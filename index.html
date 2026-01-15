@@ -7,7 +7,6 @@
   <style>
     body{
       font-family:Arial,Helvetica,sans-serif;
-      background:#f6f7fb;
       margin:0;
       min-height:100vh;
       display:flex;
@@ -15,7 +14,17 @@
       justify-content:center;
       padding:22px;
       color:#111;
+
+      /* Fondo con imagen */
+      background:
+        linear-gradient(rgba(246,247,251,.82), rgba(246,247,251,.82)),
+        url("assets/bg.jpg");
+      background-size:cover;
+      background-position:center;
+      background-repeat:no-repeat;
+      background-attachment:fixed;
     }
+
     .wrap{
       width:100%;
       max-width:420px;
@@ -48,11 +57,13 @@
       white-space:nowrap;
     }
     .card{
-      background:#fff;
-      border:1px solid #e6e8f0;
+      background:rgba(255,255,255,.92);
+      border:1px solid rgba(230,232,240,.9);
       border-radius:14px;
       padding:16px;
-      box-shadow:0 1px 8px rgba(0,0,0,.04);
+      box-shadow:0 12px 30px rgba(0,0,0,.08);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
     }
     label{
       display:block;
@@ -243,6 +254,8 @@
 </script>
 </body>
 </html>
+
+
 
 
 
