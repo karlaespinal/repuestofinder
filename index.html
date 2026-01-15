@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>RepuestoFinder - Login</title>
+  <style>
+    body{
+      font-family:Arial,Helvetica,sans-serif;
+      background:#f6f7fb;
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:22px;
+      color:#111;
+    }
+    .wrap{
+      width:100%;
+      max-width:420px;
+    }
+    .brand{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:6px;
+      margin-bottom:14px;
+      text-align:center;
+    }
+    .logo{
+      width:54px;height:54px;border-radius:14px;
+      background:#111; color:#fff;
+      display:flex;align-items:center;justify-content:center;
+      font-weight:900; font-size:18px;
+      box-shadow:0 10px 25px rgba(0,0,0,.12);
+      user-select:none;
+    }
+    h1{margin:0;font-size:26px}
+    .watermark{
+      font-size:12px;
+      color:#9ca3af;
+      font-weight:800;
+      letter-spacing:.4px;
+      opacity:.75;
+      text-transform:uppercase;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .card{
+      background:#fff;
+      border:1px solid #e6e8f0;
+      border-radius:14px;
+      padding:16px;
+      box-shadow:0 1px 8px rgba(0,0,0,.04);
+    }
+    label{
+      display:block;
+      font-size:12px;
+      color:#6b7280;
+      font-weight:800;
+      margin:12px 0 6px;
+      text-transform:uppercase;
+      letter-spacing:.3px;
+    }
+    input{
+      width:100%;
+      padding:12px 12px;
+      border-radius:10px;
+      border:1px solid #d7dbe7;
+      font-size:14px;
+      outline:none;
+      background:#fff;
+    }
+    input:focus{border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+    button,a.btn{
+      padding:10px 14px;
+      border:0;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:900;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      flex:1;
+      min-width:140px;
+      user-select:none;
+    }
+    .btnPrimary{background:#2563eb;color:#fff}
+    .btnGhost{background:#fff;border:1px solid #e6e8f0;color:#111}
+    .btnDark{background:#111;color:#fff}
+    .muted{
+      color:#6b7280;
+      font-size:13px;
+      line-height:1.4;
+    }
+    .mini{
+      font-size:12px;color:#6b7280;margin-top:10px;
+    }
+    .badge{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border-radius:999px;
+      border:1px solid #e6e8f0;background:#f3f4f6;
+      font-size:12px;font-weight:900;color:#111;
+      user-select:none;
+    }
+    .footer{
+      margin-top:12px;
+      text-align:center;
+      color:#9ca3af;
+      font-size:12px;
+    }
+    .divider{
+      height:1px;background:#eef0f6;margin:14px 0;
+    }
+    .link{
+      color:#2563eb;text-decoration:none;font-weight:900;
+    }
+    .link:hover{text-decoration:underline}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="brand">
+      <div class="logo">RF</div>
+      <h1>RepuestoFinder</h1>
+      <div class="watermark">Login / DTD STAR PARTS</div>
+      <div class="badge" id="demoBadge">Demo disponible</div>
+    </div>
+
+    <div class="card">
+      <div class="muted">
+        Entra con tu cuenta o prueba el buscador con <b>10 intentos</b> sin registrarte.
+      </div>
+
+      <label for="email">Correo</label>
+      <input id="email" type="email" placeholder="tuemail@empresa.com" autocomplete="username"/>
+
+      <label for="pass">Contraseña</label>
+      <input id="pass" type="password" placeholder="••••••••" autocomplete="current-password"/>
+
+      <div class="row">
+        <button class="btnPrimary" onclick="login()">Entrar</button>
+        <button class="btnGhost" id="btnDemo" onclick="demo()">Probar (10)</button>
+      </div>
+
+      <div class="row">
+        <button class="btnDark" onclick="register()">Registrate</button>
+        <a class="btn btnGhost" href="#" onclick="forgot();return false;">Olvide mi contraseña</a>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="mini">
+        Hoy: <span id="attemptsTxt">-</span> intentos demo disponibles.
+      </div>
+
+      <div class="mini">
+        <b>Nota:</b> El login/registro real lo conectamos a Supabase cuando instales Node.js y montemos Next.js.
+        Por ahora esto es la maqueta visual y la demo de intentos.
+      </div>
+    </div>
+
+    <div class="footer">
+      © <span id="y"></span> RepuestoFinder
+    </div>
+  </div>
+
+<script>
+  // Demo attempts (10) usando localStorage
+  var DEMO_MAX = 10;
+  var KEY = "rf_demo_attempts_left";
+
+  function getLeft(){
+    var v = localStorage.getItem(KEY);
+    if(v === null || v === "" || isNaN(Number(v))) {
+      localStorage.setItem(KEY, String(DEMO_MAX));
+      return DEMO_MAX;
+    }
+    return Math.max(0, Number(v));
+  }
+  function setLeft(n){
+    localStorage.setItem(KEY, String(Math.max(0, n)));
+    paint();
+  }
+  function paint(){
+    var left = getLeft();
+    document.getElementById("attemptsTxt").textContent = left;
+    document.getElementById("btnDemo").textContent = "Probar (" + left + ")";
+    document.getElementById("btnDemo").disabled = left <= 0;
+
+    var badge = document.getElementById("demoBadge");
+    badge.textContent = (left > 0) ? ("Demo: " + left + " intentos") : "Demo agotada";
+    badge.style.opacity = (left > 0) ? "1" : ".6";
+  }
+
+  function demo(){
+    var left = getLeft();
+    if(left <= 0){
+      alert("Ya agotaste los 10 intentos de demo. Crea una cuenta para continuar.");
+      return;
+    }
+    setLeft(left - 1);
+    // En demo entra directo a la app
+    window.location.href = "app.html?demo=1";
+  }
+
+  function login(){
+    // Por ahora solo simulamos login. Luego Supabase Auth.
+    var email = (document.getElementById("email").value || "").trim();
+    var pass  = (document.getElementById("pass").value || "").trim();
+
+    if(!email || !pass){
+      alert("Completa correo y contraseña.");
+      return;
+    }
+
+    alert("Login (demo). Cuando conectemos Supabase, esto validara usuarios reales.");
+    window.location.href = "app.html";
+  }
+
+  function register(){
+    alert("Registro (demo). Aqui pondremos el formulario real con Supabase.");
+    // Luego: window.location.href = "/register" (en Next.js)
+  }
+
+  function forgot(){
+    alert("Recuperar clave (demo). Luego lo conectamos a Supabase.");
+  }
+
+  // Init
+  document.getElementById("y").textContent = new Date().getFullYear();
+  paint();
+</script>
+</body>
+</html>
+
+
