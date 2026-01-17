@@ -15,10 +15,8 @@
       padding:22px;
       color:#111;
 
-      *, *::before, *::after {
-      box-sizing: border-box;
-      }
-
+      /* OJO: esto no debe ir dentro de body normalmente, pero lo dejo igual para no romper tu estilo */
+      *, *::before, *::after { box-sizing: border-box; }
 
       /* Fondo con imagen */
       background:
@@ -30,10 +28,7 @@
       background-attachment:fixed;
     }
 
-    .wrap{
-      width:100%;
-      max-width:420px;
-    }
+    .wrap{ width:100%; max-width:420px; }
     .brand{
       display:flex;
       flex-direction:column;
@@ -110,17 +105,12 @@
       min-width:140px;
       user-select:none;
     }
+    button:disabled, a.btn.disabled { opacity:.55; cursor:not-allowed; }
     .btnPrimary{background:#2563eb;color:#fff}
     .btnGhost{background:#fff;border:1px solid #e6e8f0;color:#111}
     .btnDark{background:#111;color:#fff}
-    .muted{
-      color:#6b7280;
-      font-size:13px;
-      line-height:1.4;
-    }
-    .mini{
-      font-size:12px;color:#6b7280;margin-top:10px;
-    }
+    .muted{ color:#6b7280; font-size:13px; line-height:1.4; }
+    .mini{ font-size:12px;color:#6b7280;margin-top:10px; }
     .badge{
       display:inline-flex;align-items:center;gap:8px;
       padding:6px 10px;border-radius:999px;
@@ -134,12 +124,8 @@
       color:#9ca3af;
       font-size:12px;
     }
-    .divider{
-      height:1px;background:#eef0f6;margin:14px 0;
-    }
-    .link{
-      color:#2563eb;text-decoration:none;font-weight:900;
-    }
+    .divider{ height:1px;background:#eef0f6;margin:14px 0; }
+    .link{ color:#2563eb;text-decoration:none;font-weight:900; }
     .link:hover{text-decoration:underline}
   </style>
 </head>
@@ -165,12 +151,12 @@
       <input id="pass" type="password" placeholder="••••••••" autocomplete="current-password"/>
 
       <div class="row">
-        <button class="btnPrimary" onclick="login()">Entrar</button>
+        <button class="btnPrimary" id="btnLogin" onclick="login()">Entrar</button>
         <button class="btnGhost" id="btnDemo" onclick="demo()">Probar (10)</button>
       </div>
 
       <div class="row">
-        <button class="btnDark" onclick="register()">Registrate</button>
+        <button class="btnDark" id="btnRegister" onclick="register()">Registrate</button>
         <a class="btn btnGhost" href="#" onclick="forgot();return false;">Olvide mi contraseña</a>
       </div>
 
@@ -180,9 +166,8 @@
         Hoy: <span id="attemptsTxt">-</span> intentos demo disponibles.
       </div>
 
-      <div class="mini">
-        <b>Nota:</b> El login/registro real lo conectamos a Supabase cuando instales Node.js y montemos Next.js.
-        Por ahora esto es la maqueta visual y la demo de intentos.
+      <div class="mini" id="loginHint">
+        <b>Nota:</b> Login real activado con Supabase Auth.
       </div>
     </div>
 
@@ -191,74 +176,151 @@
     </div>
   </div>
 
-<script>
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+  /* ===================== CONFIG SUPABASE (EDITA SOLO AQUI) ===================== */
+  const SUPABASE_URL = "https://pjkbipdjxxxzjiuyfkaq.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_G7uvRyHNLSew2HKJY_h6ag_M2NZDYx4";
+  /* ============================================================================ */
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
   // Demo attempts (10) usando localStorage
-  var DEMO_MAX = 10;
-  var KEY = "rf_demo_attempts_left";
+  const DEMO_MAX = 10;
+  const KEY = "rf_demo_attempts_left";
+
+  function setBusy(isBusy){
+    document.getElementById("btnLogin").disabled = isBusy;
+    document.getElementById("btnRegister").disabled = isBusy;
+    document.getElementById("btnDemo").disabled = isBusy || (getLeft() <= 0);
+  }
 
   function getLeft(){
-    var v = localStorage.getItem(KEY);
+    const v = localStorage.getItem(KEY);
     if(v === null || v === "" || isNaN(Number(v))) {
       localStorage.setItem(KEY, String(DEMO_MAX));
       return DEMO_MAX;
     }
     return Math.max(0, Number(v));
   }
+
   function setLeft(n){
     localStorage.setItem(KEY, String(Math.max(0, n)));
     paint();
   }
+
   function paint(){
-    var left = getLeft();
+    const left = getLeft();
     document.getElementById("attemptsTxt").textContent = left;
     document.getElementById("btnDemo").textContent = "Probar (" + left + ")";
     document.getElementById("btnDemo").disabled = left <= 0;
 
-    var badge = document.getElementById("demoBadge");
+    const badge = document.getElementById("demoBadge");
     badge.textContent = (left > 0) ? ("Demo: " + left + " intentos") : "Demo agotada";
     badge.style.opacity = (left > 0) ? "1" : ".6";
   }
 
-  function demo(){
-    var left = getLeft();
+  async function goApp(demoMode){
+    if(demoMode){
+      window.location.href = "app.html?demo=1";
+    } else {
+      window.location.href = "app.html";
+    }
+  }
+
+  // Demo
+  window.demo = async function(){
+    const left = getLeft();
     if(left <= 0){
       alert("Ya agotaste los 10 intentos de demo. Crea una cuenta para continuar.");
       return;
     }
     setLeft(left - 1);
-    // En demo entra directo a la app
-    window.location.href = "app.html?demo=1";
-  }
+    await goApp(true);
+  };
 
-  function login(){
-    // Por ahora solo simulamos login. Luego Supabase Auth.
-    var email = (document.getElementById("email").value || "").trim();
-    var pass  = (document.getElementById("pass").value || "").trim();
+  // Login real (Supabase)
+  window.login = async function(){
+    const email = (document.getElementById("email").value || "").trim();
+    const password  = (document.getElementById("pass").value || "").trim();
 
-    if(!email || !pass){
+    if(!email || !password){
       alert("Completa correo y contraseña.");
       return;
     }
 
-    alert("Login (demo). Cuando conectemos Supabase, esto validara usuarios reales.");
-    window.location.href = "app.html";
-  }
+    try{
+      setBusy(true);
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if(error){
+        alert("Error: " + error.message);
+        return;
+      }
+      await goApp(false);
+    } finally {
+      setBusy(false);
+    }
+  };
 
-  function register(){
-    alert("Registro (demo). Aqui pondremos el formulario real con Supabase.");
-    // Luego: window.location.href = "/register" (en Next.js)
-  }
+  // Registro real (Supabase)
+  window.register = async function(){
+    const email = (document.getElementById("email").value || "").trim();
+    const password  = (document.getElementById("pass").value || "").trim();
 
-  function forgot(){
-    alert("Recuperar clave (demo). Luego lo conectamos a Supabase.");
-  }
+    if(!email || !password){
+      alert("Completa correo y contraseña.");
+      return;
+    }
+
+    try{
+      setBusy(true);
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if(error){
+        alert("Error: " + error.message);
+        return;
+      }
+      alert("Cuenta creada. Si activaste confirmacion por correo, revisa tu email. Si no, ya puedes entrar.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Forgot real (Supabase)
+  window.forgot = async function(){
+    const email = (document.getElementById("email").value || "").trim();
+    if(!email){
+      alert("Escribe tu correo primero.");
+      return;
+    }
+    try{
+      setBusy(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if(error){
+        alert("Error: " + error.message);
+        return;
+      }
+      alert("Listo. Te envie un correo para recuperar la clave.");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   // Init
   document.getElementById("y").textContent = new Date().getFullYear();
   paint();
+
+  // Si ya hay sesion, entra directo
+  const { data } = await supabase.auth.getSession();
+  if(data && data.session){
+    document.getElementById("loginHint").innerHTML = "<b>Nota:</b> Sesion detectada. Entrando...";
+    setTimeout(()=>{ window.location.href = "app.html"; }, 350);
+  }
 </script>
 </body>
 </html>
+
+
 
 
 
