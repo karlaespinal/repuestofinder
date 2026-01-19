@@ -311,14 +311,19 @@
   paint();
 
   // Si ya hay sesion, entra directo
-  const { data } = await supabase.auth.getSession();
-  if(data && data.session){
-    document.getElementById("loginHint").innerHTML = "<b>Nota:</b> Sesion detectada. Entrando...";
-    setTimeout(()=>{ window.location.href = "app.html"; }, 350);
-  }
+  const urlp = new URLSearchParams(location.search);
+const stay = urlp.get("stay") === "1";
+
+const { data } = await supabase.auth.getSession();
+if(data && data.session && !stay){
+  document.getElementById("loginHint").innerHTML = "<b>Nota:</b> Sesion detectada. Entrando...";
+  setTimeout(()=>{ window.location.href = "/app"; }, 350);
+}
+
 </script>
 </body>
 </html>
+
 
 
 
