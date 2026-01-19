@@ -6,14 +6,12 @@
   <title>RepuestoFinder - App</title>
   <style>
     body{font-family:Arial,Helvetica,sans-serif;background:#f6f7fb;margin:0;padding:22px;color:#111}
-
     .topbar{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0 0 14px 0;}
     h1{margin:0;font-size:26px}
     .watermark{font-size:12px;color:#9ca3af;font-weight:800;letter-spacing:.4px;user-select:none;white-space:nowrap;opacity:.65;text-transform:uppercase;}
     .nav{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     a.navlink{color:#2563eb;text-decoration:none;font-weight:900}
     a.navlink:hover{text-decoration:underline}
-
     .card{background:#fff;border:1px solid #e6e8f0;border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 1px 8px rgba(0,0,0,.04)}
     .row{display:flex;gap:12px;flex-wrap:wrap}
     .grow{flex:1}
@@ -25,7 +23,6 @@
     .muted{color:#6b7280;font-size:13px}
     .ok{display:inline-flex;align-items:center;gap:8px;font-size:13px}
     .dot{width:10px;height:10px;border-radius:50%;background:#10b981;display:inline-block}
-
     table{width:100%;border-collapse:collapse;margin-top:10px}
     th,td{border-bottom:1px solid #eef0f6;padding:10px;text-align:left;font-size:13px;vertical-align:top}
     th{background:#fafbff}
@@ -85,47 +82,6 @@
       white-space:pre-wrap;
       color:#111;
     }
-
-    table.xref{
-      width:100%;
-      border-collapse:separate;
-      border-spacing:0;
-      margin-top:10px;
-      border:1px solid #b7cbe2;
-      border-radius:10px;
-      overflow:hidden;
-      background:#cfe0f2;
-      box-shadow:0 1px 6px rgba(0,0,0,.04);
-    }
-    table.xref thead{display:none;}
-    table.xref tbody:first-child tr th{
-      background:#8fb4d8;
-      color:#0b2a44;
-      font-weight:900;
-      padding:10px;
-      border-bottom:1px solid #7ea6cd;
-      font-size:13px;
-      text-transform:none;
-    }
-    table.xref td, table.xref th{
-      border:0 !important;
-      padding:8px 10px;
-      font-size:13px;
-      vertical-align:top;
-      color:#0b2a44;
-    }
-    table.xref tbody[id^="cat"] tr td{
-      border-bottom:1px solid rgba(11,42,68,.12) !important;
-    }
-    table.xref td.nw{white-space:nowrap}
-    table.xref td.sm{font-size:12px; line-height:1.25}
-    table.xref a{
-      color:#0b4aa2;
-      font-weight:900;
-      text-decoration:none;
-    }
-    table.xref a:hover{text-decoration:underline}
-    table.xref tbody.hidden{display:none;}
   </style>
 </head>
 
@@ -191,7 +147,6 @@
     <div class="card menuCard" id="cardOE">
       <div class="accHeader" onclick="toggleAcc('cardOE')">
         <div class="accTitle">Cambios</div>
-
         <div class="accRight" onclick="event.stopPropagation()">
           <button class="copyBtn" id="btnCopyOE" onclick="copiarOE()" disabled title="Copiar tabla para Excel">
             <svg class="copyIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -215,7 +170,6 @@
   <div class="card menuCard" id="cardVeh">
     <div class="accHeader" onclick="toggleAcc('cardVeh')">
       <div class="accTitle">Vehicles</div>
-
       <div class="accRight" onclick="event.stopPropagation()">
         <button class="copyBtn" id="btnCopyVeh" onclick="copiarVehicles()" disabled title="Copiar tabla para Excel">
           <svg class="copyIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -238,7 +192,6 @@
   <div class="card menuCard" id="cardToy">
     <div class="accHeader" onclick="toggleAcc('cardToy')">
       <div class="accTitle">Toyota/Lexus</div>
-
       <div class="accRight" onclick="event.stopPropagation()">
         <button class="copyBtn" id="btnCopyToy" onclick="copiarToyoDIY()" disabled title="Copiar tabla para Excel">
           <svg class="copyIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -413,10 +366,8 @@
 
   window.limpiar = function(){
     lastPayload = null;
-    window.__LAST_PAYLOAD__ = null;
 
     document.getElementById("btnExport").disabled = true;
-
     document.getElementById("btnCopyOE").disabled = true;
     document.getElementById("btnCopyVeh").disabled = true;
     document.getElementById("btnCopyToy").disabled = true;
@@ -433,11 +384,10 @@
     document.getElementById("toyMeta").textContent = "";
     document.getElementById("toyRaw").style.display = "none";
     document.getElementById("toyRaw").textContent = "";
-
     document.getElementById("refWrap").innerHTML = "No hay filas detectadas.";
     document.getElementById("subWrap").innerHTML = "No hay filas detectadas.";
-    setStatus("Listo");
 
+    setStatus("Listo");
     if(isMobile_()) setMobileDefault_();
   };
 
@@ -449,23 +399,19 @@
     }
 
     setStatus("Buscando...");
-    document.getElementById("btnExport").disabled = true;
-    document.getElementById("btnCopyOE").disabled = true;
-    document.getElementById("btnCopyVeh").disabled = true;
-    document.getElementById("btnCopyToy").disabled = true;
 
     try{
       let payload;
 
       if (USE_DEMO) {
-        payload = { ok:true, demo:true, code: code };
+        payload = { ok:true, demo:true, codigo: code, tablas: { oeNumbers: [], vehicles:{headers:[],rows:[]}, referencias:[], subAssembly:[], toyodiyXref:{mode:"skipped",reason:"DEMO"} } };
       } else {
-        const j = await fetchWorker_("/search?code=" + encodeURIComponent(code));
-        payload = j;
-
+        payload = await fetchWorker_("/search?code=" + encodeURIComponent(code));
+      }
 
       render(payload);
     }catch(e){
+      console.error(e);
       setStatus("Error: " + (e && e.message ? e.message : e));
       alert("Error consultando: " + (e && e.message ? e.message : e));
     }
@@ -473,27 +419,34 @@
 
   function render(payload){
     lastPayload = payload;
-    window.__LAST_PAYLOAD__ = payload;
 
-    if(!payload || !payload.tablas){
-      document.getElementById("pillCode").textContent = "-";
-      document.getElementById("productUrl").textContent = "-";
-      document.getElementById("productUrl").href = "#";
-      document.getElementById("counts").textContent = "Vehicles: 0 | OE Numbers: 0 | Refs: 0 | ToyoDIY: 0";
-      document.getElementById("notes").textContent = "Respuesta Worker: " + JSON.stringify(payload);
+    // muestra algo aunque sea MOCK
+    document.getElementById("pillCode").textContent = payload.codigo || payload.code || "-";
+    document.getElementById("productUrl").textContent = payload.productUrl || "-";
+    document.getElementById("productUrl").href = payload.productUrl || "#";
 
-      document.getElementById("oeWrap").innerHTML = "Aun no hay endpoint /search. Respuesta mostrada en notas.";
-      document.getElementById("vehWrap").innerHTML = "Aun no hay endpoint /search.";
-      document.getElementById("toyWrap").innerHTML = "Aun no hay endpoint /search.";
-      document.getElementById("refWrap").innerHTML = "Aun no hay endpoint /search.";
-      document.getElementById("subWrap").innerHTML = "Aun no hay endpoint /search.";
+    const c = payload.counts || {};
+    document.getElementById("counts").textContent =
+      "Vehicles: " + (c.vehicles_groups || 0) +
+      " | OE Numbers: " + (c.oe_numbers || 0) +
+      " | Refs: " + (c.related_products || 0) +
+      " | ToyoDIY: " + (c.toyodiy_rows || 0);
 
-      setStatus("Listo");
-      return;
-    }
+    document.getElementById("notes").textContent = "Respuesta Worker: " + JSON.stringify(payload);
+
+    setStatus("Listo ✅");
+    if(isMobile_()) setMobileDefault_();
   }
 
-  // ======= AQUI VA LA INICIALIZACION (IMPORTANTE) =======
+  window.exportar = function(){
+    alert("Exportar pendiente de implementar");
+  };
+
+  window.copiarOE = function(){ alert("Copiar pendiente"); };
+  window.copiarVehicles = function(){ alert("Copiar pendiente"); };
+  window.copiarToyoDIY = function(){ alert("Copiar pendiente"); };
+
+  // ======= INICIALIZACION =======
   await initAuth_();
 
   supabase.auth.onAuthStateChange(function (event, session) {
@@ -504,6 +457,8 @@
 </script>
 </body>
 </html>
+
+
 
 
 
