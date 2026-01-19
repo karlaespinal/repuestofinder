@@ -750,6 +750,17 @@
     if(!ok) throw new Error("execCommand(copy) fallo");
   }
 
+  // Iniciar Auth al cargar (muestra Modo, Usuario y Cerrar sesion)
+    await initAuth_();
+
+// Si la sesion se cae o cierras sesion en otra pestaña, vuelve al login
+    supabase.auth.onAuthStateChange(function (event, session) {
+  if (!USE_DEMO && !session) {
+    window.location.href = "/"; // tu login en repuestofinder.com
+    }
+  });
+
+
   /* =================== TABLAS HTML =================== */
   function tableHTML(rows, headersForced){
     const headers = (headersForced && headersForced.length) ? headersForced : Object.keys(rows[0] || {});
@@ -764,6 +775,7 @@
       for (let h=0;h<headers.length;h++){
         const key = headers[h];
         const v = (rows[r][key] === null || rows[r][key] === undefined) ? "" : String(rows[r][key]);
+
 
 
 
