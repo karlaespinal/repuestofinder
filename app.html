@@ -37,7 +37,6 @@
     .searchBox{max-width:420px}
     @media(max-width:900px){.searchBox{max-width:100%}}
 
-    /* Copiar */
     .copyBtn{
       display:inline-flex;align-items:center;gap:8px;
       padding:8px 10px;border-radius:10px;border:1px solid #e6e8f0;
@@ -47,7 +46,6 @@
     .copyBtn:disabled{opacity:.5;cursor:not-allowed}
     .copyIcon{width:16px;height:16px;display:inline-block}
 
-    /* Acordeon */
     .accHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:default;}
     .accTitle{display:flex;align-items:center;gap:10px;font-weight:900;}
     .accBody{margin-top:10px;}
@@ -76,7 +74,6 @@
       .card.open .chev{transform:rotate(180deg);}
     }
 
-    /* Raw box (blanco) */
     .rawBox{
       margin-top:10px;
       border:1px solid #eef0f6;
@@ -89,7 +86,6 @@
       color:#111;
     }
 
-    /* ToyoDIY look */
     table.xref{
       width:100%;
       border-collapse:separate;
@@ -130,39 +126,6 @@
     }
     table.xref a:hover{text-decoration:underline}
     table.xref tbody.hidden{display:none;}
-
-    /* Comercializacion */
-    .comCell{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .comEmoji{
-      font-size:18px;
-      line-height:1;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-width:24px;
-      padding:2px 4px;
-      border-radius:8px;
-      background:#f3f4f6;
-      border:1px solid #e6e8f0;
-    }
-    .btn-evidencia{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:6px 9px;
-      border-radius:10px;
-      border:1px solid #e6e8f0;
-      background:#fff;
-      color:#111;
-      font-weight:900;
-      font-size:12px;
-      cursor:pointer;
-      user-select:none;
-      white-space:nowrap;
-    }
-    .btn-evidencia:hover{background:#f6f7fb}
-    .btn-evidencia:disabled{opacity:.45;cursor:not-allowed}
-    .infoIcon{width:14px;height:14px;display:inline-block}
   </style>
 </head>
 
@@ -174,7 +137,7 @@
     </div>
 
     <div class="nav">
-      <a class="navlink" href="index.html">Volver al sitio</a>
+      <a class="navlink" href="/?stay=1">Volver al sitio</a>
       <span class="pill" id="modePill" title="DEMO no requiere login. API requiere login.">Modo: -</span>
       <span class="pill" id="userPill" style="display:none">Usuario: -</span>
       <a class="navlink" href="#" onclick="cerrarSesion();return false;" id="logoutLink" style="display:none">Cerrar sesion</a>
@@ -330,14 +293,10 @@
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-  /* ===================== CONFIG SUPABASE (EDITA SOLO AQUI) ===================== */
   const SUPABASE_URL = "https://pjkbipdjxxxzjiuyfkaq.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_G7uvRyHNLSew2HKJY_h6ag_M2NZDYx4";
-  /* ===================== CONFIG WORKER (EDITA SOLO AQUI) ======================= */
   const API_ENDPOINT = "https://repuestofinder-backend.alfredoespinal69.workers.dev";
-  /* ============================================================================ */
 
-  // DEMO se activa si vienes con ?demo=1
   const params = new URLSearchParams(location.search);
   let USE_DEMO = params.get("demo") === "1";
 
@@ -401,7 +360,6 @@
     else setDesktopDefault_();
   });
 
-  // --- Auth guard: si NO es demo, exige sesion
   async function initAuth_(){
     updateModePill_();
 
@@ -418,7 +376,7 @@
 
     const { data } = await supabase.auth.getSession();
     if(!data || !data.session){
-      window.location.href = "index.html";
+      window.location.href = "/?stay=1";
       return;
     }
 
@@ -430,13 +388,10 @@
   }
 
   window.cerrarSesion = async function(){
-    try{
-      await supabase.auth.signOut();
-    }catch(e){}
-    window.location.href = "index.html";
+    try{ await supabase.auth.signOut(); }catch(e){}
+    window.location.href = "/?stay=1";
   };
 
-  // --- fetch helper para Worker con token
   async function fetchWorker_(path){
     const { data } = await supabase.auth.getSession();
     if(!data || !data.session) throw new Error("No hay sesion. Vuelve a login.");
@@ -446,9 +401,7 @@
 
     const r = await fetch(url, {
       method: "GET",
-      headers: {
-        "Authorization": "Bearer " + token
-      }
+      headers: { "Authorization": "Bearer " + token }
     });
 
     const j = await r.json().catch(()=> ({}));
@@ -458,7 +411,6 @@
     return j;
   }
 
-  // --- UI actions
   window.limpiar = function(){
     lastPayload = null;
     window.__LAST_PAYLOAD__ = null;
@@ -506,30 +458,14 @@
       let payload;
 
       if (USE_DEMO) {
-        payload = demoPayload_(code);
-        await sleep_(250);
+        payload = { ok:true, demo:true, code: code };
       } else {
-        if(!API_ENDPOINT){
-          setStatus("Falta API_ENDPOINT.");
-          alert("Configura API_ENDPOINT con tu Cloudflare Worker.");
-          return;
-        }
-
-        // Tu worker ya tiene /test-supabase funcionando.
-        // Aqui vamos a usar un endpoint de prueba primero:
-        // - si quieres probar conexion: /test-supabase
-        // - luego creamos /search?code=...
-        // Por ahora, si el usuario escribe cualquier cosa, devolvemos /test-supabase
         const j = await fetchWorker_("/test-supabase");
-        payload = j; // por ahora mostramos lo que venga
-        // Cuando creemos /search, cambiamos a:
-        // const j = await fetchWorker_("/search?code=" + encodeURIComponent(code));
-        // payload = j.data o j.payload etc.
+        payload = j;
       }
 
       render(payload);
     }catch(e){
-      console.error(e);
       setStatus("Error: " + (e && e.message ? e.message : e));
       alert("Error consultando: " + (e && e.message ? e.message : e));
     }
@@ -539,8 +475,6 @@
     lastPayload = payload;
     window.__LAST_PAYLOAD__ = payload;
 
-    // Si viene del /test-supabase del worker, payload = { ok:true, data:[...] }
-    // Para no romper tu UI, si no existe "tablas", solo mostramos raw en notes.
     if(!payload || !payload.tablas){
       document.getElementById("pillCode").textContent = "-";
       document.getElementById("productUrl").textContent = "-";
@@ -554,227 +488,24 @@
       document.getElementById("refWrap").innerHTML = "Aun no hay endpoint /search.";
       document.getElementById("subWrap").innerHTML = "Aun no hay endpoint /search.";
 
-      setStatus("Listo ✅");
-      if(isMobile_()) setMobileDefault_();
+      setStatus("Listo");
       return;
-    }
-
-    // Si es payload real (demo o futuro /search)
-    document.getElementById("btnExport").disabled = true;
-
-    document.getElementById("pillCode").textContent = payload.codigo || payload.code || "-";
-    document.getElementById("productUrl").textContent = payload.productUrl || "-";
-    document.getElementById("productUrl").href = payload.productUrl || "#";
-
-    const c = payload.counts || {};
-    document.getElementById("counts").textContent =
-      "Vehicles: " + (c.vehicles_groups || c.vehicles || 0) +
-      " | OE Numbers: " + (c.oe_numbers || c.oe || 0) +
-      " | Refs: " + (c.related_products || c.refs || 0) +
-      " | ToyoDIY: " + (c.toyodiy_rows || c.toy || 0);
-
-    document.getElementById("notes").textContent =
-      (payload.productId ? ("product_id=" + payload.productId + " | ") : "") +
-      (payload.guestId ? ("guest_id=" + payload.guestId) : "");
-
-    const oe = (payload.tablas && payload.tablas.oeNumbers) ? payload.tablas.oeNumbers : (payload.oeNumbers || []);
-    document.getElementById("oeWrap").innerHTML = (oe.length ? tableHTML(oe, ["PartNumber","Owner"]) : "No hay filas detectadas.");
-    document.getElementById("btnCopyOE").disabled = !oe.length;
-
-    renderVehiclesTable_();
-
-    const toy = (payload.tablas && payload.tablas.toyodiyXref) ? payload.tablas.toyodiyXref : (payload.toyodiyXref || null);
-    renderToyoDIY_(toy);
-
-    const refs = (payload.tablas && payload.tablas.referencias) ? payload.tablas.referencias : (payload.referencias || []);
-    document.getElementById("refWrap").innerHTML = (refs.length ? tableHTML(refs) : "No hay filas detectadas.");
-
-    const sub = (payload.tablas && payload.tablas.subAssembly) ? payload.tablas.subAssembly : (payload.subAssembly || []);
-    document.getElementById("subWrap").innerHTML = (sub.length ? tableHTML(sub) : "No hay filas detectadas.");
-
-    setStatus("Listo ✅");
-    if(isMobile_()) setMobileDefault_();
-  }
-
-  function renderVehiclesTable_(){
-    const vehData = (lastPayload && lastPayload.tablas && lastPayload.tablas.vehicles) ? lastPayload.tablas.vehicles : (lastPayload.vehicles || null);
-    let rows = [];
-    let headers = [];
-
-    if (vehData && vehData.headers && vehData.rows) {
-      headers = vehData.headers || [];
-      rows = vehData.rows || [];
-    } else if (Array.isArray(vehData)) {
-      rows = vehData;
-      headers = rows.length ? Object.keys(rows[0]) : [];
-    }
-
-    if(rows.length){
-      document.getElementById("vehWrap").innerHTML = tableHTMLVehicles_(rows, headers);
-      document.getElementById("btnCopyVeh").disabled = false;
-    }else{
-      document.getElementById("vehWrap").innerHTML = "No hay filas detectadas.";
-      document.getElementById("btnCopyVeh").disabled = true;
     }
   }
 
-  function renderToyoDIY_(toy){
-    const meta = document.getElementById("toyMeta");
-    const wrap = document.getElementById("toyWrap");
-    const rawBox = document.getElementById("toyRaw");
-    rawBox.style.display = "none";
-    rawBox.textContent = "";
+  // ======= AQUI VA LA INICIALIZACION (IMPORTANTE) =======
+  await initAuth_();
 
-    if(!toy || toy.mode === "skipped"){
-      meta.textContent = toy && toy.reason ? ("Nota: " + toy.reason) : "";
-      wrap.innerHTML = "No hay filas detectadas.";
-      document.getElementById("btnCopyToy").disabled = true;
-      return;
-    }
-
-    const srcUrl = toy.sourceUrl || "";
-    const warn = toy.warn || "";
-    meta.innerHTML = (srcUrl ? ('Fuente: <a href="'+escapeAttr(srcUrl)+'" target="_blank">abrir ToyoDIY</a>') : "Fuente: ToyoDIY") +
-                     (warn ? (' | <span class="muted">'+escapeHtml(warn)+'</span>') : "");
-
-    if(toy.tableHtml){
-      wrap.innerHTML = toy.tableHtml;
-      document.getElementById("btnCopyToy").disabled = !(toy.rows && toy.rows.length);
-      return;
-    }
-
-    if(toy.headers && toy.rows && toy.rows.length){
-      wrap.innerHTML = tableHTML(toy.rows, toy.headers);
-      document.getElementById("btnCopyToy").disabled = false;
-      return;
-    }
-
-    wrap.innerHTML = "No hay filas detectadas.";
-    document.getElementById("btnCopyToy").disabled = true;
-
-    if(toy.rawText){
-      rawBox.style.display = "block";
-      rawBox.textContent = toy.rawText;
-    }
-  }
-
-  /* =================== COPIAR TABLAS (Excel friendly TSV) =================== */
-  window.copiarOE = async function(){
-    if(!lastPayload) return;
-    const oe = (lastPayload.tablas && lastPayload.tablas.oeNumbers) ? lastPayload.tablas.oeNumbers : (lastPayload.oeNumbers || []);
-    await copiarComoTSV_(oe, ["PartNumber","Owner"], "OE Numbers copiado ✅");
-  };
-
-  window.copiarVehicles = async function(){
-    const vehData = (lastPayload && lastPayload.tablas && lastPayload.tablas.vehicles) ? lastPayload.tablas.vehicles : (lastPayload.vehicles || null);
-    let rows = [];
-    let headers = null;
-
-    if (vehData && vehData.headers && vehData.rows) {
-      headers = vehData.headers;
-      rows = vehData.rows || [];
-    } else if (Array.isArray(vehData)) {
-      rows = vehData;
-      headers = rows.length ? Object.keys(rows[0]) : [];
-    } else {
-      headers = [];
-      rows = [];
-    }
-
-    await copiarComoTSV_(rows, headers, "Vehicles copiado ✅");
-  };
-
-  window.copiarToyoDIY = async function(){
-    if(!lastPayload) return;
-    const toy = (lastPayload.tablas && lastPayload.tablas.toyodiyXref) ? lastPayload.tablas.toyodiyXref : (lastPayload.toyodiyXref || null);
-    if(!toy || !toy.rows || !toy.rows.length) return;
-    await copiarComoTSV_(toy.rows, toy.headers, "ToyoDIY copiado ✅");
-  };
-
-  async function copiarComoTSV_(rows, headers, okMsg){
-    if(!rows || !rows.length){
-      setStatus("No hay filas para copiar.");
-      return;
-    }
-    headers = (headers && headers.length) ? headers : Object.keys(rows[0] || {});
-    if(!headers.length){
-      setStatus("No hay columnas para copiar.");
-      return;
-    }
-
-    const lines = [];
-    lines.push(headers.join("\t"));
-
-    for (let i=0;i<rows.length;i++){
-      const r = rows[i] || {};
-      const line = headers.map(function(h){
-        let v = (r[h] === null || r[h] === undefined) ? "" : String(r[h]);
-        v = v.replace(/\r?\n/g, " ").trim();
-        return v;
-      }).join("\t");
-      lines.push(line);
-    }
-
-    const tsv = lines.join("\n");
-
-    try{
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(tsv);
-      } else {
-        fallbackCopy_(tsv);
-      }
-      setStatus(okMsg);
-    }catch(e){
-      console.error(e);
-      try{
-        fallbackCopy_(tsv);
-        setStatus(okMsg);
-      }catch(e2){
-        console.error(e2);
-        setStatus("No pude copiar. Tu navegador bloqueo el portapapeles.");
-      }
-    }
-  }
-
-  function fallbackCopy_(text){
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.left = "-9999px";
-    ta.style.top = "-9999px";
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-    const ok = document.execCommand("copy");
-    ta.remove();
-    if(!ok) throw new Error("execCommand(copy) fallo");
-  }
-
-  // Iniciar Auth al cargar (muestra Modo, Usuario y Cerrar sesion)
-    await initAuth_();
-
-// Si la sesion se cae o cierras sesion en otra pestaña, vuelve al login
-    supabase.auth.onAuthStateChange(function (event, session) {
-  if (!USE_DEMO && !session) {
-    window.location.href = "/"; // tu login en repuestofinder.com
+  supabase.auth.onAuthStateChange(function (event, session) {
+    if (!USE_DEMO && !session) {
+      window.location.href = "/?stay=1";
     }
   });
+</script>
+</body>
+</html>
 
 
-  /* =================== TABLAS HTML =================== */
-  function tableHTML(rows, headersForced){
-    const headers = (headersForced && headersForced.length) ? headersForced : Object.keys(rows[0] || {});
-    let html = "<table><thead><tr>";
-    for (let i=0;i<headers.length;i++){
-      html += "<th>" + escapeHtml(headers[i]) + "</th>";
-    }
-    html += "</tr></thead><tbody>";
-
-    for (let r=0;r<rows.length;r++){
-      html += "<tr>";
-      for (let h=0;h<headers.length;h++){
-        const key = headers[h];
-        const v = (rows[r][key] === null || rows[r][key] === undefined) ? "" : String(rows[r][key]);
 
 
 
