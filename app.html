@@ -460,9 +460,9 @@
       if (USE_DEMO) {
         payload = { ok:true, demo:true, code: code };
       } else {
-        const j = await fetchWorker_("/test-supabase");
+        const j = await fetchWorker_("/search?code=" + encodeURIComponent(code));
         payload = j;
-      }
+
 
       render(payload);
     }catch(e){
@@ -504,6 +504,7 @@
 </script>
 </body>
 </html>
+
 
 
 
