@@ -432,7 +432,79 @@
       " | Refs: " + (c.related_products || 0) +
       " | ToyoDIY: " + (c.toyodiy_rows || 0);
 
-    document.getElementById("notes").textContent = "Respuesta Worker: " + JSON.stringify(payload);
+    function render(payload){
+  lastPayload = payload;
+
+  document.getElementById("pillCode").textContent = payload.codigo || payload.code || "-";
+  document.getElementById("productUrl").textContent = payload.productUrl || "-";
+  document.getElementById("productUrl").href = payload.productUrl || "#";
+
+  const c = payload.counts || {};
+  document.getElementById("counts").textContent =
+    "Vehicles: " + (c.vehicles_groups || 0) +
+    " | OE Numbers: " + (c.oe_numbers || 0) +
+    " | Refs: " + (c.related_products || 0) +
+    " | ToyoDIY: " + (c.toyodiy_rows || 0);
+
+  // ✅ Ya no ensuciamos "Producto" con el JSON gigante
+  document.getElementById("notes").textContent = "";
+
+  // ✅ Mapeo Vehicles -> tabla real
+  const vehicles = payload && payload.tablas && payload.tablas.vehicles ? payload.tablas.vehicles : null;
+  renderTableInto_("vehWrap", vehicles);
+
+  // (Opcional) habilitar copiar si hay filas
+  const hasVeh = vehicles && Array.isArray(vehicles.rows) && vehicles.rows.length > 0;
+  document.getElementById("btnCopyVeh").disabled = !hasVeh;
+
+  setStatus("Listo ✅");
+  if(isMobile_()) setMobileDefault_();
+}
+
+function escapeHtml_(s){
+  return String(s ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#39;");
+}
+
+function renderTableInto_(wrapId, tableObj){
+  const wrap = document.getElementById(wrapId);
+  if(!wrap) return;
+
+  if(!tableObj || !Array.isArray(tableObj.headers) || !Array.isArray(tableObj.rows)){
+    wrap.innerHTML = "No hay filas detectadas.";
+    return;
+  }
+
+  if(tableObj.rows.length === 0){
+    wrap.innerHTML = "No hay filas detectadas.";
+    return;
+  }
+
+  const headers = tableObj.headers;
+  const rows = tableObj.rows;
+
+  let html = '<table><thead><tr>';
+  for(const h of headers){
+    html += '<th>' + escapeHtml_(h) + '</th>';
+  }
+  html += '</tr></thead><tbody>';
+
+  for(const r of rows){
+    html += '<tr>';
+    for(let i=0;i<headers.length;i++){
+      const v = (r && r[i] !== undefined) ? r[i] : "";
+      html += '<td>' + escapeHtml_(v) + '</td>';
+    }
+    html += '</tr>';
+  }
+
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
 
     setStatus("Listo ✅");
     if(isMobile_()) setMobileDefault_();
@@ -457,6 +529,7 @@
 </script>
 </body>
 </html>
+
 
 
 
