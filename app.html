@@ -70,18 +70,6 @@
       .card.open .accBody{display:block;}
       .card.open .chev{transform:rotate(180deg);}
     }
-
-    .rawBox{
-      margin-top:10px;
-      border:1px solid #eef0f6;
-      background:#fafbff;
-      border-radius:10px;
-      padding:12px;
-      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
-      font-size:12px;
-      white-space:pre-wrap;
-      color:#111;
-    }
   </style>
 </head>
 
@@ -105,14 +93,14 @@
       <div class="grow">
         <div class="muted">Buscar por codigo OEM o equivalente:</div>
         <div style="margin-top:10px" class="searchBox">
-          <input id="code" placeholder="Ej: 55300-3X100" value="90389-16002"/>
+          <input id="code" placeholder="Ej: 55300-3X100" value="111242"/>
         </div>
       </div>
 
       <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
         <button class="btn" onclick="buscar()">Buscar</button>
         <button class="btn2" onclick="limpiar()">Limpiar</button>
-        <button class="btn3" onclick="exportar()" id="btnExport" disabled title="Lo activamos cuando conectemos backend real">Exportar a Excel</button>
+        <button class="btn3" onclick="exportar()" id="btnExport" disabled>Exportar a Excel</button>
       </div>
     </div>
 
@@ -121,7 +109,7 @@
     </div>
 
     <div class="muted" style="margin-top:8px" id="noteBox">
-      Nota: En DEMO no requiere login. En API usa Cloudflare Worker + Supabase.
+      Nota: En API usa Cloudflare Worker + Supabase.
     </div>
   </div>
 
@@ -189,60 +177,6 @@
     </div>
   </div>
 
-  <div class="card menuCard" id="cardToy">
-    <div class="accHeader" onclick="toggleAcc('cardToy')">
-      <div class="accTitle">Toyota/Lexus</div>
-      <div class="accRight" onclick="event.stopPropagation()">
-        <button class="copyBtn" id="btnCopyToy" onclick="copiarToyoDIY()" disabled title="Copiar tabla para Excel">
-          <svg class="copyIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="9" y="9" width="13" height="13" rx="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
-          Copiar
-        </button>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M6 9l6 6 6-6"></path>
-        </svg>
-      </div>
-    </div>
-
-    <div class="accBody">
-      <div class="muted" id="toyMeta"></div>
-      <div id="toyWrap" class="muted" style="margin-top:8px">No hay filas detectadas.</div>
-      <div id="toyRaw" class="rawBox" style="display:none"></div>
-    </div>
-  </div>
-
-  <div class="card menuCard" id="cardRef">
-    <div class="accHeader" onclick="toggleAcc('cardRef')">
-      <div class="accTitle">Referencias / Cambios</div>
-      <div class="accRight" onclick="event.stopPropagation()">
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M6 9l6 6 6-6"></path>
-        </svg>
-      </div>
-    </div>
-
-    <div class="accBody">
-      <div id="refWrap" class="muted">No hay filas detectadas.</div>
-    </div>
-  </div>
-
-  <div class="card menuCard" id="cardSub">
-    <div class="accHeader" onclick="toggleAcc('cardSub')">
-      <div class="accTitle">Sub Assembly</div>
-      <div class="accRight" onclick="event.stopPropagation()">
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M6 9l6 6 6-6"></path>
-        </svg>
-      </div>
-    </div>
-
-    <div class="accBody">
-      <div id="subWrap" class="muted">No hay filas detectadas.</div>
-    </div>
-  </div>
-
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
@@ -254,16 +188,10 @@
   let USE_DEMO = params.get("demo") === "1";
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
   let lastPayload = null;
 
-  function setStatus(txt){
-    document.getElementById("status").textContent = txt;
-  }
-
-  function updateModePill_(){
-    document.getElementById("modePill").textContent = "Modo: " + (USE_DEMO ? "DEMO" : "API");
-  }
+  function setStatus(txt){ document.getElementById("status").textContent = txt; }
+  function updateModePill_(){ document.getElementById("modePill").textContent = "Modo: " + (USE_DEMO ? "DEMO" : "API"); }
 
   function isMobile_(){
     const w = Math.min(window.innerWidth || 9999, screen.width || 9999);
@@ -271,51 +199,31 @@
                     (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
     return (w <= 1024) || isTouch;
   }
-
   function setMobileDefault_(){
-    ["cardProducto","cardOE","cardVeh","cardToy","cardRef","cardSub"].forEach(function(id){
-      const c = document.getElementById(id);
-      if(c) c.classList.remove("open");
-    });
-    const p = document.getElementById("cardProducto");
-    if(p) p.classList.add("open");
+    ["cardProducto","cardOE","cardVeh"].forEach(id => { const c=document.getElementById(id); if(c) c.classList.remove("open"); });
+    const p = document.getElementById("cardProducto"); if(p) p.classList.add("open");
   }
-
   function setDesktopDefault_(){
-    ["cardProducto","cardOE","cardVeh","cardToy","cardRef","cardSub"].forEach(function(id){
-      const c = document.getElementById(id);
-      if(c) c.classList.add("open");
-    });
+    ["cardProducto","cardOE","cardVeh"].forEach(id => { const c=document.getElementById(id); if(c) c.classList.add("open"); });
   }
-
   window.toggleAcc = function(cardId){
     if(!isMobile_()) return;
     const el = document.getElementById(cardId);
     if(!el) return;
-
     const willOpen = !el.classList.contains("open");
-
-    ["cardProducto","cardOE","cardVeh","cardToy","cardRef","cardSub"].forEach(function(id){
-      const c = document.getElementById(id);
-      if(c) c.classList.remove("open");
-    });
-
+    ["cardProducto","cardOE","cardVeh"].forEach(id => { const c=document.getElementById(id); if(c) c.classList.remove("open"); });
     if(willOpen) el.classList.add("open");
   };
+  window.addEventListener("resize", ()=>{ if(isMobile_()) setMobileDefault_(); else setDesktopDefault_(); });
+  document.addEventListener("DOMContentLoaded", ()=>{ if(isMobile_()) setMobileDefault_(); else setDesktopDefault_(); });
 
-  window.addEventListener("resize", function(){
-    if(isMobile_()) setMobileDefault_();
-    else setDesktopDefault_();
-  });
-
-  document.addEventListener("DOMContentLoaded", function(){
-    if(isMobile_()) setMobileDefault_();
-    else setDesktopDefault_();
-  });
+  window.cerrarSesion = async function(){
+    try{ await supabase.auth.signOut(); }catch(e){}
+    window.location.href = "/?stay=1";
+  };
 
   async function initAuth_(){
     updateModePill_();
-
     const userPill = document.getElementById("userPill");
     const logoutLink = document.getElementById("logoutLink");
     const noteBox = document.getElementById("noteBox");
@@ -340,37 +248,72 @@
     noteBox.textContent = "Nota: Estas en API. Las consultas se hacen al Worker y el token se manda en Authorization.";
   }
 
-  window.cerrarSesion = async function(){
-    try{ await supabase.auth.signOut(); }catch(e){}
-    window.location.href = "/?stay=1";
-  };
-
   async function fetchWorker_(path){
     const { data } = await supabase.auth.getSession();
     if(!data || !data.session) throw new Error("No hay sesion. Vuelve a login.");
     const token = data.session.access_token;
 
     const url = API_ENDPOINT.replace(/\/+$/,"") + path;
-
-    const r = await fetch(url, {
-      method: "GET",
-      headers: { "Authorization": "Bearer " + token }
-    });
-
+    const r = await fetch(url, { method:"GET", headers:{ "Authorization":"Bearer " + token } });
     const j = await r.json().catch(()=> ({}));
+
     if(!r.ok || (j && j.ok === false)){
       throw new Error((j && j.error) ? j.error : ("HTTP " + r.status));
     }
     return j;
   }
 
+  function escapeHtml_(s){
+    return String(s ?? "")
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+
+  function renderTableInto_(wrapId, tableObj){
+    const wrap = document.getElementById(wrapId);
+    if(!wrap) return;
+
+    if(!tableObj || !Array.isArray(tableObj.headers) || !Array.isArray(tableObj.rows) || tableObj.rows.length === 0){
+      wrap.innerHTML = "No hay filas detectadas.";
+      return;
+    }
+
+    const headers = tableObj.headers;
+    const rows = tableObj.rows;
+
+    let html = '<table><thead><tr>';
+    for(const h of headers) html += '<th>' + escapeHtml_(h) + '</th>';
+    html += '</tr></thead><tbody>';
+
+    for(const r of rows){
+      html += '<tr>';
+      for(let i=0;i<headers.length;i++){
+        const v = (r && r[i] !== undefined) ? r[i] : "";
+        html += '<td>' + escapeHtml_(v) + '</td>';
+      }
+      html += '</tr>';
+    }
+
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }
+
+  function tableToTSV_(tableObj){
+    if(!tableObj || !Array.isArray(tableObj.headers) || !Array.isArray(tableObj.rows)) return "";
+    const lines = [];
+    lines.push(tableObj.headers.join("\t"));
+    for(const r of tableObj.rows){
+      const row = tableObj.headers.map((_,i)=> (r && r[i] !== undefined && r[i] !== null) ? String(r[i]) : "");
+      lines.push(row.join("\t"));
+    }
+    return lines.join("\n");
+  }
+
   window.limpiar = function(){
     lastPayload = null;
-
     document.getElementById("btnExport").disabled = true;
     document.getElementById("btnCopyOE").disabled = true;
     document.getElementById("btnCopyVeh").disabled = true;
-    document.getElementById("btnCopyToy").disabled = true;
 
     document.getElementById("pillCode").textContent = "-";
     document.getElementById("productUrl").textContent = "-";
@@ -380,12 +323,6 @@
 
     document.getElementById("oeWrap").innerHTML = "No hay filas detectadas.";
     document.getElementById("vehWrap").innerHTML = "No hay filas detectadas.";
-    document.getElementById("toyWrap").innerHTML = "No hay filas detectadas.";
-    document.getElementById("toyMeta").textContent = "";
-    document.getElementById("toyRaw").style.display = "none";
-    document.getElementById("toyRaw").textContent = "";
-    document.getElementById("refWrap").innerHTML = "No hay filas detectadas.";
-    document.getElementById("subWrap").innerHTML = "No hay filas detectadas.";
 
     setStatus("Listo");
     if(isMobile_()) setMobileDefault_();
@@ -393,22 +330,16 @@
 
   window.buscar = async function(){
     const code = (document.getElementById("code").value || "").trim();
-    if(!code){
-      setStatus("Escribe un codigo.");
-      return;
-    }
+    if(!code){ setStatus("Escribe un codigo."); return; }
 
     setStatus("Buscando...");
-
     try{
       let payload;
-
-      if (USE_DEMO) {
-        payload = { ok:true, demo:true, codigo: code, tablas: { oeNumbers: [], vehicles:{headers:[],rows:[]}, referencias:[], subAssembly:[], toyodiyXref:{mode:"skipped",reason:"DEMO"} } };
+      if(USE_DEMO){
+        payload = { ok:true, codigo:code, productUrl:"https://www.google.com/search?q="+encodeURIComponent(code), counts:{}, tablas:{ vehicles:{headers:[],rows:[]}, oeNumbers:[] } };
       } else {
         payload = await fetchWorker_("/search?code=" + encodeURIComponent(code));
       }
-
       render(payload);
     }catch(e){
       console.error(e);
@@ -420,10 +351,12 @@
   function render(payload){
     lastPayload = payload;
 
-    // muestra algo aunque sea MOCK
-    document.getElementById("pillCode").textContent = payload.codigo || payload.code || "-";
-    document.getElementById("productUrl").textContent = payload.productUrl || "-";
-    document.getElementById("productUrl").href = payload.productUrl || "#";
+    const codigo = payload.codigo || payload.code || "-";
+    const productUrl = payload.productUrl || ("https://www.google.com/search?q="+encodeURIComponent(codigo));
+
+    document.getElementById("pillCode").textContent = codigo;
+    document.getElementById("productUrl").textContent = productUrl;
+    document.getElementById("productUrl").href = productUrl;
 
     const c = payload.counts || {};
     document.getElementById("counts").textContent =
@@ -432,103 +365,46 @@
       " | Refs: " + (c.related_products || 0) +
       " | ToyoDIY: " + (c.toyodiy_rows || 0);
 
-    function render(payload){
-  lastPayload = payload;
+    // ✅ NO mostramos JSON gigante en Producto
+    document.getElementById("notes").textContent = "";
 
-  document.getElementById("pillCode").textContent = payload.codigo || payload.code || "-";
-  document.getElementById("productUrl").textContent = payload.productUrl || "-";
-  document.getElementById("productUrl").href = payload.productUrl || "#";
+    // ✅ Vehicles mapeado a tabla
+    const vehicles = payload && payload.tablas && payload.tablas.vehicles ? payload.tablas.vehicles : null;
+    renderTableInto_("vehWrap", vehicles);
 
-  const c = payload.counts || {};
-  document.getElementById("counts").textContent =
-    "Vehicles: " + (c.vehicles_groups || 0) +
-    " | OE Numbers: " + (c.oe_numbers || 0) +
-    " | Refs: " + (c.related_products || 0) +
-    " | ToyoDIY: " + (c.toyodiy_rows || 0);
-
-  // ✅ Ya no ensuciamos "Producto" con el JSON gigante
-  document.getElementById("notes").textContent = "";
-
-  // ✅ Mapeo Vehicles -> tabla real
-  const vehicles = payload && payload.tablas && payload.tablas.vehicles ? payload.tablas.vehicles : null;
-  renderTableInto_("vehWrap", vehicles);
-
-  // (Opcional) habilitar copiar si hay filas
-  const hasVeh = vehicles && Array.isArray(vehicles.rows) && vehicles.rows.length > 0;
-  document.getElementById("btnCopyVeh").disabled = !hasVeh;
-
-  setStatus("Listo ✅");
-  if(isMobile_()) setMobileDefault_();
-}
-
-function escapeHtml_(s){
-  return String(s ?? "")
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#39;");
-}
-
-function renderTableInto_(wrapId, tableObj){
-  const wrap = document.getElementById(wrapId);
-  if(!wrap) return;
-
-  if(!tableObj || !Array.isArray(tableObj.headers) || !Array.isArray(tableObj.rows)){
-    wrap.innerHTML = "No hay filas detectadas.";
-    return;
-  }
-
-  if(tableObj.rows.length === 0){
-    wrap.innerHTML = "No hay filas detectadas.";
-    return;
-  }
-
-  const headers = tableObj.headers;
-  const rows = tableObj.rows;
-
-  let html = '<table><thead><tr>';
-  for(const h of headers){
-    html += '<th>' + escapeHtml_(h) + '</th>';
-  }
-  html += '</tr></thead><tbody>';
-
-  for(const r of rows){
-    html += '<tr>';
-    for(let i=0;i<headers.length;i++){
-      const v = (r && r[i] !== undefined) ? r[i] : "";
-      html += '<td>' + escapeHtml_(v) + '</td>';
-    }
-    html += '</tr>';
-  }
-
-  html += '</tbody></table>';
-  wrap.innerHTML = html;
-}
+    // ✅ Habilitar copiar si hay filas
+    const hasVeh = vehicles && Array.isArray(vehicles.rows) && vehicles.rows.length > 0;
+    document.getElementById("btnCopyVeh").disabled = !hasVeh;
 
     setStatus("Listo ✅");
     if(isMobile_()) setMobileDefault_();
   }
 
-  window.exportar = function(){
-    alert("Exportar pendiente de implementar");
+  window.copiarVehicles = async function(){
+    const vehicles = lastPayload && lastPayload.tablas && lastPayload.tablas.vehicles ? lastPayload.tablas.vehicles : null;
+    const tsv = tableToTSV_(vehicles);
+    if(!tsv){ alert("No hay Vehicles para copiar."); return; }
+    try{
+      await navigator.clipboard.writeText(tsv);
+      alert("Vehicles copiado ✅ (pega en Excel)");
+    }catch(e){
+      alert("No pude copiar. (Tu navegador bloqueo el clipboard)");
+    }
   };
 
-  window.copiarOE = function(){ alert("Copiar pendiente"); };
-  window.copiarVehicles = function(){ alert("Copiar pendiente"); };
-  window.copiarToyoDIY = function(){ alert("Copiar pendiente"); };
+  window.copiarOE = function(){ alert("Copiar Cambios pendiente."); };
+  window.exportar = function(){ alert("Exportar pendiente."); };
 
   // ======= INICIALIZACION =======
   await initAuth_();
-
-  supabase.auth.onAuthStateChange(function (event, session) {
-    if (!USE_DEMO && !session) {
-      window.location.href = "/?stay=1";
-    }
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (!USE_DEMO && !session) window.location.href = "/?stay=1";
   });
 </script>
 </body>
 </html>
+
+
 
 
 
