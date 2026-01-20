@@ -211,7 +211,7 @@
       content:"";
       position:absolute;
       top:0; bottom:0;
-      width:64px;
+      width:44px; /* antes 64px (muy agresivo) */
       z-index:2;
       pointer-events:none;
     }
@@ -227,7 +227,7 @@
     .carouselTrack{
       display:flex;
       gap:12px;
-      padding:12px 18px;
+      padding:12px 56px; /* padding extra para que no “toquen” tanto las sombras */
       width:max-content;
       animation: rfScroll var(--rfSpeed, 38s) linear infinite;
       will-change: transform;
@@ -266,8 +266,7 @@
       height:100%;
       object-fit:contain;
       display:block;
-      transform: scale(1.08);
-      transform-origin:center;
+      transform:none; /* antes scale(1.08) -> recortaba logos anchos */
       filter:saturate(1.05) contrast(1.05);
     }
     .ph{
@@ -350,7 +349,7 @@
       height:100%;
       object-fit:contain;
       display:block;
-      transform:scale(1.02);
+      transform:none;
     }
     .vehCap b{font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px;}
     .vehCap span{font-size:11px;color:var(--mut);font-weight:800}
@@ -368,7 +367,8 @@
       .menu{justify-content:flex-start}
       .brandSlide{min-width:210px}
       .vehSlide{width:280px}
-      .carousel::before,.carousel::after{width:36px}
+      .carousel::before,.carousel::after{width:34px}
+      .carouselTrack{padding:12px 44px}
     }
   </style>
 </head>
@@ -564,7 +564,8 @@
     wrapEl.innerHTML = `<div class="ph">${escapeHtml(text)}</div>`;
   }
 
-  function setImgRobust(imgEl, folder, slug, wrapEl, placeholderText){
+  // ✅ FIX: ahora soporta callback final sin sobrescribir onerror afuera
+  function setImgRobust(imgEl, folder, slug, wrapEl, placeholderText, onFinalFail){
     const raw = String(slug || "").trim();
     const low = raw.toLowerCase();
 
@@ -597,6 +598,10 @@
 
     const tryNext = () => {
       if(i >= candidates.length){
+        if(typeof onFinalFail === "function"){
+          onFinalFail();
+          return;
+        }
         if(wrapEl){
           showPlaceholderInWrap(wrapEl, placeholderText || "RF");
         }else{
@@ -669,8 +674,11 @@
       const ph = initialsFromName(name);
 
       const photoImg = slide.querySelector("img[data-photo]");
-      setImgRobust(photoImg, "vehicles", slug, null, null);
-      photoImg.onerror = () => { photoImg.style.display = "none"; };
+      // ✅ ya NO sobrescribimos onerror afuera
+      setImgRobust(photoImg, "vehicles", slug, null, null, () => {
+        // si no existe ninguna imagen, dejamos solo el fondo gradient
+        photoImg.style.display = "none";
+      });
 
       const logoImg = slide.querySelector("img[data-vlogo]");
       const logoWrap = slide.querySelector(".vehMiniLogo");
@@ -767,6 +775,8 @@
 </script>
 </body>
 </html>
+
+
 
 
 
