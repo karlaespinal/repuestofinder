@@ -2,5 +2,11 @@
   { "slug":"toyota", "name":"Toyota", "tag":"Top RD" },
   { "slug":"honda", "name":"Honda", "tag":"Top RD" },
   { "slug":"hyundai", "name":"Hyundai", "tag":"Top RD" },
-  { "slug":"kia", "name":"Kia", "tag":"Top RD" }
+  { "slug":"kia", "name":"Kia", "tag":"Top RD" },
+  { "slug":"mercedes_benz", "name":"Mercedes-Benz", "tag":"Premium" },
+  { "slug":"nissan", "name":"Nissan", "tag":"Top RD" },
+  { "slug":"mitsubishi", "name":"Mitsubishi", "tag":"Top RD" },
+  { "slug":"bmw", "name":"BMW", "tag":"Premium" },
+  { "slug":"volvo", "name":"Volvo", "tag":"Premium" }
 ]
+
