@@ -3,73 +3,352 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>RepuestoFinder - Login</title>
+  <title>RepuestoFinder - Dashboard</title>
   <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:rgba(255,255,255,.92);
+      --line:rgba(230,232,240,.95);
+      --txt:#0f172a;
+      --mut:#64748b;
+      --pri:#2563eb;
+      --dark:#111;
+      --shadow:0 16px 40px rgba(2,6,23,.10);
+      --r:16px;
+    }
+
+    *{box-sizing:border-box}
     body{
-      font-family:Arial,Helvetica,sans-serif;
       margin:0;
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:22px;
-      color:#111;
-
-      /* OJO: esto no debe ir dentro de body normalmente, pero lo dejo igual para no romper tu estilo */
-      *, *::before, *::after { box-sizing: border-box; }
-
-      /* Fondo con imagen */
+      font-family:Arial,Helvetica,sans-serif;
+      color:var(--txt);
       background:
-        linear-gradient(rgba(246,247,251,.82), rgba(246,247,251,.82)),
+        radial-gradient(1200px 600px at 20% 0%, rgba(37,99,235,.15), transparent 60%),
+        radial-gradient(900px 500px at 80% 20%, rgba(16,185,129,.12), transparent 55%),
+        linear-gradient(rgba(246,247,251,.92), rgba(246,247,251,.92)),
         url("assets/bg.jpg");
       background-size:cover;
       background-position:center;
       background-repeat:no-repeat;
       background-attachment:fixed;
+      min-height:100vh;
     }
 
-    .wrap{ width:100%; max-width:420px; }
+    /* ======= Layout ======= */
+    .page{
+      width:min(1180px, 100%);
+      margin:0 auto;
+      padding:18px 18px 28px;
+    }
+
+    /* ======= Top Nav ======= */
+    .nav{
+      position:sticky;
+      top:0;
+      z-index:30;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      background:rgba(246,247,251,.68);
+      border:1px solid rgba(230,232,240,.75);
+      border-radius:18px;
+      box-shadow:0 10px 26px rgba(2,6,23,.08);
+      padding:12px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:16px;
+    }
+
     .brand{
       display:flex;
-      flex-direction:column;
       align-items:center;
-      gap:6px;
-      margin-bottom:14px;
-      text-align:center;
+      gap:10px;
+      min-width:220px;
     }
     .logo{
-      width:54px;height:54px;border-radius:14px;
-      background:#111; color:#fff;
+      width:42px;height:42px;border-radius:14px;
+      background:#111;color:#fff;
       display:flex;align-items:center;justify-content:center;
-      font-weight:900; font-size:18px;
+      font-weight:900; user-select:none;
       box-shadow:0 10px 25px rgba(0,0,0,.12);
+    }
+    .brandTitle{line-height:1}
+    .brandTitle b{display:block;font-size:15px}
+    .brandTitle span{display:block;font-size:12px;color:#94a3b8;font-weight:800;letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
+
+    .menu{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:center;
+      flex:1;
+    }
+    .menu a{
+      text-decoration:none;
+      font-weight:900;
+      color:#0f172a;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid transparent;
       user-select:none;
     }
-    h1{margin:0;font-size:26px}
-    .watermark{
+    .menu a:hover{
+      background:#fff;
+      border-color:var(--line);
+    }
+    .menu a.active{
+      background:rgba(37,99,235,.10);
+      border-color:rgba(37,99,235,.20);
+      color:var(--pri);
+    }
+
+    .right{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      min-width:260px;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:#fff;
       font-size:12px;
-      color:#9ca3af;
-      font-weight:800;
-      letter-spacing:.4px;
-      opacity:.75;
-      text-transform:uppercase;
+      font-weight:900;
+      color:#0f172a;
       user-select:none;
       white-space:nowrap;
     }
-    .card{
-      background:rgba(255,255,255,.92);
-      border:1px solid rgba(230,232,240,.9);
-      border-radius:14px;
-      padding:16px;
-      box-shadow:0 12px 30px rgba(0,0,0,.08);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
+
+    .btn{
+      border:0;
+      cursor:pointer;
+      font-weight:900;
+      border-radius:12px;
+      padding:10px 12px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      user-select:none;
     }
+    .btnPrimary{background:var(--pri);color:#fff}
+    .btnGhost{background:#fff;border:1px solid var(--line);color:#0f172a}
+    .btnDark{background:var(--dark);color:#fff}
+    .btn:disabled{opacity:.55;cursor:not-allowed}
+
+    /* ======= Hero ======= */
+    .hero{
+      border:1px solid var(--line);
+      border-radius:22px;
+      background:var(--card);
+      box-shadow:var(--shadow);
+      padding:18px;
+      overflow:hidden;
+      position:relative;
+    }
+    .heroGrid{
+      display:grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap:14px;
+      align-items:stretch;
+    }
+    .hero h1{
+      margin:0;
+      font-size:28px;
+      letter-spacing:-.2px;
+    }
+    .hero p{
+      margin:10px 0 0;
+      color:var(--mut);
+      font-size:14px;
+      line-height:1.45;
+      max-width:720px;
+    }
+    .heroActions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+
+    .kpis{
+      border:1px solid rgba(230,232,240,.95);
+      border-radius:18px;
+      background:rgba(255,255,255,.85);
+      padding:14px;
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+      height:100%;
+    }
+    .kpi{
+      border:1px solid rgba(230,232,240,.9);
+      border-radius:16px;
+      padding:12px;
+      background:#fff;
+    }
+    .kpi .t{font-size:12px;color:#94a3b8;font-weight:900;text-transform:uppercase;letter-spacing:.4px}
+    .kpi .v{font-size:18px;font-weight:900;margin-top:6px}
+    .kpi .s{font-size:12px;color:var(--mut);margin-top:6px;line-height:1.35}
+
+    /* ======= Sections ======= */
+    .section{
+      margin-top:14px;
+      border:1px solid var(--line);
+      border-radius:22px;
+      background:var(--card);
+      box-shadow:0 10px 26px rgba(2,6,23,.06);
+      padding:16px;
+    }
+    .sectionTitle{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+    .sectionTitle h2{
+      margin:0;
+      font-size:16px;
+      font-weight:900;
+    }
+    .sectionTitle span{
+      font-size:12px;
+      color:#94a3b8;
+      font-weight:900;
+      letter-spacing:.4px;
+      text-transform:uppercase;
+    }
+
+    /* Brands row (middle) */
+    .brands{
+      display:grid;
+      grid-template-columns:repeat(6, 1fr);
+      gap:10px;
+    }
+    .brandCard{
+      border:1px solid rgba(230,232,240,.95);
+      border-radius:16px;
+      background:#fff;
+      padding:12px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-height:58px;
+    }
+    .brandIcon{
+      width:34px;height:34px;border-radius:12px;
+      border:1px solid rgba(230,232,240,.95);
+      background:linear-gradient(135deg, rgba(37,99,235,.12), rgba(16,185,129,.10));
+      display:flex;align-items:center;justify-content:center;
+      font-weight:900;
+      color:#0f172a;
+      user-select:none;
+      flex:0 0 auto;
+    }
+    .brandName b{display:block;font-size:13px}
+    .brandName span{display:block;font-size:11px;color:var(--mut);font-weight:800;margin-top:2px}
+
+    /* Bottom vehicle gallery */
+    .gallery{
+      display:grid;
+      grid-template-columns:repeat(4, 1fr);
+      gap:10px;
+    }
+    .veh{
+      border-radius:18px;
+      overflow:hidden;
+      border:1px solid rgba(230,232,240,.9);
+      background:#fff;
+      min-height:170px;
+      position:relative;
+    }
+    .veh img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+      transform:scale(1.01);
+    }
+    .veh .cap{
+      position:absolute;
+      left:10px; right:10px; bottom:10px;
+      background:rgba(255,255,255,.92);
+      border:1px solid rgba(230,232,240,.95);
+      border-radius:14px;
+      padding:9px 10px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      box-shadow:0 10px 20px rgba(2,6,23,.12);
+    }
+    .veh .cap b{font-size:12px}
+    .veh .cap span{font-size:11px;color:var(--mut);font-weight:800}
+
+    .footer{
+      margin-top:14px;
+      text-align:center;
+      color:#94a3b8;
+      font-size:12px;
+      font-weight:800;
+    }
+
+    /* ======= Modal (Login) ======= */
+    .overlay{
+      position:fixed;
+      inset:0;
+      background:rgba(2,6,23,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:60;
+    }
+    .overlay.show{display:flex}
+
+    .modal{
+      width:min(520px, 100%);
+      border-radius:18px;
+      border:1px solid rgba(230,232,240,.85);
+      background:rgba(255,255,255,.95);
+      box-shadow:0 28px 80px rgba(0,0,0,.25);
+      overflow:hidden;
+    }
+    .modalHead{
+      padding:14px 14px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border-bottom:1px solid rgba(230,232,240,.9);
+      background:rgba(246,247,251,.65);
+    }
+    .modalHead b{font-size:14px}
+    .x{
+      border:1px solid rgba(230,232,240,.9);
+      background:#fff;
+      width:38px;height:38px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:900;
+    }
+    .modalBody{padding:14px}
     label{
       display:block;
       font-size:12px;
       color:#6b7280;
-      font-weight:800;
+      font-weight:900;
       margin:12px 0 6px;
       text-transform:uppercase;
       letter-spacing:.3px;
@@ -77,7 +356,7 @@
     input{
       width:100%;
       padding:12px 12px;
-      border-radius:10px;
+      border-radius:12px;
       border:1px solid #d7dbe7;
       font-size:14px;
       outline:none;
@@ -90,89 +369,224 @@
       flex-wrap:wrap;
       margin-top:12px;
     }
-    button,a.btn{
-      padding:10px 14px;
-      border:0;
-      border-radius:10px;
-      cursor:pointer;
-      font-weight:900;
-      text-decoration:none;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap:8px;
-      flex:1;
-      min-width:140px;
-      user-select:none;
-    }
-    button:disabled, a.btn.disabled { opacity:.55; cursor:not-allowed; }
-    .btnPrimary{background:#2563eb;color:#fff}
-    .btnGhost{background:#fff;border:1px solid #e6e8f0;color:#111}
-    .btnDark{background:#111;color:#fff}
-    .muted{ color:#6b7280; font-size:13px; line-height:1.4; }
-    .mini{ font-size:12px;color:#6b7280;margin-top:10px; }
-    .badge{
-      display:inline-flex;align-items:center;gap:8px;
-      padding:6px 10px;border-radius:999px;
-      border:1px solid #e6e8f0;background:#f3f4f6;
-      font-size:12px;font-weight:900;color:#111;
-      user-select:none;
-    }
-    .footer{
-      margin-top:12px;
-      text-align:center;
-      color:#9ca3af;
-      font-size:12px;
-    }
-    .divider{ height:1px;background:#eef0f6;margin:14px 0; }
-    .link{ color:#2563eb;text-decoration:none;font-weight:900; }
+    .muted{color:var(--mut);font-size:13px;line-height:1.4}
+    .mini{font-size:12px;color:var(--mut);margin-top:10px}
+    .link{color:var(--pri);text-decoration:none;font-weight:900}
     .link:hover{text-decoration:underline}
+
+    @media(max-width:980px){
+      .heroGrid{grid-template-columns:1fr}
+      .right{min-width:auto}
+      .brands{grid-template-columns:repeat(2, 1fr)}
+      .gallery{grid-template-columns:repeat(2, 1fr)}
+      .brand{min-width:auto}
+    }
+    @media(max-width:520px){
+      .menu{justify-content:flex-start}
+      .gallery{grid-template-columns:1fr}
+    }
   </style>
 </head>
 
 <body>
-  <div class="wrap">
-    <div class="brand">
-      <div class="logo">RF</div>
-      <h1>RepuestoFinder</h1>
-      <div class="watermark">Login</div>
-      <div class="badge" id="demoBadge">Demo disponible</div>
+  <div class="page">
+
+    <!-- NAV -->
+    <div class="nav">
+      <div class="brand">
+        <div class="logo">RF</div>
+        <div class="brandTitle">
+          <b>RepuestoFinder</b>
+          <span>Dashboard</span>
+        </div>
+      </div>
+
+      <div class="menu">
+        <a href="#" class="active" onclick="navTo('inicio');return false;">Inicio</a>
+        <a href="#" onclick="navTo('buscador');return false;">Buscador Automotriz</a>
+        <a href="#" onclick="navTo('analytics');return false;">Analytics</a>
+        <a href="#" onclick="navTo('roadmap');return false;">Futuras funciones</a>
+      </div>
+
+      <div class="right">
+        <span class="pill" id="demoPill" title="Intentos demo disponibles">Demo: -</span>
+        <span class="pill" id="userPill" style="display:none">Usuario: -</span>
+        <button class="btn btnGhost" id="btnOpenLogin" onclick="openLogin()">Entrar</button>
+        <button class="btn btnPrimary" id="btnGoApp" onclick="goApp()">Ir a la App</button>
+      </div>
     </div>
 
-    <div class="card">
+    <!-- HERO -->
+    <div class="hero" id="inicio">
+      <div class="heroGrid">
+        <div>
+          <h1>Centro de control para tu Buscador Automotriz</h1>
+          <p>
+            Este dashboard es la entrada moderna a RepuestoFinder.
+            Aqui en el futuro vamos a ver: <b>mejores marcas por pedidos</b>, <b>vehiculos mas importados por region</b>,
+            rendimiento de busquedas, y nuevas paginas del sistema.
+          </p>
+
+          <div class="heroActions">
+            <button class="btn btnPrimary" onclick="goApp()">Abrir Buscador Automotriz</button>
+            <button class="btn btnGhost" onclick="demo()">Probar demo (10)</button>
+            <button class="btn btnDark" onclick="openLogin()">Login / Registro</button>
+          </div>
+
+          <div class="mini" style="margin-top:10px">
+            Nota: La App real usa Cloudflare Worker + Supabase. La demo entra sin login.
+          </div>
+        </div>
+
+        <div class="kpis" aria-label="KPI placeholders">
+          <div class="kpi">
+            <div class="t">Busquedas (hoy)</div>
+            <div class="v">—</div>
+            <div class="s">Placeholder (se conectara a tabla de eventos / logs).</div>
+          </div>
+          <div class="kpi">
+            <div class="t">Top marcas</div>
+            <div class="v">—</div>
+            <div class="s">Por pedidos, por region, por categoria.</div>
+          </div>
+          <div class="kpi">
+            <div class="t">Top vehiculos</div>
+            <div class="v">—</div>
+            <div class="s">Mas importados por region (RD / Caribe / etc.).</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MIDDLE: BRANDS -->
+    <div class="section" id="analytics">
+      <div class="sectionTitle">
+        <h2>Marcas automotrices mas vendidas (placeholders)</h2>
+        <span>Zona media</span>
+      </div>
+
+      <div class="brands">
+        <div class="brandCard">
+          <div class="brandIcon">B</div>
+          <div class="brandName"><b>Bosch</b><span>Frenos / sensores</span></div>
+        </div>
+        <div class="brandCard">
+          <div class="brandIcon">M</div>
+          <div class="brandName"><b>Mobil</b><span>Aceites</span></div>
+        </div>
+        <div class="brandCard">
+          <div class="brandIcon">N</div>
+          <div class="brandName"><b>NGK</b><span>Bujias</span></div>
+        </div>
+        <div class="brandCard">
+          <div class="brandIcon">D</div>
+          <div class="brandName"><b>Denso</b><span>Electrico</span></div>
+        </div>
+        <div class="brandCard">
+          <div class="brandIcon">M</div>
+          <div class="brandName"><b>Mahle</b><span>Filtros / motor</span></div>
+        </div>
+        <div class="brandCard">
+          <div class="brandIcon">B</div>
+          <div class="brandName"><b>Bilstein</b><span>Suspension</span></div>
+        </div>
+      </div>
+
+      <div class="mini" style="margin-top:10px">
+        Esto es editable: luego lo conectamos a tu data (pedidos / compras / ventas) y hacemos ranking real.
+      </div>
+    </div>
+
+    <!-- ROADMAP -->
+    <div class="section" id="roadmap">
+      <div class="sectionTitle">
+        <h2>Futuras paginas (menu superior)</h2>
+        <span>Roadmap</span>
+      </div>
+
       <div class="muted">
-        Entra con tu cuenta o prueba el buscador con <b>10 intentos</b> sin registrarte.
+        <ul style="margin:0;padding-left:18px;line-height:1.6">
+          <li><b>Mejores marcas por pedidos</b> (por fecha, region, proveedor).</li>
+          <li><b>Vehiculos mas importados por region</b> (RD, norte/sur/este, etc.).</li>
+          <li><b>Panel de intentos</b> (demo vs API, conversion a cuentas).</li>
+          <li><b>Historico de busquedas</b> y “productos mas buscados”.</li>
+          <li><b>Multi-tenant</b>: empresa, roles, limites, plan, etc.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- BOTTOM: VEHICLES GALLERY -->
+    <div class="section" id="vehiculos">
+      <div class="sectionTitle">
+        <h2>Vehiculos recientes (galeria)</h2>
+        <span>Parte inferior</span>
       </div>
 
-      <label for="email">Correo</label>
-      <input id="email" type="email" placeholder="tuemail@empresa.com" autocomplete="username"/>
-
-      <label for="pass">Contraseña</label>
-      <input id="pass" type="password" placeholder="••••••••" autocomplete="current-password"/>
-
-      <div class="row">
-        <button class="btnPrimary" id="btnLogin" onclick="login()">Entrar</button>
-        <button class="btnGhost" id="btnDemo" onclick="demo()">Probar (10)</button>
+      <div class="gallery">
+        <div class="veh">
+          <img alt="SUV" src="https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=1200&q=70"/>
+          <div class="cap"><b>SUV</b><span>Tendencia</span></div>
+        </div>
+        <div class="veh">
+          <img alt="Sedan" src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=70"/>
+          <div class="cap"><b>Sedan</b><span>Uso diario</span></div>
+        </div>
+        <div class="veh">
+          <img alt="Pickup" src="https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=1200&q=70"/>
+          <div class="cap"><b>Pickup</b><span>Trabajo</span></div>
+        </div>
+        <div class="veh">
+          <img alt="Offroad" src="https://images.unsplash.com/photo-1517142089942-ba376ce32a2e?auto=format&fit=crop&w=1200&q=70"/>
+          <div class="cap"><b>Offroad</b><span>Montana</span></div>
+        </div>
       </div>
 
-      <div class="row">
-        <button class="btnDark" id="btnRegister" onclick="register()">Registrate</button>
-        <a class="btn btnGhost" href="#" onclick="forgot();return false;">Olvide mi contraseña</a>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="mini">
-        Hoy: <span id="attemptsTxt">-</span> intentos demo disponibles.
-      </div>
-
-      <div class="mini" id="loginHint">
-        <b>Nota:</b> Login real activado con Supabase Auth.
+      <div class="mini" style="margin-top:10px">
+        Si quieres, aqui metemos un carrusel o imagenes por region (RD / Santiago / Punta Cana).
       </div>
     </div>
 
     <div class="footer">
       © <span id="y"></span> RepuestoFinder
+    </div>
+  </div>
+
+  <!-- LOGIN MODAL -->
+  <div class="overlay" id="overlay" onclick="closeLoginIfOutside(event)">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Login">
+      <div class="modalHead">
+        <b>Login / Registro</b>
+        <button class="x" onclick="closeLogin()" aria-label="Cerrar">✕</button>
+      </div>
+      <div class="modalBody">
+        <div class="muted">
+          Entra con tu cuenta o prueba el buscador con <b>10 intentos</b> sin registrarte.
+        </div>
+
+        <label for="email">Correo</label>
+        <input id="email" type="email" placeholder="tuemail@empresa.com" autocomplete="username"/>
+
+        <label for="pass">Contrasena</label>
+        <input id="pass" type="password" placeholder="********" autocomplete="current-password"/>
+
+        <div class="row">
+          <button class="btn btnPrimary" id="btnLogin" onclick="login()">Entrar</button>
+          <button class="btn btnGhost" id="btnDemo" onclick="demo()">Probar (10)</button>
+        </div>
+
+        <div class="row">
+          <button class="btn btnDark" id="btnRegister" onclick="register()">Registrate</button>
+          <a class="btn btnGhost" href="#" onclick="forgot();return false;">Olvide mi contrasena</a>
+        </div>
+
+        <div class="mini">
+          Demo disponible hoy: <span id="attemptsTxt">-</span>
+        </div>
+
+        <div class="mini" id="loginHint">
+          Nota: Login real activado con Supabase Auth.
+        </div>
+      </div>
     </div>
   </div>
 
@@ -190,12 +604,6 @@
   const DEMO_MAX = 10;
   const KEY = "rf_demo_attempts_left";
 
-  function setBusy(isBusy){
-    document.getElementById("btnLogin").disabled = isBusy;
-    document.getElementById("btnRegister").disabled = isBusy;
-    document.getElementById("btnDemo").disabled = isBusy || (getLeft() <= 0);
-  }
-
   function getLeft(){
     const v = localStorage.getItem(KEY);
     if(v === null || v === "" || isNaN(Number(v))) {
@@ -204,24 +612,34 @@
     }
     return Math.max(0, Number(v));
   }
-
   function setLeft(n){
     localStorage.setItem(KEY, String(Math.max(0, n)));
     paint();
   }
 
-  function paint(){
-    const left = getLeft();
-    document.getElementById("attemptsTxt").textContent = left;
-    document.getElementById("btnDemo").textContent = "Probar (" + left + ")";
-    document.getElementById("btnDemo").disabled = left <= 0;
-
-    const badge = document.getElementById("demoBadge");
-    badge.textContent = (left > 0) ? ("Demo: " + left + " intentos") : "Demo agotada";
-    badge.style.opacity = (left > 0) ? "1" : ".6";
+  function setBusy(isBusy){
+    document.getElementById("btnLogin").disabled = isBusy;
+    document.getElementById("btnRegister").disabled = isBusy;
+    document.getElementById("btnDemo").disabled = isBusy || (getLeft() <= 0);
+    document.getElementById("btnOpenLogin").disabled = isBusy;
+    document.getElementById("btnGoApp").disabled = isBusy;
   }
 
-  async function goApp(demoMode){
+  function paint(){
+    const left = getLeft();
+    const demoPill = document.getElementById("demoPill");
+    const attemptsTxt = document.getElementById("attemptsTxt");
+    const btnDemo = document.getElementById("btnDemo");
+
+    if(demoPill) demoPill.textContent = "Demo: " + left;
+    if(attemptsTxt) attemptsTxt.textContent = left;
+    if(btnDemo){
+      btnDemo.textContent = "Probar (" + left + ")";
+      btnDemo.disabled = left <= 0;
+    }
+  }
+
+  async function goAppInternal_(demoMode){
     if(demoMode){
       window.location.href = "app.html?demo=1";
     } else {
@@ -229,7 +647,36 @@
     }
   }
 
-  // Demo
+  // ======= Navegacion menu (placeholders) =======
+  window.navTo = function(id){
+    if(id === "buscador"){
+      goAppInternal_(false);
+      return;
+    }
+    const el = document.getElementById(id);
+    if(el) el.scrollIntoView({ behavior:"smooth", block:"start" });
+  };
+
+  // ======= Modal handlers =======
+  const overlay = document.getElementById("overlay");
+  window.openLogin = function(){ overlay.classList.add("show"); };
+  window.closeLogin = function(){ overlay.classList.remove("show"); };
+  window.closeLoginIfOutside = function(e){
+    if(e && e.target === overlay) closeLogin();
+  };
+
+  // ======= Boton top =======
+  window.goApp = async function(){
+    const { data } = await supabase.auth.getSession();
+    if(data && data.session){
+      goAppInternal_(false);
+    } else {
+      // si no hay sesion, abre login (dashboard es antes de entrar)
+      openLogin();
+    }
+  };
+
+  // ======= Demo =======
   window.demo = async function(){
     const left = getLeft();
     if(left <= 0){
@@ -237,45 +684,46 @@
       return;
     }
     setLeft(left - 1);
-    await goApp(true);
+    await goAppInternal_(true);
   };
 
-  // Login real (Supabase)
+  // ======= Login real (Supabase) =======
   window.login = async function(){
     const email = (document.getElementById("email").value || "").trim();
     const password  = (document.getElementById("pass").value || "").trim();
 
     if(!email || !password){
-      alert("Completa correo y contraseña.");
+      alert("Completa correo y contrasena.");
       return;
     }
 
     try{
       setBusy(true);
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if(error){
         alert("Error: " + error.message);
         return;
       }
-      await goApp(false);
+      closeLogin();
+      await goAppInternal_(false);
     } finally {
       setBusy(false);
     }
   };
 
-  // Registro real (Supabase)
+  // ======= Registro real (Supabase) =======
   window.register = async function(){
     const email = (document.getElementById("email").value || "").trim();
     const password  = (document.getElementById("pass").value || "").trim();
 
     if(!email || !password){
-      alert("Completa correo y contraseña.");
+      alert("Completa correo y contrasena.");
       return;
     }
 
     try{
       setBusy(true);
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { error } = await supabase.auth.signUp({ email, password });
       if(error){
         alert("Error: " + error.message);
         return;
@@ -286,7 +734,7 @@
     }
   };
 
-  // Forgot real (Supabase)
+  // ======= Forgot real (Supabase) =======
   window.forgot = async function(){
     const email = (document.getElementById("email").value || "").trim();
     if(!email){
@@ -306,23 +754,39 @@
     }
   };
 
+  // ======= Mostrar usuario si hay sesion =======
+  async function paintUser_(){
+    const userPill = document.getElementById("userPill");
+    const btnOpenLogin = document.getElementById("btnOpenLogin");
+
+    const { data } = await supabase.auth.getSession();
+    const has = data && data.session;
+
+    if(has){
+      const email = (data.session.user && data.session.user.email) ? data.session.user.email : "usuario";
+      userPill.style.display = "inline-flex";
+      userPill.textContent = "Usuario: " + email;
+      btnOpenLogin.textContent = "Cambiar cuenta";
+    } else {
+      userPill.style.display = "none";
+      btnOpenLogin.textContent = "Entrar";
+    }
+  }
+
   // Init
   document.getElementById("y").textContent = new Date().getFullYear();
   paint();
+  await paintUser_();
 
-  // Si ya hay sesion, entra directo
-  const urlp = new URLSearchParams(location.search);
-const stay = urlp.get("stay") === "1";
-
-const { data } = await supabase.auth.getSession();
-if(data && data.session && !stay){
-  document.getElementById("loginHint").innerHTML = "<b>Nota:</b> Sesion detectada. Entrando...";
-  setTimeout(()=>{ window.location.href = "/app"; }, 350);
-}
-
+  supabase.auth.onAuthStateChange(async ()=>{
+    paint();
+    await paintUser_();
+  });
 </script>
 </body>
 </html>
+
+
 
 
 
