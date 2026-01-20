@@ -678,9 +678,14 @@
 
       const logoImg = slide.querySelector("img[data-vlogo]");
       const logoWrap = slide.querySelector(".vehMiniLogo");
-      // ✅ por ahora usa la misma carpeta, asi nunca sale roto
-      setImgRobust(logoImg, "logos/vehicles", slug, logoWrap, ph);
+      // FOTO GRANDE (vehiculo detras)
+       setImgRobust(photoImg, "logos/vehicles", slug, null, null, () => {
+      photoImg.style.display = "none";
     });
+
+    // LOGO PEQUENO (marca)
+      setImgRobust(logoImg, "logos/autos", slug, logoWrap, ph);
+
   }
 
   function makeLoop(trackEl){
@@ -768,6 +773,7 @@
 </script>
 </body>
 </html>
+
 
 
 
