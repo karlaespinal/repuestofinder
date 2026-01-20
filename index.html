@@ -197,6 +197,7 @@
       text-transform:uppercase;
     }
 
+    /* ======= CAROUSEL ======= */
     .carousel{
       position:relative;
       border-radius:18px;
@@ -238,6 +239,7 @@
       to   { transform: translate3d(calc(-1 * var(--rfShift, 50%)),0,0); }
     }
 
+    /* Slides autopartes */
     .brandSlide{
       flex:0 0 auto;
       min-width:240px;
@@ -288,6 +290,7 @@
     .brandMeta b{display:block;font-size:13px}
     .brandMeta span{display:block;font-size:11px;color:var(--mut);font-weight:800;margin-top:2px}
 
+    /* Slides vehiculos */
     .vehSlide{
       flex:0 0 auto;
       width:320px;
@@ -351,6 +354,7 @@
     }
     .vehCap b{font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px;}
     .vehCap span{font-size:11px;color:var(--mut);font-weight:800}
+
     .footer{ margin-top:14px; text-align:center; color:#94a3b8; font-size:12px; font-weight:800; }
     .mini{font-size:12px;color:var(--mut);margin-top:10px}
 
@@ -455,7 +459,7 @@
     <div class="section" id="vehiculos">
       <div class="sectionTitle">
         <h2>Marcas de vehiculos en RD (carrusel automatico)</h2>
-        <span>FOTOS: assets/logos/vehicles</span>
+        <span>LOGO: assets/logos/autos | FOTO: assets/logos/vehicles</span>
       </div>
 
       <div class="carousel" style="--rfSpeed: 46s;">
@@ -473,8 +477,8 @@
   </div>
 
 <script>
-  // ✅ Sube este numero cada vez que cambies imagenes (rompe cache):
-  window.RF_ASSET_VER = "2";
+  // Sube este numero cada vez que cambies/subas imagenes para romper cache:
+  window.RF_ASSET_VER = "3";
 
   const DEMO_MAX = 10;
   const KEY = "rf_demo_attempts_left";
@@ -562,6 +566,7 @@
     wrapEl.innerHTML = `<div class="ph">${escapeHtml(text)}</div>`;
   }
 
+  // Carga robusta: prueba variantes de nombre + extensiones, sin romperse por cache.
   function setImgRobust(imgEl, folder, slug, wrapEl, placeholderText, onFinalFail){
     const raw = String(slug || "").trim();
     const low = raw.toLowerCase();
@@ -588,7 +593,7 @@
       candidates.push(`assets/${folder}/${v}.jpg`);
       candidates.push(`assets/${folder}/${v}.jpeg`);
       candidates.push(`assets/${folder}/${v}.webp`);
-      candidates.push(`assets/${folder}/${v}.avif`); // ✅ por si usas avif
+      candidates.push(`assets/${folder}/${v}.avif`);
     });
 
     let i = 0;
@@ -623,7 +628,7 @@
       return `
         <div class="brandSlide" data-slug="${slug}">
           <div class="brandLogoWrap">
-            <img alt="${name}" data-logo="${slug}">
+            <img alt="${name}" data-logo="${slug}" loading="eager" decoding="async">
           </div>
           <div class="brandMeta">
             <b>${name}</b>
@@ -643,6 +648,9 @@
     });
   }
 
+  // ✅ Aqui esta lo que pediste:
+  // - Logo pequeno (marca): assets/logos/autos/<slug>.png
+  // - Foto grande detras (vehiculo): assets/logos/vehicles/<slug>.jpg/png
   function renderVehicles(trackEl, items){
     trackEl.innerHTML = items.map(it=>{
       const name = escapeHtml(it.name || it.slug || "");
@@ -671,21 +679,17 @@
       const name = slide.querySelector(".vehCap b")?.textContent || slug;
       const ph = initialsFromName(name);
 
+      // FOTO GRANDE (vehiculo detras)
       const photoImg = slide.querySelector("img[data-photo]");
       setImgRobust(photoImg, "logos/vehicles", slug, null, null, () => {
         photoImg.style.display = "none";
       });
 
+      // LOGO PEQUENO (marca)
       const logoImg = slide.querySelector("img[data-vlogo]");
       const logoWrap = slide.querySelector(".vehMiniLogo");
-      // FOTO GRANDE (vehiculo detras)
-       setImgRobust(photoImg, "logos/vehicles", slug, null, null, () => {
-      photoImg.style.display = "none";
-    });
-
-    // LOGO PEQUENO (marca)
       setImgRobust(logoImg, "logos/autos", slug, logoWrap, ph);
-
+    });
   }
 
   function makeLoop(trackEl){
@@ -701,7 +705,7 @@
 
     const done = new Set();
     return new Promise((resolve)=>{
-      const timer = setTimeout(()=>resolve(), timeoutMs || 2200);
+      const timer = setTimeout(()=>resolve(), timeoutMs || 2400);
 
       const mark = () => {
         if(done.size >= imgs.length){
@@ -757,8 +761,8 @@
     freezeAnimation(autopartsTrack, true);
     freezeAnimation(vehiclesTrack, true);
 
-    await waitImagesIn(autopartsTrack, 2600);
-    await waitImagesIn(vehiclesTrack, 3200);
+    await waitImagesIn(autopartsTrack, 2800);
+    await waitImagesIn(vehiclesTrack, 3600);
 
     makeLoop(autopartsTrack);
     makeLoop(vehiclesTrack);
@@ -773,6 +777,8 @@
 </script>
 </body>
 </html>
+
+
 
 
 
