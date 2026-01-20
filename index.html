@@ -258,7 +258,7 @@
       align-items:center;
       gap:12px;
     }
-     .brandLogoWrap{
+    .brandLogoWrap{
       width:44px;
       height:44px;
       border-radius:14px;
@@ -269,23 +269,16 @@
       justify-content:center;
       flex:0 0 auto;
       overflow:hidden;
-    
-      /* NUEVO */
-      padding:6px;              /* da aire por dentro */
+      padding:6px;
     }
-    
-     .brandLogoWrap img{
+    .brandLogoWrap img{
       width:100%;
       height:100%;
       object-fit:contain;
       display:block;
-    
-      /* NUEVO */
-      transform: scale(1.08);   /* compensa logos con padding interno */
+      transform: scale(1.08);
       transform-origin:center;
       filter:saturate(1.05) contrast(1.05);
-    }
-
     }
     .brandMeta b{display:block;font-size:13px}
     .brandMeta span{display:block;font-size:11px;color:var(--mut);font-weight:800;margin-top:2px}
@@ -334,8 +327,15 @@
       display:flex;align-items:center;justify-content:center;
       overflow:hidden;
       flex:0 0 auto;
+      padding:5px;
     }
-    .vehMiniLogo img{width:22px;height:22px;object-fit:contain;display:block}
+    .vehMiniLogo img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      display:block;
+      transform: scale(1.02);
+    }
     .vehCap b{font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px;}
     .vehCap span{font-size:11px;color:var(--mut);font-weight:800}
 
@@ -402,6 +402,7 @@
     .row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
     .muted{color:var(--mut);font-size:13px;line-height:1.4}
     .mini{font-size:12px;color:var(--mut);margin-top:10px}
+
     @media(max-width:980px){
       .heroGrid{grid-template-columns:1fr}
       .right{min-width:auto}
@@ -501,7 +502,7 @@
       </div>
     </div>
 
-    <!-- CAROUSEL 2: VEHICULOS (logos + fotos) -->
+    <!-- CAROUSEL 2: VEHICULOS (fotos + logos) -->
     <div class="section" id="vehiculos">
       <div class="sectionTitle">
         <h2>Marcas de vehiculos en RD (carrusel automatico)</h2>
@@ -608,24 +609,70 @@
     }
   }
 
-  /*
-    Carga imagen con fallback:
-    - prueba .png y si falla, prueba .jpg
-    - si falla todo, se queda un placeholder visual (no rompe)
-  */
-  function setImgWithFallback(imgEl, basePathNoExt){
-    const png = basePathNoExt + ".png";
-    const jpg = basePathNoExt + ".jpg";
+  function toTitleCaseNoSpace(s){
+    // "mercedes benz" -> "MercedesBenz", "honda" -> "Honda"
+    s = String(s||"").trim();
+    if(!s) return "";
+    return s
+      .split(/[\s\-_]+/g)
+      .filter(Boolean)
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join("");
+  }
 
-    imgEl.src = png;
-    imgEl.onerror = () => {
-      imgEl.onerror = () => {
+  function firstUpper(s){
+    s = String(s||"");
+    if(!s) return s;
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  /*
+    Loader robusto:
+    - intenta variantes (min, upper, TitleCase, con espacios/guiones/underscore)
+    - y para cada variante intenta .png y .jpg
+  */
+  function setImgRobust(imgEl, folder, slug){
+    const raw = String(slug || "").trim();
+    const low = raw.toLowerCase();
+
+    const variants = [];
+    const add = (v) => { if(v && !variants.includes(v)) variants.push(v); };
+
+    // base (del JSON)
+    add(raw);
+    add(low);
+    add(firstUpper(low));
+    add(toTitleCaseNoSpace(raw));
+    add(toTitleCaseNoSpace(low));
+
+    // variantes con separadores (por si subiste "mercedes benz.jpg")
+    add(low.replace(/[-_]+/g, " "));
+    add(low.replace(/\s+/g, "-"));
+    add(low.replace(/\s+/g, "_"));
+    add(raw.replace(/[-_]+/g, " "));
+    add(raw.replace(/\s+/g, "-"));
+    add(raw.replace(/\s+/g, "_"));
+
+    // lista final de URLs
+    const candidates = [];
+    variants.forEach(v=>{
+      candidates.push(`assets/${folder}/${v}.png`);
+      candidates.push(`assets/${folder}/${v}.jpg`);
+    });
+
+    let i = 0;
+    const tryNext = () => {
+      if(i >= candidates.length){
         imgEl.src = "";
-        imgEl.alt = (imgEl.alt || "") + " (sin imagen)";
         imgEl.style.display = "none";
-      };
-      imgEl.src = jpg;
+        return;
+      }
+      imgEl.style.display = "";
+      imgEl.src = candidates[i++];
     };
+
+    imgEl.onerror = () => tryNext();
+    tryNext();
   }
 
   function renderAutoparts(trackEl, items){
@@ -636,7 +683,7 @@
       return `
         <div class="brandSlide" data-slug="${slug}">
           <div class="brandLogoWrap">
-            <img alt="${name}" data-logo="autopartes/${slug}">
+            <img alt="${name}" data-logo="${slug}">
           </div>
           <div class="brandMeta">
             <b>${name}</b>
@@ -646,10 +693,9 @@
       `;
     }).join("");
 
-    // aplicar logos con fallback png/jpg
     trackEl.querySelectorAll("img[data-logo]").forEach(img=>{
-      const rel = img.getAttribute("data-logo");
-      setImgWithFallback(img, "assets/logos/" + rel);
+      const slug = img.getAttribute("data-logo");
+      setImgRobust(img, "logos/autopartes", slug);
     });
   }
 
@@ -674,26 +720,20 @@
       `;
     }).join("");
 
-    // fotos + logos con fallback png/jpg
+    // fotos + logos (robusto)
     trackEl.querySelectorAll("img[data-photo]").forEach(img=>{
       const slug = img.getAttribute("data-photo");
-      setImgWithFallback(img, "assets/vehicles/" + slug);
+      setImgRobust(img, "vehicles", slug);
     });
     trackEl.querySelectorAll("img[data-vlogo]").forEach(img=>{
       const slug = img.getAttribute("data-vlogo");
-      setImgWithFallback(img, "assets/logos/autos/" + slug);
+      setImgRobust(img, "logos/autos", slug);
     });
   }
 
-  /*
-    Loop infinito suave:
-    - duplicamos el contenido una vez
-    - calculamos el shift exacto
-  */
   function makeLoop(trackEl){
     const children = Array.from(trackEl.children);
     children.forEach(n => trackEl.appendChild(n.cloneNode(true)));
-
     requestAnimationFrame(() => {
       const half = trackEl.scrollWidth / 2;
       trackEl.style.setProperty("--rfShift", half + "px");
@@ -704,7 +744,6 @@
     document.getElementById("y").textContent = new Date().getFullYear();
     paint();
 
-    // Si aun no subes JSON, dejo fallback vacio (o puedes poner placeholders)
     const autopartsFallback = [
       { slug:"mahle", name:"Mahle", note:"Filtros / motor" },
       { slug:"ngk", name:"NGK", note:"Bujias" },
@@ -720,7 +759,7 @@
     ];
 
     const autoparts = await fetchJsonSafe("assets/data/brands_autoparts.json?v=" + Date.now(), autopartsFallback);
-    const autos = await fetchJsonSafe("assets/data/brands_autos.json?v=" + Date.now(), autosFallback);
+    const autos     = await fetchJsonSafe("assets/data/brands_autos.json?v=" + Date.now(), autosFallback);
 
     const autopartsTrack = document.getElementById("autopartsTrack");
     const vehiclesTrack  = document.getElementById("vehiclesTrack");
@@ -736,6 +775,8 @@
 </script>
 </body>
 </html>
+
+
 
 
 
