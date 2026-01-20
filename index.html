@@ -702,8 +702,8 @@
       { slug:"kia", name:"Kia", tag:"Top RD" }
     ];
 
-    const autoparts = await fetchJsonSafe("assets/data/brands_autoparts.json", autopartsFallback);
-    const autos     = await fetchJsonSafe("assets/data/brands_autos.json", autosFallback);
+    const autoparts = await fetchJsonSafe("assets/data/brands_autoparts.json?v=" + Date.now(), autopartsFallback);
+    const autos = await fetchJsonSafe("assets/data/brands_autos.json?v=" + Date.now(), autosFallback);
 
     const autopartsTrack = document.getElementById("autopartsTrack");
     const vehiclesTrack  = document.getElementById("vehiclesTrack");
@@ -719,6 +719,7 @@
 </script>
 </body>
 </html>
+
 
 
 
