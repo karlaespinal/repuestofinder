@@ -675,10 +675,10 @@
 
       const photoImg = slide.querySelector("img[data-photo]");
       // ✅ ya NO sobrescribimos onerror afuera
-      setImgRobust(photoImg, "vehicles", slug, null, null, () => {
-        // si no existe ninguna imagen, dejamos solo el fondo gradient
+      setImgRobust(photoImg, "logos/vehicles", slug, null, null, () => {
         photoImg.style.display = "none";
-      });
+    });
+
 
       const logoImg = slide.querySelector("img[data-vlogo]");
       const logoWrap = slide.querySelector(".vehMiniLogo");
@@ -775,6 +775,7 @@
 </script>
 </body>
 </html>
+
 
 
 
