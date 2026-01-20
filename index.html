@@ -230,57 +230,103 @@
       text-transform:uppercase;
     }
 
-    /* Brands row (middle) */
-    .brands{
-      display:grid;
-      grid-template-columns:repeat(6, 1fr);
-      gap:10px;
-    }
-    .brandCard{
+    /* ======= CAROUSEL (reusable) ======= */
+    .carousel{
+      position:relative;
+      border-radius:18px;
+      overflow:hidden;
       border:1px solid rgba(230,232,240,.95);
+      background:rgba(255,255,255,.78);
+      box-shadow:0 10px 22px rgba(2,6,23,.06);
+    }
+    .carousel::before,
+    .carousel::after{
+      content:"";
+      position:absolute;
+      top:0; bottom:0;
+      width:64px;
+      z-index:2;
+      pointer-events:none;
+    }
+    .carousel::before{
+      left:0;
+      background:linear-gradient(90deg, rgba(246,247,251,1), rgba(246,247,251,0));
+    }
+    .carousel::after{
+      right:0;
+      background:linear-gradient(270deg, rgba(246,247,251,1), rgba(246,247,251,0));
+    }
+
+    .carouselViewport{
+      overflow:hidden;
+      width:100%;
+    }
+    .carouselTrack{
+      display:flex;
+      gap:12px;
+      padding:12px 18px;
+      width:max-content;
+      animation: rfScroll var(--rfSpeed, 38s) linear infinite;
+      will-change: transform;
+    }
+    .carousel:hover .carouselTrack{ animation-play-state: paused; }
+
+    @keyframes rfScroll{
+      from { transform: translateX(0); }
+      to   { transform: translateX(calc(-1 * var(--rfShift, 50%))); }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .carouselTrack{ animation:none; }
+      .carousel::before, .carousel::after{ display:none; }
+    }
+
+    /* ======= Brand slide ======= */
+    .brandSlide{
+      flex:0 0 auto;
+      min-width:240px;
       border-radius:16px;
+      border:1px solid rgba(230,232,240,.95);
       background:#fff;
       padding:12px;
       display:flex;
       align-items:center;
-      gap:10px;
-      min-height:58px;
+      gap:12px;
     }
-    .brandIcon{
-      width:34px;height:34px;border-radius:12px;
+    .brandLogoWrap{
+      width:44px;height:44px;border-radius:14px;
       border:1px solid rgba(230,232,240,.95);
-      background:linear-gradient(135deg, rgba(37,99,235,.12), rgba(16,185,129,.10));
+      background:linear-gradient(135deg, rgba(37,99,235,.10), rgba(16,185,129,.08));
       display:flex;align-items:center;justify-content:center;
-      font-weight:900;
-      color:#0f172a;
-      user-select:none;
       flex:0 0 auto;
+      overflow:hidden;
     }
-    .brandName b{display:block;font-size:13px}
-    .brandName span{display:block;font-size:11px;color:var(--mut);font-weight:800;margin-top:2px}
+    .brandLogoWrap img{
+      width:30px;height:30px;object-fit:contain;display:block;
+      filter: saturate(1.05);
+    }
+    .brandMeta b{display:block;font-size:13px}
+    .brandMeta span{display:block;font-size:11px;color:var(--mut);font-weight:800;margin-top:2px}
 
-    /* Bottom vehicle gallery */
-    .gallery{
-      display:grid;
-      grid-template-columns:repeat(4, 1fr);
-      gap:10px;
-    }
-    .veh{
+    /* ======= Vehicle slide ======= */
+    .vehSlide{
+      flex:0 0 auto;
+      width:320px;
       border-radius:18px;
       overflow:hidden;
       border:1px solid rgba(230,232,240,.9);
       background:#fff;
-      min-height:170px;
       position:relative;
+      min-height:180px;
     }
-    .veh img{
+    .vehSlide img{
       width:100%;
       height:100%;
       object-fit:cover;
       display:block;
       transform:scale(1.01);
     }
-    .veh .cap{
+    .vehCap{
       position:absolute;
       left:10px; right:10px; bottom:10px;
       background:rgba(255,255,255,.92);
@@ -293,8 +339,23 @@
       gap:10px;
       box-shadow:0 10px 20px rgba(2,6,23,.12);
     }
-    .veh .cap b{font-size:12px}
-    .veh .cap span{font-size:11px;color:var(--mut);font-weight:800}
+    .vehCap .left{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+    }
+    .vehMiniLogo{
+      width:34px;height:34px;border-radius:12px;
+      border:1px solid rgba(230,232,240,.95);
+      background:#fff;
+      display:flex;align-items:center;justify-content:center;
+      overflow:hidden;
+      flex:0 0 auto;
+    }
+    .vehMiniLogo img{width:22px;height:22px;object-fit:contain;display:block}
+    .vehCap b{font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px;}
+    .vehCap span{font-size:11px;color:var(--mut);font-weight:800}
 
     .footer{
       margin-top:14px;
@@ -377,13 +438,15 @@
     @media(max-width:980px){
       .heroGrid{grid-template-columns:1fr}
       .right{min-width:auto}
-      .brands{grid-template-columns:repeat(2, 1fr)}
-      .gallery{grid-template-columns:repeat(2, 1fr)}
       .brand{min-width:auto}
+      .brandSlide{min-width:220px}
+      .vehSlide{width:300px}
     }
     @media(max-width:520px){
       .menu{justify-content:flex-start}
-      .gallery{grid-template-columns:1fr}
+      .brandSlide{min-width:210px}
+      .vehSlide{width:280px}
+      .carousel::before,.carousel::after{width:36px}
     }
   </style>
 </head>
@@ -391,7 +454,6 @@
 <body>
   <div class="page">
 
-    <!-- NAV -->
     <div class="nav">
       <div class="brand">
         <div class="logo">RF</div>
@@ -416,7 +478,6 @@
       </div>
     </div>
 
-    <!-- HERO -->
     <div class="hero" id="inicio">
       <div class="heroGrid">
         <div>
@@ -458,42 +519,24 @@
       </div>
     </div>
 
-    <!-- MIDDLE: BRANDS -->
+    <!-- MIDDLE: BRANDS CAROUSEL -->
     <div class="section" id="analytics">
       <div class="sectionTitle">
-        <h2>Marcas automotrices mas vendidas (placeholders)</h2>
+        <h2>Marcas de autopartes (galeria / carrusel)</h2>
         <span>Zona media</span>
       </div>
 
-      <div class="brands">
-        <div class="brandCard">
-          <div class="brandIcon">B</div>
-          <div class="brandName"><b>Bosch</b><span>Frenos / sensores</span></div>
-        </div>
-        <div class="brandCard">
-          <div class="brandIcon">M</div>
-          <div class="brandName"><b>Mobil</b><span>Aceites</span></div>
-        </div>
-        <div class="brandCard">
-          <div class="brandIcon">N</div>
-          <div class="brandName"><b>NGK</b><span>Bujias</span></div>
-        </div>
-        <div class="brandCard">
-          <div class="brandIcon">D</div>
-          <div class="brandName"><b>Denso</b><span>Electrico</span></div>
-        </div>
-        <div class="brandCard">
-          <div class="brandIcon">M</div>
-          <div class="brandName"><b>Mahle</b><span>Filtros / motor</span></div>
-        </div>
-        <div class="brandCard">
-          <div class="brandIcon">B</div>
-          <div class="brandName"><b>Bilstein</b><span>Suspension</span></div>
+      <div class="carousel" id="brandsCarousel" style="--rfSpeed: 42s;">
+        <div class="carouselViewport">
+          <div class="carouselTrack" id="brandsTrack">
+            <!-- JS llena esto -->
+          </div>
         </div>
       </div>
 
       <div class="mini" style="margin-top:10px">
         Esto es editable: luego lo conectamos a tu data (pedidos / compras / ventas) y hacemos ranking real.
+        (Ahora es visual profesional + automatico)
       </div>
     </div>
 
@@ -515,34 +558,23 @@
       </div>
     </div>
 
-    <!-- BOTTOM: VEHICLES GALLERY -->
+    <!-- BOTTOM: VEHICLES CAROUSEL -->
     <div class="section" id="vehiculos">
       <div class="sectionTitle">
-        <h2>Vehiculos recientes (galeria)</h2>
+        <h2>Vehiculos mas vistos / importados (carrusel)</h2>
         <span>Parte inferior</span>
       </div>
 
-      <div class="gallery">
-        <div class="veh">
-          <img alt="SUV" src="https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=1200&q=70"/>
-          <div class="cap"><b>SUV</b><span>Tendencia</span></div>
-        </div>
-        <div class="veh">
-          <img alt="Sedan" src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=70"/>
-          <div class="cap"><b>Sedan</b><span>Uso diario</span></div>
-        </div>
-        <div class="veh">
-          <img alt="Pickup" src="https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=1200&q=70"/>
-          <div class="cap"><b>Pickup</b><span>Trabajo</span></div>
-        </div>
-        <div class="veh">
-          <img alt="Offroad" src="https://images.unsplash.com/photo-1517142089942-ba376ce32a2e?auto=format&fit=crop&w=1200&q=70"/>
-          <div class="cap"><b>Offroad</b><span>Montana</span></div>
+      <div class="carousel" id="vehiclesCarousel" style="--rfSpeed: 46s;">
+        <div class="carouselViewport">
+          <div class="carouselTrack" id="vehiclesTrack">
+            <!-- JS llena esto -->
+          </div>
         </div>
       </div>
 
       <div class="mini" style="margin-top:10px">
-        Si quieres, aqui metemos un carrusel o imagenes por region (RD / Santiago / Punta Cana).
+        Si quieres, aqui metemos carrusel por region (RD / Santiago / Punta Cana) y filtros.
       </div>
     </div>
 
@@ -593,14 +625,10 @@
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-  /* ===================== CONFIG SUPABASE (EDITA SOLO AQUI) ===================== */
   const SUPABASE_URL = "https://pjkbipdjxxxzjiuyfkaq.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_G7uvRyHNLSew2HKJY_h6ag_M2NZDYx4";
-  /* ============================================================================ */
-
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // Demo attempts (10) usando localStorage
   const DEMO_MAX = 10;
   const KEY = "rf_demo_attempts_left";
 
@@ -647,7 +675,6 @@
     }
   }
 
-  // ======= Navegacion menu (placeholders) =======
   window.navTo = function(id){
     if(id === "buscador"){
       goAppInternal_(false);
@@ -657,7 +684,6 @@
     if(el) el.scrollIntoView({ behavior:"smooth", block:"start" });
   };
 
-  // ======= Modal handlers =======
   const overlay = document.getElementById("overlay");
   window.openLogin = function(){ overlay.classList.add("show"); };
   window.closeLogin = function(){ overlay.classList.remove("show"); };
@@ -665,18 +691,15 @@
     if(e && e.target === overlay) closeLogin();
   };
 
-  // ======= Boton top =======
   window.goApp = async function(){
     const { data } = await supabase.auth.getSession();
     if(data && data.session){
       goAppInternal_(false);
     } else {
-      // si no hay sesion, abre login (dashboard es antes de entrar)
       openLogin();
     }
   };
 
-  // ======= Demo =======
   window.demo = async function(){
     const left = getLeft();
     if(left <= 0){
@@ -687,7 +710,6 @@
     await goAppInternal_(true);
   };
 
-  // ======= Login real (Supabase) =======
   window.login = async function(){
     const email = (document.getElementById("email").value || "").trim();
     const password  = (document.getElementById("pass").value || "").trim();
@@ -711,7 +733,6 @@
     }
   };
 
-  // ======= Registro real (Supabase) =======
   window.register = async function(){
     const email = (document.getElementById("email").value || "").trim();
     const password  = (document.getElementById("pass").value || "").trim();
@@ -734,7 +755,6 @@
     }
   };
 
-  // ======= Forgot real (Supabase) =======
   window.forgot = async function(){
     const email = (document.getElementById("email").value || "").trim();
     if(!email){
@@ -754,7 +774,6 @@
     }
   };
 
-  // ======= Mostrar usuario si hay sesion =======
   async function paintUser_(){
     const userPill = document.getElementById("userPill");
     const btnOpenLogin = document.getElementById("btnOpenLogin");
@@ -773,10 +792,129 @@
     }
   }
 
-  // Init
+  /* ===========================
+     DATA (EDITABLE)
+     - Aqui cambias marcas/logos/fotos.
+     - Luego lo conectamos a tu data real.
+  ============================ */
+  const brands20 = [
+    { name:"Bosch", note:"Frenos / sensores", logo:"https://upload.wikimedia.org/wikipedia/commons/1/16/Bosch-logo.svg" },
+    { name:"Denso", note:"Electrico / sensores", logo:"https://upload.wikimedia.org/wikipedia/commons/5/5c/DENSO_logo.svg" },
+    { name:"NGK", note:"Bujias", logo:"https://upload.wikimedia.org/wikipedia/commons/3/3b/NGK_logo.svg" },
+    { name:"Continental", note:"Llantas / sensores", logo:"https://upload.wikimedia.org/wikipedia/commons/9/9b/Continental_AG_logo.svg" },
+    { name:"ZF", note:"Transmision", logo:"https://upload.wikimedia.org/wikipedia/commons/4/4c/ZF_Logo_2021.svg" },
+    { name:"Valeo", note:"Enfriamiento / clutch", logo:"https://upload.wikimedia.org/wikipedia/commons/9/95/Valeo_Logo.svg" },
+    { name:"Mahle", note:"Motor / filtros", logo:"https://upload.wikimedia.org/wikipedia/commons/1/1b/MAHLE_Logo.svg" },
+    { name:"MANN-FILTER", note:"Filtracion", logo:"https://upload.wikimedia.org/wikipedia/commons/1/1e/MANN-FILTER_logo.svg" },
+    { name:"Brembo", note:"Frenos", logo:"https://upload.wikimedia.org/wikipedia/commons/6/66/Brembo_logo.svg" },
+    { name:"Gates", note:"Correas / mangueras", logo:"https://upload.wikimedia.org/wikipedia/commons/8/8b/Gates_Corporation_logo.svg" },
+    { name:"SKF", note:"Rodamientos", logo:"https://upload.wikimedia.org/wikipedia/commons/3/34/SKF_logo.svg" },
+    { name:"Schaeffler", note:"INA / LUK / FAG", logo:"https://upload.wikimedia.org/wikipedia/commons/4/4a/Schaeffler_Logo.svg" },
+    { name:"KYB", note:"Amortiguadores", logo:"https://upload.wikimedia.org/wikipedia/commons/3/3b/KYB_logo.svg" },
+    { name:"Bilstein", note:"Suspension", logo:"https://upload.wikimedia.org/wikipedia/commons/2/2a/Bilstein_logo.svg" },
+    { name:"HELLA", note:"Luces / electronica", logo:"https://upload.wikimedia.org/wikipedia/commons/5/51/Hella_logo.svg" },
+    { name:"Delphi", note:"Inyeccion / sensores", logo:"https://upload.wikimedia.org/wikipedia/commons/8/89/Delphi_Technologies_logo.svg" },
+    { name:"Magna", note:"Componentes", logo:"https://upload.wikimedia.org/wikipedia/commons/5/52/Magna_International_logo.svg" },
+    { name:"Mobil 1", note:"Aceites", logo:"https://upload.wikimedia.org/wikipedia/commons/1/1d/Mobil_1_logo.svg" },
+    { name:"Castrol", note:"Lubricantes", logo:"https://upload.wikimedia.org/wikipedia/commons/2/22/Castrol_logo.svg" },
+    { name:"Aisin", note:"Transmision / bombas", logo:"https://upload.wikimedia.org/wikipedia/commons/9/9d/Aisin_Logo.svg" }
+  ];
+
+  const vehicles15 = [
+    { brand:"Toyota", tag:"Mas demandada", logo:"https://upload.wikimedia.org/wikipedia/commons/9/9d/Toyota_carlogo.svg",
+      img:"https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=1400&q=70" },
+    { brand:"Hyundai", tag:"Popular", logo:"https://upload.wikimedia.org/wikipedia/commons/4/44/Hyundai_Motor_Company_logo.svg",
+      img:"https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=1400&q=70" },
+    { brand:"Kia", tag:"Buen valor", logo:"https://upload.wikimedia.org/wikipedia/commons/4/47/KIA_logo2.svg",
+      img:"https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=1400&q=70" },
+    { brand:"Nissan", tag:"Uso diario", logo:"https://upload.wikimedia.org/wikipedia/commons/8/8a/Nissan_logo.svg",
+      img:"https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=70" },
+    { brand:"Honda", tag:"Fiable", logo:"https://upload.wikimedia.org/wikipedia/commons/7/76/Honda_logo.svg",
+      img:"https://images.unsplash.com/photo-1549921296-3ecf5b3b9a3d?auto=format&fit=crop&w=1400&q=70" },
+    { brand:"Mercedes-Benz", tag:"Premium", logo:"https://upload.wikimedia.org/wikipedia/commons/9/90/Mercedes-Logo.svg",
+      img:"https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1400&q=70" },
+    { brand:"BMW", tag:"Premium", logo:"https://upload.wikimedia.org/wikipedia/commons/4/44/BMW.svg",
+      img:"https://images.unsplash.com/photo-1525609004556-c46c7d6cf023?auto=format&fit=crop&w=1400&q=70" },
+    { brand:"Ford", tag:"Pickup / SUV", logo:"https://upload.wikimedia.org/wikipedia/commons/a/a0/Ford_Motor_Company_Logo.svg",
+      img:"https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1400&q=70" },
+    { brand:"Chevrolet", tag:"SUV / pickup", logo:"https://upload.wikimedia.org/wikipedia/commons/5/5a/Chevrolet-logo.svg",
+      img:"https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=70" },
+    { brand:"Jeep", tag:"Montana", logo:"https://upload.wikimedia.org/wikipedia/commons/9/9b/Jeep_logo.svg",
+      img:"https://images.unsplash.com/photo-1517142089942-ba376ce32a2e?auto=format&fit=crop&w=1400&q=70" },
+    { brand:"Mazda", tag:"Diseno", logo:"https://upload.wikimedia.org/wikipedia/commons/7/7b/Mazda_logo.svg",
+      img:"https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=70" },
+    { brand:"Mitsubishi", tag:"SUV", logo:"https://upload.wikimedia.org/wikipedia/commons/7/7f/Mitsubishi-logo.svg",
+      img:"https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=1400&q=70" },
+    { brand:"Suzuki", tag:"Economico", logo:"https://upload.wikimedia.org/wikipedia/commons/1/12/Suzuki_logo_2.svg",
+      img:"https://images.unsplash.com/photo-1549921296-3ecf5b3b9a3d?auto=format&fit=crop&w=1400&q=70" },
+    { brand:"Volkswagen", tag:"Sedan", logo:"https://upload.wikimedia.org/wikipedia/commons/6/6d/Volkswagen_logo_2019.svg",
+      img:"https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1400&q=70" },
+    { brand:"Lexus", tag:"Lujo", logo:"https://upload.wikimedia.org/wikipedia/commons/1/19/Lexus_division_emblem.svg",
+      img:"https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1400&q=70" }
+  ];
+
+  function escapeHtml(s){
+    return String(s || "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
+  }
+
+  function renderBrands(){
+    const track = document.getElementById("brandsTrack");
+    track.innerHTML = brands20.map(b => `
+      <div class="brandSlide" aria-label="${escapeHtml(b.name)}">
+        <div class="brandLogoWrap">
+          <img alt="${escapeHtml(b.name)}" src="${escapeHtml(b.logo)}" loading="lazy" />
+        </div>
+        <div class="brandMeta">
+          <b>${escapeHtml(b.name)}</b>
+          <span>${escapeHtml(b.note)}</span>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function renderVehicles(){
+    const track = document.getElementById("vehiclesTrack");
+    track.innerHTML = vehicles15.map(v => `
+      <div class="vehSlide" aria-label="${escapeHtml(v.brand)}">
+        <img alt="${escapeHtml(v.brand)}" src="${escapeHtml(v.img)}" loading="lazy" />
+        <div class="vehCap">
+          <div class="left">
+            <div class="vehMiniLogo">
+              <img alt="${escapeHtml(v.brand)} logo" src="${escapeHtml(v.logo)}" loading="lazy" />
+            </div>
+            <b>${escapeHtml(v.brand)}</b>
+          </div>
+          <span>${escapeHtml(v.tag)}</span>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  /*
+    Carousel loop:
+    duplicamos el contenido una vez para que el "scroll infinito" sea suave.
+    Luego calculamos el shift (mitad del track) para que cierre perfecto.
+  */
+  function makeLoop(trackEl){
+    const children = Array.from(trackEl.children);
+    children.forEach(n => trackEl.appendChild(n.cloneNode(true)));
+
+    requestAnimationFrame(() => {
+      const half = trackEl.scrollWidth / 2;
+      trackEl.style.setProperty("--rfShift", half + "px");
+    });
+  }
+
+  // Init UI
   document.getElementById("y").textContent = new Date().getFullYear();
   paint();
   await paintUser_();
+
+  renderBrands();
+  renderVehicles();
+
+  makeLoop(document.getElementById("brandsTrack"));
+  makeLoop(document.getElementById("vehiclesTrack"));
 
   supabase.auth.onAuthStateChange(async ()=>{
     paint();
@@ -785,6 +923,8 @@
 </script>
 </body>
 </html>
+
+
 
 
 
