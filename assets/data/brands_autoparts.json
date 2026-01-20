@@ -1,0 +1,6 @@
+[
+  { "slug":"bosch", "name":"Bosch", "note":"Frenos / sensores" },
+  { "slug":"mahle", "name":"Mahle", "note":"Filtros / motor" },
+  { "slug":"ngk", "name":"NGK", "note":"Bujias" },
+  { "slug":"febi", "name":"Febi", "note":"Suspension / motor" }
+]
