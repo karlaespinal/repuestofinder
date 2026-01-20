@@ -34,7 +34,6 @@
     }
     .page{ width:min(1180px, 100%); margin:0 auto; padding:18px 18px 28px; }
 
-    /* ======= Top Nav ======= */
     .nav{
       position:sticky;
       top:0;
@@ -128,9 +127,7 @@
     .btnPrimary{background:var(--pri);color:#fff}
     .btnGhost{background:#fff;border:1px solid var(--line);color:#0f172a}
     .btnDark{background:var(--dark);color:#fff}
-    .btn:disabled{opacity:.55;cursor:not-allowed}
 
-    /* ======= Hero ======= */
     .hero{
       border:1px solid var(--line);
       border-radius:22px;
@@ -175,7 +172,6 @@
     .kpi .v{font-size:18px;font-weight:900;margin-top:6px}
     .kpi .s{font-size:12px;color:var(--mut);margin-top:6px;line-height:1.35}
 
-    /* ======= Sections ======= */
     .section{
       margin-top:14px;
       border:1px solid var(--line);
@@ -201,7 +197,7 @@
       text-transform:uppercase;
     }
 
-    /* ======= CAROUSEL (reusable) ======= */
+    /* ======= CAROUSEL ======= */
     .carousel{
       position:relative;
       border-radius:18px;
@@ -241,12 +237,8 @@
       from { transform: translateX(0); }
       to   { transform: translateX(calc(-1 * var(--rfShift, 50%))); }
     }
-    @media (prefers-reduced-motion: reduce){
-      .carouselTrack{ animation:none; }
-      .carousel::before, .carousel::after{ display:none; }
-    }
 
-    /* ======= Brand slide (autoparts + vehicle logos) ======= */
+    /* ======= Slides ======= */
     .brandSlide{
       flex:0 0 auto;
       min-width:240px;
@@ -259,17 +251,14 @@
       gap:12px;
     }
     .brandLogoWrap{
-      width:44px;
-      height:44px;
-      border-radius:14px;
+      width:44px;height:44px;border-radius:14px;
       border:1px solid rgba(230,232,240,.95);
       background:linear-gradient(135deg, rgba(37,99,235,.10), rgba(16,185,129,.08));
-      display:flex;
-      align-items:center;
-      justify-content:center;
+      display:flex;align-items:center;justify-content:center;
       flex:0 0 auto;
       overflow:hidden;
       padding:6px;
+      position:relative;
     }
     .brandLogoWrap img{
       width:100%;
@@ -280,10 +269,30 @@
       transform-origin:center;
       filter:saturate(1.05) contrast(1.05);
     }
+
+    /* placeholder cuando no hay imagen */
+    .ph{
+      width:100%;
+      height:100%;
+      border-radius:12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:900;
+      font-size:12px;
+      letter-spacing:.4px;
+      color:#0f172a;
+      background:
+        radial-gradient(14px 14px at 30% 30%, rgba(37,99,235,.18), transparent 60%),
+        radial-gradient(16px 16px at 70% 70%, rgba(16,185,129,.16), transparent 60%),
+        linear-gradient(135deg, rgba(255,255,255,.9), rgba(246,247,251,.9));
+      border:1px solid rgba(230,232,240,.95);
+      user-select:none;
+    }
+
     .brandMeta b{display:block;font-size:13px}
     .brandMeta span{display:block;font-size:11px;color:var(--mut);font-weight:800;margin-top:2px}
 
-    /* ======= Vehicle slide ======= */
     .vehSlide{
       flex:0 0 auto;
       width:320px;
@@ -293,6 +302,14 @@
       background:#fff;
       position:relative;
       min-height:180px;
+    }
+    .vehImgWrap{
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(420px 180px at 30% 20%, rgba(37,99,235,.10), transparent 60%),
+        radial-gradient(420px 180px at 70% 80%, rgba(16,185,129,.10), transparent 60%),
+        linear-gradient(135deg, rgba(246,247,251,.95), rgba(255,255,255,.95));
     }
     .vehSlide img{
       width:100%;
@@ -328,79 +345,18 @@
       overflow:hidden;
       flex:0 0 auto;
       padding:5px;
+      position:relative;
     }
     .vehMiniLogo img{
       width:100%;
       height:100%;
       object-fit:contain;
       display:block;
-      transform: scale(1.02);
+      transform:scale(1.02);
     }
     .vehCap b{font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px;}
     .vehCap span{font-size:11px;color:var(--mut);font-weight:800}
-
     .footer{ margin-top:14px; text-align:center; color:#94a3b8; font-size:12px; font-weight:800; }
-
-    /* ======= Modal ======= */
-    .overlay{
-      position:fixed;
-      inset:0;
-      background:rgba(2,6,23,.55);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      padding:18px;
-      z-index:60;
-    }
-    .overlay.show{display:flex}
-    .modal{
-      width:min(520px, 100%);
-      border-radius:18px;
-      border:1px solid rgba(230,232,240,.85);
-      background:rgba(255,255,255,.95);
-      box-shadow:0 28px 80px rgba(0,0,0,.25);
-      overflow:hidden;
-    }
-    .modalHead{
-      padding:14px 14px 12px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      border-bottom:1px solid rgba(230,232,240,.9);
-      background:rgba(246,247,251,.65);
-    }
-    .modalHead b{font-size:14px}
-    .x{
-      border:1px solid rgba(230,232,240,.9);
-      background:#fff;
-      width:38px;height:38px;
-      border-radius:12px;
-      cursor:pointer;
-      font-weight:900;
-    }
-    .modalBody{padding:14px}
-    label{
-      display:block;
-      font-size:12px;
-      color:#6b7280;
-      font-weight:900;
-      margin:12px 0 6px;
-      text-transform:uppercase;
-      letter-spacing:.3px;
-    }
-    input{
-      width:100%;
-      padding:12px 12px;
-      border-radius:12px;
-      border:1px solid #d7dbe7;
-      font-size:14px;
-      outline:none;
-      background:#fff;
-    }
-    input:focus{border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12)}
-    .row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
-    .muted{color:var(--mut);font-size:13px;line-height:1.4}
     .mini{font-size:12px;color:var(--mut);margin-top:10px}
 
     @media(max-width:980px){
@@ -439,8 +395,8 @@
 
       <div class="right">
         <span class="pill" id="demoPill" title="Intentos demo disponibles">Demo: -</span>
-        <button class="btn btnGhost" id="btnOpenLogin" onclick="openLogin()">Entrar</button>
-        <button class="btn btnPrimary" id="btnGoApp" onclick="goApp()">Ir a la App</button>
+        <button class="btn btnGhost" onclick="goApp()">Ir a la App</button>
+        <button class="btn btnPrimary" onclick="demo()">Probar demo (10)</button>
       </div>
     </div>
 
@@ -449,22 +405,19 @@
         <div>
           <h1>Centro de control para tu Buscador Automotriz</h1>
           <p>
-            Aqui vamos a integrar (1) ranking de marcas por pedidos, (2) marcas mas presentes en RD por data DGII,
-            (3) mas funciones dentro de la App.
+            Aqui vamos a integrar ranking de marcas por pedidos, marcas mas presentes en RD por data DGII,
+            y mas funciones dentro de la App.
           </p>
 
           <div class="heroActions">
             <button class="btn btnPrimary" onclick="goApp()">Abrir Buscador Automotriz</button>
-            <button class="btn btnGhost" onclick="demo()">Probar demo (10)</button>
-            <button class="btn btnDark" onclick="openLogin()">Login / Registro</button>
+            <button class="btn btnGhost" onclick="navTo('marcas')">Ver marcas</button>
+            <button class="btn btnDark" onclick="navTo('vehiculos')">Ver vehiculos</button>
           </div>
-
-          <div class="mini" style="margin-top:10px">
-            Tip: sube tus logos/fotos a assets y aqui se cargan automatico por slug.
-          </div>
+          <div class="mini">Tip: si una imagen no existe, veras un placeholder elegante (no se rompe el layout).</div>
         </div>
 
-        <div class="kpis" aria-label="KPI placeholders">
+        <div class="kpis">
           <div class="kpi">
             <div class="t">Busquedas (hoy)</div>
             <div class="v">—</div>
@@ -484,11 +437,11 @@
       </div>
     </div>
 
-    <!-- CAROUSEL 1: AUTOPARTES -->
+    <!-- AUTOPARTES -->
     <div class="section" id="marcas">
       <div class="sectionTitle">
         <h2>Marcas de autopartes (carrusel automatico)</h2>
-        <span>logos: assets/logos/autopartes</span>
+        <span>LOGOS: assets/logos/autopartes</span>
       </div>
 
       <div class="carousel" style="--rfSpeed: 42s;">
@@ -498,15 +451,15 @@
       </div>
 
       <div class="mini">
-        Data: <b>assets/data/brands_autoparts.json</b>. Logo por slug: <b>mahle.png / mahle.jpg</b>.
+        Data: <b>assets/data/brands_autoparts.json</b>
       </div>
     </div>
 
-    <!-- CAROUSEL 2: VEHICULOS (fotos + logos) -->
+    <!-- VEHICULOS -->
     <div class="section" id="vehiculos">
       <div class="sectionTitle">
         <h2>Marcas de vehiculos en RD (carrusel automatico)</h2>
-        <span>fotos: assets/vehicles</span>
+        <span>FOTOS: assets/vehicles</span>
       </div>
 
       <div class="carousel" style="--rfSpeed: 46s;">
@@ -516,34 +469,11 @@
       </div>
 
       <div class="mini">
-        Data: <b>assets/data/brands_autos.json</b>. Foto por slug: <b>toyota.jpg / toyota.png</b>.
+        Data: <b>assets/data/brands_autos.json</b>
       </div>
     </div>
 
     <div class="footer">© <span id="y"></span> RepuestoFinder</div>
-  </div>
-
-  <!-- LOGIN MODAL (placeholder) -->
-  <div class="overlay" id="overlay" onclick="closeLoginIfOutside(event)">
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Login">
-      <div class="modalHead">
-        <b>Login / Registro</b>
-        <button class="x" onclick="closeLogin()" aria-label="Cerrar">✕</button>
-      </div>
-      <div class="modalBody">
-        <div class="muted">Este modal se conecta a tu login real (Supabase) cuando lo actives.</div>
-
-        <label for="email">Correo</label>
-        <input id="email" type="email" placeholder="tuemail@empresa.com"/>
-
-        <label for="pass">Contrasena</label>
-        <input id="pass" type="password" placeholder="********"/>
-
-        <div class="row">
-          <button class="btn btnPrimary" onclick="closeLogin()">Cerrar</button>
-        </div>
-      </div>
-    </div>
   </div>
 
 <script>
@@ -576,10 +506,6 @@
     const el = document.getElementById(id);
     if(el) el.scrollIntoView({ behavior:"smooth", block:"start" });
   };
-  const overlay = document.getElementById("overlay");
-  window.openLogin = function(){ overlay.classList.add("show"); };
-  window.closeLogin = function(){ overlay.classList.remove("show"); };
-  window.closeLoginIfOutside = function(e){ if(e && e.target === overlay) closeLogin(); };
 
   window.goApp = function(){ window.location.href = "app.html"; };
 
@@ -610,7 +536,6 @@
   }
 
   function toTitleCaseNoSpace(s){
-    // "mercedes benz" -> "MercedesBenz", "honda" -> "Honda"
     s = String(s||"").trim();
     if(!s) return "";
     return s
@@ -619,33 +544,39 @@
       .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
       .join("");
   }
-
   function firstUpper(s){
     s = String(s||"");
     if(!s) return s;
     return s.charAt(0).toUpperCase() + s.slice(1);
   }
+  function initialsFromName(name){
+    name = String(name||"").trim();
+    if(!name) return "RF";
+    const parts = name.split(/\s+/g).filter(Boolean);
+    if(parts.length === 1){
+      const w = parts[0];
+      return (w.slice(0,2)).toUpperCase();
+    }
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
 
-  /*
-    Loader robusto:
-    - intenta variantes (min, upper, TitleCase, con espacios/guiones/underscore)
-    - y para cada variante intenta .png y .jpg
-  */
-  function setImgRobust(imgEl, folder, slug){
+  function showPlaceholderInWrap(wrapEl, text){
+    wrapEl.innerHTML = `<div class="ph">${escapeHtml(text)}</div>`;
+  }
+
+  function setImgRobust(imgEl, folder, slug, wrapEl, placeholderText){
     const raw = String(slug || "").trim();
     const low = raw.toLowerCase();
 
     const variants = [];
     const add = (v) => { if(v && !variants.includes(v)) variants.push(v); };
 
-    // base (del JSON)
     add(raw);
     add(low);
     add(firstUpper(low));
     add(toTitleCaseNoSpace(raw));
     add(toTitleCaseNoSpace(low));
 
-    // variantes con separadores (por si subiste "mercedes benz.jpg")
     add(low.replace(/[-_]+/g, " "));
     add(low.replace(/\s+/g, "-"));
     add(low.replace(/\s+/g, "_"));
@@ -653,22 +584,27 @@
     add(raw.replace(/\s+/g, "-"));
     add(raw.replace(/\s+/g, "_"));
 
-    // lista final de URLs
     const candidates = [];
     variants.forEach(v=>{
       candidates.push(`assets/${folder}/${v}.png`);
       candidates.push(`assets/${folder}/${v}.jpg`);
+      candidates.push(`assets/${folder}/${v}.jpeg`);
+      candidates.push(`assets/${folder}/${v}.webp`);
     });
 
     let i = 0;
     const tryNext = () => {
       if(i >= candidates.length){
-        imgEl.src = "";
-        imgEl.style.display = "none";
+        // no hay imagen: placeholder elegante
+        if(wrapEl){
+          showPlaceholderInWrap(wrapEl, placeholderText || "RF");
+        }else{
+          imgEl.style.display = "none";
+        }
         return;
       }
       imgEl.style.display = "";
-      imgEl.src = candidates[i++];
+      imgEl.src = candidates[i++] + "?v=" + Date.now(); // cache bust
     };
 
     imgEl.onerror = () => tryNext();
@@ -680,9 +616,10 @@
       const name = escapeHtml(it.name || it.slug || "");
       const note = escapeHtml(it.note || "Autopartes");
       const slug = escapeHtml(it.slug || "");
+      const ph = initialsFromName(name);
       return `
         <div class="brandSlide" data-slug="${slug}">
-          <div class="brandLogoWrap">
+          <div class="brandLogoWrap" data-wrap="ap-${slug}">
             <img alt="${name}" data-logo="${slug}">
           </div>
           <div class="brandMeta">
@@ -693,9 +630,13 @@
       `;
     }).join("");
 
-    trackEl.querySelectorAll("img[data-logo]").forEach(img=>{
-      const slug = img.getAttribute("data-logo");
-      setImgRobust(img, "logos/autopartes", slug);
+    trackEl.querySelectorAll(".brandSlide").forEach(slide=>{
+      const slug = slide.getAttribute("data-slug");
+      const img = slide.querySelector("img[data-logo]");
+      const wrap = slide.querySelector(".brandLogoWrap");
+      const name = slide.querySelector(".brandMeta b")?.textContent || slug;
+      const ph = initialsFromName(name);
+      setImgRobust(img, "logos/autopartes", slug, wrap, ph);
     });
   }
 
@@ -704,12 +645,15 @@
       const name = escapeHtml(it.name || it.slug || "");
       const tag  = escapeHtml(it.tag || "RD");
       const slug = escapeHtml(it.slug || "");
+      const ph = initialsFromName(name);
       return `
         <div class="vehSlide" data-slug="${slug}">
-          <img alt="${name}" data-photo="${slug}">
+          <div class="vehImgWrap" data-wrap="ph-${slug}">
+            <img alt="${name}" data-photo="${slug}" style="width:100%;height:100%;object-fit:cover;display:block;">
+          </div>
           <div class="vehCap">
             <div class="left">
-              <div class="vehMiniLogo">
+              <div class="vehMiniLogo" data-wrap="vl-${slug}">
                 <img alt="${name} logo" data-vlogo="${slug}">
               </div>
               <b>${name}</b>
@@ -720,14 +664,21 @@
       `;
     }).join("");
 
-    // fotos + logos (robusto)
-    trackEl.querySelectorAll("img[data-photo]").forEach(img=>{
-      const slug = img.getAttribute("data-photo");
-      setImgRobust(img, "vehicles", slug);
-    });
-    trackEl.querySelectorAll("img[data-vlogo]").forEach(img=>{
-      const slug = img.getAttribute("data-vlogo");
-      setImgRobust(img, "logos/autos", slug);
+    // fotos + logos (si falla: placeholder sin icono roto)
+    trackEl.querySelectorAll(".vehSlide").forEach(slide=>{
+      const slug = slide.getAttribute("data-slug");
+      const name = slide.querySelector(".vehCap b")?.textContent || slug;
+      const ph = initialsFromName(name);
+
+      const photoImg = slide.querySelector("img[data-photo]");
+      const photoWrap = slide.querySelector(".vehImgWrap");
+      setImgRobust(photoImg, "vehicles", slug, null, null);
+      // si falla foto, ocultamos img y queda el fondo bonito (vehImgWrap)
+      photoImg.onerror = () => { photoImg.style.display = "none"; };
+
+      const logoImg = slide.querySelector("img[data-vlogo]");
+      const logoWrap = slide.querySelector(".vehMiniLogo");
+      setImgRobust(logoImg, "logos/autos", slug, logoWrap, ph);
     });
   }
 
@@ -775,6 +726,8 @@
 </script>
 </body>
 </html>
+
+
 
 
 
