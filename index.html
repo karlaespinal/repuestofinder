@@ -16,7 +16,6 @@
       --shadow:0 16px 40px rgba(2,6,23,.10);
       --r:16px;
     }
-
     *{box-sizing:border-box}
     body{
       margin:0;
@@ -33,13 +32,7 @@
       background-attachment:fixed;
       min-height:100vh;
     }
-
-    /* ======= Layout ======= */
-    .page{
-      width:min(1180px, 100%);
-      margin:0 auto;
-      padding:18px 18px 28px;
-    }
+    .page{ width:min(1180px, 100%); margin:0 auto; padding:18px 18px 28px; }
 
     /* ======= Top Nav ======= */
     .nav{
@@ -59,7 +52,6 @@
       gap:10px;
       margin-bottom:16px;
     }
-
     .brand{
       display:flex;
       align-items:center;
@@ -76,7 +68,6 @@
     .brandTitle{line-height:1}
     .brandTitle b{display:block;font-size:15px}
     .brandTitle span{display:block;font-size:12px;color:#94a3b8;font-weight:800;letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
-
     .menu{
       display:flex;
       align-items:center;
@@ -94,16 +85,12 @@
       border:1px solid transparent;
       user-select:none;
     }
-    .menu a:hover{
-      background:#fff;
-      border-color:var(--line);
-    }
+    .menu a:hover{ background:#fff; border-color:var(--line); }
     .menu a.active{
       background:rgba(37,99,235,.10);
       border-color:rgba(37,99,235,.20);
       color:var(--pri);
     }
-
     .right{
       display:flex;
       align-items:center;
@@ -112,7 +99,6 @@
       justify-content:flex-end;
       min-width:260px;
     }
-
     .pill{
       display:inline-flex;
       align-items:center;
@@ -127,7 +113,6 @@
       user-select:none;
       white-space:nowrap;
     }
-
     .btn{
       border:0;
       cursor:pointer;
@@ -161,11 +146,7 @@
       gap:14px;
       align-items:stretch;
     }
-    .hero h1{
-      margin:0;
-      font-size:28px;
-      letter-spacing:-.2px;
-    }
+    .hero h1{ margin:0; font-size:28px; letter-spacing:-.2px; }
     .hero p{
       margin:10px 0 0;
       color:var(--mut);
@@ -173,13 +154,7 @@
       line-height:1.45;
       max-width:720px;
     }
-    .heroActions{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:14px;
-    }
-
+    .heroActions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
     .kpis{
       border:1px solid rgba(230,232,240,.95);
       border-radius:18px;
@@ -217,11 +192,7 @@
       flex-wrap:wrap;
       margin-bottom:12px;
     }
-    .sectionTitle h2{
-      margin:0;
-      font-size:16px;
-      font-weight:900;
-    }
+    .sectionTitle h2{ margin:0; font-size:16px; font-weight:900; }
     .sectionTitle span{
       font-size:12px;
       color:#94a3b8;
@@ -256,11 +227,7 @@
       right:0;
       background:linear-gradient(270deg, rgba(246,247,251,1), rgba(246,247,251,0));
     }
-
-    .carouselViewport{
-      overflow:hidden;
-      width:100%;
-    }
+    .carouselViewport{ overflow:hidden; width:100%; }
     .carouselTrack{
       display:flex;
       gap:12px;
@@ -270,18 +237,16 @@
       will-change: transform;
     }
     .carousel:hover .carouselTrack{ animation-play-state: paused; }
-
     @keyframes rfScroll{
       from { transform: translateX(0); }
       to   { transform: translateX(calc(-1 * var(--rfShift, 50%))); }
     }
-
     @media (prefers-reduced-motion: reduce){
       .carouselTrack{ animation:none; }
       .carousel::before, .carousel::after{ display:none; }
     }
 
-    /* ======= Brand slide ======= */
+    /* ======= Brand slide (autoparts + vehicle logos) ======= */
     .brandSlide{
       flex:0 0 auto;
       min-width:240px;
@@ -303,7 +268,7 @@
     }
     .brandLogoWrap img{
       width:30px;height:30px;object-fit:contain;display:block;
-      filter: saturate(1.05);
+      filter:saturate(1.05);
     }
     .brandMeta b{display:block;font-size:13px}
     .brandMeta span{display:block;font-size:11px;color:var(--mut);font-weight:800;margin-top:2px}
@@ -357,15 +322,9 @@
     .vehCap b{font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px;}
     .vehCap span{font-size:11px;color:var(--mut);font-weight:800}
 
-    .footer{
-      margin-top:14px;
-      text-align:center;
-      color:#94a3b8;
-      font-size:12px;
-      font-weight:800;
-    }
+    .footer{ margin-top:14px; text-align:center; color:#94a3b8; font-size:12px; font-weight:800; }
 
-    /* ======= Modal (Login) ======= */
+    /* ======= Modal ======= */
     .overlay{
       position:fixed;
       inset:0;
@@ -377,7 +336,6 @@
       z-index:60;
     }
     .overlay.show{display:flex}
-
     .modal{
       width:min(520px, 100%);
       border-radius:18px;
@@ -424,17 +382,9 @@
       background:#fff;
     }
     input:focus{border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12)}
-    .row{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:12px;
-    }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
     .muted{color:var(--mut);font-size:13px;line-height:1.4}
     .mini{font-size:12px;color:var(--mut);margin-top:10px}
-    .link{color:var(--pri);text-decoration:none;font-weight:900}
-    .link:hover{text-decoration:underline}
-
     @media(max-width:980px){
       .heroGrid{grid-template-columns:1fr}
       .right{min-width:auto}
@@ -453,7 +403,6 @@
 
 <body>
   <div class="page">
-
     <div class="nav">
       <div class="brand">
         <div class="logo">RF</div>
@@ -466,13 +415,12 @@
       <div class="menu">
         <a href="#" class="active" onclick="navTo('inicio');return false;">Inicio</a>
         <a href="#" onclick="navTo('buscador');return false;">Buscador Automotriz</a>
-        <a href="#" onclick="navTo('analytics');return false;">Analytics</a>
-        <a href="#" onclick="navTo('roadmap');return false;">Futuras funciones</a>
+        <a href="#" onclick="navTo('marcas');return false;">Marcas</a>
+        <a href="#" onclick="navTo('vehiculos');return false;">Vehiculos</a>
       </div>
 
       <div class="right">
         <span class="pill" id="demoPill" title="Intentos demo disponibles">Demo: -</span>
-        <span class="pill" id="userPill" style="display:none">Usuario: -</span>
         <button class="btn btnGhost" id="btnOpenLogin" onclick="openLogin()">Entrar</button>
         <button class="btn btnPrimary" id="btnGoApp" onclick="goApp()">Ir a la App</button>
       </div>
@@ -483,9 +431,8 @@
         <div>
           <h1>Centro de control para tu Buscador Automotriz</h1>
           <p>
-            Este dashboard es la entrada moderna a RepuestoFinder.
-            Aqui en el futuro vamos a ver: <b>mejores marcas por pedidos</b>, <b>vehiculos mas importados por region</b>,
-            rendimiento de busquedas, y nuevas paginas del sistema.
+            Aqui vamos a integrar (1) ranking de marcas por pedidos, (2) marcas mas presentes en RD por data DGII,
+            (3) mas funciones dentro de la App.
           </p>
 
           <div class="heroActions">
@@ -495,7 +442,7 @@
           </div>
 
           <div class="mini" style="margin-top:10px">
-            Nota: La App real usa Cloudflare Worker + Supabase. La demo entra sin login.
+            Tip: sube tus logos/fotos a assets y aqui se cargan automatico por slug.
           </div>
         </div>
 
@@ -503,87 +450,62 @@
           <div class="kpi">
             <div class="t">Busquedas (hoy)</div>
             <div class="v">—</div>
-            <div class="s">Placeholder (se conectara a tabla de eventos / logs).</div>
+            <div class="s">Placeholder (se conectara a logs).</div>
           </div>
           <div class="kpi">
-            <div class="t">Top marcas</div>
+            <div class="t">Top autopartes</div>
             <div class="v">—</div>
-            <div class="s">Por pedidos, por region, por categoria.</div>
+            <div class="s">Bosch, Mahle, NGK, Febi, etc.</div>
           </div>
           <div class="kpi">
-            <div class="t">Top vehiculos</div>
+            <div class="t">Top marcas RD</div>
             <div class="v">—</div>
-            <div class="s">Mas importados por region (RD / Caribe / etc.).</div>
+            <div class="s">Basado en DGII 2024 (parque vehicular).</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- MIDDLE: BRANDS CAROUSEL -->
-    <div class="section" id="analytics">
+    <!-- CAROUSEL 1: AUTOPARTES -->
+    <div class="section" id="marcas">
       <div class="sectionTitle">
-        <h2>Marcas de autopartes (galeria / carrusel)</h2>
-        <span>Zona media</span>
+        <h2>Marcas de autopartes (carrusel automatico)</h2>
+        <span>logos: assets/logos/autopartes</span>
       </div>
 
-      <div class="carousel" id="brandsCarousel" style="--rfSpeed: 42s;">
+      <div class="carousel" style="--rfSpeed: 42s;">
         <div class="carouselViewport">
-          <div class="carouselTrack" id="brandsTrack">
-            <!-- JS llena esto -->
-          </div>
+          <div class="carouselTrack" id="autopartsTrack"></div>
         </div>
       </div>
 
-      <div class="mini" style="margin-top:10px">
-        Esto es editable: luego lo conectamos a tu data (pedidos / compras / ventas) y hacemos ranking real.
-        (Ahora es visual profesional + automatico)
+      <div class="mini">
+        Data: <b>assets/data/brands_autoparts.json</b>. Logo por slug: <b>mahle.png / mahle.jpg</b>.
       </div>
     </div>
 
-    <!-- ROADMAP -->
-    <div class="section" id="roadmap">
-      <div class="sectionTitle">
-        <h2>Futuras paginas (menu superior)</h2>
-        <span>Roadmap</span>
-      </div>
-
-      <div class="muted">
-        <ul style="margin:0;padding-left:18px;line-height:1.6">
-          <li><b>Mejores marcas por pedidos</b> (por fecha, region, proveedor).</li>
-          <li><b>Vehiculos mas importados por region</b> (RD, norte/sur/este, etc.).</li>
-          <li><b>Panel de intentos</b> (demo vs API, conversion a cuentas).</li>
-          <li><b>Historico de busquedas</b> y “productos mas buscados”.</li>
-          <li><b>Multi-tenant</b>: empresa, roles, limites, plan, etc.</li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- BOTTOM: VEHICLES CAROUSEL -->
+    <!-- CAROUSEL 2: VEHICULOS (logos + fotos) -->
     <div class="section" id="vehiculos">
       <div class="sectionTitle">
-        <h2>Vehiculos mas vistos / importados (carrusel)</h2>
-        <span>Parte inferior</span>
+        <h2>Marcas de vehiculos en RD (carrusel automatico)</h2>
+        <span>fotos: assets/vehicles</span>
       </div>
 
-      <div class="carousel" id="vehiclesCarousel" style="--rfSpeed: 46s;">
+      <div class="carousel" style="--rfSpeed: 46s;">
         <div class="carouselViewport">
-          <div class="carouselTrack" id="vehiclesTrack">
-            <!-- JS llena esto -->
-          </div>
+          <div class="carouselTrack" id="vehiclesTrack"></div>
         </div>
       </div>
 
-      <div class="mini" style="margin-top:10px">
-        Si quieres, aqui metemos carrusel por region (RD / Santiago / Punta Cana) y filtros.
+      <div class="mini">
+        Data: <b>assets/data/brands_autos.json</b>. Foto por slug: <b>toyota.jpg / toyota.png</b>.
       </div>
     </div>
 
-    <div class="footer">
-      © <span id="y"></span> RepuestoFinder
-    </div>
+    <div class="footer">© <span id="y"></span> RepuestoFinder</div>
   </div>
 
-  <!-- LOGIN MODAL -->
+  <!-- LOGIN MODAL (placeholder) -->
   <div class="overlay" id="overlay" onclick="closeLoginIfOutside(event)">
     <div class="modal" role="dialog" aria-modal="true" aria-label="Login">
       <div class="modalHead">
@@ -591,44 +513,22 @@
         <button class="x" onclick="closeLogin()" aria-label="Cerrar">✕</button>
       </div>
       <div class="modalBody">
-        <div class="muted">
-          Entra con tu cuenta o prueba el buscador con <b>10 intentos</b> sin registrarte.
-        </div>
+        <div class="muted">Este modal se conecta a tu login real (Supabase) cuando lo actives.</div>
 
         <label for="email">Correo</label>
-        <input id="email" type="email" placeholder="tuemail@empresa.com" autocomplete="username"/>
+        <input id="email" type="email" placeholder="tuemail@empresa.com"/>
 
         <label for="pass">Contrasena</label>
-        <input id="pass" type="password" placeholder="********" autocomplete="current-password"/>
+        <input id="pass" type="password" placeholder="********"/>
 
         <div class="row">
-          <button class="btn btnPrimary" id="btnLogin" onclick="login()">Entrar</button>
-          <button class="btn btnGhost" id="btnDemo" onclick="demo()">Probar (10)</button>
-        </div>
-
-        <div class="row">
-          <button class="btn btnDark" id="btnRegister" onclick="register()">Registrate</button>
-          <a class="btn btnGhost" href="#" onclick="forgot();return false;">Olvide mi contrasena</a>
-        </div>
-
-        <div class="mini">
-          Demo disponible hoy: <span id="attemptsTxt">-</span>
-        </div>
-
-        <div class="mini" id="loginHint">
-          Nota: Login real activado con Supabase Auth.
+          <button class="btn btnPrimary" onclick="closeLogin()">Cerrar</button>
         </div>
       </div>
     </div>
   </div>
 
-<script type="module">
-  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-  const SUPABASE_URL = "https://pjkbipdjxxxzjiuyfkaq.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_G7uvRyHNLSew2HKJY_h6ag_M2NZDYx4";
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+<script>
   const DEMO_MAX = 10;
   const KEY = "rf_demo_attempts_left";
 
@@ -644,256 +544,134 @@
     localStorage.setItem(KEY, String(Math.max(0, n)));
     paint();
   }
-
-  function setBusy(isBusy){
-    document.getElementById("btnLogin").disabled = isBusy;
-    document.getElementById("btnRegister").disabled = isBusy;
-    document.getElementById("btnDemo").disabled = isBusy || (getLeft() <= 0);
-    document.getElementById("btnOpenLogin").disabled = isBusy;
-    document.getElementById("btnGoApp").disabled = isBusy;
-  }
-
   function paint(){
     const left = getLeft();
     const demoPill = document.getElementById("demoPill");
-    const attemptsTxt = document.getElementById("attemptsTxt");
-    const btnDemo = document.getElementById("btnDemo");
-
     if(demoPill) demoPill.textContent = "Demo: " + left;
-    if(attemptsTxt) attemptsTxt.textContent = left;
-    if(btnDemo){
-      btnDemo.textContent = "Probar (" + left + ")";
-      btnDemo.disabled = left <= 0;
-    }
-  }
-
-  async function goAppInternal_(demoMode){
-    if(demoMode){
-      window.location.href = "app.html?demo=1";
-    } else {
-      window.location.href = "app.html";
-    }
   }
 
   window.navTo = function(id){
     if(id === "buscador"){
-      goAppInternal_(false);
+      window.location.href = "app.html";
       return;
     }
     const el = document.getElementById(id);
     if(el) el.scrollIntoView({ behavior:"smooth", block:"start" });
   };
-
   const overlay = document.getElementById("overlay");
   window.openLogin = function(){ overlay.classList.add("show"); };
   window.closeLogin = function(){ overlay.classList.remove("show"); };
-  window.closeLoginIfOutside = function(e){
-    if(e && e.target === overlay) closeLogin();
-  };
+  window.closeLoginIfOutside = function(e){ if(e && e.target === overlay) closeLogin(); };
 
-  window.goApp = async function(){
-    const { data } = await supabase.auth.getSession();
-    if(data && data.session){
-      goAppInternal_(false);
-    } else {
-      openLogin();
-    }
-  };
+  window.goApp = function(){ window.location.href = "app.html"; };
 
-  window.demo = async function(){
+  window.demo = function(){
     const left = getLeft();
     if(left <= 0){
-      alert("Ya agotaste los 10 intentos de demo. Crea una cuenta para continuar.");
+      alert("Ya agotaste los 10 intentos de demo.");
       return;
     }
     setLeft(left - 1);
-    await goAppInternal_(true);
+    window.location.href = "app.html?demo=1";
   };
-
-  window.login = async function(){
-    const email = (document.getElementById("email").value || "").trim();
-    const password  = (document.getElementById("pass").value || "").trim();
-
-    if(!email || !password){
-      alert("Completa correo y contrasena.");
-      return;
-    }
-
-    try{
-      setBusy(true);
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if(error){
-        alert("Error: " + error.message);
-        return;
-      }
-      closeLogin();
-      await goAppInternal_(false);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  window.register = async function(){
-    const email = (document.getElementById("email").value || "").trim();
-    const password  = (document.getElementById("pass").value || "").trim();
-
-    if(!email || !password){
-      alert("Completa correo y contrasena.");
-      return;
-    }
-
-    try{
-      setBusy(true);
-      const { error } = await supabase.auth.signUp({ email, password });
-      if(error){
-        alert("Error: " + error.message);
-        return;
-      }
-      alert("Cuenta creada. Si activaste confirmacion por correo, revisa tu email. Si no, ya puedes entrar.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  window.forgot = async function(){
-    const email = (document.getElementById("email").value || "").trim();
-    if(!email){
-      alert("Escribe tu correo primero.");
-      return;
-    }
-    try{
-      setBusy(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
-      if(error){
-        alert("Error: " + error.message);
-        return;
-      }
-      alert("Listo. Te envie un correo para recuperar la clave.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  async function paintUser_(){
-    const userPill = document.getElementById("userPill");
-    const btnOpenLogin = document.getElementById("btnOpenLogin");
-
-    const { data } = await supabase.auth.getSession();
-    const has = data && data.session;
-
-    if(has){
-      const email = (data.session.user && data.session.user.email) ? data.session.user.email : "usuario";
-      userPill.style.display = "inline-flex";
-      userPill.textContent = "Usuario: " + email;
-      btnOpenLogin.textContent = "Cambiar cuenta";
-    } else {
-      userPill.style.display = "none";
-      btnOpenLogin.textContent = "Entrar";
-    }
-  }
-
-  /* ===========================
-     DATA (EDITABLE)
-     - Aqui cambias marcas/logos/fotos.
-     - Luego lo conectamos a tu data real.
-  ============================ */
-  const brands20 = [
-    { name:"Bosch", note:"Frenos / sensores", logo:"https://upload.wikimedia.org/wikipedia/commons/1/16/Bosch-logo.svg" },
-    { name:"Denso", note:"Electrico / sensores", logo:"https://upload.wikimedia.org/wikipedia/commons/5/5c/DENSO_logo.svg" },
-    { name:"NGK", note:"Bujias", logo:"https://upload.wikimedia.org/wikipedia/commons/3/3b/NGK_logo.svg" },
-    { name:"Continental", note:"Llantas / sensores", logo:"https://upload.wikimedia.org/wikipedia/commons/9/9b/Continental_AG_logo.svg" },
-    { name:"ZF", note:"Transmision", logo:"https://upload.wikimedia.org/wikipedia/commons/4/4c/ZF_Logo_2021.svg" },
-    { name:"Valeo", note:"Enfriamiento / clutch", logo:"https://upload.wikimedia.org/wikipedia/commons/9/95/Valeo_Logo.svg" },
-    { name:"Mahle", note:"Motor / filtros", logo:"https://upload.wikimedia.org/wikipedia/commons/1/1b/MAHLE_Logo.svg" },
-    { name:"MANN-FILTER", note:"Filtracion", logo:"https://upload.wikimedia.org/wikipedia/commons/1/1e/MANN-FILTER_logo.svg" },
-    { name:"Brembo", note:"Frenos", logo:"https://upload.wikimedia.org/wikipedia/commons/6/66/Brembo_logo.svg" },
-    { name:"Gates", note:"Correas / mangueras", logo:"https://upload.wikimedia.org/wikipedia/commons/8/8b/Gates_Corporation_logo.svg" },
-    { name:"SKF", note:"Rodamientos", logo:"https://upload.wikimedia.org/wikipedia/commons/3/34/SKF_logo.svg" },
-    { name:"Schaeffler", note:"INA / LUK / FAG", logo:"https://upload.wikimedia.org/wikipedia/commons/4/4a/Schaeffler_Logo.svg" },
-    { name:"KYB", note:"Amortiguadores", logo:"https://upload.wikimedia.org/wikipedia/commons/3/3b/KYB_logo.svg" },
-    { name:"Bilstein", note:"Suspension", logo:"https://upload.wikimedia.org/wikipedia/commons/2/2a/Bilstein_logo.svg" },
-    { name:"HELLA", note:"Luces / electronica", logo:"https://upload.wikimedia.org/wikipedia/commons/5/51/Hella_logo.svg" },
-    { name:"Delphi", note:"Inyeccion / sensores", logo:"https://upload.wikimedia.org/wikipedia/commons/8/89/Delphi_Technologies_logo.svg" },
-    { name:"Magna", note:"Componentes", logo:"https://upload.wikimedia.org/wikipedia/commons/5/52/Magna_International_logo.svg" },
-    { name:"Mobil 1", note:"Aceites", logo:"https://upload.wikimedia.org/wikipedia/commons/1/1d/Mobil_1_logo.svg" },
-    { name:"Castrol", note:"Lubricantes", logo:"https://upload.wikimedia.org/wikipedia/commons/2/22/Castrol_logo.svg" },
-    { name:"Aisin", note:"Transmision / bombas", logo:"https://upload.wikimedia.org/wikipedia/commons/9/9d/Aisin_Logo.svg" }
-  ];
-
-  const vehicles15 = [
-    { brand:"Toyota", tag:"Mas demandada", logo:"https://upload.wikimedia.org/wikipedia/commons/9/9d/Toyota_carlogo.svg",
-      img:"https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&w=1400&q=70" },
-    { brand:"Hyundai", tag:"Popular", logo:"https://upload.wikimedia.org/wikipedia/commons/4/44/Hyundai_Motor_Company_logo.svg",
-      img:"https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=1400&q=70" },
-    { brand:"Kia", tag:"Buen valor", logo:"https://upload.wikimedia.org/wikipedia/commons/4/47/KIA_logo2.svg",
-      img:"https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=1400&q=70" },
-    { brand:"Nissan", tag:"Uso diario", logo:"https://upload.wikimedia.org/wikipedia/commons/8/8a/Nissan_logo.svg",
-      img:"https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=70" },
-    { brand:"Honda", tag:"Fiable", logo:"https://upload.wikimedia.org/wikipedia/commons/7/76/Honda_logo.svg",
-      img:"https://images.unsplash.com/photo-1549921296-3ecf5b3b9a3d?auto=format&fit=crop&w=1400&q=70" },
-    { brand:"Mercedes-Benz", tag:"Premium", logo:"https://upload.wikimedia.org/wikipedia/commons/9/90/Mercedes-Logo.svg",
-      img:"https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1400&q=70" },
-    { brand:"BMW", tag:"Premium", logo:"https://upload.wikimedia.org/wikipedia/commons/4/44/BMW.svg",
-      img:"https://images.unsplash.com/photo-1525609004556-c46c7d6cf023?auto=format&fit=crop&w=1400&q=70" },
-    { brand:"Ford", tag:"Pickup / SUV", logo:"https://upload.wikimedia.org/wikipedia/commons/a/a0/Ford_Motor_Company_Logo.svg",
-      img:"https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1400&q=70" },
-    { brand:"Chevrolet", tag:"SUV / pickup", logo:"https://upload.wikimedia.org/wikipedia/commons/5/5a/Chevrolet-logo.svg",
-      img:"https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=70" },
-    { brand:"Jeep", tag:"Montana", logo:"https://upload.wikimedia.org/wikipedia/commons/9/9b/Jeep_logo.svg",
-      img:"https://images.unsplash.com/photo-1517142089942-ba376ce32a2e?auto=format&fit=crop&w=1400&q=70" },
-    { brand:"Mazda", tag:"Diseno", logo:"https://upload.wikimedia.org/wikipedia/commons/7/7b/Mazda_logo.svg",
-      img:"https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=70" },
-    { brand:"Mitsubishi", tag:"SUV", logo:"https://upload.wikimedia.org/wikipedia/commons/7/7f/Mitsubishi-logo.svg",
-      img:"https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=1400&q=70" },
-    { brand:"Suzuki", tag:"Economico", logo:"https://upload.wikimedia.org/wikipedia/commons/1/12/Suzuki_logo_2.svg",
-      img:"https://images.unsplash.com/photo-1549921296-3ecf5b3b9a3d?auto=format&fit=crop&w=1400&q=70" },
-    { brand:"Volkswagen", tag:"Sedan", logo:"https://upload.wikimedia.org/wikipedia/commons/6/6d/Volkswagen_logo_2019.svg",
-      img:"https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1400&q=70" },
-    { brand:"Lexus", tag:"Lujo", logo:"https://upload.wikimedia.org/wikipedia/commons/1/19/Lexus_division_emblem.svg",
-      img:"https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=1400&q=70" }
-  ];
 
   function escapeHtml(s){
     return String(s || "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
   }
 
-  function renderBrands(){
-    const track = document.getElementById("brandsTrack");
-    track.innerHTML = brands20.map(b => `
-      <div class="brandSlide" aria-label="${escapeHtml(b.name)}">
-        <div class="brandLogoWrap">
-          <img alt="${escapeHtml(b.name)}" src="${escapeHtml(b.logo)}" loading="lazy" />
-        </div>
-        <div class="brandMeta">
-          <b>${escapeHtml(b.name)}</b>
-          <span>${escapeHtml(b.note)}</span>
-        </div>
-      </div>
-    `).join("");
-  }
-
-  function renderVehicles(){
-    const track = document.getElementById("vehiclesTrack");
-    track.innerHTML = vehicles15.map(v => `
-      <div class="vehSlide" aria-label="${escapeHtml(v.brand)}">
-        <img alt="${escapeHtml(v.brand)}" src="${escapeHtml(v.img)}" loading="lazy" />
-        <div class="vehCap">
-          <div class="left">
-            <div class="vehMiniLogo">
-              <img alt="${escapeHtml(v.brand)} logo" src="${escapeHtml(v.logo)}" loading="lazy" />
-            </div>
-            <b>${escapeHtml(v.brand)}</b>
-          </div>
-          <span>${escapeHtml(v.tag)}</span>
-        </div>
-      </div>
-    `).join("");
+  async function fetchJsonSafe(url, fallback){
+    try{
+      const r = await fetch(url, { cache:"no-store" });
+      if(!r.ok) return fallback;
+      const j = await r.json();
+      if(!Array.isArray(j)) return fallback;
+      return j;
+    }catch(_){
+      return fallback;
+    }
   }
 
   /*
-    Carousel loop:
-    duplicamos el contenido una vez para que el "scroll infinito" sea suave.
-    Luego calculamos el shift (mitad del track) para que cierre perfecto.
+    Carga imagen con fallback:
+    - prueba .png y si falla, prueba .jpg
+    - si falla todo, se queda un placeholder visual (no rompe)
+  */
+  function setImgWithFallback(imgEl, basePathNoExt){
+    const png = basePathNoExt + ".png";
+    const jpg = basePathNoExt + ".jpg";
+
+    imgEl.src = png;
+    imgEl.onerror = () => {
+      imgEl.onerror = () => {
+        imgEl.src = "";
+        imgEl.alt = (imgEl.alt || "") + " (sin imagen)";
+        imgEl.style.display = "none";
+      };
+      imgEl.src = jpg;
+    };
+  }
+
+  function renderAutoparts(trackEl, items){
+    trackEl.innerHTML = items.map(it=>{
+      const name = escapeHtml(it.name || it.slug || "");
+      const note = escapeHtml(it.note || "Autopartes");
+      const slug = escapeHtml(it.slug || "");
+      return `
+        <div class="brandSlide" data-slug="${slug}">
+          <div class="brandLogoWrap">
+            <img alt="${name}" data-logo="autopartes/${slug}">
+          </div>
+          <div class="brandMeta">
+            <b>${name}</b>
+            <span>${note}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    // aplicar logos con fallback png/jpg
+    trackEl.querySelectorAll("img[data-logo]").forEach(img=>{
+      const rel = img.getAttribute("data-logo");
+      setImgWithFallback(img, "assets/logos/" + rel);
+    });
+  }
+
+  function renderVehicles(trackEl, items){
+    trackEl.innerHTML = items.map(it=>{
+      const name = escapeHtml(it.name || it.slug || "");
+      const tag  = escapeHtml(it.tag || "RD");
+      const slug = escapeHtml(it.slug || "");
+      return `
+        <div class="vehSlide" data-slug="${slug}">
+          <img alt="${name}" data-photo="${slug}">
+          <div class="vehCap">
+            <div class="left">
+              <div class="vehMiniLogo">
+                <img alt="${name} logo" data-vlogo="${slug}">
+              </div>
+              <b>${name}</b>
+            </div>
+            <span>${tag}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    // fotos + logos con fallback png/jpg
+    trackEl.querySelectorAll("img[data-photo]").forEach(img=>{
+      const slug = img.getAttribute("data-photo");
+      setImgWithFallback(img, "assets/vehicles/" + slug);
+    });
+    trackEl.querySelectorAll("img[data-vlogo]").forEach(img=>{
+      const slug = img.getAttribute("data-vlogo");
+      setImgWithFallback(img, "assets/logos/autos/" + slug);
+    });
+  }
+
+  /*
+    Loop infinito suave:
+    - duplicamos el contenido una vez
+    - calculamos el shift exacto
   */
   function makeLoop(trackEl){
     const children = Array.from(trackEl.children);
@@ -905,24 +683,44 @@
     });
   }
 
-  // Init UI
-  document.getElementById("y").textContent = new Date().getFullYear();
-  paint();
-  await paintUser_();
-
-  renderBrands();
-  renderVehicles();
-
-  makeLoop(document.getElementById("brandsTrack"));
-  makeLoop(document.getElementById("vehiclesTrack"));
-
-  supabase.auth.onAuthStateChange(async ()=>{
+  async function init(){
+    document.getElementById("y").textContent = new Date().getFullYear();
     paint();
-    await paintUser_();
-  });
+
+    // Si aun no subes JSON, dejo fallback vacio (o puedes poner placeholders)
+    const autopartsFallback = [
+      { slug:"mahle", name:"Mahle", note:"Filtros / motor" },
+      { slug:"ngk", name:"NGK", note:"Bujias" },
+      { slug:"bosch", name:"Bosch", note:"Frenos / sensores" },
+      { slug:"febi", name:"Febi", note:"Suspension / motor" }
+    ];
+
+    const autosFallback = [
+      { slug:"toyota", name:"Toyota", tag:"Top RD" },
+      { slug:"honda", name:"Honda", tag:"Top RD" },
+      { slug:"hyundai", name:"Hyundai", tag:"Top RD" },
+      { slug:"kia", name:"Kia", tag:"Top RD" }
+    ];
+
+    const autoparts = await fetchJsonSafe("assets/data/brands_autoparts.json", autopartsFallback);
+    const autos     = await fetchJsonSafe("assets/data/brands_autos.json", autosFallback);
+
+    const autopartsTrack = document.getElementById("autopartsTrack");
+    const vehiclesTrack  = document.getElementById("vehiclesTrack");
+
+    renderAutoparts(autopartsTrack, autoparts);
+    renderVehicles(vehiclesTrack, autos);
+
+    makeLoop(autopartsTrack);
+    makeLoop(vehiclesTrack);
+  }
+
+  init();
 </script>
 </body>
 </html>
+
+
 
 
 
