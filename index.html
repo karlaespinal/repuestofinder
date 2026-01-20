@@ -231,14 +231,15 @@
       width:max-content;
       animation: rfScroll var(--rfSpeed, 38s) linear infinite;
       will-change: transform;
+      transform: translate3d(0,0,0);
     }
     .carousel:hover .carouselTrack{ animation-play-state: paused; }
     @keyframes rfScroll{
-      from { transform: translateX(0); }
-      to   { transform: translateX(calc(-1 * var(--rfShift, 50%))); }
+      from { transform: translate3d(0,0,0); }
+      to   { transform: translate3d(calc(-1 * var(--rfShift, 50%)),0,0); }
     }
 
-    /* ======= Slides ======= */
+    /* Slides */
     .brandSlide{
       flex:0 0 auto;
       min-width:240px;
@@ -269,8 +270,6 @@
       transform-origin:center;
       filter:saturate(1.05) contrast(1.05);
     }
-
-    /* placeholder cuando no hay imagen */
     .ph{
       width:100%;
       height:100%;
@@ -289,7 +288,6 @@
       border:1px solid rgba(230,232,240,.95);
       user-select:none;
     }
-
     .brandMeta b{display:block;font-size:13px}
     .brandMeta span{display:block;font-size:11px;color:var(--mut);font-weight:800;margin-top:2px}
 
@@ -414,7 +412,7 @@
             <button class="btn btnGhost" onclick="navTo('marcas')">Ver marcas</button>
             <button class="btn btnDark" onclick="navTo('vehiculos')">Ver vehiculos</button>
           </div>
-          <div class="mini">Tip: si una imagen no existe, veras un placeholder elegante (no se rompe el layout).</div>
+          <div class="mini">Tip: el carrusel espera a que las imagenes carguen antes de arrancar (sin saltos).</div>
         </div>
 
         <div class="kpis">
@@ -477,6 +475,9 @@
   </div>
 
 <script>
+  // Cambia este numero cuando subas logos nuevos y quieras forzar cache refresh:
+  window.RF_ASSET_VER = "1";
+
   const DEMO_MAX = 10;
   const KEY = "rf_demo_attempts_left";
 
@@ -559,7 +560,6 @@
     }
     return (parts[0][0] + parts[1][0]).toUpperCase();
   }
-
   function showPlaceholderInWrap(wrapEl, text){
     wrapEl.innerHTML = `<div class="ph">${escapeHtml(text)}</div>`;
   }
@@ -593,9 +593,10 @@
     });
 
     let i = 0;
+    const ver = window.RF_ASSET_VER ? ("?v=" + window.RF_ASSET_VER) : "";
+
     const tryNext = () => {
       if(i >= candidates.length){
-        // no hay imagen: placeholder elegante
         if(wrapEl){
           showPlaceholderInWrap(wrapEl, placeholderText || "RF");
         }else{
@@ -604,7 +605,7 @@
         return;
       }
       imgEl.style.display = "";
-      imgEl.src = candidates[i++] + "?v=" + Date.now(); // cache bust
+      imgEl.src = candidates[i++] + ver;
     };
 
     imgEl.onerror = () => tryNext();
@@ -616,10 +617,9 @@
       const name = escapeHtml(it.name || it.slug || "");
       const note = escapeHtml(it.note || "Autopartes");
       const slug = escapeHtml(it.slug || "");
-      const ph = initialsFromName(name);
       return `
         <div class="brandSlide" data-slug="${slug}">
-          <div class="brandLogoWrap" data-wrap="ap-${slug}">
+          <div class="brandLogoWrap">
             <img alt="${name}" data-logo="${slug}">
           </div>
           <div class="brandMeta">
@@ -645,15 +645,14 @@
       const name = escapeHtml(it.name || it.slug || "");
       const tag  = escapeHtml(it.tag || "RD");
       const slug = escapeHtml(it.slug || "");
-      const ph = initialsFromName(name);
       return `
         <div class="vehSlide" data-slug="${slug}">
-          <div class="vehImgWrap" data-wrap="ph-${slug}">
-            <img alt="${name}" data-photo="${slug}" style="width:100%;height:100%;object-fit:cover;display:block;">
+          <div class="vehImgWrap">
+            <img alt="${name}" data-photo="${slug}">
           </div>
           <div class="vehCap">
             <div class="left">
-              <div class="vehMiniLogo" data-wrap="vl-${slug}">
+              <div class="vehMiniLogo">
                 <img alt="${name} logo" data-vlogo="${slug}">
               </div>
               <b>${name}</b>
@@ -664,16 +663,13 @@
       `;
     }).join("");
 
-    // fotos + logos (si falla: placeholder sin icono roto)
     trackEl.querySelectorAll(".vehSlide").forEach(slide=>{
       const slug = slide.getAttribute("data-slug");
       const name = slide.querySelector(".vehCap b")?.textContent || slug;
       const ph = initialsFromName(name);
 
       const photoImg = slide.querySelector("img[data-photo]");
-      const photoWrap = slide.querySelector(".vehImgWrap");
       setImgRobust(photoImg, "vehicles", slug, null, null);
-      // si falla foto, ocultamos img y queda el fondo bonito (vehImgWrap)
       photoImg.onerror = () => { photoImg.style.display = "none"; };
 
       const logoImg = slide.querySelector("img[data-vlogo]");
@@ -685,10 +681,40 @@
   function makeLoop(trackEl){
     const children = Array.from(trackEl.children);
     children.forEach(n => trackEl.appendChild(n.cloneNode(true)));
-    requestAnimationFrame(() => {
-      const half = trackEl.scrollWidth / 2;
-      trackEl.style.setProperty("--rfShift", half + "px");
+    const half = trackEl.scrollWidth / 2;
+    trackEl.style.setProperty("--rfShift", half + "px");
+  }
+
+  function waitImagesIn(el, timeoutMs){
+    const imgs = Array.from(el.querySelectorAll("img"));
+    if(imgs.length === 0) return Promise.resolve();
+
+    const done = new Set();
+    return new Promise((resolve)=>{
+      const timer = setTimeout(()=>resolve(), timeoutMs || 1800);
+
+      const mark = () => {
+        if(done.size >= imgs.length){
+          clearTimeout(timer);
+          resolve();
+        }
+      };
+
+      imgs.forEach(img=>{
+        const finish = () => { done.add(img); mark(); };
+        if(img.complete) {
+          finish();
+        } else {
+          img.addEventListener("load", finish, { once:true });
+          img.addEventListener("error", finish, { once:true });
+        }
+      });
     });
+  }
+
+  function freezeAnimation(trackEl, freeze){
+    trackEl.style.animationPlayState = freeze ? "paused" : "running";
+    trackEl.style.opacity = freeze ? "0.99" : "1";
   }
 
   async function init(){
@@ -709,8 +735,8 @@
       { slug:"kia", name:"Kia", tag:"Top RD" }
     ];
 
-    const autoparts = await fetchJsonSafe("assets/data/brands_autoparts.json?v=" + Date.now(), autopartsFallback);
-    const autos     = await fetchJsonSafe("assets/data/brands_autos.json?v=" + Date.now(), autosFallback);
+    const autoparts = await fetchJsonSafe("assets/data/brands_autoparts.json?v=" + window.RF_ASSET_VER, autopartsFallback);
+    const autos     = await fetchJsonSafe("assets/data/brands_autos.json?v=" + window.RF_ASSET_VER, autosFallback);
 
     const autopartsTrack = document.getElementById("autopartsTrack");
     const vehiclesTrack  = document.getElementById("vehiclesTrack");
@@ -718,16 +744,29 @@
     renderAutoparts(autopartsTrack, autoparts);
     renderVehicles(vehiclesTrack, autos);
 
+    // pausa mientras carga (evita salto)
+    freezeAnimation(autopartsTrack, true);
+    freezeAnimation(vehiclesTrack, true);
+
+    // espera que las imagenes carguen (o fallen)
+    await waitImagesIn(autopartsTrack, 2200);
+    await waitImagesIn(vehiclesTrack, 2600);
+
+    // duplica ya estable
     makeLoop(autopartsTrack);
     makeLoop(vehiclesTrack);
+
+    // arranca
+    requestAnimationFrame(()=>{
+      freezeAnimation(autopartsTrack, false);
+      freezeAnimation(vehiclesTrack, false);
+    });
   }
 
   init();
 </script>
 </body>
 </html>
-
-
 
 
 
