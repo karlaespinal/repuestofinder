@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>RepuestoFinder - Suscripción</title>
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:rgba(255,255,255,.92);
+      --line:rgba(230,232,240,.95);
+      --txt:#0f172a;
+      --mut:#64748b;
+      --pri:#2563eb;
+      --dark:#111;
+      --shadow:0 16px 40px rgba(2,6,23,.10);
+      --r:16px;
+      --ok:#16a34a;
+      --bad:#dc2626;
+      --warn:#f59e0b;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Arial,Helvetica,sans-serif;
+      color:var(--txt);
+      background:
+        radial-gradient(1200px 600px at 20% 0%, rgba(37,99,235,.15), transparent 60%),
+        radial-gradient(900px 500px at 80% 20%, rgba(16,185,129,.12), transparent 55%),
+        linear-gradient(rgba(246,247,251,.92), rgba(246,247,251,.92)),
+        url("assets/bg.jpg");
+      background-size:cover;
+      background-position:center;
+      background-repeat:no-repeat;
+      background-attachment:fixed;
+      min-height:100vh;
+    }
+    .page{ width:min(980px, 100%); margin:0 auto; padding:18px 18px 28px; }
+
+    .top{
+      position:sticky; top:0; z-index:30;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      background:rgba(246,247,251,.68);
+      border:1px solid rgba(230,232,240,.75);
+      border-radius:18px;
+      box-shadow:0 10px 26px rgba(2,6,23,.08);
+      padding:12px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:16px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+    }
+    .logo{
+      width:42px;height:42px;border-radius:14px;
+      background:#111;color:#fff;
+      display:flex;align-items:center;justify-content:center;
+      font-weight:900; user-select:none;
+      box-shadow:0 10px 25px rgba(0,0,0,.12);
+    }
+    .brandTitle{line-height:1}
+    .brandTitle b{display:block;font-size:15px}
+    .brandTitle span{display:block;font-size:12px;color:#94a3b8;font-weight:800;letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
+
+    .btn{
+      border:0; cursor:pointer; font-weight:900;
+      border-radius:12px; padding:10px 12px;
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      user-select:none;
+    }
+    .btnPrimary{background:var(--pri);color:#fff}
+    .btnGhost{background:#fff;border:1px solid var(--line);color:#0f172a}
+    .btnDark{background:var(--dark);color:#fff}
+    .btn:disabled{opacity:.55; cursor:not-allowed}
+
+    .wrap{
+      border:1px solid var(--line);
+      border-radius:22px;
+      background:var(--card);
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:14px;
+    }
+    @media(min-width:980px){
+      .grid{ grid-template-columns: 1fr 1fr; }
+    }
+
+    h1{ margin:0; font-size:22px; letter-spacing:-.2px; }
+    p{ margin:8px 0 0; color:var(--mut); font-size:13px; line-height:1.45; }
+
+    .card{
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#fff;
+      padding:14px;
+    }
+
+    .field{ display:grid; gap:6px; margin-top:10px; }
+    label{ font-size:12px; font-weight:900; color:#334155; }
+    input{
+      width:100%;
+      padding:12px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      outline:none;
+      font-weight:800;
+      background:#fff;
+    }
+    input:focus{ border-color: rgba(37,99,235,.35); box-shadow:0 0 0 4px rgba(37,99,235,.10); }
+
+    .row2{
+      display:grid; gap:10px;
+      grid-template-columns:1fr;
+    }
+    @media(min-width:700px){
+      .row2{ grid-template-columns:1fr 1fr; }
+    }
+
+    .terms{
+      margin-top:12px;
+      display:flex; gap:10px; align-items:flex-start;
+      border:1px dashed rgba(148,163,184,.55);
+      border-radius:14px;
+      padding:12px;
+      background:rgba(246,247,251,.8);
+    }
+    .terms input{ width:auto; margin-top:2px; }
+    .terms b{ display:block; font-size:13px; }
+    .terms span{ display:block; font-size:12px; color:var(--mut); margin-top:3px; line-height:1.35; }
+    .terms a{ color:var(--pri); text-decoration:none; font-weight:900; }
+
+    .plansHeader{
+      display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap;
+    }
+    .plansHeader h2{ margin:0; font-size:14px; font-weight:900; }
+    .plansHeader small{ color:#94a3b8; font-weight:900; text-transform:uppercase; letter-spacing:.4px; }
+
+    .plans{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+    @media(min-width:700px){
+      .plans{ grid-template-columns:1fr 1fr; }
+    }
+
+    .plan{
+      border:1px solid rgba(230,232,240,.95);
+      border-radius:16px;
+      background:#fff;
+      padding:12px;
+      cursor:pointer;
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      transition:.15s ease;
+      position:relative;
+    }
+    .plan:hover{ transform:translateY(-1px); box-shadow:0 10px 22px rgba(2,6,23,.06); }
+    .plan.active{
+      border-color: rgba(37,99,235,.35);
+      box-shadow:0 0 0 4px rgba(37,99,235,.10);
+    }
+
+    .planImg{
+      width:56px; height:56px; border-radius:14px;
+      border:1px solid rgba(230,232,240,.95);
+      background:linear-gradient(135deg, rgba(37,99,235,.10), rgba(16,185,129,.08));
+      display:flex; align-items:center; justify-content:center;
+      overflow:hidden;
+      flex:0 0 auto;
+      padding:7px;
+    }
+    .planImg img{ width:100%; height:100%; object-fit:contain; display:block; }
+
+    .planMain{ flex:1; min-width:0; }
+    .planMain b{ display:block; font-size:13px; }
+    .planMain span{ display:block; font-size:12px; color:var(--mut); margin-top:4px; line-height:1.35; }
+    .planPrice{
+      font-weight:900;
+      font-size:13px;
+      white-space:nowrap;
+      color:#0f172a;
+    }
+    .badge{
+      position:absolute; top:10px; right:10px;
+      font-size:11px;
+      font-weight:900;
+      padding:6px 8px;
+      border-radius:999px;
+      border:1px solid rgba(230,232,240,.95);
+      background:rgba(246,247,251,.9);
+      color:#334155;
+    }
+
+    .notice{
+      margin-top:10px;
+      border:1px solid rgba(245,158,11,.25);
+      background:rgba(245,158,11,.08);
+      border-radius:14px;
+      padding:12px;
+      color:#7c2d12;
+      font-size:12px;
+      font-weight:800;
+      line-height:1.35;
+    }
+
+    .ok{
+      border:1px solid rgba(22,163,74,.22);
+      background:rgba(22,163,74,.08);
+      color:#14532d;
+    }
+    .bad{
+      border:1px solid rgba(220,38,38,.22);
+      background:rgba(220,38,38,.08);
+      color:#7f1d1d;
+    }
+
+    .actions{
+      display:flex; gap:10px; flex-wrap:wrap;
+      margin-top:12px;
+      align-items:center;
+      justify-content:flex-end;
+    }
+
+    .sep{
+      height:1px; background:rgba(230,232,240,.9);
+      margin:12px 0;
+    }
+
+    .paypalBox{
+      border:1px solid rgba(230,232,240,.95);
+      border-radius:16px;
+      padding:12px;
+      background:rgba(255,255,255,.92);
+    }
+
+    .small{
+      font-size:12px; color:var(--mut); font-weight:800; line-height:1.35;
+      margin-top:8px;
+    }
+
+    .footer{
+      margin-top:14px; text-align:center;
+      color:#94a3b8; font-size:12px; font-weight:800;
+    }
+  </style>
+
+  <!-- PayPal JS SDK: pega tu CLIENT ID de sandbox aquí -->
+  <script src="https://www.paypal.com/sdk/js?client-id=PEGA_AQUI_TU_PAYPAL_CLIENT_ID&currency=USD"></script>
+</head>
+
+<body>
+  <div class="page">
+    <div class="top">
+      <div class="brand">
+        <div class="logo">RF</div>
+        <div class="brandTitle">
+          <b>RepuestoFinder</b>
+          <span>Suscripción</span>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
+        <button class="btn btnGhost" onclick="location.href='index.html'">Volver</button>
+        <button class="btn btnDark" onclick="location.href='app.html'">Ir a la App</button>
+      </div>
+    </div>
+
+    <div class="wrap">
+      <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+        <div>
+          <h1>Crear cuenta y activar con PayPal</h1>
+          <p>Completa tus datos, acepta los términos, elige un plan y paga. Tu cuenta queda activa al instante.</p>
+        </div>
+        <div class="badge" id="stepBadge">Paso 1/2</div>
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="grid">
+        <!-- FORM -->
+        <div class="card" id="formCard">
+          <div class="row2">
+            <div class="field">
+              <label>Nombre</label>
+              <input id="first_name" autocomplete="given-name" placeholder="Luis"/>
+            </div>
+            <div class="field">
+              <label>Apellido</label>
+              <input id="last_name" autocomplete="family-name" placeholder="Espinal"/>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Nombre de la compañía</label>
+            <input id="company_name" autocomplete="organization" placeholder="DTD STAR PARTS"/>
+          </div>
+
+          <div class="row2">
+            <div class="field">
+              <label>Número de teléfono</label>
+              <input id="phone" autocomplete="tel" placeholder="+1 809..."/>
+            </div>
+            <div class="field">
+              <label>Correo</label>
+              <input id="email" type="email" autocomplete="email" placeholder="correo@empresa.com"/>
+            </div>
+          </div>
+
+          <div class="row2">
+            <div class="field">
+              <label>Clave</label>
+              <input id="pass" type="password" autocomplete="new-password" placeholder="••••••••"/>
+            </div>
+            <div class="field">
+              <label>Validar la clave</label>
+              <input id="pass2" type="password" autocomplete="new-password" placeholder="••••••••"/>
+            </div>
+          </div>
+
+          <div class="terms">
+            <input id="agree" type="checkbox"/>
+            <div>
+              <b>Acepto los términos</b>
+              <span>
+                Al registrarte aceptas las condiciones de uso y política de servicio.
+                <a href="#" onclick="openTerms();return false;">Ver términos</a>.
+              </span>
+            </div>
+          </div>
+
+          <div class="notice" id="msg" style="display:none;"></div>
+
+          <div class="actions">
+            <button class="btn btnGhost" onclick="fillDemo()">Llenar demo</button>
+            <button class="btn btnPrimary" id="btnCreate" onclick="createAccount()">Crear cuenta</button>
+          </div>
+
+          <div class="small">
+            Nota: para que la activación sea inmediata, en Supabase Auth es mejor desactivar temporalmente “Email confirmations”
+            durante pruebas. Si está activo, podrías necesitar confirmar el email antes de poder pagar.
+          </div>
+        </div>
+
+        <!-- PLANS + PAYPAL -->
+        <div class="card" id="plansCard">
+          <div class="plansHeader">
+            <h2>Elige tu plan</h2>
+            <small>Planes activos</small>
+          </div>
+
+          <div class="plans" id="plans"></div>
+
+          <div class="notice" style="margin-top:10px;">
+            Después de crear tu cuenta, podrás pagar aquí mismo con PayPal y tu cuenta quedará <b>ACTIVA</b> al instante.
+          </div>
+
+          <div class="sep"></div>
+
+          <div class="paypalBox">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+              <b>Pago con PayPal</b>
+              <span style="font-size:12px;color:#94a3b8;font-weight:900;">Sandbox / USD</span>
+            </div>
+            <div class="small" id="payHint" style="margin-top:6px;">
+              1) Selecciona un plan. 2) Crea la cuenta. 3) Paga.
+            </div>
+            <div style="margin-top:10px;" id="paypal-button-container"></div>
+            <div class="notice bad" id="payErr" style="display:none;margin-top:10px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">© <span id="y"></span> RepuestoFinder</div>
+    </div>
+  </div>
+
+<script type="module">
+  import { supabase } from "./assets/supabaseClient.js";
+
+  document.getElementById("y").textContent = new Date().getFullYear();
+
+  const el = (id) => document.getElementById(id);
+
+  let selectedPlanId = null;
+  let created = false;
+
+  function showMsg(text, type){
+    const box = el("msg");
+    if(!text){
+      box.style.display = "none";
+      box.textContent = "";
+      box.className = "notice";
+      return;
+    }
+    box.style.display = "block";
+    box.textContent = text;
+    box.className = "notice " + (type || "");
+  }
+
+  function showPayErr(text){
+    const b = el("payErr");
+    if(!text){
+      b.style.display = "none";
+      b.textContent = "";
+      return;
+    }
+    b.style.display = "block";
+    b.textContent = text;
+  }
+
+  window.openTerms = function(){
+    alert(
+`TERMINOS (resumen):
+- El servicio se ofrece por suscripción según el plan seleccionado.
+- Acceso personal por usuario/empresa.
+- No se permite compartir credenciales.
+- Los planes pueden cambiar con aviso previo.
+- Soporte según el plan.
+(Después lo pasamos a una página bonita terms.html si quieres.)`
+    );
+  };
+
+  window.fillDemo = function(){
+    el("first_name").value = "Luis";
+    el("last_name").value = "Espinal";
+    el("company_name").value = "Repuesto FinderRD";
+    el("phone").value = "+1 809 000 0000";
+    el("email").value = "demo+" + Date.now() + "@mail.com";
+    el("pass").value = "Demo12345!";
+    el("pass2").value = "Demo12345!";
+    el("agree").checked = true;
+  };
+
+  function money(n){
+    const v = Number(n || 0).toFixed(2);
+    return "US$ " + v;
+  }
+
+  function planImgFallback(slug){
+    // Si no usas image_url en la tabla, puedes meter imágenes en GitHub/assets:
+    // assets/plans/<slug>.png
+    return `assets/plans/${String(slug||"plan").toLowerCase()}.png`;
+  }
+
+  async function loadPlans(){
+    const { data, error } = await supabase
+      .from("plans")
+      .select("id, slug, name, description, price_usd, duration_days, image_url, is_active, sort_order")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+
+    const plans = Array.isArray(data) ? data : [];
+    const wrap = el("plans");
+
+    if(error){
+      wrap.innerHTML = `<div class="notice bad">No se pudieron cargar los planes: ${error.message}</div>`;
+      return;
+    }
+    if(plans.length === 0){
+      wrap.innerHTML = `<div class="notice">No hay planes activos todavía. Inserta planes en la tabla <b>plans</b>.</div>`;
+      return;
+    }
+
+    // auto-seleccionar el primero
+    selectedPlanId = selectedPlanId || plans[0].id;
+
+    wrap.innerHTML = plans.map(p=>{
+      const img = p.image_url || planImgFallback(p.slug);
+      const active = (p.id === selectedPlanId) ? "active" : "";
+      return `
+        <div class="plan ${active}" data-id="${p.id}">
+          <div class="planImg"><img src="${img}" alt="${p.name}" onerror="this.src='assets/bg.jpg'"></div>
+          <div class="planMain">
+            <b>${escapeHtml(p.name)}</b>
+            <span>${escapeHtml(p.description || ("Duración: " + (p.duration_days||30) + " días"))}</span>
+          </div>
+          <div class="planPrice">${money(p.price_usd)}</div>
+        </div>
+      `;
+    }).join("");
+
+    wrap.querySelectorAll(".plan").forEach(node=>{
+      node.addEventListener("click", ()=>{
+        selectedPlanId = Number(node.getAttribute("data-id"));
+        wrap.querySelectorAll(".plan").forEach(n=>n.classList.remove("active"));
+        node.classList.add("active");
+        showPayErr("");
+      });
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s || "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
+  }
+
+  function setStep(step){
+    el("stepBadge").textContent = step === 2 ? "Paso 2/2" : "Paso 1/2";
+  }
+
+  async function ensureSignedIn(email, password){
+    // si ya hay sesión, ok
+    const { data: ses } = await supabase.auth.getSession();
+    if(ses?.session) return ses.session;
+
+    // intentar login
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if(error) throw error;
+    return data.session;
+  }
+
+  window.createAccount = async function(){
+    showMsg("", "");
+    showPayErr("");
+
+    const first_name = (el("first_name").value || "").trim();
+    const last_name  = (el("last_name").value || "").trim();
+    const company_name = (el("company_name").value || "").trim();
+    const phone = (el("phone").value || "").trim();
+    const email = (el("email").value || "").trim();
+    const pass  = (el("pass").value || "").trim();
+    const pass2 = (el("pass2").value || "").trim();
+    const agree = el("agree").checked;
+
+    if(!selectedPlanId){
+      showMsg("Selecciona un plan primero.", "bad");
+      return;
+    }
+    if(!first_name || !last_name || !company_name || !email || !pass || !pass2){
+      showMsg("Completa todos los campos requeridos.", "bad");
+      return;
+    }
+    if(pass.length < 8){
+      showMsg("La clave debe tener al menos 8 caracteres.", "bad");
+      return;
+    }
+    if(pass !== pass2){
+      showMsg("Las claves no coinciden.", "bad");
+      return;
+    }
+    if(!agree){
+      showMsg("Debes aceptar los términos para continuar.", "bad");
+      return;
+    }
+
+    el("btnCreate").disabled = true;
+    el("btnCreate").textContent = "Creando cuenta...";
+
+    try{
+      // Crear usuario
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password: pass,
+      });
+
+      if(error) throw error;
+
+      // Intentar iniciar sesión (si email confirmation está desactivado, esto funciona al instante)
+      let session = null;
+      try{
+        session = await ensureSignedIn(email, pass);
+      }catch(e){
+        // si falla por confirmación, avisamos
+      }
+
+      // user id
+      const userId = data?.user?.id || session?.user?.id;
+      if(!userId){
+        showMsg(
+          "Cuenta creada, pero necesitas confirmar el email antes de poder pagar. Revisa tu correo (o desactiva Email confirmations en Supabase Auth para pruebas).",
+          "bad"
+        );
+        created = false;
+        setStep(1);
+        return;
+      }
+
+      // Crear/actualizar perfil
+      const { error: pErr } = await supabase
+        .from("profiles")
+        .upsert({
+          id: userId,
+          first_name,
+          last_name,
+          company_name,
+          phone,
+          role: "user",
+          status: "pending"
+        }, { onConflict: "id" });
+
+      if(pErr) throw pErr;
+
+      created = true;
+      setStep(2);
+      showMsg("Cuenta creada. Ahora completa el pago con PayPal para activar tu acceso.", "ok");
+
+      el("payHint").textContent = "✅ Cuenta lista. Dale a PayPal para activar.";
+    }catch(e){
+      showMsg("Error: " + (e?.message || e), "bad");
+    }finally{
+      el("btnCreate").disabled = false;
+      el("btnCreate").textContent = "Crear cuenta";
+    }
+  };
+
+  function mustBeReadyToPay(){
+    if(!selectedPlanId) return "Selecciona un plan.";
+    if(!created) return "Primero crea la cuenta.";
+    return "";
+  }
+
+  // Render PayPal buttons
+  function initPayPal(){
+    if(!window.paypal){
+      showPayErr("No se pudo cargar PayPal SDK. Verifica el Client ID en el script.");
+      return;
+    }
+
+    window.paypal.Buttons({
+      style: { layout: "vertical" },
+
+      createOrder: async () => {
+        const msg = mustBeReadyToPay();
+        if(msg){
+          showPayErr(msg);
+          throw new Error(msg);
+        }
+        showPayErr("");
+
+        // Asegurar sesión (el JWT lo usa supabase.functions.invoke internamente)
+        const { data: ses } = await supabase.auth.getSession();
+        if(!ses?.session) throw new Error("No hay sesión. Inicia sesión o desactiva email confirmations para pruebas.");
+
+        // Crear orden via Edge Function
+        const { data, error } = await supabase.functions.invoke("paypal-create-order", {
+          body: { plan_id: selectedPlanId }
+        });
+        if(error) throw error;
+
+        if(!data?.orderID) throw new Error("No se recibió orderID.");
+        return data.orderID;
+      },
+
+      onApprove: async (data) => {
+        try{
+          showPayErr("");
+          const { data: out, error } = await supabase.functions.invoke("paypal-capture-order", {
+            body: { orderID: data.orderID }
+          });
+          if(error) throw error;
+
+          if(out?.ok){
+            alert("Pago completado ✅ Tu cuenta fue activada!");
+            window.location.href = "app.html";
+            return;
+          }
+          throw new Error("No se pudo activar: respuesta inesperada.");
+        }catch(e){
+          showPayErr("Pago no pudo confirmarse: " + (e?.message || e));
+        }
+      },
+
+      onError: (err) => {
+        showPayErr("Error PayPal: " + (err?.message || err));
+      }
+    }).render("#paypal-button-container");
+  }
+
+  await loadPlans();
+  initPayPal();
+</script>
+</body>
+</html>
