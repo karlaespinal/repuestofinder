@@ -13,7 +13,7 @@
       --mut:#64748b;
       --pri:#2563eb;
       --pri2:#1d4ed8;
-      --ok:#16a34a;
+      --ok>:#16a34a;
       --bad:#dc2626;
       --shadow: 0 20px 60px rgba(2,8,23,.10);
       --r:20px;
@@ -270,7 +270,6 @@
       <div class="sep"></div>
 
       <div class="grid">
-        <!-- FORM -->
         <div class="card">
           <div class="row2">
             <div class="field">
@@ -334,7 +333,6 @@
           </div>
         </div>
 
-        <!-- PLANS + PAYPAL -->
         <div class="card">
           <div class="plansHeader">
             <h2>Elige tu plan</h2>
@@ -371,7 +369,6 @@
   import { supabase } from "./assets/supabaseClient.js";
 
   document.getElementById("y").textContent = new Date().getFullYear();
-
   const el = (id) => document.getElementById(id);
 
   let selectedPlanId = null;
@@ -500,7 +497,7 @@
     const { data: ses } = await supabase.auth.getSession();
     const token = ses?.session?.access_token;
     if(!token){
-      throw new Error("No hay sesión activa. Si 'Confirm email' está ON, confirma el email o desactívalo temporalmente para pruebas.");
+      throw new Error("No hay sesión activa. Si 'Confirm email' está ON, confirma el email o apágalo temporalmente para pruebas.");
     }
     return token;
   }
@@ -541,7 +538,7 @@
       try{
         session = await ensureSignedIn(email, pass);
       }catch(e){
-        // Si Confirm email está ON, puede fallar el login inmediato (normal)
+        // Confirm email ON puede impedir login inmediato
       }
 
       const userId = data?.user?.id || session?.user?.id;
@@ -569,24 +566,17 @@
 
       if(pErr) throw pErr;
 
-      // ✅ Solo consideramos “lista para pagar” si hay sesión/token
-      let tokenOk = false;
-      try{
-        await getAccessTokenOrFail();
-        tokenOk = true;
-      }catch(e){
-        tokenOk = false;
-      }
-
       created = true;
       setStep(2);
 
-      if(tokenOk){
+      // Solo mostramos “lista para pagar” si hay token real
+      try{
+        await getAccessTokenOrFail();
         showMsg("Cuenta creada. Ahora completa el pago con PayPal para activar tu acceso.", "ok");
         el("payHint").textContent = "✅ Cuenta lista. Dale a PayPal para activar.";
-      }else{
+      }catch(e){
         showMsg(
-          "Cuenta creada. Pero no hay sesión activa todavía. Si 'Confirm email' está ON, confirma el correo y luego inicia sesión para pagar.",
+          "Cuenta creada, pero no hay sesión activa todavía. Confirma email / inicia sesión antes de pagar.",
           "bad"
         );
         el("payHint").textContent = "⚠️ Falta sesión. Confirma email / inicia sesión antes de pagar.";
@@ -604,7 +594,6 @@
       showPayErr("No se pudo cargar PayPal SDK. Verifica el Client ID.");
       return;
     }
-
     if(paypalRendered) return;
     paypalRendered = true;
 
@@ -631,12 +620,11 @@
         });
 
         if(error){
-          // Mejora: si la función devuelve 401, te lo dice clarito
-          const msg2 = (error?.message || "Error al crear orden.");
-          if(String(msg2).toLowerCase().includes("401") || String(msg2).toLowerCase().includes("unauthorized")){
-            throw new Error("401 (Unauthorized). La Edge Function no aceptó el token. Verifica que la función tenga JWT verification correcto y que estás logueado.");
+          const m = (error?.message || "Error al crear orden.");
+          if(m.toLowerCase().includes("401") || m.toLowerCase().includes("unauthorized")){
+            throw new Error("401 (Unauthorized). La función está rechazando el JWT. SOLUCIÓN: apaga 'Verify JWT with legacy secret' o usa el código de Edge Function que valida el JWT dentro (service role).");
           }
-          throw error;
+          throw new Error(m);
         }
 
         if(!data?.orderID) throw new Error("No se recibió orderID.");
@@ -646,7 +634,6 @@
       onApprove: async (data) => {
         try{
           showPayErr("");
-
           const token = await getAccessTokenOrFail();
 
           const { data: out, error } = await supabase.functions.invoke("paypal-capture-order", {
@@ -654,14 +641,12 @@
             body: { orderID: data.orderID }
           });
 
-          if(error) throw error;
-
+          if(error) throw new Error(error?.message || "Error al capturar.");
           if(out?.ok){
             alert("Pago completado ✅ Tu cuenta fue activada!");
             location.href = "app.html";
             return;
           }
-
           throw new Error(out?.message || "No se pudo activar: respuesta inesperada.");
         }catch(e){
           showPayErr("Pago no pudo confirmarse: " + (e?.message || e));
@@ -679,3 +664,4 @@
 </script>
 </body>
 </html>
+
