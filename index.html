@@ -395,6 +395,7 @@
 
       <div class="right">
         <span class="pill" id="demoPill" title="Intentos demo disponibles">Demo: -</span>
+        <button class="btn btnGhost" onclick="goSignup()">Registrarme</button>
         <button class="btn btnGhost" onclick="goApp()">Ir a la App</button>
         <button class="btn btnPrimary" onclick="demo()">Probar demo (10)</button>
       </div>
@@ -411,7 +412,7 @@
 
           <div class="heroActions">
             <button class="btn btnPrimary" onclick="goApp()">Abrir Buscador Automotriz</button>
-            <button class="btn btnGhost" onclick="navTo('marcas')">Ver marcas</button>
+            <button class="btn btnGhost" onclick="goSignup()">Crear cuenta (PayPal)</button>
             <button class="btn btnDark" onclick="navTo('vehiculos')">Ver vehiculos</button>
           </div>
           <div class="mini">Tip: el carrusel espera a que las imagenes carguen antes de arrancar (sin saltos).</div>
@@ -512,6 +513,7 @@
   };
 
   window.goApp = function(){ window.location.href = "app.html"; };
+  window.goSignup = function(){ window.location.href = "signup.html"; };
 
   window.demo = function(){
     const left = getLeft();
@@ -649,7 +651,6 @@
     });
   }
 
-  // ✅ Aqui esta lo que pediste:
   // - Logo pequeno (marca): assets/logos/autos/<slug>.png
   // - Foto grande detras (vehiculo): assets/logos/vehicles/<slug>.jpg/png
   function renderVehicles(trackEl, items){
@@ -778,6 +779,7 @@
 </script>
 </body>
 </html>
+
 
 
 
