@@ -6,200 +6,160 @@
   <title>RepuestoFinder - Suscripción</title>
   <style>
     :root{
-      --bg:#f6f7fb;
-      --card:rgba(255,255,255,.92);
-      --line:rgba(230,232,240,.95);
-      --txt:#0f172a;
+      --bg:#eaf2ff;
+      --card:rgba(255,255,255,.82);
+      --stroke:rgba(220,230,245,.95);
+      --text:#0b1220;
       --mut:#64748b;
       --pri:#2563eb;
-      --dark:#111;
-      --shadow:0 16px 40px rgba(2,6,23,.10);
-      --r:16px;
+      --pri2:#1d4ed8;
       --ok:#16a34a;
       --bad:#dc2626;
-      --warn:#f59e0b;
+      --shadow: 0 20px 60px rgba(2,8,23,.10);
+      --r:20px;
     }
-    *{box-sizing:border-box}
+    *{ box-sizing:border-box; }
     body{
       margin:0;
-      font-family:Arial,Helvetica,sans-serif;
-      color:var(--txt);
+      font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      color:var(--text);
       background:
-        radial-gradient(1200px 600px at 20% 0%, rgba(37,99,235,.15), transparent 60%),
-        radial-gradient(900px 500px at 80% 20%, rgba(16,185,129,.12), transparent 55%),
-        linear-gradient(rgba(246,247,251,.92), rgba(246,247,251,.92)),
-        url("assets/bg.jpg");
-      background-size:cover;
-      background-position:center;
-      background-repeat:no-repeat;
-      background-attachment:fixed;
+        radial-gradient(900px 500px at 10% 10%, rgba(255,255,255,.9), rgba(255,255,255,0)),
+        radial-gradient(900px 500px at 90% 20%, rgba(255,255,255,.9), rgba(255,255,255,0)),
+        linear-gradient(180deg, #dff0ff 0%, #eaf2ff 35%, #f3f6ff 100%);
       min-height:100vh;
-    }
-    .page{ width:min(980px, 100%); margin:0 auto; padding:18px 18px 28px; }
-
-    .top{
-      position:sticky; top:0; z-index:30;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      background:rgba(246,247,251,.68);
-      border:1px solid rgba(230,232,240,.75);
-      border-radius:18px;
-      box-shadow:0 10px 26px rgba(2,6,23,.08);
-      padding:12px 14px;
+      padding:22px;
       display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      margin-bottom:16px;
+      justify-content:center;
+    }
+    .page{ width: min(1120px, 100%); }
+    .top{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:14px 16px;
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      background:rgba(255,255,255,.6);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(2,8,23,.06);
     }
     .brand{ display:flex; align-items:center; gap:10px; }
     .logo{
-      width:42px;height:42px;border-radius:14px;
-      background:#111;color:#fff;
-      display:flex;align-items:center;justify-content:center;
-      font-weight:900; user-select:none;
-      box-shadow:0 10px 25px rgba(0,0,0,.12);
+      width:38px; height:38px; border-radius:12px;
+      display:grid; place-items:center;
+      background:#0b1220; color:#fff; font-weight:900;
+      letter-spacing:.5px;
     }
-    .brandTitle{line-height:1}
-    .brandTitle b{display:block;font-size:15px}
-    .brandTitle span{display:block;font-size:12px;color:#94a3b8;font-weight:800;letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
+    .brandTitle{ display:flex; flex-direction:column; line-height:1.05; }
+    .brandTitle b{ font-size:14px; }
+    .brandTitle span{ font-size:12px; color:#94a3b8; font-weight:900; letter-spacing:.4px; text-transform:uppercase; }
 
     .btn{
-      border:0; cursor:pointer; font-weight:900;
-      border-radius:12px; padding:10px 12px;
-      display:inline-flex; align-items:center; justify-content:center; gap:8px;
-      user-select:none;
+      border:0; cursor:pointer;
+      font-weight:900;
+      border-radius:12px;
+      padding:10px 14px;
+      transition:.15s transform;
     }
-    .btnPrimary{background:var(--pri);color:#fff}
-    .btnGhost{background:#fff;border:1px solid var(--line);color:#0f172a}
-    .btnDark{background:var(--dark);color:#fff}
-    .btn:disabled{opacity:.55; cursor:not-allowed}
+    .btn:active{ transform: scale(.98); }
+    .btnGhost{
+      background:rgba(255,255,255,.8);
+      border:1px solid var(--stroke);
+      color:#0b1220;
+    }
+    .btnDark{ background:#0b1220; color:#fff; }
 
     .wrap{
-      border:1px solid var(--line);
-      border-radius:22px;
-      background:var(--card);
-      box-shadow:var(--shadow);
-      padding:16px;
+      margin-top:16px;
+      border:1px solid var(--stroke);
+      border-radius:24px;
+      background:rgba(255,255,255,.55);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      padding:20px;
     }
-    .grid{ display:grid; grid-template-columns: 1fr; gap:14px; }
-    @media(min-width:980px){ .grid{ grid-template-columns: 1fr 1fr; } }
 
-    h1{ margin:0; font-size:22px; letter-spacing:-.2px; }
-    p{ margin:8px 0 0; color:var(--mut); font-size:13px; line-height:1.45; }
+    h1{ margin:0; font-size:26px; letter-spacing:-.2px; }
+    p{ margin:6px 0 0; color:var(--mut); font-weight:700; }
+
+    .badge{
+      font-size:12px; font-weight:900;
+      color:#1e293b;
+      background:rgba(255,255,255,.8);
+      border:1px solid var(--stroke);
+      padding:8px 10px;
+      border-radius:999px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+      margin-top:14px;
+    }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+    }
 
     .card{
-      border:1px solid var(--line);
-      border-radius:18px;
-      background:#fff;
-      padding:14px;
+      background:var(--card);
+      border:1px solid var(--stroke);
+      border-radius:var(--r);
+      padding:16px;
     }
 
-    .field{ display:grid; gap:6px; margin-top:10px; }
-    label{ font-size:12px; font-weight:900; color:#334155; }
+    .row2{
+      display:grid; grid-template-columns:1fr 1fr; gap:10px;
+    }
+    @media (max-width: 520px){
+      .row2{ grid-template-columns:1fr; }
+    }
+
+    label{
+      font-size:12px;
+      color:#0b1220;
+      font-weight:900;
+      display:block;
+      margin:0 0 6px;
+    }
     input{
       width:100%;
       padding:12px 12px;
-      border-radius:12px;
-      border:1px solid var(--line);
+      border-radius:14px;
+      border:1px solid rgba(210,220,240,.95);
+      background:rgba(255,255,255,.85);
       outline:none;
       font-weight:800;
-      background:#fff;
     }
-    input:focus{ border-color: rgba(37,99,235,.35); box-shadow:0 0 0 4px rgba(37,99,235,.10); }
-
-    .row2{ display:grid; gap:10px; grid-template-columns:1fr; }
-    @media(min-width:700px){ .row2{ grid-template-columns:1fr 1fr; } }
+    input:focus{
+      border-color: rgba(37,99,235,.55);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+    }
 
     .terms{
-      margin-top:12px;
-      display:flex; gap:10px; align-items:flex-start;
-      border:1px dashed rgba(148,163,184,.55);
-      border-radius:14px;
-      padding:12px;
-      background:rgba(246,247,251,.8);
-    }
-    .terms input{ width:auto; margin-top:2px; }
-    .terms b{ display:block; font-size:13px; }
-    .terms span{ display:block; font-size:12px; color:var(--mut); margin-top:3px; line-height:1.35; }
-    .terms a{ color:var(--pri); text-decoration:none; font-weight:900; }
-
-    .plansHeader{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; }
-    .plansHeader h2{ margin:0; font-size:14px; font-weight:900; }
-    .plansHeader small{ color:#94a3b8; font-weight:900; text-transform:uppercase; letter-spacing:.4px; }
-
-    .plans{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:10px;
+      display:flex; gap:10px;
       margin-top:10px;
-    }
-    @media(min-width:700px){ .plans{ grid-template-columns:1fr 1fr; } }
-
-    .plan{
-      border:1px solid rgba(230,232,240,.95);
-      border-radius:16px;
-      background:#fff;
       padding:12px;
-      cursor:pointer;
-      display:flex;
-      gap:12px;
+      border:1px dashed rgba(148,163,184,.6);
+      border-radius:16px;
+      background:rgba(255,255,255,.65);
       align-items:flex-start;
-      transition:.15s ease;
-      position:relative;
     }
-    .plan:hover{ transform:translateY(-1px); box-shadow:0 10px 22px rgba(2,6,23,.06); }
-    .plan.active{
-      border-color: rgba(37,99,235,.35);
-      box-shadow:0 0 0 4px rgba(37,99,235,.10);
-    }
-
-    .planImg{
-      width:56px; height:56px; border-radius:14px;
-      border:1px solid rgba(230,232,240,.95);
-      background:linear-gradient(135deg, rgba(37,99,235,.10), rgba(16,185,129,.08));
-      display:flex; align-items:center; justify-content:center;
-      overflow:hidden;
-      flex:0 0 auto;
-      padding:7px;
-    }
-    .planImg img{ width:100%; height:100%; object-fit:contain; display:block; }
-
-    .planMain{ flex:1; min-width:0; }
-    .planMain b{ display:block; font-size:13px; }
-    .planMain span{ display:block; font-size:12px; color:var(--mut); margin-top:4px; line-height:1.35; }
-    .planPrice{
-      font-weight:900;
-      font-size:13px;
-      white-space:nowrap;
-      color:#0f172a;
-    }
-    .badge{
-      position:absolute; top:10px; right:10px;
-      font-size:11px;
-      font-weight:900;
-      padding:6px 8px;
-      border-radius:999px;
-      border:1px solid rgba(230,232,240,.95);
-      background:rgba(246,247,251,.9);
-      color:#334155;
-    }
+    .terms b{ display:block; font-size:13px; }
+    .terms span{ font-size:12px; color:var(--mut); font-weight:800; line-height:1.35; }
+    .terms a{ color:#2563eb; font-weight:900; text-decoration:none; }
 
     .notice{
-      margin-top:10px;
-      border:1px solid rgba(245,158,11,.25);
-      background:rgba(245,158,11,.08);
-      border-radius:14px;
+      margin-top:12px;
       padding:12px;
-      color:#7c2d12;
-      font-size:12px;
-      font-weight:800;
-      line-height:1.35;
+      border-radius:14px;
+      font-weight:900;
+      border:1px solid rgba(148,163,184,.25);
+      background:rgba(255,255,255,.75);
+      color:#0b1220;
     }
-
     .ok{
       border:1px solid rgba(22,163,74,.22);
-      background:rgba(22,163,74,.08);
+      background:rgba(22,163,74,.09);
       color:#14532d;
     }
     .bad{
@@ -214,8 +174,56 @@
       align-items:center;
       justify-content:flex-end;
     }
+    .btnPrimary{ background:var(--pri); color:#fff; }
+    .btnPrimary:hover{ background:var(--pri2); }
 
     .sep{ height:1px; background:rgba(230,232,240,.9); margin:12px 0; }
+
+    .plansHeader{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .plansHeader h2{ margin:0; font-size:16px; }
+    .plansHeader small{ color:#94a3b8; font-weight:900; letter-spacing:.4px; text-transform:uppercase; }
+
+    .plans{
+      margin-top:10px;
+      display:grid; grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    @media (max-width: 520px){
+      .plans{ grid-template-columns: 1fr; }
+    }
+    .plan{
+      display:flex; align-items:center; gap:12px;
+      border:1px solid rgba(210,220,240,.95);
+      border-radius:16px;
+      padding:12px;
+      background:rgba(255,255,255,.75);
+      cursor:pointer;
+      transition: .15s transform, .15s border-color, .15s box-shadow;
+    }
+    .plan:hover{
+      transform: translateY(-1px);
+      border-color: rgba(37,99,235,.35);
+      box-shadow: 0 14px 30px rgba(2,8,23,.06);
+    }
+    .plan.active{
+      border-color: rgba(37,99,235,.55);
+      box-shadow: 0 0 0 4px rgba(37,99,235,.10);
+    }
+    .planImg{
+      width:42px; height:42px; border-radius:12px;
+      background:rgba(37,99,235,.08);
+      overflow:hidden;
+      border:1px solid rgba(210,220,240,.95);
+      display:grid; place-items:center;
+      flex:0 0 auto;
+    }
+    .planImg img{ width:100%; height:100%; object-fit:cover; }
+    .planMain{ flex:1 1 auto; }
+    .planMain b{ display:block; font-size:13px; }
+    .planMain span{ display:block; font-size:12px; color:var(--mut); font-weight:800; line-height:1.25; margin-top:2px; }
+    .planPrice{ font-size:13px; font-weight:1000; white-space:nowrap; }
 
     .paypalBox{
       border:1px solid rgba(230,232,240,.95);
@@ -223,19 +231,14 @@
       padding:12px;
       background:rgba(255,255,255,.92);
     }
-
     .small{
       font-size:12px; color:var(--mut); font-weight:800; line-height:1.35;
       margin-top:8px;
     }
-
-    .footer{
-      margin-top:14px; text-align:center;
-      color:#94a3b8; font-size:12px; font-weight:800;
-    }
+    .footer{ margin-top:14px; text-align:center; color:#94a3b8; font-size:12px; font-weight:800; }
   </style>
 
-  <!-- PayPal JS SDK: pega tu CLIENT ID de sandbox aquí -->
+  <!-- PayPal JS SDK -->
   <script src="https://www.paypal.com/sdk/js?client-id=AYWKMceIAY3_hMnYn3ZlakjlnET8u-ttzOghp19X93tSAK2VnVvsxiB9klvLkdFPjr-f_f628gBhbsQx&currency=USD"></script>
 </head>
 
@@ -267,7 +270,8 @@
       <div class="sep"></div>
 
       <div class="grid">
-        <div class="card" id="formCard">
+        <!-- FORM -->
+        <div class="card">
           <div class="row2">
             <div class="field">
               <label>Nombre</label>
@@ -279,12 +283,12 @@
             </div>
           </div>
 
-          <div class="field">
+          <div class="field" style="margin-top:10px;">
             <label>Nombre de la compañía</label>
             <input id="company_name" autocomplete="organization" placeholder="DTD STAR PARTS"/>
           </div>
 
-          <div class="row2">
+          <div class="row2" style="margin-top:10px;">
             <div class="field">
               <label>Número de teléfono</label>
               <input id="phone" autocomplete="tel" placeholder="+1 809..."/>
@@ -295,7 +299,7 @@
             </div>
           </div>
 
-          <div class="row2">
+          <div class="row2" style="margin-top:10px;">
             <div class="field">
               <label>Clave</label>
               <input id="pass" type="password" autocomplete="new-password" placeholder="••••••••"/>
@@ -325,12 +329,13 @@
           </div>
 
           <div class="small">
-            Nota: para activación inmediata en pruebas, desactiva temporalmente “Email confirmations” en Supabase Auth.
-            Si está activo, podrías necesitar confirmar el email antes de poder pagar.
+            Nota: en pruebas, si “Confirm email” está activo, puede que no cree sesión de una vez.
+            Para activar inmediato, temporalmente apágalo. En producción lo dejamos ON.
           </div>
         </div>
 
-        <div class="card" id="plansCard">
+        <!-- PLANS + PAYPAL -->
+        <div class="card">
           <div class="plansHeader">
             <h2>Elige tu plan</h2>
             <small>Planes activos</small>
@@ -349,11 +354,9 @@
               <b>Pago con PayPal</b>
               <span style="font-size:12px;color:#94a3b8;font-weight:900;">Sandbox / USD</span>
             </div>
-
             <div class="small" id="payHint" style="margin-top:6px;">
               1) Selecciona un plan. 2) Crea la cuenta. 3) Paga.
             </div>
-
             <div style="margin-top:10px;" id="paypal-button-container"></div>
             <div class="notice bad" id="payErr" style="display:none;margin-top:10px;"></div>
           </div>
@@ -398,21 +401,14 @@
     b.textContent = text;
   }
 
-  function showEdgeError(prefix, error){
-    // Supabase Edge Function error trae details en error.context.body
-    const details = (error?.context?.body || error?.message || String(error));
-    console.log(prefix, error);
-    showPayErr(prefix + ": " + details);
-  }
-
   window.openTerms = function(){
     alert(
 `TERMINOS (resumen):
-- El servicio se ofrece por suscripción según el plan seleccionado.
-- Acceso personal por usuario/empresa.
-- No se permite compartir credenciales.
-- Los planes pueden cambiar con aviso previo.
-- Soporte según el plan.`
+- Suscripción según plan.
+- Acceso por usuario/empresa.
+- No compartir credenciales.
+- Planes y precios pueden cambiar con aviso.
+- Soporte según plan.`
     );
   };
 
@@ -455,7 +451,7 @@
     const wrap = el("plans");
 
     if(error){
-      wrap.innerHTML = `<div class="notice bad">No se pudieron cargar los planes: ${escapeHtml(error.message)}</div>`;
+      wrap.innerHTML = `<div class="notice bad">No se pudieron cargar los planes: ${error.message}</div>`;
       return;
     }
     if(plans.length === 0){
@@ -470,7 +466,7 @@
       const active = (p.id === selectedPlanId) ? "active" : "";
       return `
         <div class="plan ${active}" data-id="${p.id}">
-          <div class="planImg"><img src="${img}" alt="${escapeHtml(p.name)}" onerror="this.src='assets/bg.jpg'"></div>
+          <div class="planImg"><img src="${img}" alt="${p.name}" onerror="this.src='assets/bg.jpg'"></div>
           <div class="planMain">
             <b>${escapeHtml(p.name)}</b>
             <span>${escapeHtml(p.description || ("Duración: " + (p.duration_days||30) + " días"))}</span>
@@ -512,56 +508,33 @@
     const pass2 = (el("pass2").value || "").trim();
     const agree = el("agree").checked;
 
-    if(!selectedPlanId){
-      showMsg("Selecciona un plan primero.", "bad");
-      return;
-    }
-    if(!first_name || !last_name || !company_name || !email || !pass || !pass2){
-      showMsg("Completa todos los campos requeridos.", "bad");
-      return;
-    }
-    if(pass.length < 8){
-      showMsg("La clave debe tener al menos 8 caracteres.", "bad");
-      return;
-    }
-    if(pass !== pass2){
-      showMsg("Las claves no coinciden.", "bad");
-      return;
-    }
-    if(!agree){
-      showMsg("Debes aceptar los términos para continuar.", "bad");
-      return;
-    }
+    if(!selectedPlanId) return showMsg("Selecciona un plan primero.", "bad");
+    if(!first_name || !last_name || !company_name || !email || !pass || !pass2) return showMsg("Completa todos los campos requeridos.", "bad");
+    if(pass.length < 8) return showMsg("La clave debe tener al menos 8 caracteres.", "bad");
+    if(pass !== pass2) return showMsg("Las claves no coinciden.", "bad");
+    if(!agree) return showMsg("Debes aceptar los términos para continuar.", "bad");
 
     el("btnCreate").disabled = true;
     el("btnCreate").textContent = "Creando cuenta...";
 
     try{
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password: pass,
-      });
+      const { data, error } = await supabase.auth.signUp({ email, password: pass });
       if(error) throw error;
 
       let session = null;
       try{
         session = await ensureSignedIn(email, pass);
       }catch(e){
-        // si confirm email está activo, esto puede fallar. Avisamos abajo.
+        // si Confirm email está ON, puede no crear sesión aquí
       }
 
       const userId = data?.user?.id || session?.user?.id;
       if(!userId){
-        showMsg(
-          "Cuenta creada, pero necesitas confirmar el email antes de poder pagar. Revisa tu correo (o desactiva Email confirmations en Supabase Auth para pruebas).",
-          "bad"
-        );
         created = false;
         setStep(1);
-        return;
+        return showMsg("Cuenta creada, pero debes confirmar el email antes de poder pagar. Revisa tu correo (o apaga Confirm email en pruebas).", "bad");
       }
 
-      // Upsert profile (sin 'status' para evitar mismatch de columnas)
       const { error: pErr } = await supabase
         .from("profiles")
         .upsert({
@@ -593,9 +566,15 @@
     return "";
   }
 
+  async function getAccessTokenOrFail(){
+    const { data: ses } = await supabase.auth.getSession();
+    if(!ses?.session?.access_token) throw new Error("No hay sesión. Inicia sesión o desactiva confirmación de email para pruebas.");
+    return ses.session.access_token;
+  }
+
   function initPayPal(){
     if(!window.paypal){
-      showPayErr("No se pudo cargar PayPal SDK. Verifica el Client ID en el script.");
+      showPayErr("No se pudo cargar PayPal SDK. Verifica el Client ID.");
       return;
     }
 
@@ -604,69 +583,46 @@
 
       createOrder: async () => {
         const msg = mustBeReadyToPay();
-        if(msg){
-          showPayErr(msg);
-          throw new Error(msg);
-        }
+        if(msg){ showPayErr(msg); throw new Error(msg); }
         showPayErr("");
 
-        // Asegurar sesión (JWT para supabase.functions.invoke)
-        const { data: ses } = await supabase.auth.getSession();
-        if(!ses?.session){
-          const email = (el("email").value || "").trim();
-          const pass  = (el("pass").value || "").trim();
-          if(email && pass){
-            await ensureSignedIn(email, pass);
-          }
-        }
+        const token = await getAccessTokenOrFail();
 
         const { data, error } = await supabase.functions.invoke("paypal-create-order", {
-          body: { plan_id: selectedPlanId }
+          body: { plan_id: selectedPlanId },
+          headers: { Authorization: `Bearer ${token}` }   // ✅ FIX 401
         });
 
-        if(error){
-          showEdgeError("PayPal (create-order)", error);
-          throw error;
-        }
-
-        // ✅ FIX: la function devuelve { id: order.id }
-        if(!data?.id){
-          const msg2 = "No se recibio id de la orden (create-order).";
-          showPayErr(msg2);
-          throw new Error(msg2);
-        }
-        return data.id;
+        if(error) throw error;
+        if(!data?.orderID) throw new Error("No se recibió orderID.");
+        return data.orderID;
       },
 
       onApprove: async (data) => {
         try{
           showPayErr("");
 
-          // ✅ FIX: enviar order_id + plan_id
+          const token = await getAccessTokenOrFail();
+
           const { data: out, error } = await supabase.functions.invoke("paypal-capture-order", {
-            body: { order_id: data.orderID, plan_id: selectedPlanId }
+            body: { orderID: data.orderID },
+            headers: { Authorization: `Bearer ${token}` } // ✅ FIX 401
           });
 
-          if(error){
-            showEdgeError("PayPal (capture-order)", error);
-            throw error;
-          }
+          if(error) throw error;
 
           if(out?.ok){
             alert("Pago completado ✅ Tu cuenta fue activada!");
-            window.location.href = "app.html";
+            location.href = "app.html";
             return;
           }
-
-          throw new Error("Respuesta inesperada al confirmar pago.");
+          throw new Error(out?.message || "No se pudo activar: respuesta inesperada.");
         }catch(e){
           showPayErr("Pago no pudo confirmarse: " + (e?.message || e));
         }
       },
 
-      onError: (err) => {
-        showPayErr("Error PayPal: " + (err?.message || err));
-      }
+      onError: (err) => showPayErr("Error PayPal: " + (err?.message || err))
     }).render("#paypal-button-container");
   }
 
@@ -675,4 +631,3 @@
 </script>
 </body>
 </html>
-
