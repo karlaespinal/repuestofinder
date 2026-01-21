@@ -376,6 +376,7 @@
 
   let selectedPlanId = null;
   let created = false;
+  let paypalRendered = false;
 
   function showMsg(text, type){
     const box = el("msg");
@@ -399,6 +400,10 @@
     }
     b.style.display = "block";
     b.textContent = text;
+  }
+
+  function setStep(step){
+    el("stepBadge").textContent = step === 2 ? "Paso 2/2" : "Paso 1/2";
   }
 
   window.openTerms = function(){
@@ -436,10 +441,6 @@
     return String(s || "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
   }
 
-  function setStep(step){
-    el("stepBadge").textContent = step === 2 ? "Paso 2/2" : "Paso 1/2";
-  }
-
   async function loadPlans(){
     const { data, error } = await supabase
       .from("plans")
@@ -451,7 +452,7 @@
     const wrap = el("plans");
 
     if(error){
-      wrap.innerHTML = `<div class="notice bad">No se pudieron cargar los planes: ${error.message}</div>`;
+      wrap.innerHTML = `<div class="notice bad">No se pudieron cargar los planes: ${escapeHtml(error.message)}</div>`;
       return;
     }
     if(plans.length === 0){
@@ -466,7 +467,7 @@
       const active = (p.id === selectedPlanId) ? "active" : "";
       return `
         <div class="plan ${active}" data-id="${p.id}">
-          <div class="planImg"><img src="${img}" alt="${p.name}" onerror="this.src='assets/bg.jpg'"></div>
+          <div class="planImg"><img src="${img}" alt="${escapeHtml(p.name)}" onerror="this.src='assets/bg.jpg'"></div>
           <div class="planMain">
             <b>${escapeHtml(p.name)}</b>
             <span>${escapeHtml(p.description || ("Duración: " + (p.duration_days||30) + " días"))}</span>
@@ -493,6 +494,21 @@
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if(error) throw error;
     return data.session;
+  }
+
+  async function getAccessTokenOrFail(){
+    const { data: ses } = await supabase.auth.getSession();
+    const token = ses?.session?.access_token;
+    if(!token){
+      throw new Error("No hay sesión activa. Si 'Confirm email' está ON, confirma el email o desactívalo temporalmente para pruebas.");
+    }
+    return token;
+  }
+
+  function mustBeReadyToPay(){
+    if(!selectedPlanId) return "Selecciona un plan.";
+    if(!created) return "Primero crea la cuenta.";
+    return "";
   }
 
   window.createAccount = async function(){
@@ -525,14 +541,19 @@
       try{
         session = await ensureSignedIn(email, pass);
       }catch(e){
-        // si Confirm email está ON, puede no crear sesión aquí
+        // Si Confirm email está ON, puede fallar el login inmediato (normal)
       }
 
       const userId = data?.user?.id || session?.user?.id;
+
       if(!userId){
         created = false;
         setStep(1);
-        return showMsg("Cuenta creada, pero debes confirmar el email antes de poder pagar. Revisa tu correo (o apaga Confirm email en pruebas).", "bad");
+        showMsg(
+          "Cuenta creada, pero debes confirmar el email para poder iniciar sesión y pagar. Revisa tu correo (o apaga 'Confirm email' en pruebas).",
+          "bad"
+        );
+        return;
       }
 
       const { error: pErr } = await supabase
@@ -548,10 +569,28 @@
 
       if(pErr) throw pErr;
 
+      // ✅ Solo consideramos “lista para pagar” si hay sesión/token
+      let tokenOk = false;
+      try{
+        await getAccessTokenOrFail();
+        tokenOk = true;
+      }catch(e){
+        tokenOk = false;
+      }
+
       created = true;
       setStep(2);
-      showMsg("Cuenta creada. Ahora completa el pago con PayPal para activar tu acceso.", "ok");
-      el("payHint").textContent = "✅ Cuenta lista. Dale a PayPal para activar.";
+
+      if(tokenOk){
+        showMsg("Cuenta creada. Ahora completa el pago con PayPal para activar tu acceso.", "ok");
+        el("payHint").textContent = "✅ Cuenta lista. Dale a PayPal para activar.";
+      }else{
+        showMsg(
+          "Cuenta creada. Pero no hay sesión activa todavía. Si 'Confirm email' está ON, confirma el correo y luego inicia sesión para pagar.",
+          "bad"
+        );
+        el("payHint").textContent = "⚠️ Falta sesión. Confirma email / inicia sesión antes de pagar.";
+      }
     }catch(e){
       showMsg("Error: " + (e?.message || e), "bad");
     }finally{
@@ -560,23 +599,14 @@
     }
   };
 
-  function mustBeReadyToPay(){
-    if(!selectedPlanId) return "Selecciona un plan.";
-    if(!created) return "Primero crea la cuenta.";
-    return "";
-  }
-
-  async function getAccessTokenOrFail(){
-    const { data: ses } = await supabase.auth.getSession();
-    if(!ses?.session?.access_token) throw new Error("No hay sesión. Inicia sesión o desactiva confirmación de email para pruebas.");
-    return ses.session.access_token;
-  }
-
   function initPayPal(){
     if(!window.paypal){
       showPayErr("No se pudo cargar PayPal SDK. Verifica el Client ID.");
       return;
     }
+
+    if(paypalRendered) return;
+    paypalRendered = true;
 
     window.paypal.Buttons({
       style: { layout: "vertical" },
@@ -586,14 +616,29 @@
         if(msg){ showPayErr(msg); throw new Error(msg); }
         showPayErr("");
 
-        const token = await getAccessTokenOrFail();
+        let token;
+        try{
+          token = await getAccessTokenOrFail();
+        }catch(e){
+          const m = (e?.message || e);
+          showPayErr(m);
+          throw new Error(m);
+        }
 
         const { data, error } = await supabase.functions.invoke("paypal-create-order", {
-          body: { plan_id: selectedPlanId },
-          headers: { Authorization: `Bearer ${token}` }   // ✅ FIX 401
+          headers: { Authorization: "Bearer " + token },
+          body: { plan_id: selectedPlanId }
         });
 
-        if(error) throw error;
+        if(error){
+          // Mejora: si la función devuelve 401, te lo dice clarito
+          const msg2 = (error?.message || "Error al crear orden.");
+          if(String(msg2).toLowerCase().includes("401") || String(msg2).toLowerCase().includes("unauthorized")){
+            throw new Error("401 (Unauthorized). La Edge Function no aceptó el token. Verifica que la función tenga JWT verification correcto y que estás logueado.");
+          }
+          throw error;
+        }
+
         if(!data?.orderID) throw new Error("No se recibió orderID.");
         return data.orderID;
       },
@@ -605,8 +650,8 @@
           const token = await getAccessTokenOrFail();
 
           const { data: out, error } = await supabase.functions.invoke("paypal-capture-order", {
-            body: { orderID: data.orderID },
-            headers: { Authorization: `Bearer ${token}` } // ✅ FIX 401
+            headers: { Authorization: "Bearer " + token },
+            body: { orderID: data.orderID }
           });
 
           if(error) throw error;
@@ -616,13 +661,16 @@
             location.href = "app.html";
             return;
           }
+
           throw new Error(out?.message || "No se pudo activar: respuesta inesperada.");
         }catch(e){
           showPayErr("Pago no pudo confirmarse: " + (e?.message || e));
         }
       },
 
-      onError: (err) => showPayErr("Error PayPal: " + (err?.message || err))
+      onError: (err) => {
+        showPayErr("Error PayPal: " + (err?.message || err));
+      }
     }).render("#paypal-button-container");
   }
 
