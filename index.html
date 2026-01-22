@@ -16,9 +16,6 @@
       --dark:#111;
       --shadow:0 16px 40px rgba(2,6,23,.10);
       --r:16px;
-      --ok:#16a34a;
-      --bad:#dc2626;
-      --warn:#f59e0b;
     }
     *{box-sizing:border-box}
     body{
@@ -98,7 +95,7 @@
       border:1px solid rgba(230,232,240,.75);
       background:rgba(255,255,255,.60);
       overflow:auto;
-      max-width:760px;
+      max-width:720px;
       scrollbar-width:none;
     }
     .menu::-webkit-scrollbar{display:none}
@@ -126,10 +123,24 @@
       gap:8px;
       flex-wrap:wrap;
       justify-content:flex-end;
-      min-width:340px;
+      min-width:320px;
       flex:0 0 auto;
     }
 
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background:#fff;
+      font-size:12px;
+      font-weight:900;
+      color:#0f172a;
+      user-select:none;
+      white-space:nowrap;
+    }
     .btn{
       border:0;
       cursor:pointer;
@@ -157,34 +168,6 @@
       color:var(--pri);
     }
     .btnSmall{ padding:8px 10px; border-radius:10px; font-size:12px; }
-
-    /* Perfil (botón avatar) */
-    .profileBtn{
-      display:none;
-      align-items:center;
-      gap:10px;
-      padding:8px 10px;
-      border-radius:14px;
-      background:#fff;
-      border:1px solid var(--line);
-      cursor:pointer;
-      user-select:none;
-      box-shadow:0 10px 22px rgba(2,6,23,.06);
-    }
-    .avatar{
-      width:34px;height:34px;border-radius:12px;
-      display:flex;align-items:center;justify-content:center;
-      background:
-        radial-gradient(14px 14px at 30% 30%, rgba(37,99,235,.18), transparent 60%),
-        radial-gradient(16px 16px at 70% 70%, rgba(16,185,129,.16), transparent 60%),
-        linear-gradient(135deg, rgba(255,255,255,.95), rgba(246,247,251,.95));
-      border:1px solid rgba(230,232,240,.95);
-      font-weight:900;
-      color:#0f172a;
-    }
-    .profileMeta{line-height:1.05; display:flex; flex-direction:column;}
-    .profileMeta b{font-size:12px; max-width:160px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-    .profileMeta span{font-size:11px; color:var(--mut); font-weight:800;}
 
     .hero{
       border:1px solid var(--line);
@@ -441,7 +424,7 @@
       z-index:99;
     }
     .modal{
-      width:min(720px, 100%);
+      width:min(520px, 100%);
       background:rgba(255,255,255,.94);
       border:1px solid rgba(230,232,240,.95);
       border-radius:18px;
@@ -461,7 +444,6 @@
     }
     .modalHead b{font-size:14px}
     .modalBody{ padding:14px; }
-
     .tabs{
       display:flex;
       gap:8px;
@@ -482,7 +464,6 @@
       border-color:rgba(37,99,235,.20);
       color:var(--pri);
     }
-
     .field{ margin-top:10px; }
     .field label{
       display:block;
@@ -491,7 +472,7 @@
       font-weight:900;
       margin-bottom:6px;
     }
-    .inp, .ta, .sel{
+    .inp{
       width:100%;
       padding:11px 12px;
       border-radius:12px;
@@ -501,12 +482,10 @@
       font-weight:800;
       color:#0f172a;
     }
-    .ta{ min-height:110px; resize:vertical; font-weight:800; }
-    .inp:focus, .ta:focus, .sel:focus{
+    .inp:focus{
       border-color:rgba(37,99,235,.35);
       box-shadow:0 0 0 4px rgba(37,99,235,.10);
     }
-
     .row{
       display:flex;
       gap:10px;
@@ -517,51 +496,11 @@
     }
     .muted{ color:var(--mut); font-size:12px; font-weight:800; }
 
-    /* Tablas dentro del modal (historial y mensajes) */
-    .tableWrap{
-      margin-top:10px;
-      border:1px solid rgba(230,232,240,.95);
-      border-radius:14px;
-      overflow:hidden;
-      background:#fff;
+    .promoWrap{
+      display:none;
+      margin-top:14px;
     }
-    table{
-      width:100%;
-      border-collapse:collapse;
-      font-size:12px;
-    }
-    th, td{
-      padding:10px 10px;
-      border-bottom:1px solid rgba(230,232,240,.85);
-      text-align:left;
-      vertical-align:top;
-    }
-    th{
-      background:rgba(246,247,251,.8);
-      font-size:11px;
-      color:#64748b;
-      font-weight:900;
-      letter-spacing:.35px;
-      text-transform:uppercase;
-    }
-    tr:last-child td{ border-bottom:0; }
 
-    .badge{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:6px 10px;
-      border-radius:999px;
-      font-size:11px;
-      font-weight:900;
-      border:1px solid rgba(230,232,240,.95);
-      background:#fff;
-    }
-    .bOk{ background:rgba(22,163,74,.08); border-color:rgba(22,163,74,.18); color:#14532d; }
-    .bWarn{ background:rgba(245,158,11,.10); border-color:rgba(245,158,11,.18); color:#7c2d12; }
-    .bBad{ background:rgba(220,38,38,.08); border-color:rgba(220,38,38,.18); color:#7f1d1d; }
-
-    .promoWrap{ display:none; margin-top:14px; }
     .promoImg{
       width:100%;
       height:auto;
@@ -583,23 +522,32 @@
       border:1px solid rgba(230,232,240,.95);
       cursor:pointer;
     }
-    .dot.active{ background:rgba(37,99,235,.70); }
+    .dot.active{
+      background:rgba(37,99,235,.70);
+    }
 
     @media(max-width:980px){
       .heroGrid{grid-template-columns:1fr}
       .nav{ gap:10px; }
       .navRight{ min-width:auto; }
       .navLeft{ min-width:auto; }
-      .menu{ max-width:540px; }
+      .menu{ max-width:520px; }
       .brandSlide{min-width:220px}
       .vehSlide{width:300px}
     }
     @media(max-width:640px){
-      .nav{ flex-wrap:wrap; justify-content:center; }
-      .navLeft, .navRight, .navCenter{ width:100%; justify-content:center; }
-      .navRight{ gap:8px; }
+      .nav{
+        flex-wrap:wrap;
+        justify-content:center;
+      }
+      .navLeft, .navRight, .navCenter{
+        width:100%;
+        justify-content:center;
+      }
+      .navRight{
+        gap:8px;
+      }
       .menu{ width:100%; max-width:100%; justify-content:flex-start; }
-      .profileMeta{ display:none; }
     }
     @media(max-width:520px){
       .brandSlide{min-width:210px}
@@ -624,29 +572,23 @@
       </div>
 
       <div class="navCenter">
-        <div class="menu" id="topMenu">
+        <div class="menu">
           <a href="#" class="active" onclick="navTo('inicio');return false;">Inicio</a>
           <a href="#" onclick="navTo('buscador');return false;">Buscador Automotriz</a>
           <a href="#" onclick="navTo('marcas');return false;">Marcas</a>
           <a href="#" onclick="navTo('vehiculos');return false;">Vehiculos</a>
-          <a href="#" onclick="openProfile('perfil');return false;" id="menuPerfil" style="display:none;">Perfil</a>
         </div>
       </div>
 
       <div class="navRight">
-        <!-- Nuevo: Perfil (solo cuando hay sesión) -->
-        <div class="profileBtn" id="profileBtn" onclick="openProfile('perfil')" title="Abrir perfil">
-          <div class="avatar" id="avatarTxt">RF</div>
-          <div class="profileMeta">
-            <b id="profileName">Perfil</b>
-            <span id="profileRole">—</span>
-          </div>
-        </div>
+        <span class="pill" id="demoPill" title="Intentos demo disponibles">Demo: -</span>
+
+        <span class="pill" id="userPill" style="display:none">Hola, —</span>
 
         <button class="btn btnGhost" id="btnLogin" onclick="openAuth()">Iniciar sesion</button>
         <button class="btn btnGhost" id="btnLogout" style="display:none" onclick="logout()">Salir</button>
 
-        <button class="btn btnGhost" id="btnSignup" onclick="goSignup()">Registrarme</button>
+        <button class="btn btnGhost" onclick="goSignup()">Registrarme</button>
         <button class="btn btnGhost" onclick="goApp()">Ir a la App</button>
         <button class="btn btnPrimary" onclick="demo()">Probar demo (10)</button>
       </div>
@@ -665,7 +607,6 @@
             <button class="btn btnPrimary" onclick="goApp()">Abrir Buscador Automotriz</button>
             <button class="btn btnGhost" onclick="goSignup()">Crear cuenta</button>
             <button class="btn btnDark" onclick="navTo('vehiculos')">Ver vehiculos</button>
-            <button class="btn btnGhost" onclick="openProfile('mensajes')">Comentarios / Soporte</button>
           </div>
 
           <div class="msg" id="topMsg"></div>
@@ -722,7 +663,6 @@
     <div class="footer">© <span id="y"></span> RepuestoFinder</div>
   </div>
 
-  <!-- AUTH MODAL (igual que el tuyo) -->
   <div class="modalBack" id="authBack" onclick="backdropClose(event,'authBack')">
     <div class="modal" role="dialog" aria-modal="true" aria-label="Autenticacion">
       <div class="modalHead">
@@ -793,198 +733,6 @@
     </div>
   </div>
 
-  <!-- PERFIL MODAL (NUEVO) -->
-  <div class="modalBack" id="profileBack" onclick="backdropClose(event,'profileBack')">
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Perfil">
-      <div class="modalHead">
-        <b id="profileTitle">Perfil</b>
-        <button class="btn btnGhost btnSmall" onclick="closeProfile()">Cerrar</button>
-      </div>
-      <div class="modalBody">
-        <div class="tabs" id="profileTabs">
-          <button class="tab active" id="ptPerfil" onclick="switchProfileTab('perfil')">Perfil</button>
-          <button class="tab" id="ptHist" onclick="switchProfileTab('historial')">Historial</button>
-          <button class="tab" id="ptMsg" onclick="switchProfileTab('mensajes')">Comentarios</button>
-          <button class="tab" id="ptAdmin" style="display:none" onclick="switchProfileTab('admin')">ADM</button>
-        </div>
-
-        <!-- PERFIL -->
-        <div id="panePerfil">
-          <div class="muted">Edita tus datos personales (tabla <b>profiles</b>).</div>
-
-          <div class="field">
-            <label>Nombre</label>
-            <input class="inp" id="pf_first" placeholder="Nombre"/>
-          </div>
-          <div class="field">
-            <label>Apellido</label>
-            <input class="inp" id="pf_last" placeholder="Apellido"/>
-          </div>
-          <div class="field">
-            <label>Compañía</label>
-            <input class="inp" id="pf_company" placeholder="Nombre de la compañía"/>
-          </div>
-
-          <div class="row">
-            <div style="flex:1; min-width:220px">
-              <div class="field">
-                <label>Teléfono</label>
-                <input class="inp" id="pf_phone" placeholder="+1 809..."/>
-              </div>
-            </div>
-            <div style="flex:1; min-width:220px">
-              <div class="field">
-                <label>Username (opcional)</label>
-                <input class="inp" id="pf_username" placeholder="ej: luis.espinal"/>
-              </div>
-            </div>
-          </div>
-
-          <div class="field">
-            <label>País</label>
-            <select class="sel" id="pf_pais">
-              <option value="">Selecciona tu país</option>
-              <option value="República Dominicana">República Dominicana</option>
-              <option value="Estados Unidos">Estados Unidos</option>
-              <option value="Puerto Rico">Puerto Rico</option>
-              <option value="México">México</option>
-              <option value="Colombia">Colombia</option>
-              <option value="Venezuela">Venezuela</option>
-              <option value="Panamá">Panamá</option>
-              <option value="Costa Rica">Costa Rica</option>
-              <option value="Perú">Perú</option>
-              <option value="Chile">Chile</option>
-              <option value="Argentina">Argentina</option>
-              <option value="España">España</option>
-              <option value="Otro">Otro</option>
-            </select>
-          </div>
-
-          <div class="row">
-            <span class="muted" id="pf_email">Correo: —</span>
-            <button class="btn btnPrimary" onclick="saveProfile()">Guardar cambios</button>
-          </div>
-
-          <div class="msg" id="profileMsg"></div>
-        </div>
-
-        <!-- HISTORIAL -->
-        <div id="paneHistorial" style="display:none">
-          <div class="muted">Tu historial de búsqueda (tabla sugerida: <b>search_logs</b>).</div>
-          <div class="row">
-            <button class="btn btnGhost btnSmall" onclick="loadHistory()">Actualizar</button>
-            <span class="muted" id="histCount">—</span>
-          </div>
-
-          <div class="tableWrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Busqueda</th>
-                  <th>Fuente</th>
-                </tr>
-              </thead>
-              <tbody id="histBody">
-                <tr><td colspan="3" class="muted">Cargando...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- MENSAJES / COMENTARIOS (USER) -->
-        <div id="paneMensajes" style="display:none">
-          <div class="muted">Envía un mensaje al equipo. El ADM lo verá y podrá responder.</div>
-
-          <div class="field">
-            <label>Asunto</label>
-            <input class="inp" id="msg_subject" placeholder="Ej: No me aparece X / sugerencia / duda"/>
-          </div>
-          <div class="field">
-            <label>Mensaje</label>
-            <textarea class="ta" id="msg_body" placeholder="Escribe tu mensaje..."></textarea>
-          </div>
-
-          <div class="row">
-            <span class="muted">Tabla sugerida: <b>support_messages</b></span>
-            <button class="btn btnPrimary" onclick="sendSupportMessage()">Enviar</button>
-          </div>
-
-          <div class="sep"></div>
-
-          <div class="row">
-            <button class="btn btnGhost btnSmall" onclick="loadMyMessages()">Ver mis mensajes</button>
-            <span class="muted" id="myMsgCount">—</span>
-          </div>
-
-          <div class="tableWrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Asunto</th>
-                  <th>Estado</th>
-                  <th>Respuesta</th>
-                </tr>
-              </thead>
-              <tbody id="myMsgBody">
-                <tr><td colspan="4" class="muted">Cargando...</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="msg" id="supportMsg"></div>
-        </div>
-
-        <!-- ADMIN (ADM) -->
-        <div id="paneAdmin" style="display:none">
-          <div class="muted">Bandeja de mensajes por responder (solo ADM).</div>
-
-          <div class="row">
-            <button class="btn btnGhost btnSmall" onclick="loadAdminInbox()">Actualizar</button>
-            <span class="muted" id="adminCount">—</span>
-          </div>
-
-          <div class="tableWrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Usuario</th>
-                  <th>Asunto</th>
-                  <th>Mensaje</th>
-                  <th>Acción</th>
-                </tr>
-              </thead>
-              <tbody id="adminBody">
-                <tr><td colspan="5" class="muted">Cargando...</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="sep"></div>
-
-          <div class="muted"><b>Responder</b> (selecciona un mensaje arriba)</div>
-
-          <input type="hidden" id="adm_msg_id" />
-          <div class="field">
-            <label>Respuesta</label>
-            <textarea class="ta" id="adm_reply" placeholder="Escribe la respuesta..."></textarea>
-          </div>
-
-          <div class="row">
-            <span class="muted" id="admTarget">—</span>
-            <button class="btn btnPrimary" onclick="sendAdminReply()">Enviar respuesta</button>
-          </div>
-
-          <div class="msg" id="adminMsg"></div>
-        </div>
-
-      </div>
-    </div>
-  </div>
-
-  <!-- PROMO MODAL (igual que el tuyo) -->
   <div class="modalBack" id="promoBack" onclick="backdropClose(event,'promoBack')">
     <div class="modal" role="dialog" aria-modal="true" aria-label="Promocion">
       <div class="modalHead">
@@ -1008,36 +756,18 @@
   <script type="module">
     import { supabase } from "./assets/supabaseClient.js";
 
-    window.RF_ASSET_VER = "5";
+    window.RF_ASSET_VER = "4";
 
     const DEMO_MAX = 10;
     const KEY = "rf_demo_attempts_left";
 
     const $ = (id)=>document.getElementById(id);
 
-    // Estado global (sesión/rol)
-    const RF = {
-      user: null,
-      profile: null,
-      role: "user"
-    };
-
     function setMsg(el, text, isErr){
       if(!el) return;
       el.textContent = text || "";
       el.classList.toggle("err", !!isErr);
       el.style.display = text ? "block" : "none";
-    }
-
-    function setBox(elId, text, type){
-      const el = $(elId);
-      if(!el) return;
-      el.textContent = text || "";
-      el.classList.remove("err");
-      el.style.display = text ? "block" : "none";
-      if(type === "err"){
-        el.classList.add("err");
-      }
     }
 
     function getLeft(){
@@ -1050,6 +780,12 @@
     }
     function setLeft(n){
       localStorage.setItem(KEY, String(Math.max(0, n)));
+      paint();
+    }
+    function paint(){
+      const left = getLeft();
+      const demoPill = $("demoPill");
+      if(demoPill) demoPill.textContent = "Demo: " + left;
     }
 
     window.navTo = function(id){
@@ -1059,11 +795,6 @@
       }
       const el = document.getElementById(id);
       if(el) el.scrollIntoView({ behavior:"smooth", block:"start" });
-
-      // marcar active
-      document.querySelectorAll("#topMenu a").forEach(a=>a.classList.remove("active"));
-      const link = Array.from(document.querySelectorAll("#topMenu a")).find(a => (a.getAttribute("onclick")||"").includes(`'${id}'`));
-      if(link) link.classList.add("active");
     };
 
     window.goApp = function(){ window.location.href = "app.html"; };
@@ -1285,7 +1016,6 @@
       if(ev.target && ev.target.id === backId){
         if(backId === "authBack") closeAuth();
         if(backId === "promoBack") closePromo();
-        if(backId === "profileBack") closeProfile();
       }
     }
 
@@ -1308,25 +1038,9 @@
       openModal("authBack");
       setTimeout(()=>{ $("loginId")?.focus(); }, 30);
     }
-    window.closeAuth = function(){ closeModal("authBack"); }
-
-    window.openProfile = async function(tab){
-      // si no hay sesión, pedir login
-      const { data: ses } = await supabase.auth.getSession();
-      if(!ses?.session?.user){
-        openAuth();
-        setMsg($("authMsg"), "Inicia sesión para ver tu perfil.", true);
-        return;
-      }
-      // cargar perfil si falta
-      await refreshHeaderUser();
-      openModal("profileBack");
-      switchProfileTab(tab || "perfil");
-      if(tab === "historial") loadHistory();
-      if(tab === "mensajes") loadMyMessages();
-      if(tab === "admin") loadAdminInbox();
+    window.closeAuth = function(){
+      closeModal("authBack");
     }
-    window.closeProfile = function(){ closeModal("profileBack"); }
 
     window.switchAuthTab = function(tab){
       $("tabLogin").classList.toggle("active", tab==="login");
@@ -1379,8 +1093,8 @@
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if(error) throw new Error(error.message);
 
-        await refreshHeaderUser();
-        setMsg($("topMsg"), "Sesión iniciada. Bienvenido.", false);
+        await refreshHeaderUser(data?.user?.id);
+        setMsg($("topMsg"), "Sesion iniciada. Bienvenido.", false);
         closeAuth();
         window.location.href = "app.html";
       }catch(err){
@@ -1398,6 +1112,7 @@
         }
 
         const redirectTo = window.location.origin + window.location.pathname;
+
         const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
         if(error) throw new Error(error.message);
 
@@ -1439,11 +1154,40 @@
 
     window.logout = async function(){
       await supabase.auth.signOut();
-      RF.user = null;
-      RF.profile = null;
-      RF.role = "user";
       setMsg($("topMsg"), "Sesion cerrada.", false);
-      await refreshHeaderUser();
+      await refreshHeaderUser(null);
+    }
+
+    async function refreshHeaderUser(userId){
+      const btnLogin = $("btnLogin");
+      const btnLogout = $("btnLogout");
+      const userPill = $("userPill");
+
+      const { data: ses } = await supabase.auth.getSession();
+      const user = ses?.session?.user;
+
+      if(!user){
+        btnLogin.style.display = "";
+        btnLogout.style.display = "none";
+        userPill.style.display = "none";
+        userPill.textContent = "Hola, —";
+        return;
+      }
+
+      btnLogin.style.display = "none";
+      btnLogout.style.display = "";
+      userPill.style.display = "";
+
+      const uid = userId || user.id;
+
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("first_name,last_name,company_name,role")
+        .eq("id", uid)
+        .maybeSingle();
+
+      const fn = (prof?.first_name || user?.email || "Usuario").toString();
+      userPill.textContent = "Hola, " + fn;
     }
 
     function looksLikeRecoveryUrl(){
@@ -1472,328 +1216,6 @@
       }
     }
 
-    // PERFIL UI
-    window.switchProfileTab = function(tab){
-      $("ptPerfil").classList.toggle("active", tab==="perfil");
-      $("ptHist").classList.toggle("active", tab==="historial");
-      $("ptMsg").classList.toggle("active", tab==="mensajes");
-      $("ptAdmin").classList.toggle("active", tab==="admin");
-
-      $("panePerfil").style.display = (tab==="perfil") ? "block" : "none";
-      $("paneHistorial").style.display = (tab==="historial") ? "block" : "none";
-      $("paneMensajes").style.display = (tab==="mensajes") ? "block" : "none";
-      $("paneAdmin").style.display = (tab==="admin") ? "block" : "none";
-
-      $("profileTitle").textContent =
-        (tab==="perfil") ? "Perfil" :
-        (tab==="historial") ? "Historial de búsquedas" :
-        (tab==="mensajes") ? "Comentarios / Soporte" :
-        "ADM - Bandeja";
-
-      setMsg($("profileMsg"), "", false);
-      setMsg($("supportMsg"), "", false);
-      setMsg($("adminMsg"), "", false);
-    }
-
-    async function refreshHeaderUser(){
-      const btnLogin = $("btnLogin");
-      const btnLogout = $("btnLogout");
-      const btnSignup = $("btnSignup");
-      const profileBtn = $("profileBtn");
-      const menuPerfil = $("menuPerfil");
-
-      const { data: ses } = await supabase.auth.getSession();
-      const user = ses?.session?.user;
-
-      if(!user){
-        btnLogin.style.display = "";
-        btnLogout.style.display = "none";
-        btnSignup.style.display = "";
-        profileBtn.style.display = "none";
-        if(menuPerfil) menuPerfil.style.display = "none";
-        return;
-      }
-
-      RF.user = user;
-      btnLogin.style.display = "none";
-      btnLogout.style.display = "";
-      btnSignup.style.display = "none";
-      profileBtn.style.display = "inline-flex";
-      if(menuPerfil) menuPerfil.style.display = "";
-
-      // Cargar profile
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("first_name,last_name,company_name,phone,username,pais,email,role")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      RF.profile = prof || null;
-      RF.role = (prof?.role || "user").toString().toLowerCase();
-
-      // Pintar header avatar
-      const displayName = (prof?.first_name || user.email || "Usuario").toString();
-      const fullName = [prof?.first_name, prof?.last_name].filter(Boolean).join(" ").trim();
-      $("avatarTxt").textContent = initialsFromName(fullName || displayName);
-      $("profileName").textContent = fullName || displayName;
-      $("profileRole").textContent = (RF.role === "adm" || RF.role === "admin") ? "ADM" : "USER";
-
-      // Habilitar tab admin si aplica
-      const isAdmin = (RF.role === "adm" || RF.role === "admin");
-      $("ptAdmin").style.display = isAdmin ? "" : "none";
-
-      // Prellenar form perfil
-      $("pf_first").value = prof?.first_name || "";
-      $("pf_last").value = prof?.last_name || "";
-      $("pf_company").value = prof?.company_name || "";
-      $("pf_phone").value = prof?.phone || "";
-      $("pf_username").value = prof?.username || "";
-      $("pf_pais").value = prof?.pais || "";
-      $("pf_email").textContent = "Correo: " + (user.email || "—");
-    }
-
-    window.saveProfile = async function(){
-      try{
-        setMsg($("profileMsg"), "", false);
-        if(!RF.user) throw new Error("No hay sesión.");
-
-        const patch = {
-          first_name: ($("pf_first").value || "").trim() || null,
-          last_name: ($("pf_last").value || "").trim() || null,
-          company_name: ($("pf_company").value || "").trim() || null,
-          phone: ($("pf_phone").value || "").trim() || null,
-          username: ($("pf_username").value || "").trim() || null,
-          pais: ($("pf_pais").value || "").trim() || null,
-          email: (RF.user.email || "").trim() || null
-        };
-
-        const { error } = await supabase
-          .from("profiles")
-          .update(patch)
-          .eq("id", RF.user.id);
-
-        if(error) throw error;
-
-        setMsg($("profileMsg"), "✅ Perfil actualizado.", false);
-        await refreshHeaderUser();
-      }catch(e){
-        setMsg($("profileMsg"), "❌ " + (e?.message || e), true);
-      }
-    }
-
-    // HISTORIAL (tabla: search_logs)
-    window.loadHistory = async function(){
-      try{
-        if(!RF.user) throw new Error("No hay sesión.");
-
-        $("histBody").innerHTML = `<tr><td colspan="3" class="muted">Cargando...</td></tr>`;
-
-        // Ajusta nombres de columnas si tu tabla difiere
-        const { data, error } = await supabase
-          .from("search_logs")
-          .select("created_at, query, source")
-          .eq("user_id", RF.user.id)
-          .order("created_at", { ascending:false })
-          .limit(50);
-
-        if(error) throw error;
-
-        const rows = Array.isArray(data) ? data : [];
-        $("histCount").textContent = rows.length ? (`Últimas ${rows.length}`) : "Sin historial";
-
-        if(!rows.length){
-          $("histBody").innerHTML = `<tr><td colspan="3" class="muted">No hay búsquedas todavía.</td></tr>`;
-          return;
-        }
-
-        $("histBody").innerHTML = rows.map(r=>{
-          const d = r.created_at ? new Date(r.created_at) : null;
-          const ds = d ? d.toLocaleString() : "—";
-          return `
-            <tr>
-              <td>${escapeHtml(ds)}</td>
-              <td><b>${escapeHtml(r.query || "")}</b></td>
-              <td>${escapeHtml(r.source || "app")}</td>
-            </tr>
-          `;
-        }).join("");
-      }catch(e){
-        $("histBody").innerHTML = `<tr><td colspan="3" class="muted">Error: ${escapeHtml(e?.message || e)}</td></tr>`;
-      }
-    }
-
-    // MENSAJES (USER) tabla: support_messages
-    function statusBadge(status){
-      const s = (status || "").toString().toLowerCase();
-      if(s === "open") return `<span class="badge bWarn">Pendiente</span>`;
-      if(s === "answered") return `<span class="badge bOk">Respondido</span>`;
-      if(s === "closed") return `<span class="badge">Cerrado</span>`;
-      return `<span class="badge">—</span>`;
-    }
-
-    window.sendSupportMessage = async function(){
-      try{
-        setMsg($("supportMsg"), "", false);
-        if(!RF.user) throw new Error("No hay sesión.");
-
-        const subject = ($("msg_subject").value || "").trim();
-        const body = ($("msg_body").value || "").trim();
-
-        if(!subject || !body){
-          setMsg($("supportMsg"), "Completa asunto y mensaje.", true);
-          return;
-        }
-
-        const payload = {
-          user_id: RF.user.id,
-          user_email: RF.user.email || null,
-          subject,
-          message: body,
-          status: "open"
-        };
-
-        const { error } = await supabase.from("support_messages").insert(payload);
-        if(error) throw error;
-
-        $("msg_subject").value = "";
-        $("msg_body").value = "";
-        setMsg($("supportMsg"), "✅ Mensaje enviado. Te responderemos aquí mismo.", false);
-
-        await loadMyMessages();
-      }catch(e){
-        setMsg($("supportMsg"), "❌ " + (e?.message || e), true);
-      }
-    }
-
-    window.loadMyMessages = async function(){
-      try{
-        if(!RF.user) throw new Error("No hay sesión.");
-
-        $("myMsgBody").innerHTML = `<tr><td colspan="4" class="muted">Cargando...</td></tr>`;
-
-        const { data, error } = await supabase
-          .from("support_messages")
-          .select("created_at, subject, status, admin_reply")
-          .eq("user_id", RF.user.id)
-          .order("created_at", { ascending:false })
-          .limit(50);
-
-        if(error) throw error;
-
-        const rows = Array.isArray(data) ? data : [];
-        $("myMsgCount").textContent = rows.length ? (`Últimos ${rows.length}`) : "Sin mensajes";
-
-        if(!rows.length){
-          $("myMsgBody").innerHTML = `<tr><td colspan="4" class="muted">No has enviado mensajes todavía.</td></tr>`;
-          return;
-        }
-
-        $("myMsgBody").innerHTML = rows.map(r=>{
-          const d = r.created_at ? new Date(r.created_at) : null;
-          const ds = d ? d.toLocaleString() : "—";
-          const rep = (r.admin_reply || "").toString().trim();
-          return `
-            <tr>
-              <td>${escapeHtml(ds)}</td>
-              <td><b>${escapeHtml(r.subject || "")}</b></td>
-              <td>${statusBadge(r.status)}</td>
-              <td>${rep ? escapeHtml(rep) : '<span class="muted">—</span>'}</td>
-            </tr>
-          `;
-        }).join("");
-      }catch(e){
-        $("myMsgBody").innerHTML = `<tr><td colspan="4" class="muted">Error: ${escapeHtml(e?.message || e)}</td></tr>`;
-      }
-    }
-
-    // ADMIN inbox
-    window.loadAdminInbox = async function(){
-      try{
-        if(!RF.user) throw new Error("No hay sesión.");
-        const isAdmin = (RF.role === "adm" || RF.role === "admin");
-        if(!isAdmin) throw new Error("No autorizado.");
-
-        $("adminBody").innerHTML = `<tr><td colspan="5" class="muted">Cargando...</td></tr>`;
-
-        const { data, error } = await supabase
-          .from("support_messages")
-          .select("id, created_at, user_email, subject, message, status")
-          .in("status", ["open"])
-          .order("created_at", { ascending:true })
-          .limit(100);
-
-        if(error) throw error;
-
-        const rows = Array.isArray(data) ? data : [];
-        $("adminCount").textContent = rows.length ? (`Pendientes: ${rows.length}`) : "Sin pendientes";
-
-        if(!rows.length){
-          $("adminBody").innerHTML = `<tr><td colspan="5" class="muted">No hay mensajes pendientes.</td></tr>`;
-          return;
-        }
-
-        $("adminBody").innerHTML = rows.map(r=>{
-          const d = r.created_at ? new Date(r.created_at) : null;
-          const ds = d ? d.toLocaleString() : "—";
-          return `
-            <tr>
-              <td>${escapeHtml(ds)}</td>
-              <td>${escapeHtml(r.user_email || "—")}</td>
-              <td><b>${escapeHtml(r.subject || "")}</b></td>
-              <td>${escapeHtml((r.message||"").slice(0,140))}${(r.message||"").length>140?"…":""}</td>
-              <td>
-                <button class="btn btnGhost btnSmall" onclick="pickAdminMsg('${escapeHtml(r.id)}','${escapeHtml(r.user_email||"")}','${escapeHtml(r.subject||"")}')">
-                  Responder
-                </button>
-              </td>
-            </tr>
-          `;
-        }).join("");
-      }catch(e){
-        $("adminBody").innerHTML = `<tr><td colspan="5" class="muted">Error: ${escapeHtml(e?.message || e)}</td></tr>`;
-      }
-    }
-
-    window.pickAdminMsg = function(id, email, subject){
-      $("adm_msg_id").value = id || "";
-      $("admTarget").textContent = "Respondiendo a: " + (email || "—") + " | " + (subject || "");
-      $("adm_reply").focus();
-    }
-
-    window.sendAdminReply = async function(){
-      try{
-        setMsg($("adminMsg"), "", false);
-        const isAdmin = (RF.role === "adm" || RF.role === "admin");
-        if(!isAdmin) throw new Error("No autorizado.");
-
-        const id = ($("adm_msg_id").value || "").trim();
-        const reply = ($("adm_reply").value || "").trim();
-        if(!id) throw new Error("Selecciona un mensaje para responder.");
-        if(!reply) throw new Error("Escribe la respuesta.");
-
-        const { error } = await supabase
-          .from("support_messages")
-          .update({
-            admin_reply: reply,
-            status: "answered",
-            replied_at: new Date().toISOString()
-          })
-          .eq("id", id);
-
-        if(error) throw error;
-
-        $("adm_reply").value = "";
-        $("adm_msg_id").value = "";
-        $("admTarget").textContent = "—";
-
-        setMsg($("adminMsg"), "✅ Respuesta enviada.", false);
-        await loadAdminInbox();
-      }catch(e){
-        setMsg($("adminMsg"), "❌ " + (e?.message || e), true);
-      }
-    }
-
-    // Promos (igual que tu versión)
     let promoState = { items: [], idx: 0, timer: null };
 
     window.closePromo = function(){
@@ -1908,22 +1330,22 @@
 
     async function init(){
       $("y").textContent = new Date().getFullYear();
+      paint();
 
-      await refreshHeaderUser();
+      await refreshHeaderUser(null);
+
       await handleRecoveryFlow();
+
       await initCarousels();
+
       await initPromotions();
     }
-
-    // Escuchar cambios de sesión
-    supabase.auth.onAuthStateChange(async () => {
-      await refreshHeaderUser();
-    });
 
     init();
   </script>
 </body>
 </html>
+
 
 
 
