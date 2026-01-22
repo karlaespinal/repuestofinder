@@ -3,560 +3,483 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>RepuestoFinder - Suscripción</title>
+  <title>Crear cuenta - Repuesto FinderRD</title>
   <style>
     :root{
-      --bg:#eaf2ff;
-      --card:rgba(255,255,255,.82);
-      --stroke:rgba(220,230,245,.95);
-      --text:#0b1220;
-      --mut:#64748b;
-      --pri:#2563eb;
-      --pri2:#1d4ed8;
-      --ok:#16a34a;
+      --bg:#f5f7fb;
+      --card:#fff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#e2e8f0;
+      --brand:#2563eb;
+      --brand2:#60a5fa;
+      --good:#16a34a;
       --bad:#dc2626;
-      --shadow: 0 20px 60px rgba(2,8,23,.10);
-      --r:20px;
+      --shadow:0 14px 45px rgba(2,8,23,.10);
+      --radius:18px;
     }
-    *{ box-sizing:border-box; }
+    *{box-sizing:border-box}
     body{
       margin:0;
-      font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      font-family:Arial,Helvetica,sans-serif;
+      background:linear-gradient(180deg,#f8fafc, #eef2ff 70%, #f8fafc);
       color:var(--text);
-      background:
-        radial-gradient(900px 500px at 10% 10%, rgba(255,255,255,.9), rgba(255,255,255,0)),
-        radial-gradient(900px 500px at 90% 20%, rgba(255,255,255,.9), rgba(255,255,255,0)),
-        linear-gradient(180deg, #dff0ff 0%, #eaf2ff 35%, #f3f6ff 100%);
-      min-height:100vh;
-      padding:22px;
-      display:flex;
-      justify-content:center;
+      padding:24px;
     }
-    .page{ width: min(1120px, 100%); }
-    .top{
-      display:flex; align-items:center; justify-content:space-between; gap:12px;
-      padding:14px 16px;
-      border:1px solid var(--stroke);
-      border-radius:18px;
-      background:rgba(255,255,255,.6);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 10px 30px rgba(2,8,23,.06);
-    }
-    .brand{ display:flex; align-items:center; gap:10px; }
-    .logo{
-      width:38px; height:38px; border-radius:12px;
-      display:grid; place-items:center;
-      background:#0b1220; color:#fff; font-weight:900;
-      letter-spacing:.5px;
-    }
-    .brandTitle{ display:flex; flex-direction:column; line-height:1.05; }
-    .brandTitle b{ font-size:14px; }
-    .brandTitle span{ font-size:12px; color:#94a3b8; font-weight:900; letter-spacing:.4px; text-transform:uppercase; }
-
-    .btn{
-      border:0; cursor:pointer;
-      font-weight:900;
-      border-radius:12px;
-      padding:10px 14px;
-      transition:.15s transform;
-    }
-    .btn:active{ transform: scale(.98); }
-    .btnGhost{
-      background:rgba(255,255,255,.8);
-      border:1px solid var(--stroke);
-      color:#0b1220;
-    }
-    .btnDark{ background:#0b1220; color:#fff; }
-
     .wrap{
-      margin-top:16px;
-      border:1px solid var(--stroke);
-      border-radius:24px;
-      background:rgba(255,255,255,.55);
-      backdrop-filter: blur(10px);
-      box-shadow: var(--shadow);
-      padding:20px;
+      max-width:1100px;
+      margin:0 auto;
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:26px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
     }
-
-    h1{ margin:0; font-size:26px; letter-spacing:-.2px; }
-    p{ margin:6px 0 0; color:var(--mut); font-weight:700; }
-
-    .badge{
-      font-size:12px; font-weight:900;
-      color:#1e293b;
-      background:rgba(255,255,255,.8);
-      border:1px solid var(--stroke);
-      padding:8px 10px;
+    header{
+      padding:22px 26px;
+      border-bottom:1px solid var(--line);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      background:linear-gradient(90deg,#ffffff, #f8fafc);
+    }
+    header h1{
+      margin:0;
+      font-size:22px;
+      letter-spacing:.2px;
+    }
+    header p{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:13.5px;
+    }
+    .step{
+      display:flex; align-items:center; gap:8px;
+      font-size:12px; color:var(--muted);
+      background:#f1f5f9;
+      border:1px solid #e2e8f0;
+      padding:8px 12px;
       border-radius:999px;
+      height:fit-content;
+      white-space:nowrap;
     }
-
+    main{
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap:0;
+      min-height:540px;
+    }
+    .left, .right{ padding:22px 26px; }
+    .left{ border-right:1px solid var(--line); }
     .grid{
       display:grid;
       grid-template-columns: 1fr 1fr;
-      gap:14px;
-      margin-top:14px;
+      gap:14px 14px;
     }
-    @media (max-width: 980px){
-      .grid{ grid-template-columns: 1fr; }
-    }
-
-    .card{
-      background:var(--card);
-      border:1px solid var(--stroke);
-      border-radius:var(--r);
-      padding:16px;
-    }
-
-    .row2{
-      display:grid; grid-template-columns:1fr 1fr; gap:10px;
-    }
-    @media (max-width: 520px){
-      .row2{ grid-template-columns:1fr; }
-    }
-
+    .field{ display:flex; flex-direction:column; gap:7px; }
     label{
       font-size:12px;
+      font-weight:700;
       color:#0b1220;
-      font-weight:900;
-      display:block;
-      margin:0 0 6px;
     }
     input, select{
       width:100%;
-      padding:12px 12px;
+      height:44px;
+      padding:10px 12px;
+      border:1px solid var(--line);
       border-radius:14px;
-      border:1px solid rgba(210,220,240,.95);
-      background:rgba(255,255,255,.85);
       outline:none;
-      font-weight:800;
+      background:#fff;
+      font-size:14px;
     }
     input:focus, select:focus{
-      border-color: rgba(37,99,235,.55);
-      box-shadow: 0 0 0 4px rgba(37,99,235,.12);
+      border-color:#93c5fd;
+      box-shadow:0 0 0 4px rgba(37,99,235,.10);
     }
-
+    .full{ grid-column: 1 / -1; }
     .terms{
-      display:flex; gap:10px;
       margin-top:10px;
-      padding:12px;
-      border:1px dashed rgba(148,163,184,.6);
+      padding:14px 14px;
+      border:1px dashed #cbd5e1;
       border-radius:16px;
-      background:rgba(255,255,255,.65);
+      display:flex;
+      gap:12px;
       align-items:flex-start;
+      background:#fafcff;
     }
-    .terms b{ display:block; font-size:13px; }
-    .terms span{ font-size:12px; color:var(--mut); font-weight:800; line-height:1.35; }
-    .terms a{ color:#2563eb; font-weight:900; text-decoration:none; }
-
-    .notice{
-      margin-top:12px;
-      padding:12px;
+    .terms small{ color:var(--muted); display:block; margin-top:3px; line-height:1.35; }
+    .msg{
+      margin-top:14px;
+      padding:12px 12px;
       border-radius:14px;
-      font-weight:900;
-      border:1px solid rgba(148,163,184,.25);
-      background:rgba(255,255,255,.75);
-      color:#0b1220;
+      border:1px solid var(--line);
+      background:#f8fafc;
+      font-size:13.5px;
+      color:var(--muted);
     }
-    .ok{
-      border:1px solid rgba(22,163,74,.22);
-      background:rgba(22,163,74,.09);
-      color:#14532d;
-    }
-    .bad{
-      border:1px solid rgba(220,38,38,.22);
-      background:rgba(220,38,38,.08);
-      color:#7f1d1d;
-    }
-
-    .actions{
-      display:flex; gap:10px; flex-wrap:wrap;
-      margin-top:12px;
-      align-items:center;
+    .msg.good{ border-color: rgba(22,163,74,.35); background: rgba(22,163,74,.06); color:#14532d; }
+    .msg.bad{ border-color: rgba(220,38,38,.35); background: rgba(220,38,38,.06); color:#7f1d1d; }
+    .btnRow{
+      display:flex;
       justify-content:flex-end;
+      gap:10px;
+      margin-top:14px;
+      flex-wrap:wrap;
     }
-    .btnPrimary{ background:var(--pri); color:#fff; }
-    .btnPrimary:hover{ background:var(--pri2); }
-
-    .sep{ height:1px; background:rgba(230,232,240,.9); margin:12px 0; }
-
-    .plansHeader{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    button{
+      cursor:pointer;
+      border:none;
+      border-radius:14px;
+      height:44px;
+      padding:0 14px;
+      font-weight:800;
+      letter-spacing:.2px;
     }
-    .plansHeader h2{ margin:0; font-size:16px; }
-    .plansHeader small{ color:#94a3b8; font-weight:900; letter-spacing:.4px; text-transform:uppercase; }
-
-    .plans{
-      margin-top:10px;
-      display:grid; grid-template-columns: 1fr 1fr;
+    .btnGhost{
+      background:#f1f5f9;
+      border:1px solid #e2e8f0;
+      color:#0f172a;
+    }
+    .btnPrimary{
+      background:linear-gradient(90deg, var(--brand), var(--brand2));
+      color:#fff;
+    }
+    .right h2{
+      margin:0 0 10px;
+      font-size:16px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
       gap:10px;
     }
-    @media (max-width: 520px){
-      .plans{ grid-template-columns: 1fr; }
+    .plans{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+      margin-top:10px;
     }
     .plan{
-      display:flex; align-items:center; gap:12px;
-      border:1px solid rgba(210,220,240,.95);
-      border-radius:16px;
+      border:1px solid var(--line);
+      border-radius:18px;
       padding:12px;
-      background:rgba(255,255,255,.75);
+      display:flex;
+      gap:12px;
+      align-items:center;
       cursor:pointer;
-      transition: .15s transform, .15s border-color, .15s box-shadow;
-      position: relative;
+      transition: transform .08s ease, border-color .08s ease;
+      background:#fff;
     }
-    .plan:hover{
-      transform: translateY(-1px);
-      border-color: rgba(37,99,235,.35);
-      box-shadow: 0 14px 30px rgba(2,8,23,.06);
-    }
+    .plan:hover{ transform: translateY(-1px); border-color:#bfdbfe; }
     .plan.active{
-      border-color: rgba(37,99,235,.55);
-      box-shadow: 0 0 0 4px rgba(37,99,235,.10);
+      border-color:#60a5fa;
+      box-shadow:0 0 0 4px rgba(96,165,250,.18);
     }
-    .planImg{
-      width:42px; height:42px; border-radius:12px;
-      background:rgba(37,99,235,.08);
+    .icon{
+      width:44px;height:44px;border-radius:14px;
+      background:linear-gradient(180deg,#dbeafe,#eff6ff);
+      border:1px solid #bfdbfe;
+      display:flex;align-items:center;justify-content:center;
       overflow:hidden;
-      border:1px solid rgba(210,220,240,.95);
-      display:grid; place-items:center;
-      flex:0 0 auto;
+      flex-shrink:0;
     }
-    .planImg img{ width:100%; height:100%; object-fit:cover; display:block; }
-    .planMain{ flex:1 1 auto; }
-    .planMain b{ display:block; font-size:13px; }
-    .planMain span{ display:block; font-size:12px; color:var(--mut); font-weight:800; line-height:1.25; margin-top:2px; }
-    .planPrice{ font-size:13px; font-weight:1000; white-space:nowrap; }
-
-    .paypalBox{
-      border:1px solid rgba(230,232,240,.95);
-      border-radius:16px;
+    .pname{ font-weight:900; font-size:13.2px; margin:0; }
+    .pdesc{ margin:2px 0 0; font-size:12px; color:var(--muted); line-height:1.2; }
+    .price{ margin-left:auto; font-weight:900; }
+    .hint{
+      margin-top:14px;
       padding:12px;
-      background:rgba(255,255,255,.92);
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:#f8fafc;
+      color:#0f172a;
+      font-size:13px;
+      line-height:1.35;
     }
-    .small{
-      font-size:12px; color:var(--mut); font-weight:800; line-height:1.35;
-      margin-top:8px;
+    .payBox{
+      margin-top:14px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:14px;
+      background:#fff;
     }
-    .footer{ margin-top:14px; text-align:center; color:#94a3b8; font-size:12px; font-weight:800; }
+    .payTitle{
+      display:flex; align-items:center; justify-content:space-between;
+      font-weight:900;
+      font-size:13px;
+      margin:0 0 10px;
+    }
+    .payErr{
+      margin-top:10px;
+      padding:10px 10px;
+      border-radius:14px;
+      border:1px solid rgba(220,38,38,.35);
+      background:rgba(220,38,38,.06);
+      color:#7f1d1d;
+      font-size:13px;
+      display:none;
+    }
+    footer{
+      padding:14px 26px 18px;
+      border-top:1px solid var(--line);
+      color:var(--muted);
+      font-size:12px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      background:#fcfdff;
+    }
+    @media (max-width: 980px){
+      main{ grid-template-columns:1fr; }
+      .left{ border-right:none; border-bottom:1px solid var(--line); }
+    }
+    @media (max-width: 640px){
+      .grid{ grid-template-columns:1fr; }
+      header{ flex-direction:column; align-items:flex-start; }
+      .plans{ grid-template-columns:1fr; }
+      .btnRow{ justify-content:stretch; }
+      button{ width:100%; }
+    }
   </style>
 
-  <!-- PayPal JS SDK -->
-  <script src="https://www.paypal.com/sdk/js?client-id=Af-d9pElEYJg1Qwoq0alwJkSNXfAEPf3skFWcidb7G7S3plO76_GSPgIM76e79hHVOU_Qul20sCi6fCM&currency=USD"></script>
+  <!-- PayPal SDK (tu client-id se carga abajo) -->
 </head>
-
 <body>
-  <div class="page">
-    <div class="top">
-      <div class="brand">
-        <div class="logo">RF</div>
-        <div class="brandTitle">
-          <b>RepuestoFinder</b>
-          <span>Suscripción</span>
-        </div>
-      </div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;">
-        <button class="btn btnGhost" onclick="location.href='index.html'">Volver</button>
-        <button class="btn btnDark" onclick="location.href='app.html'">Ir a la App</button>
-      </div>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Crear cuenta y activar con PayPal</h1>
+      <p>Completa tus datos, acepta los términos, elige un plan y paga. Tu cuenta queda activa al instante.</p>
     </div>
+    <div class="step" id="stepBadge">Paso 1/2</div>
+  </header>
 
-    <div class="wrap">
-      <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-        <div>
-          <h1>Crear cuenta y activar con PayPal</h1>
-          <p>Completa tus datos, acepta los términos, elige un plan y paga. Tu cuenta queda activa al instante.</p>
-        </div>
-        <div class="badge" id="stepBadge">Paso 1/2</div>
-      </div>
-
-      <div class="sep"></div>
-
+  <main>
+    <section class="left">
       <div class="grid">
-        <!-- Form -->
-        <div class="card">
-          <div class="row2">
-            <div class="field">
-              <label>Nombre</label>
-              <input id="first_name" autocomplete="given-name" placeholder=""/>
-            </div>
-            <div class="field">
-              <label>Apellido</label>
-              <input id="last_name" autocomplete="family-name" placeholder=""/>
-            </div>
-          </div>
-
-          <div class="field" style="margin-top:10px;">
-            <label>Nombre de la compañía</label>
-            <input id="company_name" autocomplete="organization" placeholder=""/>
-          </div>
-
-          <div class="row2" style="margin-top:10px;">
-            <div class="field">
-              <label>Número de teléfono</label>
-              <input id="phone" autocomplete="tel" placeholder="+1 809 000 0000"/>
-            </div>
-            <div class="field">
-              <label>Correo</label>
-              <input id="email" type="email" autocomplete="email" placeholder="correo@empresa.com"/>
-            </div>
-          </div>
-
-          <!-- NUEVO: username + pais -->
-          <div class="row2" style="margin-top:10px;">
-            <div class="field">
-              <label>Username (opcional)</label>
-              <input id="username" autocomplete="username" placeholder="ej: luis.espinal"/>
-            </div>
-            <div class="field">
-              <label>País</label>
-              <select id="pais">
-                <option value="">Selecciona tu país</option>
-                <option value="República Dominicana">República Dominicana</option>
-                <option value="Estados Unidos">Estados Unidos</option>
-                <option value="Puerto Rico">Puerto Rico</option>
-                <option value="México">México</option>
-                <option value="Colombia">Colombia</option>
-                <option value="Venezuela">Venezuela</option>
-                <option value="Panamá">Panamá</option>
-                <option value="Costa Rica">Costa Rica</option>
-                <option value="Guatemala">Guatemala</option>
-                <option value="Honduras">Honduras</option>
-                <option value="El Salvador">El Salvador</option>
-                <option value="Nicaragua">Nicaragua</option>
-                <option value="Perú">Perú</option>
-                <option value="Ecuador">Ecuador</option>
-                <option value="Chile">Chile</option>
-                <option value="Argentina">Argentina</option>
-                <option value="España">España</option>
-                <option value="Otro">Otro</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="row2" style="margin-top:10px;">
-            <div class="field">
-              <label>Clave</label>
-              <input id="pass" type="password" autocomplete="new-password" placeholder="••••••••"/>
-            </div>
-            <div class="field">
-              <label>Validar la clave</label>
-              <input id="pass2" type="password" autocomplete="new-password" placeholder="••••••••"/>
-            </div>
-          </div>
-
-          <div class="terms">
-            <input id="agree" type="checkbox"/>
-            <div>
-              <b>Acepto los términos</b>
-              <span>
-                Al registrarte aceptas las condiciones de uso y política de servicio.
-                <a href="#" onclick="openTerms();return false;">Ver términos</a>.
-              </span>
-            </div>
-          </div>
-
-          <div class="notice" id="msg" style="display:none;"></div>
-
-          <div class="actions">
-            <button class="btn btnGhost" onclick="fillDemo()">Llenar demo</button>
-          </div>
-
-          <div class="small">
-            Nota: En este flujo, la cuenta se crea <b>después</b> del pago (más seguro). Si ya tienes cuenta, al final te manda al login.
-          </div>
+        <div class="field">
+          <label>Nombre</label>
+          <input id="first_name" placeholder="Luis"/>
+        </div>
+        <div class="field">
+          <label>Apellido</label>
+          <input id="last_name" placeholder="Espinal"/>
         </div>
 
-        <!-- Plan + PayPal -->
-        <div class="card">
-          <div class="plansHeader">
-            <h2>Elige tu plan</h2>
-            <small>Planes activos por 30 dias</small>
-          </div>
+        <div class="field full">
+          <label>Nombre de la compañía</label>
+          <input id="company_name" placeholder="Repuesto FinderRD"/>
+        </div>
 
-          <div class="plans" id="plans"></div>
+        <div class="field">
+          <label>Número de teléfono</label>
+          <input id="phone" placeholder="+1 809 000 0000"/>
+        </div>
+        <div class="field">
+          <label>Correo</label>
+          <input id="email" placeholder="correo@ejemplo.com"/>
+        </div>
 
-          <div class="notice" style="margin-top:10px;">
-            <b>Primero pagas</b> y luego se crea tu cuenta automáticamente. Al finalizar, inicia sesión y listo ✅
-          </div>
+        <div class="field">
+          <label>Username (opcional)</label>
+          <input id="username" placeholder="luis783"/>
+        </div>
+        <div class="field">
+          <label>País</label>
+          <select id="pais">
+            <option value="República Dominicana">República Dominicana</option>
+            <option value="Estados Unidos">Estados Unidos</option>
+            <option value="Puerto Rico">Puerto Rico</option>
+            <option value="España">España</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
 
-          <div class="sep"></div>
-
-          <div class="paypalBox">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
-              <b>Pago con PayPal</b>
-              <span style="font-size:12px;color:#94a3b8;font-weight:900;"></span>
-            </div>
-            <div class="small" id="payHint" style="margin-top:6px;">
-              1) Completa tus datos. 2) Selecciona plan. 3) Paga con PayPal.
-            </div>
-            <div style="margin-top:10px;" id="paypal-button-container"></div>
-            <div class="notice bad" id="payErr" style="display:none;margin-top:10px;"></div>
-          </div>
+        <div class="field">
+          <label>Clave</label>
+          <input id="pass" type="password" placeholder="••••••••"/>
+        </div>
+        <div class="field">
+          <label>Validar la clave</label>
+          <input id="pass2" type="password" placeholder="••••••••"/>
         </div>
       </div>
 
-      <div class="footer">© <span id="y"></span> RepuestoFinder</div>
-    </div>
-  </div>
+      <div class="terms">
+        <input id="agree" type="checkbox" style="width:18px;height:18px;margin-top:2px"/>
+        <div>
+          <div style="font-weight:900;font-size:13px;">Acepto los términos</div>
+          <small>Al registrarte aceptas las condiciones de uso y política de servicio.
+            <a href="#" style="color:#2563eb;font-weight:800;text-decoration:none;">Ver términos</a>.
+          </small>
+        </div>
+      </div>
+
+      <div id="msg" class="msg">Completa el formulario y selecciona un plan para continuar.</div>
+
+      <div class="btnRow">
+        <button class="btnGhost" id="demoBtn">Llenar demo</button>
+      </div>
+
+      <div class="msg" style="margin-top:10px;">
+        <b>Nota:</b> En este flujo, la cuenta se crea después del pago (más seguro). Si ya tienes cuenta, al final te manda al login.
+      </div>
+    </section>
+
+    <section class="right">
+      <h2>
+        <span>Elige tu plan</span>
+        <span style="font-size:12px;color:var(--muted);font-weight:900;">PLANES ACTIVOS POR 30 DÍAS</span>
+      </h2>
+
+      <div class="plans" id="plansBox"></div>
+
+      <div class="hint" id="payHint">
+        Primero pagas y luego se crea tu cuenta automáticamente.<br/>
+        <b>Al finalizar, inicia sesión y listo ✅</b>
+      </div>
+
+      <div class="payBox">
+        <div class="payTitle">
+          <span>Pago con PayPal</span>
+          <span id="payStatus" style="font-weight:800;color:var(--muted);font-size:12px;">—</span>
+        </div>
+
+        <div id="paypal-button-container"></div>
+
+        <div id="payErr" class="payErr"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>© 2026 RepuestoFinder</span>
+    <span>Soporte: soporte@repuestofinder.com</span>
+  </footer>
+</div>
 
 <script type="module">
   import { supabase } from "./assets/supabaseClient.js";
 
-  document.getElementById("y").textContent = new Date().getFullYear();
+  // ---------- Helpers ----------
   const el = (id) => document.getElementById(id);
 
+  function showMsg(text, type=""){
+    const m = el("msg");
+    m.className = "msg" + (type ? " " + type : "");
+    m.textContent = text;
+  }
+  function showPayErr(text){
+    const p = el("payErr");
+    if(!text){
+      p.style.display = "none";
+      p.textContent = "";
+      return;
+    }
+    p.style.display = "block";
+    p.textContent = text;
+  }
+  function setStep(n){
+    el("stepBadge").textContent = n === 1 ? "Paso 1/2" : "Paso 2/2";
+  }
+
+  function cleanPhone(v){
+    return String(v||"").trim().replace(/[^\d+]/g,"");
+  }
+
+  // ---------- Plans ----------
+  let plans = [];
   let selectedPlanId = null;
   let paypalRendered = false;
+  let currentOrderId = "";
+  let formLocked = false;
 
-  function showMsg(text, type){
-    const box = el("msg");
-    if(!text){
-      box.style.display = "none";
-      box.textContent = "";
-      box.className = "notice";
-      return;
-    }
-    box.style.display = "block";
-    box.textContent = text;
-    box.className = "notice " + (type || "");
-  }
-
-  function showPayErr(text){
-    const b = el("payErr");
-    if(!text){
-      b.style.display = "none";
-      b.textContent = "";
-      return;
-    }
-    b.style.display = "block";
-    b.textContent = text;
-  }
-
-  function setStep(step){
-    el("stepBadge").textContent = step === 2 ? "Paso 2/2" : "Paso 1/2";
-  }
-
-  function cleanPhone(s){
-    return String(s || "").replace(/[^\d+]/g,"").trim();
-  }
-
-  window.openTerms = function(){
-    alert(
-`TERMINOS (resumen):
-- Suscripción según plan.
-- Acceso por usuario/empresa.
-- No compartir credenciales.
-- Planes y precios pueden cambiar con aviso.
-- Soporte según plan.`
-    );
-  };
-
-  window.fillDemo = function(){
-    el("first_name").value = "Luis";
-    el("last_name").value = "Espinal";
-    el("company_name").value = "Repuesto FinderRD";
-    el("phone").value = "+1 809 000 0000";
-    el("email").value = "demo+" + Date.now() + "@mail.com";
-    el("username").value = "luis" + Math.floor(Math.random()*1000);
-    el("pais").value = "República Dominicana";
-    el("pass").value = "Demo12345!";
-    el("pass2").value = "Demo12345!";
-    el("agree").checked = true;
-  };
-
-  function money(n){
-    const v = Number(n || 0).toFixed(2);
-    return "US$ " + v;
-  }
-
-  function escapeHtml(s){
-    return String(s || "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
-  }
-
-  function normalizeImgPath(url){
-    const u = String(url || "").trim();
-    if(!u) return "";
-    if(/^https?:\/\//i.test(u)) return u;
-    if(u.startsWith("/")) return u;
-    if(u.startsWith("./")) return u;
-    return "./" + u.replace(/^\.?\//, "");
-  }
-  function planImgFallback(slug){
-    const s = String(slug || "plan").toLowerCase().trim();
-    return `./assets/plans/${s}.png`;
-  }
-
-  async function loadPlans(){
-    const { data, error } = await supabase
-      .from("plans")
-      .select("id, slug, name, description, price_usd, duration_days, image_url, is_active, sort_order")
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true });
-
-    const plans = Array.isArray(data) ? data : [];
-    const wrap = el("plans");
-
-    if(error){
-      wrap.innerHTML = `<div class="notice bad">No se pudieron cargar los planes: ${escapeHtml(error.message)}</div>`;
-      return;
-    }
-    if(plans.length === 0){
-      wrap.innerHTML = `<div class="notice">No hay planes activos todavía. Inserta planes en la tabla <b>plans</b>.</div>`;
-      return;
-    }
-
-    selectedPlanId = selectedPlanId || plans[0].id;
-
-    wrap.innerHTML = plans.map(p=>{
-      const imgFromDb = normalizeImgPath(p.image_url);
-      const img = imgFromDb || planImgFallback(p.slug);
-      const active = (p.id === selectedPlanId) ? "active" : "";
-      return `
-        <div class="plan ${active}" data-id="${p.id}">
-          <div class="planImg">
-            <img
-              src="${img}"
-              alt="${escapeHtml(p.name)}"
-              onerror="this.onerror=null; this.src='${planImgFallback(p.slug)}'; if(this.src.includes('/assets/plans/')){ this.onerror=null; this.src='./assets/bg.jpg'; }"
-            >
-          </div>
-          <div class="planMain">
-            <b>${escapeHtml(p.name)}</b>
-            <span>${escapeHtml(p.description || ("Duración: " + (p.duration_days||30) + " días"))}</span>
-          </div>
-          <div class="planPrice">${money(p.price_usd)}</div>
-        </div>
-      `;
-    }).join("");
-
-    wrap.querySelectorAll(".plan").forEach(node=>{
-      node.addEventListener("click", ()=>{
-        selectedPlanId = Number(node.getAttribute("data-id"));
-        wrap.querySelectorAll(".plan").forEach(n=>n.classList.remove("active"));
-        node.classList.add("active");
-        showPayErr("");
-      });
+  function setFormLocked(locked){
+    formLocked = !!locked;
+    const ids = ["first_name","last_name","company_name","phone","email","username","pais","pass","pass2","agree"];
+    ids.forEach(id => {
+      const node = document.getElementById(id);
+      if(node) node.disabled = formLocked;
+    });
+    // bloquear selección de plan
+    document.querySelectorAll(".plan").forEach(p => {
+      p.style.pointerEvents = formLocked ? "none" : "auto";
+      p.style.opacity = formLocked ? "0.78" : "1";
     });
   }
 
+  async function loadPlans(){
+    el("payStatus").textContent = "Cargando planes…";
+    const { data, error } = await supabase
+      .from("plans")
+      .select("id, name, description, price_usd, duration_days, is_active, order_index")
+      .eq("is_active", true)
+      .order("order_index", { ascending: true });
+
+    if(error){
+      el("payStatus").textContent = "Error";
+      showMsg("No se pudieron cargar los planes: " + error.message, "bad");
+      return;
+    }
+
+    plans = data || [];
+    renderPlans();
+    el("payStatus").textContent = "Listo";
+  }
+
+  function renderPlans(){
+    const box = el("plansBox");
+    box.innerHTML = "";
+
+    plans.forEach((p, idx) => {
+      const card = document.createElement("div");
+      card.className = "plan" + (idx===0 ? " active" : "");
+      if(idx===0) selectedPlanId = p.id;
+
+      card.innerHTML = `
+        <div class="icon">
+          <img src="assets/plan-${p.id}.png" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'"/>
+        </div>
+        <div style="min-width:0">
+          <div class="pname">${p.name}</div>
+          <div class="pdesc">${p.description || ""}</div>
+        </div>
+        <div class="price">US$ ${Number(p.price_usd).toFixed(2)}</div>
+      `;
+
+      card.addEventListener("click", () => {
+        if(formLocked) return; // ya hay orden creada, no cambiar
+        document.querySelectorAll(".plan").forEach(x => x.classList.remove("active"));
+        card.classList.add("active");
+        selectedPlanId = p.id;
+      });
+
+      box.appendChild(card);
+    });
+  }
+
+  // ---------- Form ----------
   function validateForm(){
-    showMsg("", "");
-    const first_name = (el("first_name").value || "").trim();
-    const last_name  = (el("last_name").value || "").trim();
-    const company_name = (el("company_name").value || "").trim();
-    const phone = cleanPhone(el("phone").value || "");
-    const email = (el("email").value || "").trim();
-    const username = (el("username").value || "").trim(); // opcional
-    const pais = (el("pais").value || "").trim();
-    const pass  = (el("pass").value || "").trim();
-    const pass2 = (el("pass2").value || "").trim();
+    const first_name = (el("first_name").value||"").trim();
+    const last_name = (el("last_name").value||"").trim();
+    const company_name = (el("company_name").value||"").trim();
+    const phone = (el("phone").value||"").trim();
+    const email = (el("email").value||"").trim();
+    const username = (el("username").value||"").trim();
+    const pais = (el("pais").value||"").trim();
+    const pass = (el("pass").value||"").trim();
+    const pass2 = (el("pass2").value||"").trim();
     const agree = el("agree").checked;
 
-    if(!selectedPlanId) return { ok:false, msg:"Selecciona un plan.", type:"bad" };
-    if(!first_name || !last_name || !company_name || !phone || !email || !pass || !pass2) {
-      return { ok:false, msg:"Completa todos los campos requeridos.", type:"bad" };
-    }
-    if(pass.length < 8) return { ok:false, msg:"La clave debe tener al menos 8 caracteres.", type:"bad" };
+    if(!first_name) return { ok:false, msg:"Completa tu nombre.", type:"bad" };
+    if(!last_name) return { ok:false, msg:"Completa tu apellido.", type:"bad" };
+    if(!company_name) return { ok:false, msg:"Completa el nombre de la compañía.", type:"bad" };
+    if(!phone) return { ok:false, msg:"Completa el teléfono.", type:"bad" };
+    if(!email || !email.includes("@")) return { ok:false, msg:"Completa un correo válido.", type:"bad" };
+    if(!pass || pass.length < 6) return { ok:false, msg:"La clave debe tener al menos 6 caracteres.", type:"bad" };
     if(pass !== pass2) return { ok:false, msg:"Las claves no coinciden.", type:"bad" };
+    if(!selectedPlanId) return { ok:false, msg:"Selecciona un plan.", type:"bad" };
     if(!agree) return { ok:false, msg:"Debes aceptar los términos para continuar.", type:"bad" };
 
     return {
@@ -568,7 +491,7 @@
         phone,
         email,
         username: username || null,
-        pais: pais || null,
+        country: pais || null,
         password: pass
       }
     };
@@ -580,6 +503,22 @@
     return "";
   }
 
+  // Demo
+  el("demoBtn").addEventListener("click", () => {
+    el("first_name").value = "Luisaa";
+    el("last_name").value = "Espinalaa";
+    el("company_name").value = "Repuesto FinderRDaaa";
+    el("phone").value = "+1 809 000 0000";
+    el("email").value = `demo+${Date.now()}@mail.com`;
+    el("username").value = "luis783aa";
+    el("pais").value = "República Dominicana";
+    el("pass").value = "123456";
+    el("pass2").value = "123456";
+    el("agree").checked = true;
+    showMsg("Demo listo ✅ Selecciona plan y paga.", "good");
+  });
+
+  // ---------- PayPal ----------
   function initPayPal(){
     if(!window.paypal){
       showPayErr("No se pudo cargar PayPal SDK. Verifica el Client ID.");
@@ -594,28 +533,41 @@
       createOrder: async () => {
         const msg = mustBeReadyToPay();
         if(msg){ showMsg(msg, "bad"); showPayErr(msg); throw new Error(msg); }
+
+        // Si ya existe una orden creada en esta sesión, reúsala (evita cobros duplicados por reintentos)
+        if(currentOrderId){
+          setStep(2);
+          el("payHint").textContent = "✅ Orden ya creada. Completa el pago para crear tu cuenta.";
+          return currentOrderId;
+        }
+
         showPayErr("");
-        showMsg("Listo ✅ Ahora confirma el pago con PayPal…", "ok");
+        showMsg("Listo ✅ Ahora confirma el pago con PayPal…", "good");
 
         const { signup } = validateForm();
 
-        // IMPORTANTE: este flow NO requiere sesión. Crea orden y guarda pending_signups.
         const { data, error } = await supabase.functions.invoke("paypal-create-order-public", {
           body: { plan_id: selectedPlanId, signup }
         });
 
-        if(error) throw new Error(error?.message || "Error al crear orden.");
+        if(error){
+          const ctx = error?.context || {};
+          const detail = ctx?.body ? JSON.stringify(ctx.body) : "";
+          throw new Error((error?.message || "Error al crear orden.") + (detail ? " | " + detail : ""));
+        }
         if(!data?.orderID) throw new Error("No se recibió orderID.");
+
         setStep(2);
+        currentOrderId = data.orderID;
+        setFormLocked(true);
         el("payHint").textContent = "✅ Orden creada. Completa el pago para crear tu cuenta.";
         return data.orderID;
       },
 
-      // ✅ MODIFICADO: ahora enviamos TODO el payload requerido por paypal-capture-order-public
       onApprove: async (data) => {
         try{
           showPayErr("");
-          showMsg("Procesando pago…", "ok");
+          showMsg("Procesando pago…", "good");
 
           const v = validateForm();
           if(!v.ok){
@@ -629,15 +581,13 @@
           const payload = {
             orderID: data.orderID,
             plan_id: selectedPlanId,
-
-            // datos del usuario (para crear cuenta despues del pago)
             email: signup.email,
             password: signup.password,
             first_name: signup.first_name,
             last_name: signup.last_name,
             company_name: signup.company_name,
             phone: cleanPhone(signup.phone),
-            country: signup.pais || "República Dominicana",
+            country: signup.country || "República Dominicana",
             username: signup.username || ""
           };
 
@@ -645,9 +595,14 @@
             body: payload
           });
 
-          if(error) throw new Error(error?.message || "Error al capturar.");
+          if(error){
+            const ctx = error?.context || {};
+            const detail = ctx?.body ? JSON.stringify(ctx.body) : "";
+            throw new Error((error?.message || "Error al capturar.") + (detail ? " | " + detail : ""));
+          }
+
           if(out?.ok){
-            alert("Pago completado ✅ Cuenta creada. Ahora inicia sesión.");
+            alert("Pago completado ✅ Cuenta activada. Ahora inicia sesión.");
             location.href = "index.html";
             return;
           }
@@ -665,10 +620,24 @@
     }).render("#paypal-button-container");
   }
 
+  // Cargar PayPal SDK (tu client-id)
+  // OJO: si tú ya lo cargas en el HTML, puedes borrar este bloque.
+  const PAYPAL_CLIENT_ID = window.PAYPAL_CLIENT_ID || "";
+  if(PAYPAL_CLIENT_ID){
+    const s = document.createElement("script");
+    s.src = "https://www.paypal.com/sdk/js?client-id=" + encodeURIComponent(PAYPAL_CLIENT_ID) + "&currency=USD&intent=capture";
+    s.onload = () => initPayPal();
+    s.onerror = () => showPayErr("No se pudo cargar el SDK de PayPal.");
+    document.head.appendChild(s);
+  }else{
+    // Si no hay variable global, asume que ya está en el HTML
+    initPayPal();
+  }
+
   await loadPlans();
-  initPayPal();
 </script>
 </body>
 </html>
+
 
 
