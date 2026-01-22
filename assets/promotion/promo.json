@@ -1,6 +1,5 @@
 {
   "items": [
-    { "file": "promo1.png", "title": "Promo Enero"},
-    { "file": "promo2.png", "title": "Descuento filtros"}
+    { "file": "promo1.png", "title": "Planes de pago"},
   ]
 }
