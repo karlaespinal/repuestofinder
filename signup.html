@@ -121,7 +121,7 @@
       display:block;
       margin:0 0 6px;
     }
-    input{
+    input, select{
       width:100%;
       padding:12px 12px;
       border-radius:14px;
@@ -130,7 +130,7 @@
       outline:none;
       font-weight:800;
     }
-    input:focus{
+    input:focus, select:focus{
       border-color: rgba(37,99,235,.55);
       box-shadow: 0 0 0 4px rgba(37,99,235,.12);
     }
@@ -271,6 +271,7 @@
       <div class="sep"></div>
 
       <div class="grid">
+        <!-- Form -->
         <div class="card">
           <div class="row2">
             <div class="field">
@@ -291,11 +292,43 @@
           <div class="row2" style="margin-top:10px;">
             <div class="field">
               <label>Número de teléfono</label>
-              <input id="phone" autocomplete="tel" placeholder=""/>
+              <input id="phone" autocomplete="tel" placeholder="+1 809 000 0000"/>
             </div>
             <div class="field">
               <label>Correo</label>
               <input id="email" type="email" autocomplete="email" placeholder="correo@empresa.com"/>
+            </div>
+          </div>
+
+          <!-- NUEVO: username + pais -->
+          <div class="row2" style="margin-top:10px;">
+            <div class="field">
+              <label>Username (opcional)</label>
+              <input id="username" autocomplete="username" placeholder="ej: luis.espinal"/>
+            </div>
+            <div class="field">
+              <label>País</label>
+              <select id="pais">
+                <option value="">Selecciona tu país</option>
+                <option value="República Dominicana">República Dominicana</option>
+                <option value="Estados Unidos">Estados Unidos</option>
+                <option value="Puerto Rico">Puerto Rico</option>
+                <option value="México">México</option>
+                <option value="Colombia">Colombia</option>
+                <option value="Venezuela">Venezuela</option>
+                <option value="Panamá">Panamá</option>
+                <option value="Costa Rica">Costa Rica</option>
+                <option value="Guatemala">Guatemala</option>
+                <option value="Honduras">Honduras</option>
+                <option value="El Salvador">El Salvador</option>
+                <option value="Nicaragua">Nicaragua</option>
+                <option value="Perú">Perú</option>
+                <option value="Ecuador">Ecuador</option>
+                <option value="Chile">Chile</option>
+                <option value="Argentina">Argentina</option>
+                <option value="España">España</option>
+                <option value="Otro">Otro</option>
+              </select>
             </div>
           </div>
 
@@ -325,15 +358,14 @@
 
           <div class="actions">
             <button class="btn btnGhost" onclick="fillDemo()">Llenar demo</button>
-            <button class="btn btnPrimary" id="btnCreate" onclick="createAccount()">Crear cuenta</button>
           </div>
 
           <div class="small">
-            Nota: en pruebas, si “Confirm email” está activo, puede que no cree sesión de una vez.
-            Para activar inmediato, temporalmente apágalo. En producción lo dejamos ON.
+            Nota: En este flujo, la cuenta se crea <b>después</b> del pago (más seguro). Si ya tienes cuenta, al final te manda al login.
           </div>
         </div>
 
+        <!-- Plan + PayPal -->
         <div class="card">
           <div class="plansHeader">
             <h2>Elige tu plan</h2>
@@ -343,7 +375,7 @@
           <div class="plans" id="plans"></div>
 
           <div class="notice" style="margin-top:10px;">
-            Después de crear tu cuenta, podrás pagar aquí mismo con PayPal y tu cuenta quedará <b>ACTIVA</b> al instante.
+            <b>Primero pagas</b> y luego se crea tu cuenta automáticamente. Al finalizar, inicia sesión y listo ✅
           </div>
 
           <div class="sep"></div>
@@ -354,7 +386,7 @@
               <span style="font-size:12px;color:#94a3b8;font-weight:900;"></span>
             </div>
             <div class="small" id="payHint" style="margin-top:6px;">
-              1) Selecciona un plan. 2) Crea la cuenta. 3) Paga.
+              1) Completa tus datos. 2) Selecciona plan. 3) Paga con PayPal.
             </div>
             <div style="margin-top:10px;" id="paypal-button-container"></div>
             <div class="notice bad" id="payErr" style="display:none;margin-top:10px;"></div>
@@ -373,7 +405,6 @@
   const el = (id) => document.getElementById(id);
 
   let selectedPlanId = null;
-  let created = false;
   let paypalRendered = false;
 
   function showMsg(text, type){
@@ -421,6 +452,8 @@
     el("company_name").value = "Repuesto FinderRD";
     el("phone").value = "+1 809 000 0000";
     el("email").value = "demo+" + Date.now() + "@mail.com";
+    el("username").value = "luis" + Math.floor(Math.random()*1000);
+    el("pais").value = "República Dominicana";
     el("pass").value = "Demo12345!";
     el("pass2").value = "Demo12345!";
     el("agree").checked = true;
@@ -435,10 +468,6 @@
     return String(s || "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
   }
 
-  // Ruta de imagen:
-  // - Si image_url es absoluta: se usa tal cual
-  // - Si image_url es relativa: se fuerza a ./...
-  // - Si no hay image_url: ./assets/plans/<slug>.png
   function normalizeImgPath(url){
     const u = String(url || "").trim();
     if(!u) return "";
@@ -505,109 +534,43 @@
     });
   }
 
-  async function ensureSignedIn(email, password){
-    const { data: ses } = await supabase.auth.getSession();
-    if(ses?.session) return ses.session;
-
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if(error) throw error;
-    return data.session;
-  }
-
-  async function getAccessTokenOrFail(){
-    const { data: ses } = await supabase.auth.getSession();
-    const token = ses?.session?.access_token;
-    if(!token){
-      throw new Error("No hay sesión activa. Si 'Confirm email' está ON, confirma el email o apágalo temporalmente para pruebas.");
-    }
-    return token;
-  }
-
-  function mustBeReadyToPay(){
-    if(!selectedPlanId) return "Selecciona un plan.";
-    if(!created) return "Primero crea la cuenta.";
-    return "";
-  }
-
-  window.createAccount = async function(){
+  function validateForm(){
     showMsg("", "");
-    showPayErr("");
-
     const first_name = (el("first_name").value || "").trim();
     const last_name  = (el("last_name").value || "").trim();
     const company_name = (el("company_name").value || "").trim();
     const phone = (el("phone").value || "").trim();
     const email = (el("email").value || "").trim();
+    const username = (el("username").value || "").trim(); // opcional
+    const pais = (el("pais").value || "").trim();
     const pass  = (el("pass").value || "").trim();
     const pass2 = (el("pass2").value || "").trim();
     const agree = el("agree").checked;
 
-    if(!selectedPlanId) return showMsg("Selecciona un plan primero.", "bad");
-    if(!first_name || !last_name || !company_name || !email || !pass || !pass2) return showMsg("Completa todos los campos requeridos.", "bad");
-    if(pass.length < 8) return showMsg("La clave debe tener al menos 8 caracteres.", "bad");
-    if(pass !== pass2) return showMsg("Las claves no coinciden.", "bad");
-    if(!agree) return showMsg("Debes aceptar los términos para continuar.", "bad");
-
-    el("btnCreate").disabled = true;
-    el("btnCreate").textContent = "Creando cuenta...";
-
-    try{
-      const { data, error } = await supabase.auth.signUp({ email, password: pass });
-      if(error) throw error;
-
-      let session = null;
-      try{
-        session = await ensureSignedIn(email, pass);
-      }catch(e){
-        // Confirm email ON puede impedir login inmediato
-      }
-
-      const userId = data?.user?.id || session?.user?.id;
-
-      if(!userId){
-        created = false;
-        setStep(1);
-        showMsg(
-          "Cuenta creada, pero debes confirmar el email para poder iniciar sesión y pagar. Revisa tu correo (o apaga 'Confirm email' en pruebas).",
-          "bad"
-        );
-        return;
-      }
-
-      const { error: pErr } = await supabase
-        .from("profiles")
-        .upsert({
-          id: userId,
-          first_name,
-          last_name,
-          company_name,
-          phone,
-          role: "user"
-        }, { onConflict: "id" });
-
-      if(pErr) throw pErr;
-
-      created = true;
-      setStep(2);
-
-      try{
-        await getAccessTokenOrFail();
-        showMsg("Cuenta creada. Ahora completa el pago con PayPal para activar tu acceso.", "ok");
-        el("payHint").textContent = "✅ Cuenta lista. Dale a PayPal para activar.";
-      }catch(e){
-        showMsg(
-          "Cuenta creada, pero no hay sesión activa todavía. Confirma email / inicia sesión antes de pagar.",
-          "bad"
-        );
-        el("payHint").textContent = "⚠️ Falta sesión. Confirma email / inicia sesión antes de pagar.";
-      }
-    }catch(e){
-      showMsg("Error: " + (e?.message || e), "bad");
-    }finally{
-      el("btnCreate").disabled = false;
-      el("btnCreate").textContent = "Crear cuenta";
+    if(!selectedPlanId) return { ok:false, msg:"Selecciona un plan.", type:"bad" };
+    if(!first_name || !last_name || !company_name || !phone || !email || !pass || !pass2) {
+      return { ok:false, msg:"Completa todos los campos requeridos.", type:"bad" };
     }
-  };
+    if(pass.length < 8) return { ok:false, msg:"La clave debe tener al menos 8 caracteres.", type:"bad" };
+    if(pass !== pass2) return { ok:false, msg:"Las claves no coinciden.", type:"bad" };
+    if(!agree) return { ok:false, msg:"Debes aceptar los términos para continuar.", type:"bad" };
+
+    return {
+      ok:true,
+      signup:{
+        first_name, last_name, company_name, phone, email,
+        username: username || null,
+        pais: pais || null,
+        password: pass
+      }
+    };
+  }
+
+  function mustBeReadyToPay(){
+    const v = validateForm();
+    if(!v.ok) return v.msg;
+    return "";
+  }
 
   function initPayPal(){
     if(!window.paypal){
@@ -622,40 +585,45 @@
 
       createOrder: async () => {
         const msg = mustBeReadyToPay();
-        if(msg){ showPayErr(msg); throw new Error(msg); }
+        if(msg){ showMsg(msg, "bad"); showPayErr(msg); throw new Error(msg); }
         showPayErr("");
+        showMsg("Listo ✅ Ahora confirma el pago con PayPal…", "ok");
 
-        const token = await getAccessTokenOrFail();
+        const { signup } = validateForm();
 
-        const { data, error } = await supabase.functions.invoke("paypal-create-order", {
-          headers: { Authorization: "Bearer " + token },
-          body: { plan_id: selectedPlanId }
+        // IMPORTANTE: este flow NO requiere sesión. Crea orden y guarda pending_signups.
+        const { data, error } = await supabase.functions.invoke("paypal-create-order-public", {
+          body: { plan_id: selectedPlanId, signup }
         });
 
         if(error) throw new Error(error?.message || "Error al crear orden.");
         if(!data?.orderID) throw new Error("No se recibió orderID.");
+        setStep(2);
+        el("payHint").textContent = "✅ Orden creada. Completa el pago para crear tu cuenta.";
         return data.orderID;
       },
 
       onApprove: async (data) => {
         try{
           showPayErr("");
-          const token = await getAccessTokenOrFail();
+          showMsg("Procesando pago…", "ok");
 
-          const { data: out, error } = await supabase.functions.invoke("paypal-capture-order", {
-            headers: { Authorization: "Bearer " + token },
-            body: { orderID: data.orderID, plan_id: selectedPlanId }
+          const { data: out, error } = await supabase.functions.invoke("paypal-capture-order-public", {
+            body: { orderID: data.orderID }
           });
 
           if(error) throw new Error(error?.message || "Error al capturar.");
           if(out?.ok){
-            alert("Pago completado ✅ Tu cuenta fue activada!");
-            location.href = "app.html";
+            alert("Pago completado ✅ Cuenta creada. Ahora inicia sesión.");
+            location.href = "index.html";
             return;
           }
-          throw new Error(out?.message || "No se pudo activar: respuesta inesperada.");
+
+          // Caso típico: pago OK pero email ya existía
+          throw new Error(out?.message || "No se pudo crear cuenta: respuesta inesperada.");
         }catch(e){
           showPayErr("Pago no pudo confirmarse: " + (e?.message || e));
+          showMsg("Ocurrió un error al activar la cuenta. Verifica el mensaje y reintenta.", "bad");
         }
       },
 
@@ -670,6 +638,7 @@
 </script>
 </body>
 </html>
+
 
 
 
