@@ -435,6 +435,10 @@
     el("stepBadge").textContent = step === 2 ? "Paso 2/2" : "Paso 1/2";
   }
 
+  function cleanPhone(s){
+    return String(s || "").replace(/[^\d+]/g,"").trim();
+  }
+
   window.openTerms = function(){
     alert(
 `TERMINOS (resumen):
@@ -539,7 +543,7 @@
     const first_name = (el("first_name").value || "").trim();
     const last_name  = (el("last_name").value || "").trim();
     const company_name = (el("company_name").value || "").trim();
-    const phone = (el("phone").value || "").trim();
+    const phone = cleanPhone(el("phone").value || "");
     const email = (el("email").value || "").trim();
     const username = (el("username").value || "").trim(); // opcional
     const pais = (el("pais").value || "").trim();
@@ -558,7 +562,11 @@
     return {
       ok:true,
       signup:{
-        first_name, last_name, company_name, phone, email,
+        first_name,
+        last_name,
+        company_name,
+        phone,
+        email,
         username: username || null,
         pais: pais || null,
         password: pass
@@ -603,13 +611,38 @@
         return data.orderID;
       },
 
+      // ✅ MODIFICADO: ahora enviamos TODO el payload requerido por paypal-capture-order-public
       onApprove: async (data) => {
         try{
           showPayErr("");
           showMsg("Procesando pago…", "ok");
 
+          const v = validateForm();
+          if(!v.ok){
+            showMsg(v.msg, "bad");
+            showPayErr(v.msg);
+            throw new Error(v.msg);
+          }
+
+          const signup = v.signup;
+
+          const payload = {
+            orderID: data.orderID,
+            plan_id: selectedPlanId,
+
+            // datos del usuario (para crear cuenta despues del pago)
+            email: signup.email,
+            password: signup.password,
+            first_name: signup.first_name,
+            last_name: signup.last_name,
+            company_name: signup.company_name,
+            phone: cleanPhone(signup.phone),
+            country: signup.pais || "República Dominicana",
+            username: signup.username || ""
+          };
+
           const { data: out, error } = await supabase.functions.invoke("paypal-capture-order-public", {
-            body: { orderID: data.orderID }
+            body: payload
           });
 
           if(error) throw new Error(error?.message || "Error al capturar.");
@@ -619,7 +652,6 @@
             return;
           }
 
-          // Caso típico: pago OK pero email ya existía
           throw new Error(out?.message || "No se pudo crear cuenta: respuesta inesperada.");
         }catch(e){
           showPayErr("Pago no pudo confirmarse: " + (e?.message || e));
