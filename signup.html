@@ -604,41 +604,52 @@
       },
 
       onApprove: async (data) => {
-        try{
-          showPayErr("");
-          showMsg("Procesando pago…", "ok");
+  try{
+    showPayErr("");
+    showMsg("Procesando pago…", "ok");
 
-          const { data: out, error } = await supabase.functions.invoke("paypal-capture-order-public", {
-            body: { orderID: data.orderID }
-          });
+    // limpiar telefono (quita letras/espacios)
+    const cleanPhone = (s) => String(s||"").replace(/[^\d+]/g,"").trim();
 
-          if(error) throw new Error(error?.message || "Error al capturar.");
-          if(out?.ok){
-            alert("Pago completado ✅ Cuenta creada. Ahora inicia sesión.");
-            location.href = "index.html";
-            return;
-          }
+    const payload = {
+      orderID: data.orderID,
+      plan_id: selectedPlanId,
 
-          // Caso típico: pago OK pero email ya existía
-          throw new Error(out?.message || "No se pudo crear cuenta: respuesta inesperada.");
-        }catch(e){
-          showPayErr("Pago no pudo confirmarse: " + (e?.message || e));
-          showMsg("Ocurrió un error al activar la cuenta. Verifica el mensaje y reintenta.", "bad");
-        }
-      },
+      // Datos del formulario (IDs reales de tu HTML)
+      email: el("email").value.trim(),
+      password: el("pass").value.trim(),
+      first_name: el("first_name").value.trim(),
+      last_name: el("last_name").value.trim(),
+      company_name: el("company_name").value.trim(),
+      phone: cleanPhone(el("phone").value),
+      country: el("pais").value,
+      username: (el("username").value || "").trim()
+    };
 
-      onError: (err) => {
-        showPayErr("Error PayPal: " + (err?.message || err));
-      }
-    }).render("#paypal-button-container");
+    const { data: out, error } = await supabase.functions.invoke("paypal-capture-order-public", {
+      body: payload
+    });
+
+    if(error) throw new Error(error?.message || "Error al capturar.");
+    if(out?.ok){
+      alert("Pago completado ✅ Cuenta creada. Ahora inicia sesión.");
+      location.href = "index.html";
+      return;
+    }
+
+    throw new Error(out?.message || "No se pudo activar la cuenta.");
+  }catch(e){
+    console.error(e);
+    showMsg("Ocurrió un error al activar la cuenta. Verifica el mensaje y reintenta.", "err");
+    showPayErr("Pago no pudo confirmarse: " + (e?.message || e));
   }
+}
 
   await loadPlans();
   initPayPal();
 </script>
 </body>
 </html>
-
 
 
 
