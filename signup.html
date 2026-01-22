@@ -67,6 +67,10 @@
       color:#0b1220;
     }
     .btnDark{ background:#0b1220; color:#fff; }
+    .btnPrimary{ background:var(--pri); color:#fff; }
+    .btnPrimary:hover{ background:var(--pri2); }
+    .btnOk{ background:#16a34a; color:#fff; }
+    .btnOk:hover{ filter:brightness(.95); }
 
     .wrap{
       margin-top:16px;
@@ -156,7 +160,6 @@
       border:1px solid rgba(148,163,184,.25);
       background:rgba(255,255,255,.75);
       color:#0b1220;
-      white-space:pre-wrap;
     }
     .ok{
       border:1px solid rgba(22,163,74,.22);
@@ -175,8 +178,6 @@
       align-items:center;
       justify-content:flex-end;
     }
-    .btnPrimary{ background:var(--pri); color:#fff; }
-    .btnPrimary:hover{ background:var(--pri2); }
 
     .sep{ height:1px; background:rgba(230,232,240,.9); margin:12px 0; }
 
@@ -361,7 +362,7 @@
           </div>
 
           <div class="small">
-            Nota: En este flujo, la cuenta se crea <b>después</b> del pago (más seguro). Si ya tienes cuenta, al final te manda al login.
+            Nota: En este flujo, la cuenta se crea <b>después</b> del pago (más seguro). Si ya tienes cuenta, al final te damos acceso a iniciar sesión.
           </div>
         </div>
 
@@ -385,10 +386,20 @@
               <b>Pago con PayPal</b>
               <span style="font-size:12px;color:#94a3b8;font-weight:900;"></span>
             </div>
+
             <div class="small" id="payHint" style="margin-top:6px;">
               1) Completa tus datos. 2) Selecciona plan. 3) Paga con PayPal.
             </div>
+
             <div style="margin-top:10px;" id="paypal-button-container"></div>
+
+            <!-- NUEVO: zona de éxito (sin sacarte de la página) -->
+            <div class="notice ok" id="payOk" style="display:none;margin-top:10px;"></div>
+            <div class="actions" id="payOkActions" style="display:none; justify-content:flex-start; margin-top:10px;">
+              <button class="btn btnOk" id="btnGoApp">Entrar a la App</button>
+              <button class="btn btnPrimary" id="btnGoLogin">Iniciar sesión</button>
+            </div>
+
             <div class="notice bad" id="payErr" style="display:none;margin-top:10px;"></div>
           </div>
         </div>
@@ -429,6 +440,21 @@
     }
     b.style.display = "block";
     b.textContent = text;
+  }
+
+  function showPayOk(text){
+    const b = el("payOk");
+    if(!text){
+      b.style.display = "none";
+      b.textContent = "";
+      return;
+    }
+    b.style.display = "block";
+    b.textContent = text;
+  }
+
+  function setPayOkActions(visible){
+    el("payOkActions").style.display = visible ? "flex" : "none";
   }
 
   function setStep(step){
@@ -560,9 +586,7 @@
       signup:{
         first_name, last_name, company_name, phone, email,
         username: username || null,
-        // mandamos los 2 por compatibilidad
         pais: pais || null,
-        country: pais || null,
         password: pass
       }
     };
@@ -572,19 +596,6 @@
     const v = validateForm();
     if(!v.ok) return v.msg;
     return "";
-  }
-
-  function formatInvokeError(error, out){
-    // error = error del invoke (no siempre trae lo real)
-    // out = response body de la Edge Function (si llegó)
-    const parts = [];
-    if(out && typeof out === "object"){
-      if(out.step) parts.push(`step: ${out.step}`);
-      if(out.message) parts.push(`message: ${out.message}`);
-      if(out.detail) parts.push(`detail: ${typeof out.detail === "string" ? out.detail : JSON.stringify(out.detail)}`);
-    }
-    if(error?.message) parts.push(`invoke: ${error.message}`);
-    return parts.filter(Boolean).join("\n");
   }
 
   function initPayPal(){
@@ -602,6 +613,9 @@
         const msg = mustBeReadyToPay();
         if(msg){ showMsg(msg, "bad"); showPayErr(msg); throw new Error(msg); }
         showPayErr("");
+        showPayOk("");
+        setPayOkActions(false);
+
         showMsg("Listo ✅ Ahora confirma el pago con PayPal…", "ok");
 
         const { signup } = validateForm();
@@ -610,11 +624,7 @@
           body: { plan_id: selectedPlanId, signup }
         });
 
-        if(error){
-          const m = formatInvokeError(error, data);
-          showPayErr("No se pudo crear la orden:\n" + (m || "Error desconocido"));
-          throw new Error(error?.message || "Error al crear orden.");
-        }
+        if(error) throw new Error(error?.message || "Error al crear orden.");
         if(!data?.orderID) throw new Error("No se recibió orderID.");
 
         setStep(2);
@@ -625,26 +635,50 @@
       onApprove: async (data) => {
         try{
           showPayErr("");
+          showPayOk("");
+          setPayOkActions(false);
+
           showMsg("Procesando pago…", "ok");
 
           const { data: out, error } = await supabase.functions.invoke("paypal-capture-order-public", {
             body: { orderID: data.orderID }
           });
 
-          if(error){
-            const m = formatInvokeError(error, out);
-            throw new Error(m || error?.message || "Error al capturar.");
-          }
+          if(error) throw new Error(error?.message || "Error al capturar.");
 
           if(out?.ok){
-            alert("Pago completado ✅ Cuenta creada/activada. Ahora inicia sesión.");
-            location.href = "index.html";
+            // ✅ Mensaje bonito (sin sacarte de la página)
+            showMsg("¡Gracias! ✅ Tu cuenta ya está activa. Vamos a iniciar sesión…", "ok");
+            showPayOk("Pago confirmado ✅ Cuenta activa. Puedes entrar a la App ahora mismo.");
+            setPayOkActions(true);
+
+            // Desactivar botón PayPal visualmente (opcional)
+            el("paypal-button-container").innerHTML = "";
+
+            // Botones
+            el("btnGoApp").onclick = () => location.href = "app.html";
+            el("btnGoLogin").onclick = () => location.href = "index.html";
+
+            // ✅ Auto-login (pro)
+            const email = (el("email").value || "").trim();
+            const password = (el("pass").value || "").trim();
+
+            const { data: loginData, error: loginErr } = await supabase.auth.signInWithPassword({ email, password });
+
+            if(!loginErr && loginData?.session){
+              showMsg("Listo ✅ Sesión iniciada. Entrando a la App…", "ok");
+              setTimeout(()=> location.href = "app.html", 900);
+              return;
+            }
+
+            // Si no pudo auto-loguear, dejamos el botón visible
+            showMsg("Cuenta activa ✅ Ahora puedes iniciar sesión.", "ok");
             return;
           }
 
-          throw new Error(formatInvokeError(null, out) || "Respuesta inesperada del servidor.");
+          throw new Error(out?.message || "No se pudo crear cuenta: respuesta inesperada.");
         }catch(e){
-          showPayErr("Pago no pudo confirmarse:\n" + (e?.message || e));
+          showPayErr("Pago no pudo confirmarse: " + (e?.message || e));
           showMsg("Ocurrió un error al activar la cuenta. Verifica el mensaje y reintenta.", "bad");
         }
       },
