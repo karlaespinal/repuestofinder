@@ -1,9 +1,15 @@
 [
-  { "slug": "bosch",  "name": "Bosch",  "note": "Frenos / sensores" },
-  { "slug": "mahle",  "name": "Mahle",  "note": "Filtros / motor" },
-  { "slug": "ngk",    "name": "NGK",    "note": "Bujias" },
-  { "slug": "febi",   "name": "Febi",   "note": "Suspension / motor" },
-  { "slug": "kayaba", "name": "KYB",    "note": "Amortiguadores" },
-  { "slug": "mann",   "name": "MANN",   "note": "Filtros" }
+  { "slug": "bosch",   "name": "Bosch",   "note": "Frenos / sensores" },
+  { "slug": "mahle",   "name": "Mahle",   "note": "Filtros / motor" },
+  { "slug": "ngk",     "name": "NGK",     "note": "Bujias" },
+  { "slug": "febi",    "name": "Febi",    "note": "Suspension / motor" },
+  { "slug": "kayaba",  "name": "KYB",     "note": "Amortiguadores" },
+  { "slug": "mann",    "name": "MANN",    "note": "Filtros" },
+  { "slug": "555",     "name": "555",     "note": "Suspension / direccion" },
+  { "slug": "fremax",  "name": "Fremax",  "note": "Discos y frenos" },
+  { "slug": "hiq",     "name": "HI-Q",    "note": "Pastillas de freno" },
+  { "slug": "tp",      "name": "TP",      "note": "Motor / componentes internos" },
+  { "slug": "pmc",     "name": "PMC",     "note": "Filtros, Suspesion y Coreana" }
 ]
+
 
