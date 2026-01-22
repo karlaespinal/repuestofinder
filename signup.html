@@ -156,6 +156,7 @@
       border:1px solid rgba(148,163,184,.25);
       background:rgba(255,255,255,.75);
       color:#0b1220;
+      white-space:pre-wrap;
     }
     .ok{
       border:1px solid rgba(22,163,74,.22);
@@ -300,7 +301,6 @@
             </div>
           </div>
 
-          <!-- NUEVO: username + pais -->
           <div class="row2" style="margin-top:10px;">
             <div class="field">
               <label>Username (opcional)</label>
@@ -541,7 +541,7 @@
     const company_name = (el("company_name").value || "").trim();
     const phone = (el("phone").value || "").trim();
     const email = (el("email").value || "").trim();
-    const username = (el("username").value || "").trim(); // opcional
+    const username = (el("username").value || "").trim();
     const pais = (el("pais").value || "").trim();
     const pass  = (el("pass").value || "").trim();
     const pass2 = (el("pass2").value || "").trim();
@@ -560,7 +560,9 @@
       signup:{
         first_name, last_name, company_name, phone, email,
         username: username || null,
+        // mandamos los 2 por compatibilidad
         pais: pais || null,
+        country: pais || null,
         password: pass
       }
     };
@@ -570,6 +572,19 @@
     const v = validateForm();
     if(!v.ok) return v.msg;
     return "";
+  }
+
+  function formatInvokeError(error, out){
+    // error = error del invoke (no siempre trae lo real)
+    // out = response body de la Edge Function (si llegó)
+    const parts = [];
+    if(out && typeof out === "object"){
+      if(out.step) parts.push(`step: ${out.step}`);
+      if(out.message) parts.push(`message: ${out.message}`);
+      if(out.detail) parts.push(`detail: ${typeof out.detail === "string" ? out.detail : JSON.stringify(out.detail)}`);
+    }
+    if(error?.message) parts.push(`invoke: ${error.message}`);
+    return parts.filter(Boolean).join("\n");
   }
 
   function initPayPal(){
@@ -591,13 +606,17 @@
 
         const { signup } = validateForm();
 
-        // IMPORTANTE: este flow NO requiere sesión. Crea orden y guarda pending_signups.
         const { data, error } = await supabase.functions.invoke("paypal-create-order-public", {
           body: { plan_id: selectedPlanId, signup }
         });
 
-        if(error) throw new Error(error?.message || "Error al crear orden.");
+        if(error){
+          const m = formatInvokeError(error, data);
+          showPayErr("No se pudo crear la orden:\n" + (m || "Error desconocido"));
+          throw new Error(error?.message || "Error al crear orden.");
+        }
         if(!data?.orderID) throw new Error("No se recibió orderID.");
+
         setStep(2);
         el("payHint").textContent = "✅ Orden creada. Completa el pago para crear tu cuenta.";
         return data.orderID;
@@ -612,17 +631,20 @@
             body: { orderID: data.orderID }
           });
 
-          if(error) throw new Error(error?.message || "Error al capturar.");
+          if(error){
+            const m = formatInvokeError(error, out);
+            throw new Error(m || error?.message || "Error al capturar.");
+          }
+
           if(out?.ok){
-            alert("Pago completado ✅ Cuenta creada. Ahora inicia sesión.");
+            alert("Pago completado ✅ Cuenta creada/activada. Ahora inicia sesión.");
             location.href = "index.html";
             return;
           }
 
-          // Caso típico: pago OK pero email ya existía
-          throw new Error(out?.message || "No se pudo crear cuenta: respuesta inesperada.");
+          throw new Error(formatInvokeError(null, out) || "Respuesta inesperada del servidor.");
         }catch(e){
-          showPayErr("Pago no pudo confirmarse: " + (e?.message || e));
+          showPayErr("Pago no pudo confirmarse:\n" + (e?.message || e));
           showMsg("Ocurrió un error al activar la cuenta. Verifica el mensaje y reintenta.", "bad");
         }
       },
