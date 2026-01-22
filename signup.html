@@ -201,8 +201,8 @@
       background:rgba(255,255,255,.75);
       cursor:pointer;
       transition: .15s transform, .15s border-color, .15s box-shadow;
+      position: relative;
     }
-    (position: relative; ) /* (dejo tu css tal cual, solo arreglé lo de imágenes y el typo de --ok) */
     .plan:hover{
       transform: translateY(-1px);
       border-color: rgba(37,99,235,.35);
@@ -431,23 +431,25 @@
     return "US$ " + v;
   }
 
-  // ✅ FIX: rutas de imagen robustas (relative + http + / + fallback por slug)
+  function escapeHtml(s){
+    return String(s || "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
+  }
+
+  // Ruta de imagen:
+  // - Si image_url es absoluta: se usa tal cual
+  // - Si image_url es relativa: se fuerza a ./...
+  // - Si no hay image_url: ./assets/plans/<slug>.png
   function normalizeImgPath(url){
     const u = String(url || "").trim();
     if(!u) return "";
-    if(/^https?:\/\//i.test(u)) return u;      // absoluto web
-    if(u.startsWith("/")) return u;            // absoluto en dominio
-    if(u.startsWith("./")) return u;           // relativo correcto
-    return "./" + u.replace(/^\.?\//, "");     // fuerza relativo desde el mismo nivel del html
+    if(/^https?:\/\//i.test(u)) return u;
+    if(u.startsWith("/")) return u;
+    if(u.startsWith("./")) return u;
+    return "./" + u.replace(/^\.?\//, "");
   }
-
   function planImgFallback(slug){
     const s = String(slug || "plan").toLowerCase().trim();
     return `./assets/plans/${s}.png`;
-  }
-
-  function escapeHtml(s){
-    return String(s || "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
   }
 
   async function loadPlans(){
@@ -481,8 +483,7 @@
             <img
               src="${img}"
               alt="${escapeHtml(p.name)}"
-              referrerpolicy="no-referrer"
-              onerror="this.onerror=null; this.src='./assets/bg.jpg';"
+              onerror="this.onerror=null; this.src='${planImgFallback(p.slug)}'; if(this.src.includes('/assets/plans/')){ this.onerror=null; this.src='./assets/bg.jpg'; }"
             >
           </div>
           <div class="planMain">
@@ -624,14 +625,7 @@
         if(msg){ showPayErr(msg); throw new Error(msg); }
         showPayErr("");
 
-        let token;
-        try{
-          token = await getAccessTokenOrFail();
-        }catch(e){
-          const m = (e?.message || e);
-          showPayErr(m);
-          throw new Error(m);
-        }
+        const token = await getAccessTokenOrFail();
 
         const { data, error } = await supabase.functions.invoke("paypal-create-order", {
           headers: { Authorization: "Bearer " + token },
@@ -650,7 +644,7 @@
 
           const { data: out, error } = await supabase.functions.invoke("paypal-capture-order", {
             headers: { Authorization: "Bearer " + token },
-            body: { orderID: data.orderID }
+            body: { orderID: data.orderID, plan_id: selectedPlanId }
           });
 
           if(error) throw new Error(error?.message || "Error al capturar.");
@@ -676,5 +670,6 @@
 </script>
 </body>
 </html>
+
 
 
