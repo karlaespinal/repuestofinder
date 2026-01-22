@@ -12,6 +12,7 @@
       --txt:#0f172a;
       --mut:#64748b;
       --pri:#2563eb;
+      --pri2:#1d4ed8;
       --dark:#111;
       --shadow:0 16px 40px rgba(2,6,23,.10);
       --r:16px;
@@ -48,14 +49,21 @@
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap:10px;
+      gap:12px;
       margin-bottom:16px;
+    }
+
+    .navLeft{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:230px;
+      flex:0 0 auto;
     }
     .brand{
       display:flex;
       align-items:center;
       gap:10px;
-      min-width:220px;
     }
     .logo{
       width:42px;height:42px;border-radius:14px;
@@ -67,22 +75,40 @@
     .brandTitle{line-height:1}
     .brandTitle b{display:block;font-size:15px}
     .brandTitle span{display:block;font-size:12px;color:#94a3b8;font-weight:800;letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
+
+    .navCenter{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex:1;
+      min-width:0;
+    }
+
     .menu{
       display:flex;
       align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
+      gap:6px;
+      flex-wrap:nowrap;
       justify-content:center;
-      flex:1;
+      padding:6px;
+      border-radius:14px;
+      border:1px solid rgba(230,232,240,.75);
+      background:rgba(255,255,255,.60);
+      overflow:auto;
+      max-width:720px;
+      scrollbar-width:none;
     }
+    .menu::-webkit-scrollbar{display:none}
     .menu a{
       text-decoration:none;
       font-weight:900;
       color:#0f172a;
-      padding:10px 12px;
+      padding:9px 12px;
       border-radius:12px;
       border:1px solid transparent;
       user-select:none;
+      white-space:nowrap;
+      flex:0 0 auto;
     }
     .menu a:hover{ background:#fff; border-color:var(--line); }
     .menu a.active{
@@ -90,14 +116,17 @@
       border-color:rgba(37,99,235,.20);
       color:var(--pri);
     }
-    .right{
+
+    .navRight{
       display:flex;
       align-items:center;
       gap:8px;
       flex-wrap:wrap;
       justify-content:flex-end;
-      min-width:260px;
+      min-width:320px;
+      flex:0 0 auto;
     }
+
     .pill{
       display:inline-flex;
       align-items:center;
@@ -123,10 +152,22 @@
       justify-content:center;
       gap:8px;
       user-select:none;
+      white-space:nowrap;
     }
+    .btn:active{ transform: translateY(1px); }
     .btnPrimary{background:var(--pri);color:#fff}
+    .btnPrimary:hover{background:var(--pri2)}
     .btnGhost{background:#fff;border:1px solid var(--line);color:#0f172a}
     .btnDark{background:var(--dark);color:#fff}
+    .btnLink{
+      background:transparent;
+      border:0;
+      padding:0;
+      cursor:pointer;
+      font-weight:900;
+      color:var(--pri);
+    }
+    .btnSmall{ padding:8px 10px; border-radius:10px; font-size:12px; }
 
     .hero{
       border:1px solid var(--line);
@@ -152,6 +193,7 @@
       max-width:720px;
     }
     .heroActions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+
     .kpis{
       border:1px solid rgba(230,232,240,.95);
       border-radius:18px;
@@ -197,7 +239,6 @@
       text-transform:uppercase;
     }
 
-    /* ======= CAROUSEL ======= */
     .carousel{
       position:relative;
       border-radius:18px;
@@ -239,7 +280,6 @@
       to   { transform: translate3d(calc(-1 * var(--rfShift, 50%)),0,0); }
     }
 
-    /* Slides autopartes */
     .brandSlide{
       flex:0 0 auto;
       min-width:240px;
@@ -290,7 +330,6 @@
     .brandMeta b{display:block;font-size:13px}
     .brandMeta span{display:block;font-size:11px;color:var(--mut);font-weight:800;margin-top:2px}
 
-    /* Slides vehiculos */
     .vehSlide{
       flex:0 0 auto;
       width:320px;
@@ -358,15 +397,159 @@
     .footer{ margin-top:14px; text-align:center; color:#94a3b8; font-size:12px; font-weight:800; }
     .mini{font-size:12px;color:var(--mut);margin-top:10px}
 
+    .msg{
+      margin-top:10px;
+      font-size:12px;
+      font-weight:900;
+      color:#0f172a;
+      background:rgba(37,99,235,.08);
+      border:1px solid rgba(37,99,235,.18);
+      padding:10px 12px;
+      border-radius:14px;
+      display:none;
+    }
+    .msg.err{
+      background:rgba(239,68,68,.08);
+      border-color:rgba(239,68,68,.18);
+    }
+
+    .modalBack{
+      position:fixed;
+      inset:0;
+      background:rgba(2,6,23,.48);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:99;
+    }
+    .modal{
+      width:min(520px, 100%);
+      background:rgba(255,255,255,.94);
+      border:1px solid rgba(230,232,240,.95);
+      border-radius:18px;
+      box-shadow:0 22px 70px rgba(2,6,23,.30);
+      overflow:hidden;
+    }
+    .modalHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:12px 14px;
+      border-bottom:1px solid rgba(230,232,240,.95);
+      background:rgba(246,247,251,.68);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .modalHead b{font-size:14px}
+    .modalBody{ padding:14px; }
+    .tabs{
+      display:flex;
+      gap:8px;
+      margin-bottom:12px;
+      flex-wrap:wrap;
+    }
+    .tab{
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid rgba(230,232,240,.95);
+      background:#fff;
+      font-weight:900;
+      cursor:pointer;
+      font-size:12px;
+    }
+    .tab.active{
+      background:rgba(37,99,235,.10);
+      border-color:rgba(37,99,235,.20);
+      color:var(--pri);
+    }
+    .field{ margin-top:10px; }
+    .field label{
+      display:block;
+      font-size:12px;
+      color:#334155;
+      font-weight:900;
+      margin-bottom:6px;
+    }
+    .inp{
+      width:100%;
+      padding:11px 12px;
+      border-radius:12px;
+      border:1px solid rgba(230,232,240,.95);
+      background:#fff;
+      outline:none;
+      font-weight:800;
+      color:#0f172a;
+    }
+    .inp:focus{
+      border-color:rgba(37,99,235,.35);
+      box-shadow:0 0 0 4px rgba(37,99,235,.10);
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+    .muted{ color:var(--mut); font-size:12px; font-weight:800; }
+
+    .promoWrap{
+      display:none;
+      margin-top:14px;
+    }
+
+    .promoImg{
+      width:100%;
+      height:auto;
+      display:block;
+      border-radius:16px;
+      border:1px solid rgba(230,232,240,.95);
+      box-shadow:0 14px 40px rgba(2,6,23,.18);
+    }
+    .promoDots{
+      display:flex;
+      gap:8px;
+      justify-content:center;
+      margin-top:10px;
+      flex-wrap:wrap;
+    }
+    .dot{
+      width:9px;height:9px;border-radius:999px;
+      background:rgba(100,116,139,.35);
+      border:1px solid rgba(230,232,240,.95);
+      cursor:pointer;
+    }
+    .dot.active{
+      background:rgba(37,99,235,.70);
+    }
+
     @media(max-width:980px){
       .heroGrid{grid-template-columns:1fr}
-      .right{min-width:auto}
-      .brand{min-width:auto}
+      .nav{ gap:10px; }
+      .navRight{ min-width:auto; }
+      .navLeft{ min-width:auto; }
+      .menu{ max-width:520px; }
       .brandSlide{min-width:220px}
       .vehSlide{width:300px}
     }
+    @media(max-width:640px){
+      .nav{
+        flex-wrap:wrap;
+        justify-content:center;
+      }
+      .navLeft, .navRight, .navCenter{
+        width:100%;
+        justify-content:center;
+      }
+      .navRight{
+        gap:8px;
+      }
+      .menu{ width:100%; max-width:100%; justify-content:flex-start; }
+    }
     @media(max-width:520px){
-      .menu{justify-content:flex-start}
       .brandSlide{min-width:210px}
       .vehSlide{width:280px}
       .carousel::before,.carousel::after{width:34px}
@@ -378,23 +561,33 @@
 <body>
   <div class="page">
     <div class="nav">
-      <div class="brand">
-        <div class="logo">RF</div>
-        <div class="brandTitle">
-          <b>RepuestoFinder</b>
-          <span>Dashboard</span>
+      <div class="navLeft">
+        <div class="brand">
+          <div class="logo">RF</div>
+          <div class="brandTitle">
+            <b>RepuestoFinder</b>
+            <span>Dashboard</span>
+          </div>
         </div>
       </div>
 
-      <div class="menu">
-        <a href="#" class="active" onclick="navTo('inicio');return false;">Inicio</a>
-        <a href="#" onclick="navTo('buscador');return false;">Buscador Automotriz</a>
-        <a href="#" onclick="navTo('marcas');return false;">Marcas</a>
-        <a href="#" onclick="navTo('vehiculos');return false;">Vehiculos</a>
+      <div class="navCenter">
+        <div class="menu">
+          <a href="#" class="active" onclick="navTo('inicio');return false;">Inicio</a>
+          <a href="#" onclick="navTo('buscador');return false;">Buscador Automotriz</a>
+          <a href="#" onclick="navTo('marcas');return false;">Marcas</a>
+          <a href="#" onclick="navTo('vehiculos');return false;">Vehiculos</a>
+        </div>
       </div>
 
-      <div class="right">
+      <div class="navRight">
         <span class="pill" id="demoPill" title="Intentos demo disponibles">Demo: -</span>
+
+        <span class="pill" id="userPill" style="display:none">Hola, —</span>
+
+        <button class="btn btnGhost" id="btnLogin" onclick="openAuth()">Iniciar sesion</button>
+        <button class="btn btnGhost" id="btnLogout" style="display:none" onclick="logout()">Salir</button>
+
         <button class="btn btnGhost" onclick="goSignup()">Registrarme</button>
         <button class="btn btnGhost" onclick="goApp()">Ir a la App</button>
         <button class="btn btnPrimary" onclick="demo()">Probar demo (10)</button>
@@ -415,7 +608,8 @@
             <button class="btn btnGhost" onclick="goSignup()">Crear cuenta</button>
             <button class="btn btnDark" onclick="navTo('vehiculos')">Ver vehiculos</button>
           </div>
-          <div class="mini"></div>
+
+          <div class="msg" id="topMsg"></div>
         </div>
 
         <div class="kpis">
@@ -438,7 +632,6 @@
       </div>
     </div>
 
-    <!-- AUTOPARTES -->
     <div class="section" id="marcas">
       <div class="sectionTitle">
         <h2>Marcas de TOP MUNDIAL</h2>
@@ -450,12 +643,9 @@
           <div class="carouselTrack" id="autopartsTrack"></div>
         </div>
       </div>
-
-      <div class="mini">
-      </div>
+      <div class="mini"></div>
     </div>
 
-    <!-- VEHICULOS -->
     <div class="section" id="vehiculos">
       <div class="sectionTitle">
         <h2>Marcas de vehiculos TOP MUNDIAL</h2>
@@ -467,316 +657,696 @@
           <div class="carouselTrack" id="vehiclesTrack"></div>
         </div>
       </div>
-
-      <div class="mini">
-      </div>
+      <div class="mini"></div>
     </div>
 
     <div class="footer">© <span id="y"></span> RepuestoFinder</div>
   </div>
 
-<script>
+  <div class="modalBack" id="authBack" onclick="backdropClose(event,'authBack')">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Autenticacion">
+      <div class="modalHead">
+        <b id="authTitle">Iniciar sesion</b>
+        <button class="btn btnGhost btnSmall" onclick="closeAuth()">Cerrar</button>
+      </div>
+      <div class="modalBody">
+        <div class="tabs">
+          <button class="tab active" id="tabLogin" onclick="switchAuthTab('login')">Iniciar sesion</button>
+          <button class="tab" id="tabRecovery" onclick="switchAuthTab('recovery')">Recuperar</button>
+          <button class="tab" id="tabNewPass" style="display:none" onclick="switchAuthTab('newpass')">Nueva clave</button>
+        </div>
 
-  // Sube este numero cada vez que cambies/subas imagenes para romper cache:
-  window.RF_ASSET_VER = "3";
+        <div id="paneLogin">
+          <div class="field">
+            <label>Correo o username</label>
+            <input class="inp" id="loginId" placeholder="ej: luis@correo.com o luis" autocomplete="username"/>
+          </div>
+          <div class="field">
+            <label>Clave</label>
+            <input class="inp" id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password"/>
+          </div>
 
-  const DEMO_MAX = 10;
-  const KEY = "rf_demo_attempts_left";
+          <div class="row">
+            <button class="btn btnPrimary" onclick="doLogin()">Entrar</button>
+            <button class="btnLink" onclick="switchAuthTab('recovery')">Olvide mi contraseña</button>
+          </div>
 
-  function getLeft(){
-    const v = localStorage.getItem(KEY);
-    if(v === null || v === "" || isNaN(Number(v))) {
-      localStorage.setItem(KEY, String(DEMO_MAX));
-      return DEMO_MAX;
+          <div class="muted" style="margin-top:10px">
+            Si escribes username, el sistema lo convertira a correo usando Supabase.
+          </div>
+        </div>
+
+        <div id="paneRecovery" style="display:none">
+          <div class="field">
+            <label>Correo (para enviar link)</label>
+            <input class="inp" id="recoveryEmail" placeholder="ej: luis@correo.com" autocomplete="email"/>
+          </div>
+          <div class="row">
+            <button class="btn btnPrimary" onclick="sendRecovery()">Enviar link</button>
+            <button class="btn btnGhost" onclick="switchAuthTab('login')">Volver</button>
+          </div>
+          <div class="muted" style="margin-top:10px">
+            Te llegara un correo con un link para crear una nueva clave.
+          </div>
+        </div>
+
+        <div id="paneNewPass" style="display:none">
+          <div class="field">
+            <label>Nueva clave</label>
+            <input class="inp" id="newPass1" type="password" placeholder="Minimo 6 caracteres" autocomplete="new-password"/>
+          </div>
+          <div class="field">
+            <label>Confirmar nueva clave</label>
+            <input class="inp" id="newPass2" type="password" placeholder="Repite la clave" autocomplete="new-password"/>
+          </div>
+          <div class="row">
+            <button class="btn btnPrimary" onclick="setNewPassword()">Guardar clave</button>
+            <button class="btn btnGhost" onclick="closeAuth()">Cerrar</button>
+          </div>
+          <div class="muted" style="margin-top:10px">
+            Si llegaste aqui desde el link de recuperacion, ya puedes actualizar tu clave.
+          </div>
+        </div>
+
+        <div class="msg" id="authMsg"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modalBack" id="promoBack" onclick="backdropClose(event,'promoBack')">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Promocion">
+      <div class="modalHead">
+        <b>Promocion</b>
+        <button class="btn btnGhost btnSmall" onclick="closePromo()">Cerrar</button>
+      </div>
+      <div class="modalBody">
+        <div class="promoWrap" id="promoWrap">
+          <a href="#" id="promoLink" target="_blank" rel="noopener" style="display:block">
+            <img id="promoImg" class="promoImg" alt="Promocion"/>
+          </a>
+          <div class="promoDots" id="promoDots"></div>
+        </div>
+        <div class="muted" id="promoEmpty" style="display:none;text-align:center;padding:10px 0;">
+          No hay promociones.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { supabase } from "./assets/supabaseClient.js";
+
+    window.RF_ASSET_VER = "4";
+
+    const DEMO_MAX = 10;
+    const KEY = "rf_demo_attempts_left";
+
+    const $ = (id)=>document.getElementById(id);
+
+    function setMsg(el, text, isErr){
+      if(!el) return;
+      el.textContent = text || "";
+      el.classList.toggle("err", !!isErr);
+      el.style.display = text ? "block" : "none";
     }
-    return Math.max(0, Number(v));
-  }
-  function setLeft(n){
-    localStorage.setItem(KEY, String(Math.max(0, n)));
-    paint();
-  }
-  function paint(){
-    const left = getLeft();
-    const demoPill = document.getElementById("demoPill");
-    if(demoPill) demoPill.textContent = "Demo: " + left;
-  }
 
-  window.navTo = function(id){
-    if(id === "buscador"){
-      window.location.href = "app.html";
-      return;
+    function getLeft(){
+      const v = localStorage.getItem(KEY);
+      if(v === null || v === "" || isNaN(Number(v))) {
+        localStorage.setItem(KEY, String(DEMO_MAX));
+        return DEMO_MAX;
+      }
+      return Math.max(0, Number(v));
     }
-    const el = document.getElementById(id);
-    if(el) el.scrollIntoView({ behavior:"smooth", block:"start" });
-  };
-
-  window.goApp = function(){ window.location.href = "app.html"; };
-  window.goSignup = function(){ window.location.href = "signup.html"; };
-
-  window.demo = function(){
-    const left = getLeft();
-    if(left <= 0){
-      alert("Ya agotaste los 10 intentos de demo.");
-      return;
+    function setLeft(n){
+      localStorage.setItem(KEY, String(Math.max(0, n)));
+      paint();
     }
-    setLeft(left - 1);
-    window.location.href = "app.html?demo=1";
-  };
-
-  function escapeHtml(s){
-    return String(s || "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
-  }
-
-  async function fetchJsonSafe(url, fallback){
-    try{
-      const r = await fetch(url, { cache:"no-store" });
-      if(!r.ok) return fallback;
-      const j = await r.json();
-      if(!Array.isArray(j)) return fallback;
-      return j;
-    }catch(_){
-      return fallback;
+    function paint(){
+      const left = getLeft();
+      const demoPill = $("demoPill");
+      if(demoPill) demoPill.textContent = "Demo: " + left;
     }
-  }
 
-  function toTitleCaseNoSpace(s){
-    s = String(s||"").trim();
-    if(!s) return "";
-    return s
-      .split(/[\s\-_]+/g)
-      .filter(Boolean)
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-      .join("");
-  }
-  function firstUpper(s){
-    s = String(s||"");
-    if(!s) return s;
-    return s.charAt(0).toUpperCase() + s.slice(1);
-  }
-  function initialsFromName(name){
-    name = String(name||"").trim();
-    if(!name) return "RF";
-    const parts = name.split(/\s+/g).filter(Boolean);
-    if(parts.length === 1){
-      const w = parts[0];
-      return (w.slice(0,2)).toUpperCase();
-    }
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  function showPlaceholderInWrap(wrapEl, text){
-    wrapEl.innerHTML = `<div class="ph">${escapeHtml(text)}</div>`;
-  }
-
-  // Carga robusta: prueba variantes de nombre + extensiones, sin romperse por cache.
-  function setImgRobust(imgEl, folder, slug, wrapEl, placeholderText, onFinalFail){
-    const raw = String(slug || "").trim();
-    const low = raw.toLowerCase();
-
-    const variants = [];
-    const add = (v) => { if(v && !variants.includes(v)) variants.push(v); };
-
-    add(raw);
-    add(low);
-    add(firstUpper(low));
-    add(toTitleCaseNoSpace(raw));
-    add(toTitleCaseNoSpace(low));
-
-    add(low.replace(/[-_]+/g, " "));
-    add(low.replace(/\s+/g, "-"));
-    add(low.replace(/\s+/g, "_"));
-    add(raw.replace(/[-_]+/g, " "));
-    add(raw.replace(/\s+/g, "-"));
-    add(raw.replace(/\s+/g, "_"));
-
-    const candidates = [];
-    variants.forEach(v=>{
-      candidates.push(`assets/${folder}/${v}.png`);
-      candidates.push(`assets/${folder}/${v}.jpg`);
-      candidates.push(`assets/${folder}/${v}.jpeg`);
-      candidates.push(`assets/${folder}/${v}.webp`);
-      candidates.push(`assets/${folder}/${v}.avif`);
-    });
-
-    let i = 0;
-    const ver = window.RF_ASSET_VER ? ("?v=" + window.RF_ASSET_VER) : "";
-
-    const tryNext = () => {
-      if(i >= candidates.length){
-        if(typeof onFinalFail === "function"){
-          onFinalFail();
-          return;
-        }
-        if(wrapEl){
-          showPlaceholderInWrap(wrapEl, placeholderText || "RF");
-        }else{
-          imgEl.style.display = "none";
-        }
+    window.navTo = function(id){
+      if(id === "buscador"){
+        window.location.href = "app.html";
         return;
       }
-      imgEl.style.display = "";
-      imgEl.src = candidates[i++] + ver;
+      const el = document.getElementById(id);
+      if(el) el.scrollIntoView({ behavior:"smooth", block:"start" });
     };
 
-    imgEl.onerror = () => tryNext();
-    tryNext();
-  }
+    window.goApp = function(){ window.location.href = "app.html"; };
+    window.goSignup = function(){ window.location.href = "signup.html"; };
 
-  function renderAutoparts(trackEl, items){
-    trackEl.innerHTML = items.map(it=>{
-      const name = escapeHtml(it.name || it.slug || "");
-      const note = escapeHtml(it.note || "Autopartes");
-      const slug = escapeHtml(it.slug || "");
-      return `
-        <div class="brandSlide" data-slug="${slug}">
-          <div class="brandLogoWrap">
-            <img alt="${name}" data-logo="${slug}" loading="eager" decoding="async">
-          </div>
-          <div class="brandMeta">
-            <b>${name}</b>
-            <span>${note}</span>
-          </div>
-        </div>
-      `;
-    }).join("");
+    window.demo = function(){
+      const left = getLeft();
+      if(left <= 0){
+        alert("Ya agotaste los 10 intentos de demo.");
+        return;
+      }
+      setLeft(left - 1);
+      window.location.href = "app.html?demo=1";
+    };
 
-    trackEl.querySelectorAll(".brandSlide").forEach(slide=>{
-      const slug = slide.getAttribute("data-slug");
-      const img = slide.querySelector("img[data-logo]");
-      const wrap = slide.querySelector(".brandLogoWrap");
-      const name = slide.querySelector(".brandMeta b")?.textContent || slug;
-      const ph = initialsFromName(name);
-      setImgRobust(img, "logos/autopartes", slug, wrap, ph);
-    });
-  }
+    function escapeHtml(s){
+      return String(s || "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
+    }
 
-  // - Logo pequeno (marca): assets/logos/autos/<slug>.png
-  // - Foto grande detras (vehiculo): assets/logos/vehicles/<slug>.jpg/png
-  function renderVehicles(trackEl, items){
-    trackEl.innerHTML = items.map(it=>{
-      const name = escapeHtml(it.name || it.slug || "");
-      const tag  = escapeHtml(it.tag || "RD");
-      const slug = escapeHtml(it.slug || "");
-      return `
-        <div class="vehSlide" data-slug="${slug}">
-          <div class="vehImgWrap">
-            <img alt="${name}" data-photo="${slug}" loading="eager" decoding="async">
-          </div>
-          <div class="vehCap">
-            <div class="left">
-              <div class="vehMiniLogo">
-                <img alt="${name} logo" data-vlogo="${slug}" loading="eager" decoding="async">
-              </div>
-              <b>${name}</b>
-            </div>
-            <span>${tag}</span>
-          </div>
-        </div>
-      `;
-    }).join("");
+    async function fetchJsonSafe(url, fallback){
+      try{
+        const r = await fetch(url, { cache:"no-store" });
+        if(!r.ok) return fallback;
+        const j = await r.json();
+        return j ?? fallback;
+      }catch(_){
+        return fallback;
+      }
+    }
 
-    trackEl.querySelectorAll(".vehSlide").forEach(slide=>{
-      const slug = slide.getAttribute("data-slug");
-      const name = slide.querySelector(".vehCap b")?.textContent || slug;
-      const ph = initialsFromName(name);
+    function toTitleCaseNoSpace(s){
+      s = String(s||"").trim();
+      if(!s) return "";
+      return s
+        .split(/[\s\-_]+/g)
+        .filter(Boolean)
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join("");
+    }
+    function firstUpper(s){
+      s = String(s||"");
+      if(!s) return s;
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+    function initialsFromName(name){
+      name = String(name||"").trim();
+      if(!name) return "RF";
+      const parts = name.split(/\s+/g).filter(Boolean);
+      if(parts.length === 1){
+        const w = parts[0];
+        return (w.slice(0,2)).toUpperCase();
+      }
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    function showPlaceholderInWrap(wrapEl, text){
+      wrapEl.innerHTML = `<div class="ph">${escapeHtml(text)}</div>`;
+    }
 
-      // FOTO GRANDE (vehiculo detras)
-      const photoImg = slide.querySelector("img[data-photo]");
-      setImgRobust(photoImg, "logos/vehicles", slug, null, null, () => {
-        photoImg.style.display = "none";
+    function setImgRobust(imgEl, folder, slug, wrapEl, placeholderText, onFinalFail){
+      const raw = String(slug || "").trim();
+      const low = raw.toLowerCase();
+
+      const variants = [];
+      const add = (v) => { if(v && !variants.includes(v)) variants.push(v); };
+
+      add(raw);
+      add(low);
+      add(firstUpper(low));
+      add(toTitleCaseNoSpace(raw));
+      add(toTitleCaseNoSpace(low));
+
+      add(low.replace(/[-_]+/g, " "));
+      add(low.replace(/\s+/g, "-"));
+      add(low.replace(/\s+/g, "_"));
+      add(raw.replace(/[-_]+/g, " "));
+      add(raw.replace(/\s+/g, "-"));
+      add(raw.replace(/\s+/g, "_"));
+
+      const candidates = [];
+      variants.forEach(v=>{
+        candidates.push(`assets/${folder}/${v}.png`);
+        candidates.push(`assets/${folder}/${v}.jpg`);
+        candidates.push(`assets/${folder}/${v}.jpeg`);
+        candidates.push(`assets/${folder}/${v}.webp`);
+        candidates.push(`assets/${folder}/${v}.avif`);
       });
 
-      // LOGO PEQUENO (marca)
-      const logoImg = slide.querySelector("img[data-vlogo]");
-      const logoWrap = slide.querySelector(".vehMiniLogo");
-      setImgRobust(logoImg, "logos/autos", slug, logoWrap, ph);
-    });
-  }
+      let i = 0;
+      const ver = window.RF_ASSET_VER ? ("?v=" + window.RF_ASSET_VER) : "";
 
-  function makeLoop(trackEl){
-    const children = Array.from(trackEl.children);
-    children.forEach(n => trackEl.appendChild(n.cloneNode(true)));
-    const half = trackEl.scrollWidth / 2;
-    trackEl.style.setProperty("--rfShift", half + "px");
-  }
-
-  function waitImagesIn(el, timeoutMs){
-    const imgs = Array.from(el.querySelectorAll("img"));
-    if(imgs.length === 0) return Promise.resolve();
-
-    const done = new Set();
-    return new Promise((resolve)=>{
-      const timer = setTimeout(()=>resolve(), timeoutMs || 2400);
-
-      const mark = () => {
-        if(done.size >= imgs.length){
-          clearTimeout(timer);
-          resolve();
+      const tryNext = () => {
+        if(i >= candidates.length){
+          if(typeof onFinalFail === "function"){
+            onFinalFail();
+            return;
+          }
+          if(wrapEl){
+            showPlaceholderInWrap(wrapEl, placeholderText || "RF");
+          }else{
+            imgEl.style.display = "none";
+          }
+          return;
         }
+        imgEl.style.display = "";
+        imgEl.src = candidates[i++] + ver;
       };
 
-      imgs.forEach(img=>{
-        const finish = () => { done.add(img); mark(); };
-        if(img.complete) {
-          finish();
-        } else {
-          img.addEventListener("load", finish, { once:true });
-          img.addEventListener("error", finish, { once:true });
+      imgEl.onerror = () => tryNext();
+      tryNext();
+    }
+
+    function renderAutoparts(trackEl, items){
+      trackEl.innerHTML = items.map(it=>{
+        const name = escapeHtml(it.name || it.slug || "");
+        const note = escapeHtml(it.note || "Autopartes");
+        const slug = escapeHtml(it.slug || "");
+        return `
+          <div class="brandSlide" data-slug="${slug}">
+            <div class="brandLogoWrap">
+              <img alt="${name}" data-logo="${slug}" loading="eager" decoding="async">
+            </div>
+            <div class="brandMeta">
+              <b>${name}</b>
+              <span>${note}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      trackEl.querySelectorAll(".brandSlide").forEach(slide=>{
+        const slug = slide.getAttribute("data-slug");
+        const img = slide.querySelector("img[data-logo]");
+        const wrap = slide.querySelector(".brandLogoWrap");
+        const name = slide.querySelector(".brandMeta b")?.textContent || slug;
+        const ph = initialsFromName(name);
+        setImgRobust(img, "logos/autopartes", slug, wrap, ph);
+      });
+    }
+
+    function renderVehicles(trackEl, items){
+      trackEl.innerHTML = items.map(it=>{
+        const name = escapeHtml(it.name || it.slug || "");
+        const tag  = escapeHtml(it.tag || "RD");
+        const slug = escapeHtml(it.slug || "");
+        return `
+          <div class="vehSlide" data-slug="${slug}">
+            <div class="vehImgWrap">
+              <img alt="${name}" data-photo="${slug}" loading="eager" decoding="async">
+            </div>
+            <div class="vehCap">
+              <div class="left">
+                <div class="vehMiniLogo">
+                  <img alt="${name} logo" data-vlogo="${slug}" loading="eager" decoding="async">
+                </div>
+                <b>${name}</b>
+              </div>
+              <span>${tag}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      trackEl.querySelectorAll(".vehSlide").forEach(slide=>{
+        const slug = slide.getAttribute("data-slug");
+        const name = slide.querySelector(".vehCap b")?.textContent || slug;
+        const ph = initialsFromName(name);
+
+        const photoImg = slide.querySelector("img[data-photo]");
+        setImgRobust(photoImg, "logos/vehicles", slug, null, null, () => {
+          photoImg.style.display = "none";
+        });
+
+        const logoImg = slide.querySelector("img[data-vlogo]");
+        const logoWrap = slide.querySelector(".vehMiniLogo");
+        setImgRobust(logoImg, "logos/autos", slug, logoWrap, ph);
+      });
+    }
+
+    function makeLoop(trackEl){
+      const children = Array.from(trackEl.children);
+      children.forEach(n => trackEl.appendChild(n.cloneNode(true)));
+      const half = trackEl.scrollWidth / 2;
+      trackEl.style.setProperty("--rfShift", half + "px");
+    }
+
+    function waitImagesIn(el, timeoutMs){
+      const imgs = Array.from(el.querySelectorAll("img"));
+      if(imgs.length === 0) return Promise.resolve();
+
+      const done = new Set();
+      return new Promise((resolve)=>{
+        const timer = setTimeout(()=>resolve(), timeoutMs || 2400);
+
+        const mark = () => {
+          if(done.size >= imgs.length){
+            clearTimeout(timer);
+            resolve();
+          }
+        };
+
+        imgs.forEach(img=>{
+          const finish = () => { done.add(img); mark(); };
+          if(img.complete) {
+            finish();
+          } else {
+            img.addEventListener("load", finish, { once:true });
+            img.addEventListener("error", finish, { once:true });
+          }
+        });
+      });
+    }
+
+    function freezeAnimation(trackEl, freeze){
+      trackEl.style.animationPlayState = freeze ? "paused" : "running";
+      trackEl.style.opacity = freeze ? "0.99" : "1";
+    }
+
+    window.backdropClose = function(ev, backId){
+      if(ev.target && ev.target.id === backId){
+        if(backId === "authBack") closeAuth();
+        if(backId === "promoBack") closePromo();
+      }
+    }
+
+    function openModal(backId){
+      const el = $(backId);
+      if(!el) return;
+      el.style.display = "flex";
+      document.body.style.overflow = "hidden";
+    }
+    function closeModal(backId){
+      const el = $(backId);
+      if(!el) return;
+      el.style.display = "none";
+      document.body.style.overflow = "";
+    }
+
+    window.openAuth = function(){
+      setMsg($("authMsg"), "", false);
+      switchAuthTab("login");
+      openModal("authBack");
+      setTimeout(()=>{ $("loginId")?.focus(); }, 30);
+    }
+    window.closeAuth = function(){
+      closeModal("authBack");
+    }
+
+    window.switchAuthTab = function(tab){
+      $("tabLogin").classList.toggle("active", tab==="login");
+      $("tabRecovery").classList.toggle("active", tab==="recovery");
+      $("tabNewPass").classList.toggle("active", tab==="newpass");
+
+      $("paneLogin").style.display = (tab==="login") ? "block" : "none";
+      $("paneRecovery").style.display = (tab==="recovery") ? "block" : "none";
+      $("paneNewPass").style.display = (tab==="newpass") ? "block" : "none";
+
+      $("authTitle").textContent =
+        (tab==="login") ? "Iniciar sesion" :
+        (tab==="recovery") ? "Recuperar cuenta" :
+        "Crear nueva clave";
+
+      setMsg($("authMsg"), "", false);
+    }
+
+    async function resolveEmailForLogin(identifier){
+      const id = String(identifier||"").trim();
+      if(!id) return "";
+      if(id.includes("@")) return id.toLowerCase();
+
+      const { data, error } = await supabase.functions.invoke("login-lookup", {
+        body: { identifier: id }
+      });
+
+      if(error) throw new Error("No se pudo validar username: " + error.message);
+      if(!data || !data.email) return "";
+      return String(data.email).toLowerCase();
+    }
+
+    window.doLogin = async function(){
+      try{
+        setMsg($("authMsg"), "", false);
+
+        const identifier = ($("loginId").value || "").trim();
+        const password = ($("loginPass").value || "").trim();
+        if(!identifier || !password){
+          setMsg($("authMsg"), "Completa correo/username y clave.", true);
+          return;
+        }
+
+        const email = await resolveEmailForLogin(identifier);
+        if(!email){
+          setMsg($("authMsg"), "No encontre ese usuario/correo.", true);
+          return;
+        }
+
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if(error) throw new Error(error.message);
+
+        await refreshHeaderUser(data?.user?.id);
+        setMsg($("topMsg"), "Sesion iniciada. Bienvenido.", false);
+        closeAuth();
+        window.location.href = "app.html";
+      }catch(err){
+        setMsg($("authMsg"), String(err?.message || err), true);
+      }
+    }
+
+    window.sendRecovery = async function(){
+      try{
+        setMsg($("authMsg"), "", false);
+        const email = ($("recoveryEmail").value || "").trim().toLowerCase();
+        if(!email || !email.includes("@")){
+          setMsg($("authMsg"), "Escribe un correo valido.", true);
+          return;
+        }
+
+        const redirectTo = window.location.origin + window.location.pathname;
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+        if(error) throw new Error(error.message);
+
+        setMsg($("authMsg"), "Listo. Revisa tu correo para el link de recuperacion.", false);
+      }catch(err){
+        setMsg($("authMsg"), String(err?.message || err), true);
+      }
+    }
+
+    window.setNewPassword = async function(){
+      try{
+        setMsg($("authMsg"), "", false);
+        const p1 = ($("newPass1").value || "").trim();
+        const p2 = ($("newPass2").value || "").trim();
+        if(p1.length < 6){
+          setMsg($("authMsg"), "La clave debe tener minimo 6 caracteres.", true);
+          return;
+        }
+        if(p1 !== p2){
+          setMsg($("authMsg"), "Las claves no coinciden.", true);
+          return;
+        }
+
+        const { data: ses } = await supabase.auth.getSession();
+        if(!ses?.session){
+          setMsg($("authMsg"), "No hay sesion de recuperacion activa. Abre el link del correo.", true);
+          return;
+        }
+
+        const { error } = await supabase.auth.updateUser({ password: p1 });
+        if(error) throw new Error(error.message);
+
+        setMsg($("authMsg"), "Clave actualizada. Ya puedes iniciar sesion.", false);
+        switchAuthTab("login");
+      }catch(err){
+        setMsg($("authMsg"), String(err?.message || err), true);
+      }
+    }
+
+    window.logout = async function(){
+      await supabase.auth.signOut();
+      setMsg($("topMsg"), "Sesion cerrada.", false);
+      await refreshHeaderUser(null);
+    }
+
+    async function refreshHeaderUser(userId){
+      const btnLogin = $("btnLogin");
+      const btnLogout = $("btnLogout");
+      const userPill = $("userPill");
+
+      const { data: ses } = await supabase.auth.getSession();
+      const user = ses?.session?.user;
+
+      if(!user){
+        btnLogin.style.display = "";
+        btnLogout.style.display = "none";
+        userPill.style.display = "none";
+        userPill.textContent = "Hola, —";
+        return;
+      }
+
+      btnLogin.style.display = "none";
+      btnLogout.style.display = "";
+      userPill.style.display = "";
+
+      const uid = userId || user.id;
+
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("first_name,last_name,company_name,role")
+        .eq("id", uid)
+        .maybeSingle();
+
+      const fn = (prof?.first_name || user?.email || "Usuario").toString();
+      userPill.textContent = "Hola, " + fn;
+    }
+
+    function looksLikeRecoveryUrl(){
+      const u = new URL(window.location.href);
+      return u.searchParams.has("code") || window.location.hash.includes("access_token");
+    }
+
+    async function handleRecoveryFlow(){
+      try{
+        if(!looksLikeRecoveryUrl()) return;
+
+        const u = new URL(window.location.href);
+        const code = u.searchParams.get("code");
+        if(code){
+          await supabase.auth.exchangeCodeForSession(code);
+          u.searchParams.delete("code");
+          window.history.replaceState({}, "", u.toString());
+        }
+
+        $("tabNewPass").style.display = "";
+        openAuth();
+        switchAuthTab("newpass");
+        setMsg($("authMsg"), "Listo. Crea tu nueva clave.", false);
+      }catch(e){
+        setMsg($("topMsg"), "Error en recuperacion: " + (e?.message || e), true);
+      }
+    }
+
+    let promoState = { items: [], idx: 0, timer: null };
+
+    window.closePromo = function(){
+      if(promoState.timer) clearInterval(promoState.timer);
+      promoState.timer = null;
+      closeModal("promoBack");
+    }
+
+    function renderPromo(){
+      const wrap = $("promoWrap");
+      const empty = $("promoEmpty");
+      const img = $("promoImg");
+      const link = $("promoLink");
+      const dots = $("promoDots");
+
+      if(!promoState.items.length){
+        wrap.style.display = "none";
+        empty.style.display = "block";
+        return;
+      }
+
+      empty.style.display = "none";
+      wrap.style.display = "block";
+
+      const it = promoState.items[promoState.idx];
+      const file = typeof it === "string" ? it : it.file;
+      const href = (typeof it === "object" && it.link) ? it.link : "";
+      const title = (typeof it === "object" && it.title) ? it.title : "Promocion";
+
+      img.alt = title;
+      img.src = "assets/promotion/" + file + "?v=" + window.RF_ASSET_VER;
+
+      if(href){
+        link.href = href;
+        link.style.pointerEvents = "auto";
+      }else{
+        link.href = "#";
+        link.style.pointerEvents = "none";
+      }
+
+      dots.innerHTML = promoState.items.map((_,i)=>`<span class="dot ${i===promoState.idx?"active":""}" data-i="${i}"></span>`).join("");
+      dots.querySelectorAll(".dot").forEach(d=>{
+        d.onclick = ()=>{
+          promoState.idx = Number(d.getAttribute("data-i")||"0");
+          renderPromo();
         }
       });
-    });
-  }
+    }
 
-  function freezeAnimation(trackEl, freeze){
-    trackEl.style.animationPlayState = freeze ? "paused" : "running";
-    trackEl.style.opacity = freeze ? "0.99" : "1";
-  }
+    async function initPromotions(){
+      const data = await fetchJsonSafe("assets/promotion/promo.json?v=" + window.RF_ASSET_VER, null);
+      const items = Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : []);
+      const cleaned = items
+        .map(x=>{
+          if(typeof x === "string") return x.trim();
+          if(x && typeof x === "object" && x.file) return { file:String(x.file).trim(), link:x.link||"", title:x.title||"" };
+          return "";
+        })
+        .filter(x => (typeof x === "string" ? x : x.file).toString().length > 0);
 
-  async function init(){
-    document.getElementById("y").textContent = new Date().getFullYear();
-    paint();
+      if(!cleaned.length) return;
 
-    const autopartsFallback = [
-      { slug:"mahle", name:"Mahle", note:"Filtros / motor" },
-      { slug:"ngk", name:"NGK", note:"Bujias" },
-      { slug:"bosch", name:"Bosch", note:"Frenos / sensores" },
-      { slug:"febi", name:"Febi", note:"Suspension / motor" }
-    ];
+      promoState.items = cleaned;
+      promoState.idx = 0;
+      renderPromo();
+      openModal("promoBack");
 
-    const autosFallback = [
-      { slug:"toyota", name:"Toyota", tag:"Top RD" },
-      { slug:"honda", name:"Honda", tag:"Top RD" },
-      { slug:"hyundai", name:"Hyundai", tag:"Top RD" },
-      { slug:"kia", name:"Kia", tag:"Top RD" }
-    ];
+      promoState.timer = setInterval(()=>{
+        promoState.idx = (promoState.idx + 1) % promoState.items.length;
+        renderPromo();
+      }, 7000);
+    }
 
-    const autoparts = await fetchJsonSafe("assets/data/brands_autoparts.json?v=" + window.RF_ASSET_VER, autopartsFallback);
-    const autos     = await fetchJsonSafe("assets/data/brands_autos.json?v=" + window.RF_ASSET_VER, autosFallback);
+    async function initCarousels(){
+      const autopartsFallback = [
+        { slug:"mahle", name:"Mahle", note:"Filtros / motor" },
+        { slug:"ngk", name:"NGK", note:"Bujias" },
+        { slug:"bosch", name:"Bosch", note:"Frenos / sensores" },
+        { slug:"febi", name:"Febi", note:"Suspension / motor" }
+      ];
 
-    const autopartsTrack = document.getElementById("autopartsTrack");
-    const vehiclesTrack  = document.getElementById("vehiclesTrack");
+      const autosFallback = [
+        { slug:"toyota", name:"Toyota", tag:"Top RD" },
+        { slug:"honda", name:"Honda", tag:"Top RD" },
+        { slug:"hyundai", name:"Hyundai", tag:"Top RD" },
+        { slug:"kia", name:"Kia", tag:"Top RD" }
+      ];
 
-    renderAutoparts(autopartsTrack, autoparts);
-    renderVehicles(vehiclesTrack, autos);
+      const autoparts = await fetchJsonSafe("assets/data/brands_autoparts.json?v=" + window.RF_ASSET_VER, autopartsFallback);
+      const autos     = await fetchJsonSafe("assets/data/brands_autos.json?v=" + window.RF_ASSET_VER, autosFallback);
 
-    freezeAnimation(autopartsTrack, true);
-    freezeAnimation(vehiclesTrack, true);
+      const autopartsTrack = $("autopartsTrack");
+      const vehiclesTrack  = $("vehiclesTrack");
 
-    await waitImagesIn(autopartsTrack, 2800);
-    await waitImagesIn(vehiclesTrack, 3600);
+      renderAutoparts(autopartsTrack, autoparts);
+      renderVehicles(vehiclesTrack, autos);
 
-    makeLoop(autopartsTrack);
-    makeLoop(vehiclesTrack);
+      freezeAnimation(autopartsTrack, true);
+      freezeAnimation(vehiclesTrack, true);
 
-    requestAnimationFrame(()=>{
-      freezeAnimation(autopartsTrack, false);
-      freezeAnimation(vehiclesTrack, false);
-    });
-  }
+      await waitImagesIn(autopartsTrack, 2800);
+      await waitImagesIn(vehiclesTrack, 3600);
 
-  init();
-</script>
+      makeLoop(autopartsTrack);
+      makeLoop(vehiclesTrack);
+
+      requestAnimationFrame(()=>{
+        freezeAnimation(autopartsTrack, false);
+        freezeAnimation(vehiclesTrack, false);
+      });
+    }
+
+    async function init(){
+      $("y").textContent = new Date().getFullYear();
+      paint();
+
+      await refreshHeaderUser(null);
+
+      await handleRecoveryFlow();
+
+      await initCarousels();
+
+      await initPromotions();
+    }
+
+    init();
+  </script>
 </body>
 </html>
+
+
 
 
 
