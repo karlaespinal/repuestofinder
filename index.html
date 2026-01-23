@@ -1178,7 +1178,7 @@
 
         setMsg($("topMsg"), "Sesion iniciada. Bienvenido.", false);
         closeAuth();
-        window.location.href = "app.html";
+        window.location.reload();
       }catch(err){
         setMsg($("authMsg"), String(err?.message || err), true);
       }
@@ -1427,6 +1427,7 @@
   </script>
 </body>
 </html>
+
 
 
 
