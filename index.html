@@ -602,6 +602,17 @@
               <span class="pill">Nuevo</span>
             </div>
 
+          <div class="ddItem" role="menuitem" onclick="goRadar()">
+              <div>
+                Radar de Demanda RD & eBay
+                <div style="margin-top:2px">
+                  <small>Modelos, años, motores y oportunidades</small>
+                </div>
+              </div>
+              <span class="pill">Pro</span>
+            </div>
+
+
             <div class="ddItem disabled" role="menuitem" aria-disabled="true">
               <div>— Proximamente <div style="margin-top:2px"><small>Espacio reservado</small></div></div>
               <small>—</small>
@@ -867,6 +878,12 @@
       closeTools();
       window.location.href = "kpis.html";
     }
+
+    window.goRadar = function(){
+      closeTools();
+      window.location.href = "radar.html";
+    }
+
     document.addEventListener("click", ()=> closeTools());
     document.addEventListener("keydown", (e)=>{
       if(e.key === "Escape") closeTools();
