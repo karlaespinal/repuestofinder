@@ -76,46 +76,7 @@
     .brandTitle b{display:block;font-size:15px}
     .brandTitle span{display:block;font-size:12px;color:#94a3b8;font-weight:800;letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
 
-    .navCenter{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      flex:1;
-      min-width:0;
-    }
-
-    .menu{
-      display:flex;
-      align-items:center;
-      gap:6px;
-      flex-wrap:nowrap;
-      justify-content:center;
-      padding:6px;
-      border-radius:14px;
-      border:1px solid rgba(230,232,240,.75);
-      background:rgba(255,255,255,.60);
-      overflow:auto;
-      max-width:720px;
-      scrollbar-width:none;
-    }
-    .menu::-webkit-scrollbar{display:none}
-    .menu a{
-      text-decoration:none;
-      font-weight:900;
-      color:#0f172a;
-      padding:9px 12px;
-      border-radius:12px;
-      border:1px solid transparent;
-      user-select:none;
-      white-space:nowrap;
-      flex:0 0 auto;
-    }
-    .menu a:hover{ background:#fff; border-color:var(--line); }
-    .menu a.active{
-      background:rgba(37,99,235,.10);
-      border-color:rgba(37,99,235,.20);
-      color:var(--pri);
-    }
+    /* NavCenter eliminado (menu) */
 
     .navRight{
       display:flex;
@@ -423,8 +384,9 @@
       padding:18px;
       z-index:99;
     }
+    /* (Si quieres promo mas grande, cambia 520 por 820/1000) */
     .modal{
-      width:min(820px, 100%);
+      width:min(520px, 100%);
       background:rgba(255,255,255,.94);
       border:1px solid rgba(230,232,240,.95);
       border-radius:18px;
@@ -531,7 +493,6 @@
       .nav{ gap:10px; }
       .navRight{ min-width:auto; }
       .navLeft{ min-width:auto; }
-      .menu{ max-width:520px; }
       .brandSlide{min-width:220px}
       .vehSlide{width:300px}
     }
@@ -540,14 +501,11 @@
         flex-wrap:wrap;
         justify-content:center;
       }
-      .navLeft, .navRight, .navCenter{
+      .navLeft, .navRight{
         width:100%;
         justify-content:center;
       }
-      .navRight{
-        gap:8px;
-      }
-      .menu{ width:100%; max-width:100%; justify-content:flex-start; }
+      .navRight{ gap:8px; }
     }
     @media(max-width:520px){
       .brandSlide{min-width:210px}
@@ -570,9 +528,14 @@
           </div>
         </div>
       </div>
-      
-     
-        <button class="btn btnGhost" id="btnLogin" onclick="openAuth()">Iniciar sesion</button>
+
+      <!-- menu eliminado -->
+
+      <div class="navRight">
+        <!-- pill demo eliminado -->
+        <!-- pill user eliminado -->
+        <!-- login eliminado (solo dejamos los 4 botones que pediste) -->
+
         <button class="btn btnGhost" id="btnLogout" style="display:none" onclick="logout()">Salir</button>
 
         <button class="btn btnGhost" onclick="goSignup()">Registrarme</button>
@@ -650,6 +613,7 @@
     <div class="footer">© <span id="y"></span> RepuestoFinder</div>
   </div>
 
+  <!-- Modal Auth queda por si lo usas luego -->
   <div class="modalBack" id="authBack" onclick="backdropClose(event,'authBack')">
     <div class="modal" role="dialog" aria-modal="true" aria-label="Autenticacion">
       <div class="modalHead">
@@ -770,12 +734,12 @@
       paint();
     }
     function paint(){
-      const left = getLeft();
-      const demoPill = $("demoPill");
-      if(demoPill) demoPill.textContent = "Demo: " + left;
+      // Ya no mostramos el pill "Demo: X", pero seguimos manejando el contador
+      getLeft();
     }
 
     window.navTo = function(id){
+      // Se mantiene por compatibilidad (aunque ya no hay menu arriba)
       if(id === "buscador"){
         window.location.href = "app.html";
         return;
@@ -1019,6 +983,7 @@
       document.body.style.overflow = "";
     }
 
+    // Auth modal functions quedan por si lo reactivas luego
     window.openAuth = function(){
       setMsg($("authMsg"), "", false);
       switchAuthTab("login");
@@ -1080,7 +1045,6 @@
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if(error) throw new Error(error.message);
 
-        await refreshHeaderUser(data?.user?.id);
         setMsg($("topMsg"), "Sesion iniciada. Bienvenido.", false);
         closeAuth();
         window.location.href = "app.html";
@@ -1142,39 +1106,17 @@
     window.logout = async function(){
       await supabase.auth.signOut();
       setMsg($("topMsg"), "Sesion cerrada.", false);
-      await refreshHeaderUser(null);
+      await refreshHeaderUser();
     }
 
-    async function refreshHeaderUser(userId){
-      const btnLogin = $("btnLogin");
+    async function refreshHeaderUser(){
       const btnLogout = $("btnLogout");
-      const userPill = $("userPill");
 
       const { data: ses } = await supabase.auth.getSession();
       const user = ses?.session?.user;
 
-      if(!user){
-        btnLogin.style.display = "";
-        btnLogout.style.display = "none";
-        userPill.style.display = "none";
-        userPill.textContent = "Hola, —";
-        return;
-      }
-
-      btnLogin.style.display = "none";
-      btnLogout.style.display = "";
-      userPill.style.display = "";
-
-      const uid = userId || user.id;
-
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("first_name,last_name,company_name,role")
-        .eq("id", uid)
-        .maybeSingle();
-
-      const fn = (prof?.first_name || user?.email || "Usuario").toString();
-      userPill.textContent = "Hola, " + fn;
+      // Solo controlamos "Salir"
+      btnLogout.style.display = user ? "" : "none";
     }
 
     function looksLikeRecoveryUrl(){
@@ -1194,7 +1136,7 @@
           window.history.replaceState({}, "", u.toString());
         }
 
-        $("tabNewPass").style.display = "";
+        document.getElementById("tabNewPass").style.display = "";
         openAuth();
         switchAuthTab("newpass");
         setMsg($("authMsg"), "Listo. Crea tu nueva clave.", false);
@@ -1319,7 +1261,7 @@
       $("y").textContent = new Date().getFullYear();
       paint();
 
-      await refreshHeaderUser(null);
+      await refreshHeaderUser();
 
       await handleRecoveryFlow();
 
