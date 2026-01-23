@@ -210,14 +210,27 @@
   };
 
   async function initAuth_(){
-    const logoutLink = document.getElementById("logoutLink");
-    const { data } = await supabase.auth.getSession();
-    if(!data || !data.session){
-      window.location.href = "/?stay=1";
+  const logoutLink = document.getElementById("logoutLink");
+
+  const params = new URLSearchParams(window.location.search);
+  const isDemo = params.get("demo") === "1";
+
+  const { data } = await supabase.auth.getSession();
+
+  // ✅ Si NO hay sesión pero es DEMO => permitir entrar
+  if(!data || !data.session){
+    if(isDemo){
+      if(logoutLink) logoutLink.style.display = "none";
       return;
     }
-    logoutLink.style.display = "inline-flex";
+    // ❌ No hay sesión y NO es demo => fuera
+    window.location.href = "/?stay=1";
+    return;
   }
+
+  // ✅ hay sesión => mostrar logout
+  if(logoutLink) logoutLink.style.display = "inline-flex";
+}
 
   function escapeHtml_(s){
     return String(s ?? "")
@@ -517,8 +530,13 @@
 
   await initAuth_();
   supabase.auth.onAuthStateChange((event, session) => {
-    if (!session) window.location.href = "/?stay=1";
+    const params = new URLSearchParams(window.location.search);
+    const isDemo = params.get("demo") === "1";
+
+    // ✅ Si es demo, no rebotes aunque no haya sesión
+    if (!session && !isDemo) window.location.href = "/?stay=1";
   });
+
 </script>
 </body>
 </html>
