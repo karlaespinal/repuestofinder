@@ -609,6 +609,68 @@
     .topGrid{ grid-template-columns:1fr; }
     .colsGrid{ grid-template-columns:1fr; }
   }
+    /* ===== MODAL ANALISIS (BOTON 6) ===== */
+  .anaGrid{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .anaCard{
+    border:1px solid rgba(230,232,240,.95);
+    background:#fff;
+    border-radius:16px;
+    padding:12px;
+    box-shadow:0 10px 26px rgba(2,6,23,.04);
+  }
+  .anaCard small{
+    display:block;
+    font-weight:900;
+    color:#64748b;
+    margin-bottom:6px;
+  }
+  .anaCard b{
+    font-size:18px;
+    font-weight:900;
+    color:#0f172a;
+  }
+  .anaBox{
+    border:1px solid rgba(230,232,240,.95);
+    background:rgba(255,255,255,.72);
+    border-radius:16px;
+    padding:12px;
+    margin-top:10px;
+  }
+  .anaBoxTop{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:8px;
+  }
+  .anaList{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .anaRow{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 12px;
+    border-radius:14px;
+    border:1px solid rgba(230,232,240,.9);
+    background:#fff;
+    font-weight:900;
+  }
+  .anaRow .k{color:#0f172a}
+  .anaRow .v{color:#1d4ed8}
+  @media(max-width:980px){
+    .anaGrid{ grid-template-columns: 1fr 1fr; }
+  }
+
 </style>
 </head>
 
@@ -695,7 +757,7 @@
       <!-- BOTON 5: EXPORTAR EXCEL -->
       <button id="btnExportExcel" class="btn btnGhost" onclick="exportExcel()">Exportar Excel</button>
 
-      <button class="btn btnGhost" onclick="alert('Proximo: calculos automaticos')">Boton 6</button>
+      <button class="btn btnGhost" onclick="openAnalysisModal()">📊 Analisis</button>
 
       <div class="sizeCtrl" title="Ajusta tamaño de letras y altura de celdas">
         <small>Tamaño</small>
@@ -828,6 +890,62 @@
     </div>
   </div>
 </div>
+
+<!-- MODAL ANALISIS (BOTON 6) -->
+<div class="modalBackdrop" id="analysisModal">
+  <div class="modal">
+    <div class="modalHeader">
+      <b>📊 Analisis rapido</b>
+      <button onclick="closeAnalysisModal()">Cerrar ✕</button>
+    </div>
+
+    <div class="modalBody">
+      <div class="anaGrid">
+        <div class="anaCard">
+          <small>Filas (visibles)</small>
+          <b id="ana_rows_visible">0</b>
+        </div>
+
+        <div class="anaCard">
+          <small>Filas (totales)</small>
+          <b id="ana_rows_total">0</b>
+        </div>
+
+        <div class="anaCard">
+          <small>Columnas (visibles)</small>
+          <b id="ana_cols_visible">0</b>
+        </div>
+
+        <div class="anaCard">
+          <small>Marcas distintas</small>
+          <b id="ana_brands">0</b>
+        </div>
+      </div>
+
+      <div class="anaBox">
+        <div class="anaBoxTop">
+          <b>Top 5 marcas por promedio de ventas</b>
+          <span class="hint">usa MARCA + columnas Ventas_*</span>
+        </div>
+        <div id="ana_top5" class="anaList"></div>
+      </div>
+
+      <div class="anaBox">
+        <div class="anaBoxTop">
+          <b>Distribucion ABC (conteo)</b>
+          <span class="hint">usa CATEGORIA ABC</span>
+        </div>
+        <div id="ana_abc" class="anaList"></div>
+      </div>
+    </div>
+
+    <div class="modalFooter">
+      <span class="hint" id="ana_note">—</span>
+      <button class="btn btnPrimary" onclick="refreshAnalysis()">Actualizar</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- SheetJS (Excel) -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -2136,6 +2254,141 @@ function toggleTOP(){
   tableScroll.addEventListener("scroll", ()=> scheduleRender());
   window.addEventListener("resize", ()=> scheduleRender());
 })();
+
+/* ===== MODAL ANALISIS (BOTON 6) ===== */
+function openAnalysisModal(){
+  document.getElementById("analysisModal").style.display = "flex";
+  refreshAnalysis();
+}
+function closeAnalysisModal(){
+  document.getElementById("analysisModal").style.display = "none";
+}
+
+function refreshAnalysis(){
+  // filas
+  const totalRows = dataRows.length;
+  const visibleRows = visibleRowIdx.length;
+
+  // columnas visibles
+  const visCols = getVisibleColIndices();
+  const visibleCols = visCols.length;
+
+  // indices clave
+  const brandIdx = getMarcaIndex();
+  const abcIdx = getCategoriaABCIndex();
+  const salesIdx = getSalesIndices();
+
+  // marcas distintas (en filas visibles)
+  const brandSet = new Set();
+  if(brandIdx >= 0){
+    for(const r of visibleRowIdx){
+      const b = (getCellData(r, brandIdx) || "").trim();
+      if(b) brandSet.add(b.toUpperCase());
+    }
+  }
+
+  // Top 5 marcas (por promedio ventas) usando tus funciones ya existentes
+  const topList = computeTopBrandsVisibleRows(5);
+
+  // ABC conteo (visible)
+  const abcCounts = computeABCCategoryCountsVisible();
+
+  // pintar métricas
+  document.getElementById("ana_rows_visible").textContent = String(visibleRows);
+  document.getElementById("ana_rows_total").textContent = String(totalRows);
+  document.getElementById("ana_cols_visible").textContent = String(visibleCols);
+  document.getElementById("ana_brands").textContent = String(brandSet.size);
+
+  // pintar top 5
+  const topWrap = document.getElementById("ana_top5");
+  topWrap.innerHTML = "";
+  if(brandIdx < 0 || salesIdx.length === 0){
+    topWrap.innerHTML = `<div class="hint">Falta la columna MARCA o columnas Ventas_*</div>`;
+  }else if(topList.length === 0){
+    topWrap.innerHTML = `<div class="hint">No hay datos suficientes para calcular Top.</div>`;
+  }else{
+    topList.forEach((x, i)=>{
+      const row = document.createElement("div");
+      row.className = "anaRow";
+      row.innerHTML = `<span class="k">${i+1}. ${escapeHtml(x.label)}</span><span class="v">${formatCompact(x.value)}</span>`;
+      topWrap.appendChild(row);
+    });
+  }
+
+  // pintar abc
+  const abcWrap = document.getElementById("ana_abc");
+  abcWrap.innerHTML = "";
+  if(abcIdx < 0){
+    abcWrap.innerHTML = `<div class="hint">No existe la columna “CATEGORIA ABC”.</div>`;
+  }else{
+    const entries = Object.entries(abcCounts).sort((a,b)=> b[1]-a[1]);
+    if(entries.length === 0){
+      abcWrap.innerHTML = `<div class="hint">No hay categorias ABC en filas visibles.</div>`;
+    }else{
+      entries.forEach(([k,v])=>{
+        const row = document.createElement("div");
+        row.className = "anaRow";
+        row.innerHTML = `<span class="k">${escapeHtml(k)}</span><span class="v">${v}</span>`;
+        abcWrap.appendChild(row);
+      });
+    }
+  }
+
+  // nota
+  const note = document.getElementById("ana_note");
+  const salesInfo = (salesIdx.length ? `${salesIdx.length} col(s) Ventas_` : "0 col(s) Ventas_");
+  note.textContent = `Filas visibles por filtros: ${visibleRows} · ${salesInfo} · Modo ventas: ${salesMode === "YEAR" ? "AÑO" : "MES"}`;
+}
+
+function computeTopBrandsVisibleRows(limit){
+  const brandIdx = getMarcaIndex();
+  const salesIdx = getSalesIndices();
+  if(brandIdx < 0 || salesIdx.length === 0) return [];
+
+  const agg = new Map();
+
+  for(const r of visibleRowIdx){
+    const brandRaw = (getCellData(r, brandIdx) || "").trim();
+    if(!brandRaw) continue;
+
+    let sum = 0;
+    let count = 0;
+    for(const si of salesIdx){
+      const raw = getCellData(r, si);
+      const n = parseNumberSmart(raw);
+      if(n !== 0 || String(raw).trim() !== ""){
+        sum += n;
+        count++;
+      }
+    }
+    if(count === 0) continue;
+
+    const avg = sum / count;
+    const key = brandRaw.toUpperCase();
+
+    const prev = agg.get(key) || { label: brandRaw, sum: 0 };
+    prev.sum += avg;
+    agg.set(key, prev);
+  }
+
+  return [...agg.values()]
+    .sort((a,b)=> b.sum - a.sum)
+    .slice(0, limit)
+    .map(x=>({ label: x.label, value: x.sum }));
+}
+
+function computeABCCategoryCountsVisible(){
+  const idx = getCategoriaABCIndex();
+  if(idx < 0) return {};
+
+  const out = {};
+  for(const r of visibleRowIdx){
+    const cat = normalizeCat(getCellData(r, idx));
+    out[cat] = (out[cat] || 0) + 1;
+  }
+  return out;
+}
+
 </script>
 
 </body>
