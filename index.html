@@ -76,8 +76,6 @@
     .brandTitle b{display:block;font-size:15px}
     .brandTitle span{display:block;font-size:12px;color:#94a3b8;font-weight:800;letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
 
-    /* NavCenter eliminado (menu) */
-
     .navRight{
       display:flex;
       align-items:center;
@@ -88,20 +86,6 @@
       flex:0 0 auto;
     }
 
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 10px;
-      border-radius:999px;
-      border:1px solid var(--line);
-      background:#fff;
-      font-size:12px;
-      font-weight:900;
-      color:#0f172a;
-      user-select:none;
-      white-space:nowrap;
-    }
     .btn{
       border:0;
       cursor:pointer;
@@ -384,9 +368,9 @@
       padding:18px;
       z-index:99;
     }
-    /* (Si quieres promo mas grande, cambia 520 por 820/1000) */
+    /* Promo mas grande: ajusta 820/1000 si quieres */
     .modal{
-      width:min(520px, 100%);
+      width:min(820px, 100%);
       background:rgba(255,255,255,.94);
       border:1px solid rgba(230,232,240,.95);
       border-radius:18px;
@@ -462,7 +446,6 @@
       display:none;
       margin-top:14px;
     }
-
     .promoImg{
       width:100%;
       height:auto;
@@ -529,18 +512,21 @@
         </div>
       </div>
 
-      <!-- menu eliminado -->
-
       <div class="navRight">
-        <!-- pill demo eliminado -->
-        <!-- pill user eliminado -->
-        <!-- login eliminado (solo dejamos los 4 botones que pediste) -->
+        <!-- ✅ Login (solo si NO hay sesion) -->
+        <button class="btn btnGhost" id="btnLogin" style="display:none" onclick="openAuth()">Login</button>
 
+        <!-- ✅ Salir (solo si HAY sesion) -->
         <button class="btn btnGhost" id="btnLogout" style="display:none" onclick="logout()">Salir</button>
 
-        <button class="btn btnGhost" onclick="goSignup()">Registrarme</button>
-        <button class="btn btnGhost" onclick="goApp()">Ir a la App</button>
-        <button class="btn btnPrimary" onclick="demo()">Probar demo (10)</button>
+        <!-- ✅ Registrarme (solo si NO hay sesion) -->
+        <button class="btn btnGhost" id="btnSignup" onclick="goSignup()">Registrarme</button>
+
+        <!-- ✅ Ir a la App (siempre visible) -->
+        <button class="btn btnGhost" id="btnApp" onclick="goApp()">Ir a la App</button>
+
+        <!-- ✅ Demo (solo si NO hay sesion) + contador -->
+        <button class="btn btnPrimary" id="btnDemo" onclick="demo()">Probar demo (10)</button>
       </div>
     </div>
 
@@ -613,7 +599,7 @@
     <div class="footer">© <span id="y"></span> RepuestoFinder</div>
   </div>
 
-  <!-- Modal Auth queda por si lo usas luego -->
+  <!-- Modal Auth -->
   <div class="modalBack" id="authBack" onclick="backdropClose(event,'authBack')">
     <div class="modal" role="dialog" aria-modal="true" aria-label="Autenticacion">
       <div class="modalHead">
@@ -684,6 +670,7 @@
     </div>
   </div>
 
+  <!-- Modal Promo -->
   <div class="modalBack" id="promoBack" onclick="backdropClose(event,'promoBack')">
     <div class="modal" role="dialog" aria-modal="true" aria-label="Promocion">
       <div class="modalHead">
@@ -733,13 +720,19 @@
       localStorage.setItem(KEY, String(Math.max(0, n)));
       paint();
     }
+
     function paint(){
-      // Ya no mostramos el pill "Demo: X", pero seguimos manejando el contador
-      getLeft();
+      const left = getLeft();
+      const btnDemo = $("btnDemo");
+      if(btnDemo){
+        btnDemo.textContent = `Probar demo (${left})`;
+        btnDemo.disabled = (left <= 0);
+        btnDemo.style.opacity = (left <= 0) ? "0.7" : "1";
+        btnDemo.style.cursor = (left <= 0) ? "not-allowed" : "pointer";
+      }
     }
 
     window.navTo = function(id){
-      // Se mantiene por compatibilidad (aunque ya no hay menu arriba)
       if(id === "buscador"){
         window.location.href = "app.html";
         return;
@@ -983,7 +976,7 @@
       document.body.style.overflow = "";
     }
 
-    // Auth modal functions quedan por si lo reactivas luego
+    // ✅ Auth modal (activo)
     window.openAuth = function(){
       setMsg($("authMsg"), "", false);
       switchAuthTab("login");
@@ -1042,7 +1035,7 @@
           return;
         }
 
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if(error) throw new Error(error.message);
 
         setMsg($("topMsg"), "Sesion iniciada. Bienvenido.", false);
@@ -1109,14 +1102,26 @@
       await refreshHeaderUser();
     }
 
+    // ✅ Aqui esta la logica: si hay sesion => ocultar demo y login
     async function refreshHeaderUser(){
       const btnLogout = $("btnLogout");
+      const btnLogin  = $("btnLogin");
+      const btnDemo   = $("btnDemo");
+      const btnSignup = $("btnSignup");
 
       const { data: ses } = await supabase.auth.getSession();
       const user = ses?.session?.user;
 
-      // Solo controlamos "Salir"
-      btnLogout.style.display = user ? "" : "none";
+      // Salir solo con sesion
+      if(btnLogout) btnLogout.style.display = user ? "" : "none";
+
+      // Login / Registrarme / Demo solo SIN sesion
+      if(btnLogin)  btnLogin.style.display  = user ? "none" : "";
+      if(btnSignup) btnSignup.style.display = user ? "none" : "";
+      if(btnDemo)   btnDemo.style.display   = user ? "none" : "";
+
+      // Pintar contador del demo (si aplica)
+      paint();
     }
 
     function looksLikeRecoveryUrl(){
@@ -1259,14 +1264,20 @@
 
     async function init(){
       $("y").textContent = new Date().getFullYear();
+
+      // contador demo
       paint();
 
+      // header segun sesion
       await refreshHeaderUser();
 
+      // recovery flow
       await handleRecoveryFlow();
 
+      // carousels
       await initCarousels();
 
+      // promos
       await initPromotions();
     }
 
