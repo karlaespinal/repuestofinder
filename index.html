@@ -532,15 +532,13 @@
       <!-- menu eliminado -->
 
       <div class="navRight">
-        <!-- pill demo eliminado -->
-        <!-- pill user eliminado -->
-        <!-- login eliminado (solo dejamos los 4 botones que pediste) -->
-
         <button class="btn btnGhost" id="btnLogout" style="display:none" onclick="logout()">Salir</button>
 
         <button class="btn btnGhost" onclick="goSignup()">Registrarme</button>
         <button class="btn btnGhost" onclick="goApp()">Ir a la App</button>
-        <button class="btn btnPrimary" onclick="demo()">Probar demo (10)</button>
+
+        <!-- Demo: se oculta si hay sesion -->
+        <button class="btn btnPrimary" id="btnDemo" onclick="demo()">Probar demo (10)</button>
       </div>
     </div>
 
@@ -733,13 +731,20 @@
       localStorage.setItem(KEY, String(Math.max(0, n)));
       paint();
     }
+
     function paint(){
-      // Ya no mostramos el pill "Demo: X", pero seguimos manejando el contador
-      getLeft();
+      // Actualiza texto del boton demo con el contador real
+      const left = getLeft();
+      const btnDemo = $("btnDemo");
+      if(btnDemo){
+        btnDemo.textContent = `Probar demo (${left})`;
+        btnDemo.disabled = (left <= 0);
+        btnDemo.style.opacity = (left <= 0) ? "0.7" : "1";
+        btnDemo.style.cursor = (left <= 0) ? "not-allowed" : "pointer";
+      }
     }
 
     window.navTo = function(id){
-      // Se mantiene por compatibilidad (aunque ya no hay menu arriba)
       if(id === "buscador"){
         window.location.href = "app.html";
         return;
@@ -983,7 +988,7 @@
       document.body.style.overflow = "";
     }
 
-    // Auth modal functions quedan por si lo reactivas luego
+    // Auth modal functions quedan por si lo usas luego
     window.openAuth = function(){
       setMsg($("authMsg"), "", false);
       switchAuthTab("login");
@@ -1111,12 +1116,21 @@
 
     async function refreshHeaderUser(){
       const btnLogout = $("btnLogout");
+      const btnDemo = $("btnDemo");
 
       const { data: ses } = await supabase.auth.getSession();
       const user = ses?.session?.user;
 
       // Solo controlamos "Salir"
       btnLogout.style.display = user ? "" : "none";
+
+      // ✅ NUEVO: si hay sesion, ocultar demo; si no hay sesion, mostrar demo
+      if(btnDemo){
+        btnDemo.style.display = user ? "none" : "";
+      }
+
+      // Pintar contador y texto del boton demo (si esta visible)
+      paint();
     }
 
     function looksLikeRecoveryUrl(){
@@ -1274,6 +1288,8 @@
   </script>
 </body>
 </html>
+
+
 
 
 
