@@ -9,7 +9,7 @@
     .topbar{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0 0 14px 0;}
     h1{margin:0;font-size:26px}
     .watermark{font-size:12px;color:#9ca3af;font-weight:800;letter-spacing:.4px;user-select:none;white-space:nowrap;opacity:.65;text-transform:uppercase;}
-    .nav{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .nav{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
     a.navlink{color:#2563eb;text-decoration:none;font-weight:900}
     a.navlink:hover{text-decoration:underline}
     .card{background:#fff;border:1px solid #e6e8f0;border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 1px 8px rgba(0,0,0,.04)}
@@ -82,8 +82,6 @@
 
     <div class="nav">
       <a class="navlink" href="/?stay=1">Volver al sitio</a>
-      <span class="pill" id="modePill" title="DEMO no requiere login. API requiere login.">Modo: -</span>
-      <span class="pill" id="userPill" style="display:none">Usuario: -</span>
       <a class="navlink" href="#" onclick="cerrarSesion();return false;" id="logoutLink" style="display:none">Cerrar sesion</a>
     </div>
   </div>
@@ -107,10 +105,6 @@
     <div style="margin-top:10px" class="ok">
       <span class="dot"></span><span id="status">Listo</span>
     </div>
-
-    <div class="muted" style="margin-top:8px" id="noteBox">
-      Nota: En API usa Cloudflare Worker + Supabase.
-    </div>
   </div>
 
   <div class="grid2">
@@ -127,7 +121,7 @@
 
       <div class="accBody">
         <div class="muted">URL: <a id="productUrl" href="#" target="_blank">-</a></div>
-        <div style="margin-top:8px" class="muted" id="counts">Vehicles: 0 | OE Numbers: 0 | Refs: 0 | ToyoDIY: 0</div>
+        <div style="margin-top:8px" class="muted" id="counts">Vehicles: 0 | Cambios: 0</div>
         <div style="margin-top:8px" class="muted" id="notes"></div>
       </div>
     </div>
@@ -182,16 +176,12 @@
 
   const SUPABASE_URL = "https://pjkbipdjxxxzjiuyfkaq.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_G7uvRyHNLSew2HKJY_h6ag_M2NZDYx4";
-  const API_ENDPOINT = "https://repuestofinder-backend.alfredoespinal69.workers.dev";
-
-  const params = new URLSearchParams(location.search);
-  let USE_DEMO = params.get("demo") === "1";
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
   let lastPayload = null;
 
   function setStatus(txt){ document.getElementById("status").textContent = txt; }
-  function updateModePill_(){ document.getElementById("modePill").textContent = "Modo: " + (USE_DEMO ? "DEMO" : "API"); }
 
   function isMobile_(){
     const w = Math.min(window.innerWidth || 9999, screen.width || 9999);
@@ -223,44 +213,13 @@
   };
 
   async function initAuth_(){
-    updateModePill_();
-    const userPill = document.getElementById("userPill");
     const logoutLink = document.getElementById("logoutLink");
-    const noteBox = document.getElementById("noteBox");
-
-    if(USE_DEMO){
-      userPill.style.display = "none";
-      logoutLink.style.display = "none";
-      noteBox.textContent = "Nota: Estas en DEMO. Para API real quita ?demo=1 y entra con tu usuario.";
-      return;
-    }
-
     const { data } = await supabase.auth.getSession();
     if(!data || !data.session){
       window.location.href = "/?stay=1";
       return;
     }
-
-    const email = (data.session.user && data.session.user.email) ? data.session.user.email : "usuario";
-    userPill.style.display = "inline-flex";
-    userPill.textContent = "Usuario: " + email;
     logoutLink.style.display = "inline-flex";
-    noteBox.textContent = "Nota: Estas en API. Las consultas se hacen al Worker y el token se manda en Authorization.";
-  }
-
-  async function fetchWorker_(path){
-    const { data } = await supabase.auth.getSession();
-    if(!data || !data.session) throw new Error("No hay sesion. Vuelve a login.");
-    const token = data.session.access_token;
-
-    const url = API_ENDPOINT.replace(/\/+$/,"") + path;
-    const r = await fetch(url, { method:"GET", headers:{ "Authorization":"Bearer " + token } });
-    const j = await r.json().catch(()=> ({}));
-
-    if(!r.ok || (j && j.ok === false)){
-      throw new Error((j && j.error) ? j.error : ("HTTP " + r.status));
-    }
-    return j;
   }
 
   function escapeHtml_(s){
@@ -309,6 +268,96 @@
     return lines.join("\n");
   }
 
+  // Normalizacion tolerante a signos: "8-777-25" -> "877725"
+  function normalizeCode_(s){
+    return String(s||"")
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g,"")
+      .replace(/[^A-Z0-9]/g,"");
+  }
+
+  function unique_(arr){
+    const out = [];
+    const seen = new Set();
+    for(const x of arr){
+      const k = String(x);
+      if(seen.has(k)) continue;
+      seen.add(k);
+      out.push(x);
+    }
+    return out;
+  }
+
+  function buildGoogleUrl_(code){
+    return "https://www.google.com/search?q=" + encodeURIComponent(code);
+  }
+
+  // === LOGICA DOBLE VIA ===
+  // 1) resuelve original_norms con cambios (si code es original o cambio)
+  // 2) trae vehicles por original_norms
+  // 3) trae cambios por original_norms
+  async function resolveOriginals_(codeNorm){
+    // Si el usuario escribe ORIGINAL o CAMBIO, aquí resolvemos original_norm(s)
+    // - original_norm == codeNorm  OR  cambio_norm == codeNorm
+    const { data, error } = await supabase
+      .from("cambios")
+      .select("original_norm")
+      .or(`original_norm.eq.${codeNorm},cambio_norm.eq.${codeNorm}`)
+      .limit(5000);
+
+    if(error) throw error;
+
+    const originals = unique_((data || []).map(x => x.original_norm).filter(Boolean));
+    // Si no aparece en cambios, igual devolvemos el codeNorm como posible original (para buscar vehículos directo)
+    if(originals.length === 0) return [codeNorm];
+    return originals;
+  }
+
+  async function fetchCambiosByOriginals_(originalNorms){
+    // Trae la tabla de cambios ya ordenada: posicion asc, cambio asc
+    const { data, error } = await supabase
+      .from("cambios")
+      .select("cambio, owner, posicion, original_norm")
+      .in("original_norm", originalNorms)
+      .order("posicion", { ascending: true, nullsFirst: false })
+      .order("cambio", { ascending: true });
+
+    if(error) throw error;
+
+    const rows = (data || []).map(r => ([
+      r.cambio || "",
+      r.owner || ""
+    ]));
+
+    return {
+      headers: ["cambio", "owner"],
+      rows
+    };
+  }
+
+  async function fetchVehiclesByOriginals_(originalNorms){
+    const { data, error } = await supabase
+      .from("datos_vehiculares")
+      .select("original, original_norm, vehiculo, modelo, motor")
+      .in("original_norm", originalNorms)
+      .limit(5000);
+
+    if(error) throw error;
+
+    const rows = (data || []).map(r => ([
+      r.original || "",
+      r.vehiculo || "",
+      r.modelo || "",
+      r.motor || ""
+    ]));
+
+    return {
+      headers: ["original", "vehiculo", "modelo", "motor"],
+      rows
+    };
+  }
+
   window.limpiar = function(){
     lastPayload = null;
     document.getElementById("btnExport").disabled = true;
@@ -318,7 +367,7 @@
     document.getElementById("pillCode").textContent = "-";
     document.getElementById("productUrl").textContent = "-";
     document.getElementById("productUrl").href = "#";
-    document.getElementById("counts").textContent = "Vehicles: 0 | OE Numbers: 0 | Refs: 0 | ToyoDIY: 0";
+    document.getElementById("counts").textContent = "Vehicles: 0 | Cambios: 0";
     document.getElementById("notes").textContent = "";
 
     document.getElementById("oeWrap").innerHTML = "No hay filas detectadas.";
@@ -329,17 +378,37 @@
   };
 
   window.buscar = async function(){
-    const code = (document.getElementById("code").value || "").trim();
-    if(!code){ setStatus("Escribe un codigo."); return; }
+    const raw = (document.getElementById("code").value || "").trim();
+    if(!raw){ setStatus("Escribe un codigo."); return; }
+
+    const norm = normalizeCode_(raw);
+    const candidates = unique_([ raw, raw.toUpperCase(), norm ]).filter(Boolean);
 
     setStatus("Buscando...");
     try{
-      let payload;
-      if(USE_DEMO){
-        payload = { ok:true, codigo:code, productUrl:"https://www.google.com/search?q="+encodeURIComponent(code), counts:{}, tablas:{ vehicles:{headers:[],rows:[]}, oeNumbers:[] } };
-      } else {
-        payload = await fetchWorker_("/search?code=" + encodeURIComponent(code));
-      }
+      // Tomamos el primer candidato como "codigo mostrado" pero el norm manda
+      const codigoMostrado = candidates[0] || raw;
+
+      // 1) resolver originales
+      const originalNorms = await resolveOriginals_(norm);
+
+      // 2) traer datos
+      const [veh, camb] = await Promise.all([
+        fetchVehiclesByOriginals_(originalNorms),
+        fetchCambiosByOriginals_(originalNorms),
+      ]);
+
+      const payload = {
+        codigo: codigoMostrado,
+        codigo_norm: norm,
+        original_norms: originalNorms,
+        productUrl: buildGoogleUrl_(codigoMostrado),
+        tablas: {
+          vehicles: veh,
+          cambios: camb
+        }
+      };
+
       render(payload);
     }catch(e){
       console.error(e);
@@ -351,37 +420,44 @@
   function render(payload){
     lastPayload = payload;
 
-    const codigo = payload.codigo || payload.code || "-";
-    const productUrl = payload.productUrl || ("https://www.google.com/search?q="+encodeURIComponent(codigo));
+    const codigo = payload.codigo || "-";
+    const productUrl = payload.productUrl || buildGoogleUrl_(codigo);
 
     document.getElementById("pillCode").textContent = codigo;
     document.getElementById("productUrl").textContent = productUrl;
     document.getElementById("productUrl").href = productUrl;
 
-    const c = payload.counts || {};
-    document.getElementById("counts").textContent =
-      "Vehicles: " + (c.vehicles_groups || 0) +
-      " | OE Numbers: " + (c.oe_numbers || 0) +
-      " | Refs: " + (c.related_products || 0) +
-      " | ToyoDIY: " + (c.toyodiy_rows || 0);
+    const vehicles = payload.tablas?.vehicles || null;
+    const cambios  = payload.tablas?.cambios  || null;
 
-    // ✅ NO mostramos JSON gigante en Producto
-    document.getElementById("notes").textContent = "";
-
-    // ✅ Vehicles mapeado a tabla
-    const vehicles = payload && payload.tablas && payload.tablas.vehicles ? payload.tablas.vehicles : null;
     renderTableInto_("vehWrap", vehicles);
+    renderTableInto_("oeWrap", cambios);
 
-    // ✅ Habilitar copiar si hay filas
     const hasVeh = vehicles && Array.isArray(vehicles.rows) && vehicles.rows.length > 0;
+    const hasCamb = cambios && Array.isArray(cambios.rows) && cambios.rows.length > 0;
+
     document.getElementById("btnCopyVeh").disabled = !hasVeh;
+    document.getElementById("btnCopyOE").disabled = !hasCamb;
+
+    document.getElementById("counts").textContent =
+      "Vehicles: " + (hasVeh ? vehicles.rows.length : 0) +
+      " | Cambios: " + (hasCamb ? cambios.rows.length : 0);
+
+    // Nota interna (no molesta al usuario)
+    const origs = (payload.original_norms || []).slice(0, 4).join(", ");
+    document.getElementById("notes").textContent =
+      (payload.original_norms && payload.original_norms.length > 0)
+        ? ("Original(es): " + origs + (payload.original_norms.length > 4 ? " ..." : ""))
+        : "";
+
+    document.getElementById("btnExport").disabled = !(hasVeh || hasCamb);
 
     setStatus("Listo ✅");
     if(isMobile_()) setMobileDefault_();
   }
 
   window.copiarVehicles = async function(){
-    const vehicles = lastPayload && lastPayload.tablas && lastPayload.tablas.vehicles ? lastPayload.tablas.vehicles : null;
+    const vehicles = lastPayload?.tablas?.vehicles || null;
     const tsv = tableToTSV_(vehicles);
     if(!tsv){ alert("No hay Vehicles para copiar."); return; }
     try{
@@ -392,13 +468,48 @@
     }
   };
 
-  window.copiarOE = function(){ alert("Copiar Cambios pendiente."); };
-  window.exportar = function(){ alert("Exportar pendiente."); };
+  window.copiarOE = async function(){
+    const cambios = lastPayload?.tablas?.cambios || null;
+    const tsv = tableToTSV_(cambios);
+    if(!tsv){ alert("No hay Cambios para copiar."); return; }
+    try{
+      await navigator.clipboard.writeText(tsv);
+      alert("Cambios copiado ✅ (pega en Excel)");
+    }catch(e){
+      alert("No pude copiar. (Tu navegador bloqueo el clipboard)");
+    }
+  };
 
-  // ======= INICIALIZACION =======
+  window.exportar = function(){
+    if(!lastPayload){ alert("No hay datos para exportar."); return; }
+
+    const codigo = (lastPayload.codigo || "export").toString();
+    const vehicles = lastPayload?.tablas?.vehicles || null;
+    const cambios  = lastPayload?.tablas?.cambios  || null;
+
+    const parts = [];
+    parts.push("CODIGO\t" + codigo);
+    parts.push("");
+    parts.push("=== VEHICLES ===");
+    parts.push(tableToTSV_(vehicles) || "No hay filas");
+    parts.push("");
+    parts.push("=== CAMBIOS ===");
+    parts.push(tableToTSV_(cambios) || "No hay filas");
+
+    const content = parts.join("\n");
+    const blob = new Blob([content], { type:"text/tab-separated-values;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "RepuestoFinder_" + codigo.replace(/[^a-zA-Z0-9_-]/g,"_") + ".tsv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  // === INIT ===
   await initAuth_();
   supabase.auth.onAuthStateChange((event, session) => {
-    if (!USE_DEMO && !session) window.location.href = "/?stay=1";
+    if (!session) window.location.href = "/?stay=1";
   });
 </script>
 </body>
