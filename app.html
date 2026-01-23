@@ -348,6 +348,63 @@
     return "otros";
   }
 
+    // ✅ Clasifica por "posicion" cuando el query es un código (mejor que keywords)
+  function classifyCategoryFromPosition_(posText){
+    const s = String(posText || "").toLowerCase();
+
+    const has = (...words) => words.some(w => s.includes(w));
+
+    // FRENOS
+    if (has("brake","freno","rear axle brake","front brake","disc","pad","caliper","zapata","drum","rotor","master cylinder","abs")) {
+      return "frenos";
+    }
+
+    // SUSPENSION / DIRECCION
+    if (has("suspension","shock","strut","control arm","arm","ball joint","rotula","bushing","buje","stabilizer","stabilizer link","tie rod","rack","steering","terminal")) {
+      return "suspension";
+    }
+
+    // MOTOR (interno)
+    if (has("engine","timing","gasket","head","piston","ring","bearing","oil pump","camshaft","crankshaft","valve","culata","empaque","anillo")) {
+      return "motor";
+    }
+
+    // TRANSMISION
+    if (has("transmission","gear","clutch","cv joint","driveshaft","axle shaft","differential")) {
+      return "transmision";
+    }
+
+    // ELECTRICO
+    if (has("sensor","ignition","coil","spark","alternator","starter","relay","fuse","wiring")) {
+      return "electrico";
+    }
+
+    // COOLING
+    if (has("radiator","water pump","thermostat","coolant","fan","hose")) {
+      return "cooling";
+    }
+
+    return null; // si no podemos inferir
+  }
+
+  // ✅ Busca una "posicion" representativa dentro de la tabla Vehicles
+  function extractBestPosition_(vehiclesTable){
+    if(!vehiclesTable || !Array.isArray(vehiclesTable.headers) || !Array.isArray(vehiclesTable.rows)) return null;
+
+    // Ubica la columna "Posicion" (o "Position")
+    const headers = vehiclesTable.headers.map(h => String(h||"").toLowerCase());
+    let idx = headers.findIndex(h => h === "posicion" || h.includes("posicion") || h === "position" || h.includes("position"));
+    if(idx < 0) return null;
+
+    // Toma el primer valor no vacío (o el más repetido si quieres luego)
+    for(const r of vehiclesTable.rows){
+      const v = r && r[idx] !== undefined ? String(r[idx] || "").trim() : "";
+      if(v) return v;
+    }
+    return null;
+  }
+
+
   async function getCurrentUserId_(){
     try{
       const { data } = await supabase.auth.getSession();
@@ -548,7 +605,14 @@
       const totalResults = vehCount + cambCount;
 
       const resultStatus = totalResults > 0 ? "found" : "not_found";
-      const category = classifyCategory_(raw);
+
+      // ✅ Primero intenta inferir desde "posicion" (Vehicles)
+      const pos = extractBestPosition_(veh);
+      const catFromPos = classifyCategoryFromPosition_(pos);
+
+      // ✅ Si no se pudo por posicion, cae al clasificador por texto
+      const category = catFromPos || classifyCategory_(raw);
+
 
       const t1 = performance.now();
       const responseMs = Math.round(t1 - t0);
