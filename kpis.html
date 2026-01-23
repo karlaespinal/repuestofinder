@@ -234,7 +234,11 @@
     background:rgba(255,255,255,.72);
   }
 
-  /* ✅ ahora usamos FLEX para que el ancho se pueda cambiar por columna */
+  /* Toggle de “Fijar encabezados” */
+  .freezeOff .colHeader{ position:static !important; }
+  .freezeOff .col.rowcol{ position:static !important; left:auto !important; box-shadow:none !important; }
+
+  /* GRID: flex (ancho ajustable por columna) */
   .grid{
     display:flex;
     align-items:flex-start;
@@ -247,7 +251,7 @@
     width:170px; /* default */
   }
 
-  /* Columna # (fila) sticky */
+  /* Columna # sticky */
   .col.rowcol{
     width: var(--rowcol-w);
     position:sticky;
@@ -277,12 +281,26 @@
     justify-content:space-between;
     gap:8px;
   }
-  .colHeader[contenteditable="true"]{ user-select:text; cursor:text; }
-  .colHeader:active{cursor:grabbing}
 
-  .hdrText{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .hdrText{
+    flex:1; min-width:0;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    outline:none;
+  }
+  .hdrText[contenteditable="true"]{ cursor:text; }
 
-  /* Handle de resize */
+  .hdrLock{
+    font-size:12px;
+    color:#64748b;
+    font-weight:900;
+    padding:2px 6px;
+    border-radius:10px;
+    border:1px solid rgba(100,116,139,.20);
+    background:rgba(255,255,255,.75);
+    user-select:none;
+  }
+
+  /* Handle resize */
   .resizer{
     width:10px;
     align-self:stretch;
@@ -315,7 +333,7 @@
     text-overflow:ellipsis;
     font-size: var(--grid-font);
     display:flex;
-    align-items:center; /* centra vertical */
+    align-items:center;
   }
   .cell:focus{
     background:#eef2ff;
@@ -332,9 +350,7 @@
     background:#dbeafe;
     box-shadow: inset 0 0 0 2px rgba(37,99,235,.35);
   }
-  .rowSelected .cell{
-    background:rgba(219,234,254,.35);
-  }
+  .rowSelected .cell{ background:rgba(219,234,254,.35); }
   .rowcol .cell.rowSel{
     cursor:pointer;
     justify-content:center;
@@ -343,11 +359,119 @@
   }
   .rowcol .cell.rowSel:hover{ background:#eef2ff; }
 
+  /* Filas ocultas por filtros */
+  .rowHidden{ display:none !important; }
+
   .footer{
     text-align:center;
     color:#94a3b8;
     font-size:12px;
     font-weight:800;
+  }
+
+  /* MODAL FILTROS */
+  .modalBackdrop{
+    position:fixed;
+    inset:0;
+    background:rgba(2,6,23,.45);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:99;
+    padding:14px;
+  }
+  .modal{
+    width:min(760px, 100%);
+    background:#fff;
+    border:1px solid rgba(230,232,240,.9);
+    border-radius:18px;
+    box-shadow:0 22px 60px rgba(2,6,23,.25);
+    overflow:hidden;
+  }
+  .modalHeader{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:12px 14px;
+    background:#f8fafc;
+    border-bottom:1px solid rgba(230,232,240,.9);
+  }
+  .modalHeader b{ font-size:14px; }
+  .modalHeader button{
+    border:0;
+    background:#fff;
+    border:1px solid rgba(230,232,240,.9);
+    border-radius:12px;
+    padding:8px 10px;
+    cursor:pointer;
+    font-weight:900;
+  }
+  .modalBody{ padding:14px; }
+  .row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:flex-end;
+    margin-bottom:10px;
+  }
+  .field{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    min-width:220px;
+    flex:1;
+  }
+  .field label{
+    font-size:12px;
+    color:#64748b;
+    font-weight:900;
+  }
+  .field select, .field input{
+    border:1px solid rgba(230,232,240,.95);
+    border-radius:12px;
+    padding:10px 10px;
+    font-weight:900;
+    outline:none;
+  }
+  .field input:focus, .field select:focus{
+    box-shadow:0 0 0 3px rgba(37,99,235,.12);
+    border-color:rgba(37,99,235,.45);
+  }
+  .modalFooter{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 14px;
+    border-top:1px solid rgba(230,232,240,.9);
+    background:#fff;
+  }
+  .chips{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .chipF{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 10px;
+    border-radius:999px;
+    border:1px solid rgba(37,99,235,.22);
+    background:#eef2ff;
+    font-weight:900;
+    color:#1d4ed8;
+    cursor:pointer;
+    user-select:none;
+  }
+  .chipF small{color:#334155;font-weight:900}
+  .hint{
+    font-size:12px;
+    color:#64748b;
+    font-weight:900;
   }
 
   @media(max-width:980px){
@@ -370,7 +494,7 @@
 
     <div class="navRight">
       <button class="btn btnGhost" onclick="goHome()">⬅ Volver al Dashboard</button>
-      <button class="btn btnPrimary" onclick="alert('Luego conectamos exportaciones / filtros')">Acciones</button>
+      <button class="btn btnPrimary" onclick="alert('Luego conectamos exportaciones / filtros avanzados')">Acciones</button>
     </div>
   </div>
 
@@ -395,8 +519,13 @@
   <div class="actionBar">
     <div class="actionLeft">
       <button id="btnSalesMode" class="btn btnSoft" onclick="toggleSalesMode()">📌 Ventas: Por AÑO</button>
-      <button class="btn btnGhost" onclick="alert('Proximo: filtros por categoria / demanda')">Boton 2</button>
-      <button class="btn btnGhost" onclick="alert('Proximo: exportar Excel/PDF')">Boton 3</button>
+
+      <!-- ✅ BOTÓN 2: FILTROS -->
+      <button id="btnFilters" class="btn btnGhost" onclick="openFilters()">Filtros</button>
+
+      <!-- ✅ BOTÓN 3: FIJAR -->
+      <button id="btnFreeze" class="btn btnGhost" onclick="toggleFreeze()">Fijar: ON</button>
+
       <button class="btn btnGhost" onclick="alert('Proximo: guardar configuracion de columnas por usuario')">Boton 4</button>
       <button class="btn btnGhost" onclick="alert('Proximo: reglas/validaciones')">Boton 5</button>
       <button class="btn btnGhost" onclick="alert('Proximo: calculos automaticos')">Boton 6</button>
@@ -407,7 +536,6 @@
         <span class="val" id="sizeVal">100%</span>
       </div>
 
-      <!-- ✅ Botones tipo imagen (alineación) -->
       <div class="fmtGroup" title="Formato de alineación">
         <button class="fmtBtn" onclick="applyAlign('left')" title="Alinear izquierda">≡</button>
         <button class="fmtBtn" onclick="applyAlign('center')" title="Centrar">≣</button>
@@ -432,7 +560,7 @@
       <div>
         <b>Tabla dinámica (tipo Excel)</b>
         <div class="mutedNote">
-          Arrastra headers para mover columnas · Arrastra borde del header para ajustar ancho · Click header para seleccionar columna · Click # para seleccionar fila · Delete elimina.
+          Arrastra headers para mover columnas · Arrastra borde del header para ajustar ancho · Click header selecciona columna · Click # selecciona fila · Delete elimina (si no está protegida).
         </div>
       </div>
 
@@ -442,7 +570,7 @@
       </div>
     </div>
 
-    <div class="tableScroll">
+    <div class="tableScroll" id="tableScroll">
       <div id="grid" class="grid"></div>
     </div>
   </div>
@@ -450,13 +578,48 @@
   <div class="footer">© <span id="y"></span> RepuestoFinder</div>
 </div>
 
+<!-- MODAL FILTROS -->
+<div class="modalBackdrop" id="filterModal">
+  <div class="modal">
+    <div class="modalHeader">
+      <b>Filtros</b>
+      <button onclick="closeFilters()">Cerrar ✕</button>
+    </div>
+
+    <div class="modalBody">
+      <div class="row">
+        <div class="field">
+          <label>Columna</label>
+          <select id="filterCol"></select>
+        </div>
+        <div class="field">
+          <label>Buscar (código / texto)</label>
+          <input id="filterVal" type="text" placeholder="Ej: A276... / 642094..." autocomplete="off">
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:6px;">
+        <button class="btn btnPrimary" onclick="addFilter()">Aplicar filtro</button>
+        <button class="btn btnGhost" onclick="clearFilters()">Limpiar filtros</button>
+        <span class="hint">Tip: puedes agregar varios filtros (AND). Click en un chip para removerlo.</span>
+      </div>
+    </div>
+
+    <div class="modalFooter">
+      <div class="chips" id="activeChips"></div>
+      <div class="hint" id="matchInfo">—</div>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ========= UTIL ========= */
 document.getElementById("y").textContent = new Date().getFullYear();
 function goHome(){ window.location.href = "index.html"; }
 const grid = document.getElementById("grid");
+const tableScroll = document.getElementById("tableScroll");
 
-/* ========= CONFIG COLUMNS BASE ========= */
+/* ========= COLUMNAS BASE ========= */
 const baseBeforeSales = [
   "CODIGO 1","CODIGO 2","CODIGO 3","DESCRIPCION","DEPARTAMENTO","MARCA","STOCK DISPONIBLE","CATEGORIA POR DEMANDA"
 ];
@@ -489,6 +652,32 @@ function salesColsMonth(){
   return cols;
 }
 
+/* ========= PROTECCIÓN DE COLUMNAS ========= */
+function isProtectedColumnName(name){
+  const n = (name || "").trim();
+
+  // todas las ventas
+  if(n.startsWith("Ventas_")) return true;
+
+  const protectedSet = new Set([
+    "SUGERIDO",
+    "TRANSITO",
+    "PENDIENTE DE DESPACHO",
+    "CANTIDAD MINIMA",
+    "MULTIPLO DE COMPRA",
+    "LEAD TIME (DIAS)",
+    "STOCK DISPONIBLE",
+    "MESES DE INVENTARIO"
+  ]);
+
+  return protectedSet.has(n.toUpperCase());
+}
+
+function isProtectedIndex(idx){
+  const name = columns[idx];
+  return isProtectedColumnName(name);
+}
+
 /* ========= ESTADO ========= */
 let salesMode = "YEAR";           // YEAR | MONTH
 let columns = [];                 // nombres
@@ -499,12 +688,143 @@ let selectedCol = null;           // índice de columna (sin contar la #)
 let selectedRow = null;           // row index (0..rows-1)
 let activeCell = null;            // referencia celda activa
 
+let freezeOn = true;
+
+/* ========= FILTROS ========= */
+let activeFilters = []; // { colIndex, value }
+function openFilters(){
+  rebuildFilterColumnOptions();
+  document.getElementById("filterModal").style.display = "flex";
+  document.getElementById("filterVal").focus();
+  renderFilterChips();
+  updateMatchInfo();
+}
+function closeFilters(){
+  document.getElementById("filterModal").style.display = "none";
+}
+function rebuildFilterColumnOptions(){
+  const sel = document.getElementById("filterCol");
+  sel.innerHTML = "";
+  columns.forEach((name, idx)=>{
+    const opt = document.createElement("option");
+    opt.value = String(idx);
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+
+  // default: CODIGO 1 si existe
+  const defaultIdx = columns.findIndex(x => (x || "").toUpperCase() === "CODIGO 1");
+  if(defaultIdx >= 0) sel.value = String(defaultIdx);
+}
+function addFilter(){
+  const colIndex = parseInt(document.getElementById("filterCol").value, 10);
+  const value = (document.getElementById("filterVal").value || "").trim();
+  if(isNaN(colIndex) || !value) return;
+
+  activeFilters.push({ colIndex, value });
+  document.getElementById("filterVal").value = "";
+  applyFilters();
+  renderFilterChips();
+  updateMatchInfo();
+}
+function removeFilter(i){
+  activeFilters.splice(i, 1);
+  applyFilters();
+  renderFilterChips();
+  updateMatchInfo();
+}
+function clearFilters(){
+  activeFilters = [];
+  applyFilters();
+  renderFilterChips();
+  updateMatchInfo();
+}
+function renderFilterChips(){
+  const wrap = document.getElementById("activeChips");
+  wrap.innerHTML = "";
+  if(activeFilters.length === 0){
+    wrap.innerHTML = `<span class="hint">Sin filtros activos</span>`;
+    return;
+  }
+  activeFilters.forEach((f, i)=>{
+    const colName = columns[f.colIndex] || ("Col " + (f.colIndex+1));
+    const chip = document.createElement("div");
+    chip.className = "chipF";
+    chip.innerHTML = `<small>${colName}:</small> <span>${escapeHtml(f.value)}</span> <b>✕</b>`;
+    chip.onclick = ()=> removeFilter(i);
+    wrap.appendChild(chip);
+  });
+}
+function escapeHtml(str){
+  return String(str)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function getCellText(colIndex, rowIndex){
+  const colEl = grid.children[colIndex + 1]; // +1 por columna #
+  if(!colEl) return "";
+  const cell = colEl.children[rowIndex + 1]; // +1 por header
+  if(!cell) return "";
+  return (cell.textContent || "").trim();
+}
+
+function applyFilters(){
+  // si no hay filtros => mostrar todo
+  if(activeFilters.length === 0){
+    for(let r=0; r<rows; r++){
+      setRowHidden(r, false);
+    }
+    return;
+  }
+
+  let matches = 0;
+  for(let r=0; r<rows; r++){
+    const ok = activeFilters.every(f=>{
+      const cellText = getCellText(f.colIndex, r).toLowerCase();
+      return cellText.includes(String(f.value).toLowerCase());
+    });
+    setRowHidden(r, !ok);
+    if(ok) matches++;
+  }
+  return matches;
+}
+
+function setRowHidden(r, hidden){
+  // columna # (rowcol) está en index 0
+  for(let c=0; c<grid.children.length; c++){
+    const colEl = grid.children[c];
+    const cell = colEl?.children[r + 1];
+    if(!cell) continue;
+    if(hidden) cell.classList.add("rowHidden");
+    else cell.classList.remove("rowHidden");
+  }
+}
+
+function updateMatchInfo(){
+  const info = document.getElementById("matchInfo");
+  if(activeFilters.length === 0){
+    info.textContent = `Mostrando ${rows} filas`;
+    return;
+  }
+  let count = 0;
+  for(let r=0;r<rows;r++){
+    // si la celda # está oculta, row está oculta
+    const rowCell = grid.children[0]?.children[r + 1];
+    if(rowCell && !rowCell.classList.contains("rowHidden")) count++;
+  }
+  info.textContent = `Coincidencias: ${count} / ${rows}`;
+}
+
 /* ========= BUILD ========= */
 function buildColumns(){
   const sales = (salesMode === "YEAR") ? salesColsYear() : salesColsMonth();
   columns = [...baseBeforeSales, ...sales, ...baseAfterSales];
 
-  // asegura widths (si no existe)
+  // widths default
   columns.forEach((_, i)=>{ if(!colWidths[i]) colWidths[i] = 170; });
 }
 
@@ -512,7 +832,7 @@ function buildColumns(){
 function render(){
   grid.innerHTML = "";
 
-  // 1) Columna # (selección de filas)
+  // Columna #
   const rowCol = document.createElement("div");
   rowCol.className = "col rowcol";
   const rowHdr = document.createElement("div");
@@ -525,14 +845,12 @@ function render(){
     c.className = "cell rowSel";
     c.textContent = (r+1);
     c.dataset.row = r;
-    c.addEventListener("click", ()=>{
-      selectRow(r);
-    });
+    c.addEventListener("click", ()=> selectRow(r));
     rowCol.appendChild(c);
   }
   grid.appendChild(rowCol);
 
-  // 2) Columnas reales
+  // Columnas normales
   columns.forEach((name, index)=>{
     const col = document.createElement("div");
     col.className = "col";
@@ -543,17 +861,17 @@ function render(){
       col.classList.add("salesCentered");
     }
 
-    // seleccionar columna con click en header
+    // seleccionar columna
     col.addEventListener("click", (e)=>{
-      const isHeaderClick = e.target.classList.contains("colHeader") || e.target.closest(".colHeader");
-      if(isHeaderClick){
-        // si el click fue en el resizer, no seleccionar
+      const headerEl = e.target.closest(".colHeader");
+      if(headerEl){
+        // si click en resizer, no seleccionar
         if(e.target.classList.contains("resizer")) return;
         selectCol(index);
       }
     });
 
-    // Drag & drop reorder (solo si arrastra header)
+    // DnD reorder
     col.draggable = true;
     col.addEventListener("dragstart", e=>{
       e.dataTransfer.setData("col", index);
@@ -564,43 +882,54 @@ function render(){
       const to = index;
       if(isNaN(from) || isNaN(to)) return;
 
-      // swap columns
       const tmp = columns[from];
       columns[from] = columns[to];
       columns[to] = tmp;
 
-      // swap widths
       const w = colWidths[from];
       colWidths[from] = colWidths[to];
       colWidths[to] = w;
 
-      // corrige selección si aplica
       if(selectedCol === from) selectedCol = to;
       else if(selectedCol === to) selectedCol = from;
 
       render();
+      applyFilters();
+      updateMatchInfo();
     });
 
-    // Header (editable) + resizer
+    // Header + resizer
     const header = document.createElement("div");
     header.className = "colHeader";
-    header.contentEditable = true;
 
     const hdrText = document.createElement("span");
     hdrText.className = "hdrText";
     hdrText.textContent = name;
 
+    // Protección rename
+    const protectedCol = isProtectedColumnName(name);
+    hdrText.contentEditable = !protectedCol;
+
+    if(protectedCol){
+      const lock = document.createElement("span");
+      lock.className = "hdrLock";
+      lock.textContent = "LOCK";
+      lock.title = "Columna protegida: no se puede renombrar ni eliminar.";
+      header.appendChild(lock);
+    }
+
+    // al salir (si editable) => guardar nombre
+    hdrText.addEventListener("blur", ()=>{
+      if(isProtectedIndex(index)) return;
+      const t = hdrText.textContent.trim();
+      columns[index] = t || columns[index];
+      // rearmar select de filtros (si está abierto)
+      rebuildFilterColumnOptions();
+    });
+
     const resizer = document.createElement("span");
     resizer.className = "resizer";
     resizer.title = "Arrastra para ajustar ancho";
-
-    // al blur, guarda nombre
-    header.addEventListener("blur", ()=>{
-      const t = hdrText.textContent.trim();
-      columns[index] = t || columns[index];
-    });
-
-    // prevenir que resizer afecte el contenteditable
     resizer.addEventListener("mousedown", (e)=>{ e.preventDefault(); });
 
     // Resize logic
@@ -636,18 +965,14 @@ function render(){
       cell.dataset.col = index;
       cell.dataset.row = r;
 
-      // click/focus tracking
       cell.addEventListener("focus", ()=>{
         activeCell = cell;
         selectedCol = null;
         selectedRow = null;
         paintSelection();
       });
-      cell.addEventListener("click", ()=>{
-        activeCell = cell;
-      });
+      cell.addEventListener("click", ()=>{ activeCell = cell; });
 
-      // centrar ventas en modo MES
       if(salesMode === "MONTH" && isSales){
         cell.style.justifyContent = "center";
         cell.style.textAlign = "center";
@@ -662,24 +987,20 @@ function render(){
   paintSelection();
 }
 
-/* ========= SELECCIÓN VISUAL ========= */
+/* ========= SELECCIÓN ========= */
 function paintSelection(){
-  // limpia
-  [...grid.querySelectorAll(".col")].forEach(c=>c.classList.remove("colSelected","rowSelected"));
+  [...grid.querySelectorAll(".col")].forEach(c=>c.classList.remove("colSelected"));
+  [...grid.querySelectorAll(".cell")].forEach(c=>c.classList.remove("rowSelected"));
 
-  // columnas reales empiezan en child index 1 (por la col #)
   if(selectedCol !== null){
     const colEl = grid.children[selectedCol + 1];
     if(colEl) colEl.classList.add("colSelected");
   }
 
   if(selectedRow !== null){
-    // marcar row en todas las columnas
     for(let i=0;i<grid.children.length;i++){
       const colEl = grid.children[i];
-      if(!colEl) continue;
-      // la celda de la fila está en (row+1) por el header
-      const cell = colEl.children[selectedRow + 1];
+      const cell = colEl?.children[selectedRow + 1];
       if(cell) cell.classList.add("rowSelected");
     }
   }
@@ -717,61 +1038,74 @@ grid.addEventListener("paste", (e)=>{
     rowArr.forEach((val, cIdx)=>{
       const colIndex = startCol + cIdx;
       const rowIndex = startRow + rIdx;
-      // +1 porque col # está al inicio
-      const col = grid.children[colIndex + 1];
+
+      const col = grid.children[colIndex + 1]; // +1 por #
       if(!col) return;
+
       const cell = col.children[rowIndex + 1];
       if(!cell) return;
+
       cell.textContent = val;
     });
   });
+
+  applyFilters();
+  updateMatchInfo();
 });
 
-/* ========= DELETE KEY (eliminar filas/columnas) ========= */
+/* ========= DELETE KEY ========= */
 document.addEventListener("keydown", (e)=>{
   if(e.key !== "Delete") return;
 
-  // si hay columna seleccionada, borrar columna
+  // columna seleccionada => borrar columna si no está protegida
   if(selectedCol !== null){
+    if(isProtectedIndex(selectedCol)){
+      alert("Esta columna está protegida y no se puede eliminar.");
+      return;
+    }
     deleteColumn(selectedCol);
     return;
   }
 
-  // si hay fila seleccionada, borrar fila
+  // fila seleccionada => vaciar fila (no elimina estructura)
   if(selectedRow !== null){
     deleteRow(selectedRow);
     return;
   }
 
-  // si hay celda activa, borrar contenido
+  // celda activa => borrar contenido
   if(activeCell && activeCell.classList.contains("cell")){
     activeCell.textContent = "";
+    applyFilters();
+    updateMatchInfo();
   }
 });
 
 function deleteColumn(idx){
   columns.splice(idx, 1);
 
-  // rehacer widths (reindex)
   const newW = {};
   columns.forEach((_, i)=>{ newW[i] = colWidths[i] || 170; });
   colWidths = newW;
 
   selectedCol = null;
   render();
+  applyFilters();
+  rebuildFilterColumnOptions();
+  renderFilterChips();
+  updateMatchInfo();
 }
 
 function deleteRow(r){
-  // borrar contenido de esa fila en todas las columnas (no elimina “estructura de fila” porque grid es fijo)
-  // estilo Excel-lite: deja la fila vacía.
   for(let c=0;c<columns.length;c++){
     const colEl = grid.children[c + 1];
-    if(!colEl) continue;
-    const cell = colEl.children[r + 1];
+    const cell = colEl?.children[r + 1];
     if(cell) cell.textContent = "";
   }
   selectedRow = null;
   paintSelection();
+  applyFilters();
+  updateMatchInfo();
 }
 
 /* ========= ACCIONES ========= */
@@ -779,6 +1113,9 @@ function addColumn(){
   columns.push("NUEVA COLUMNA");
   colWidths[columns.length - 1] = 170;
   render();
+  rebuildFilterColumnOptions();
+  applyFilters();
+  updateMatchInfo();
 }
 
 function clearTable(){
@@ -786,6 +1123,8 @@ function clearTable(){
     if(c.classList.contains("rowSel")) return;
     c.textContent = "";
   });
+  applyFilters();
+  updateMatchInfo();
 }
 
 /* ========= VENTAS MODE ========= */
@@ -796,7 +1135,7 @@ function toggleSalesMode(){
   document.getElementById("btnSalesMode").textContent = (salesMode === "YEAR") ? "📌 Ventas: Por AÑO" : "📌 Ventas: Por MES";
   document.getElementById("monthControls").style.display = (salesMode === "MONTH") ? "inline-flex" : "none";
 
-  // default month input
+  // default month
   const now = new Date();
   const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
   const sm = document.getElementById("startMonth");
@@ -804,12 +1143,20 @@ function toggleSalesMode(){
 
   buildColumns();
   render();
+
+  // refresca filtros
+  rebuildFilterColumnOptions();
+  applyFilters();
+  updateMatchInfo();
 }
 
 function applyMonthMode(){
   if(salesMode !== "MONTH") return;
   buildColumns();
   render();
+  rebuildFilterColumnOptions();
+  applyFilters();
+  updateMatchInfo();
 }
 
 /* ========= SLIDER ========= */
@@ -831,17 +1178,15 @@ function applySize(percent){
 
 /* ========= FORMATO: ALINEACIÓN ========= */
 function applyAlign(where){
-  // where: left|center|right
-
-  // 1) Columna seleccionada
+  // Columna seleccionada
   if(selectedCol !== null){
     const colEl = grid.children[selectedCol + 1];
     if(!colEl) return;
-    // header
-    colEl.querySelector(".hdrText").style.textAlign = where;
-    colEl.querySelector(".colHeader").style.justifyContent = (where === "left") ? "space-between" : "center";
+    const header = colEl.querySelector(".colHeader");
+    const hdrText = colEl.querySelector(".hdrText");
+    if(hdrText) hdrText.style.textAlign = where;
+    if(header) header.style.justifyContent = (where === "left") ? "space-between" : "center";
 
-    // cells
     const cells = [...colEl.querySelectorAll(".cell")];
     cells.forEach(cell=>{
       cell.style.textAlign = where;
@@ -850,7 +1195,7 @@ function applyAlign(where){
     return;
   }
 
-  // 2) Fila seleccionada
+  // Fila seleccionada
   if(selectedRow !== null){
     for(let c=0;c<columns.length;c++){
       const colEl = grid.children[c + 1];
@@ -863,10 +1208,22 @@ function applyAlign(where){
     return;
   }
 
-  // 3) Celda activa
+  // Celda activa
   if(activeCell){
     activeCell.style.textAlign = where;
     activeCell.style.justifyContent = (where === "left") ? "flex-start" : (where === "center" ? "center" : "flex-end");
+  }
+}
+
+/* ========= FIJAR ENCABEZADOS ========= */
+function toggleFreeze(){
+  freezeOn = !freezeOn;
+  if(freezeOn){
+    tableScroll.classList.remove("freezeOff");
+    document.getElementById("btnFreeze").textContent = "Fijar: ON";
+  }else{
+    tableScroll.classList.add("freezeOff");
+    document.getElementById("btnFreeze").textContent = "Fijar: OFF";
   }
 }
 
@@ -881,10 +1238,16 @@ function applyAlign(where){
 
   buildColumns();
   render();
+
+  // init filtros
+  rebuildFilterColumnOptions();
+  renderFilterChips();
+  updateMatchInfo();
 })();
 </script>
 
 </body>
 </html>
+
 
 
