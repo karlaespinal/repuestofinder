@@ -1,221 +1,504 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>KPIs + Tabla Dinámica</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>RepuestoFinder - KPIs y Analisis</title>
 
 <style>
-:root{
-  --bg:#f6f7fb;
-  --card:#fff;
-  --line:#e5e7eb;
-  --txt:#0f172a;
-  --mut:#64748b;
-  --pri:#2563eb;
-}
+  :root{
+    --bg:#f6f7fb;
+    --card:rgba(255,255,255,.94);
+    --line:rgba(230,232,240,.95);
+    --txt:#0f172a;
+    --mut:#64748b;
+    --pri:#2563eb;
+    --pri2:#1d4ed8;
+    --shadow:0 16px 40px rgba(2,6,23,.10);
+    --r:16px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Arial,Helvetica,sans-serif;
+    color:var(--txt);
+    background:
+      radial-gradient(1200px 600px at 20% 0%, rgba(37,99,235,.15), transparent 60%),
+      radial-gradient(900px 500px at 80% 20%, rgba(16,185,129,.12), transparent 55%),
+      linear-gradient(rgba(246,247,251,.92), rgba(246,247,251,.92));
+    min-height:100vh;
+  }
 
-*{box-sizing:border-box}
+  .page{
+    width:100%;
+    margin:0 auto;
+    padding:14px 14px 18px;
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
 
-body{
-  margin:0;
-  font-family: Arial, Helvetica, sans-serif;
-  background:var(--bg);
-  color:var(--txt);
-}
+  /* NAV */
+  .nav{
+    position:sticky;
+    top:0;
+    z-index:30;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background:rgba(246,247,251,.68);
+    border:1px solid rgba(230,232,240,.75);
+    border-radius:18px;
+    box-shadow:0 10px 26px rgba(2,6,23,.08);
+    padding:12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
 
-.page{
-  padding:16px;
-  height:100vh;
-  display:flex;
-  flex-direction:column;
-  gap:14px;
-}
+  .brand{display:flex;align-items:center;gap:10px}
+  .logo{
+    width:42px;height:42px;border-radius:14px;
+    background:#111;color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:900; user-select:none;
+    box-shadow:0 10px 25px rgba(0,0,0,.12);
+  }
+  .brandTitle{line-height:1}
+  .brandTitle b{display:block;font-size:15px}
+  .brandTitle span{
+    display:block;font-size:12px;color:#94a3b8;font-weight:800;
+    letter-spacing:.4px;text-transform:uppercase;margin-top:2px
+  }
 
-/* =================== BLOQUES SUPERIORES =================== */
-.topGrid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:14px;
-}
+  .navRight{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;
+  }
 
-.block{
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:16px;
-  padding:14px;
-  min-height:180px;
-}
+  .btn{
+    border:0;
+    cursor:pointer;
+    font-weight:900;
+    border-radius:12px;
+    padding:10px 12px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    user-select:none;
+    white-space:nowrap;
+  }
+  .btn:active{ transform: translateY(1px); }
+  .btnPrimary{background:var(--pri);color:#fff}
+  .btnPrimary:hover{background:var(--pri2)}
+  .btnGhost{background:#fff;border:1px solid var(--line);color:#0f172a}
+  .btnSoft{background:#eef2ff;border:1px solid rgba(37,99,235,.22);color:#1d4ed8}
 
-.block h3{
-  margin:0 0 8px;
-  font-size:15px;
-  font-weight:900;
-}
+  /* TOP BLOCKS */
+  .topGrid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:12px;
+  }
 
-.placeholder{
-  border:2px dashed #cbd5f5;
-  border-radius:12px;
-  height:120px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:var(--mut);
-  font-weight:700;
-}
+  .section{
+    border:1px solid var(--line);
+    border-radius:22px;
+    background:var(--card);
+    box-shadow:0 10px 26px rgba(2,6,23,.06);
+    padding:14px;
+    overflow:hidden;
+    min-height:190px;
+  }
+  .sectionTitle{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+  }
+  .sectionTitle h2{ margin:0; font-size:16px; font-weight:900; }
+  .sectionTitle span{
+    font-size:12px;
+    color:#94a3b8;
+    font-weight:900;
+    letter-spacing:.4px;
+    text-transform:uppercase;
+  }
+  .placeholderChart{
+    border:1px dashed rgba(100,116,139,.45);
+    border-radius:18px;
+    padding:18px;
+    background:rgba(255,255,255,.72);
+    color:#334155;
+    font-weight:900;
+    min-height:130px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+  }
 
-/* =================== TABLA =================== */
-.tableWrap{
-  flex:1;
-  background:var(--card);
-  border:1px solid var(--line);
-  border-radius:18px;
-  padding:12px;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-}
+  /* ACTION BAR (6 botones) */
+  .actionBar{
+    border:1px solid var(--line);
+    border-radius:18px;
+    background:var(--card);
+    box-shadow:0 10px 26px rgba(2,6,23,.06);
+    padding:10px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .actionLeft{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .actionRight{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:flex-end;
+  }
+  .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 10px;
+    border-radius:14px;
+    background:#fff;
+    border:1px solid var(--line);
+    font-weight:900;
+    color:#0f172a;
+  }
+  .chip small{font-weight:900;color:#64748b}
+  .miniCtrl{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 10px;
+    border-radius:14px;
+    background:#fff;
+    border:1px solid var(--line);
+  }
+  .miniCtrl label{font-weight:900;color:#0f172a;font-size:12px}
+  .miniCtrl input[type="month"]{
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:6px 8px;
+    font-weight:900;
+  }
+  .miniCtrl input[type="checkbox"]{ transform: translateY(1px); }
 
-.tableActions{
-  display:flex;
-  gap:8px;
-  margin-bottom:10px;
-}
+  /* TABLE */
+  .tableWrap{
+    flex:1;
+    border:1px solid var(--line);
+    border-radius:22px;
+    background:var(--card);
+    box-shadow:0 10px 26px rgba(2,6,23,.06);
+    padding:12px;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .tableTop{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+  }
+  .tableTop b{font-size:13px}
+  .tableScroll{
+    flex:1;
+    overflow:auto;
+    border-radius:16px;
+    border:1px solid rgba(230,232,240,.9);
+    background:rgba(255,255,255,.72);
+  }
+  .grid{
+    display:grid;
+    grid-auto-flow:column;
+    grid-auto-columns: 170px;
+    min-width:max-content;
+  }
+  .col{
+    border-right:1px solid rgba(230,232,240,.9);
+    background:transparent;
+  }
+  .colHeader{
+    position:sticky;
+    top:0;
+    z-index:2;
+    background:#f1f5f9;
+    padding:9px 10px;
+    font-weight:900;
+    cursor:grab;
+    border-bottom:1px solid rgba(230,232,240,.9);
+    user-select:none;
+  }
+  .colHeader[contenteditable="true"]{
+    user-select:text;
+    cursor:text;
+  }
+  .colHeader:active{cursor:grabbing}
+  .cell{
+    padding:7px 10px;
+    min-height:30px;
+    border-bottom:1px solid rgba(230,232,240,.9);
+    outline:none;
+    font-weight:800;
+    color:#0f172a;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .cell:focus{
+    background:#eef2ff;
+    box-shadow: inset 0 0 0 2px rgba(37,99,235,.15);
+  }
 
-.btn{
-  border:0;
-  border-radius:10px;
-  padding:8px 12px;
-  font-weight:900;
-  cursor:pointer;
-}
+  .mutedNote{
+    font-size:12px;
+    color:#64748b;
+    font-weight:900;
+  }
 
-.btnPrimary{
-  background:var(--pri);
-  color:#fff;
-}
+  .footer{
+    text-align:center;
+    color:#94a3b8;
+    font-size:12px;
+    font-weight:800;
+  }
 
-/* Scroll horizontal */
-.tableScroll{
-  overflow:auto;
-  flex:1;
-}
-
-/* Grid estilo Excel */
-.grid{
-  display:grid;
-  grid-auto-flow:column;
-  grid-auto-columns:160px;
-  min-width:max-content;
-}
-
-/* Columnas */
-.col{
-  border-right:1px solid var(--line);
-}
-
-/* Header */
-.colHeader{
-  background:#f1f5f9;
-  padding:8px;
-  font-weight:900;
-  cursor:grab;
-  border-bottom:1px solid var(--line);
-}
-
-/* Celdas */
-.cell{
-  padding:6px 8px;
-  min-height:28px;
-  border-bottom:1px solid var(--line);
-}
-.cell:focus{
-  outline:none;
-  background:#eef2ff;
-}
+  @media(max-width:980px){
+    .topGrid{ grid-template-columns:1fr; }
+  }
 </style>
 </head>
 
 <body>
-
 <div class="page">
 
-  <!-- BLOQUES -->
-  <div class="topGrid">
-    <div class="block">
-      <h3>📊 Reporte de Búsquedas</h3>
-      <div class="placeholder">Gráficos por fecha / marca</div>
+  <!-- NAV -->
+  <div class="nav">
+    <div class="brand">
+      <div class="logo">RF</div>
+      <div class="brandTitle">
+        <b>RepuestoFinder</b>
+        <span>KPIs y Analisis</span>
+      </div>
     </div>
-    <div class="block">
-      <h3>🏆 Top Marcas y Repuestos</h3>
-      <div class="placeholder">Ranking dinámico</div>
+
+    <div class="navRight">
+      <button class="btn btnGhost" onclick="goHome()">⬅ Volver al Dashboard</button>
+      <button class="btn btnPrimary" onclick="alert('Luego conectamos exportaciones / filtros')">Acciones</button>
     </div>
   </div>
 
-  <!-- TABLA -->
-  <div class="tableWrap">
+  <!-- TOP BLOCKS SIDE BY SIDE -->
+  <div class="topGrid">
+    <div class="section">
+      <div class="sectionTitle">
+        <h2>Reporte de Busquedas</h2>
+        <span>placeholder</span>
+      </div>
+      <div class="placeholderChart">
+        Aqui ira un grafico (por fecha / marca / modelo) y filtros.
+      </div>
+    </div>
 
-    <div class="tableActions">
-      <button class="btn btnPrimary" onclick="addColumn()">+ Agregar columna</button>
+    <div class="section">
+      <div class="sectionTitle">
+        <h2>Top Marcas y Repuestos</h2>
+        <span>placeholder</span>
+      </div>
+      <div class="placeholderChart">
+        Aqui ira una tabla ranking + comparativas.
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTION BAR (6 BOTONES) -->
+  <div class="actionBar">
+    <div class="actionLeft">
+      <button id="btnSalesMode" class="btn btnSoft" onclick="toggleSalesMode()">📌 Ventas: Por AÑO</button>
+      <button class="btn btnGhost" onclick="alert('Proximo: filtros por categoria / demanda')">Boton 2</button>
+      <button class="btn btnGhost" onclick="alert('Proximo: exportar Excel/PDF')">Boton 3</button>
+      <button class="btn btnGhost" onclick="alert('Proximo: guardar configuracion de columnas por usuario')">Boton 4</button>
+      <button class="btn btnGhost" onclick="alert('Proximo: reglas/validaciones')">Boton 5</button>
+      <button class="btn btnGhost" onclick="alert('Proximo: calculos automaticos')">Boton 6</button>
+    </div>
+
+    <div class="actionRight">
+      <span class="chip"><small>Modo actual:</small> <span id="salesModeLabel">AÑO</span></span>
+
+      <div class="miniCtrl" id="monthControls" style="display:none">
+        <label><input id="useCurrentMonth" type="checkbox" checked onchange="applyMonthMode()"> Desde hoy</label>
+        <label>Mes inicio:
+          <input id="startMonth" type="month" onchange="applyMonthMode()">
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="tableWrap">
+    <div class="tableTop">
+      <div>
+        <b>Tabla dinámica (tipo Excel)</b>
+        <div class="mutedNote">Arrastra headers para mover columnas · Edita nombre del header · Ctrl+V para pegar desde Excel</div>
+      </div>
+
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <button class="btn btnPrimary" onclick="addColumn()">+ Agregar columna</button>
+        <button class="btn btnGhost" onclick="clearTable()">Limpiar celdas</button>
+      </div>
     </div>
 
     <div class="tableScroll">
       <div id="grid" class="grid"></div>
     </div>
-
   </div>
 
+  <div class="footer">© <span id="y"></span> RepuestoFinder</div>
 </div>
 
 <script>
+/* ========= UTIL ========= */
+document.getElementById("y").textContent = new Date().getFullYear();
+function goHome(){ window.location.href = "index.html"; }
+
 const grid = document.getElementById("grid");
 
-let columns = [
+/* ========= CONFIG COLUMNS BASE (segun tu imagen) ========= */
+const baseBeforeSales = [
   "CODIGO 1",
   "CODIGO 2",
   "CODIGO 3",
   "DESCRIPCION",
+  "DEPARTAMENTO",
   "MARCA",
-  "STOCK DISPONIBLE"
+  "STOCK DISPONIBLE",
+  "CATEGORIA POR DEMANDA"
 ];
 
-const rows = 20;
+const baseAfterSales = [
+  "PENDIENTE DE DESPACHO",
+  "FECHA PREVS. DE LLEGADA",
+  "TRANSITO",
+  "MESES SIN VENTAS",
+  "EFECTIVIDAD DE VENTA",
+  "ULTIMO MES DE VENTA",
+  "AÑO DE VENTA",
+  "CANTIDAD MINIMA",
+  "MULTIPLO DE COMPRA",
+  "ULTIMA COMPRA",
+  "APLICACION PRINCIPAL",
+  "DESCRIPCION EN INGLES",
+  "LEAD TIME (DIAS)",
+  "PROMEDIO VENTA MENSUAL",
+  "MESES DE INVENTARIO",
+  "DATOS ADICIONALES",
+  "SUGERIDO",
+  "COMENTARIOS"
+];
 
-/* Crear tabla */
+/* Ventas por AÑO segun tu pedido:
+   A0=2026, A1=2025, A2=2024  */
+function salesColsYear(){
+  return ["Ventas_2024", "Ventas_2025", "Ventas_2026"];
+}
+
+/* Ventas por MES: 12 meses hacia atras.
+   - Si "Desde hoy": usa mes actual como final y calcula 12.
+   - Si no: usa el mes elegido como final.
+*/
+function salesColsMonth(){
+  const useCurrent = document.getElementById("useCurrentMonth")?.checked ?? true;
+  const startMonthInput = document.getElementById("startMonth")?.value || "";
+
+  let end = new Date();
+  if(!useCurrent && startMonthInput){
+    const [yy, mm] = startMonthInput.split("-").map(n=>parseInt(n,10));
+    // end = ultimo dia del mes seleccionado (pero label solo necesita mes)
+    end = new Date(yy, mm-1, 1);
+  }else{
+    // normal: mes actual
+    end = new Date(end.getFullYear(), end.getMonth(), 1);
+  }
+
+  // generar 12 meses hacia atras incluyendo el mes "end"
+  const cols = [];
+  for(let i=11;i>=0;i--){
+    const d = new Date(end.getFullYear(), end.getMonth()-i, 1);
+    const m = d.toLocaleString("es-DO", { month:"short" }).replace(".","");
+    const label = `${m.toUpperCase()}-${d.getFullYear()}`;
+    cols.push("Ventas_" + label);
+  }
+  return cols;
+}
+
+/* ========= ESTADO ========= */
+let salesMode = "YEAR"; // YEAR | MONTH
+let columns = [];       // se arma en buildColumns()
+const rows = 22;
+
+/* ========= BUILD COLUMNS ========= */
+function buildColumns(){
+  const sales = (salesMode === "YEAR") ? salesColsYear() : salesColsMonth();
+  columns = [...baseBeforeSales, ...sales, ...baseAfterSales];
+}
+
+/* ========= RENDER GRID ========= */
 function render(){
   grid.innerHTML = "";
+
   columns.forEach((name, index)=>{
     const col = document.createElement("div");
     col.className = "col";
     col.draggable = true;
 
+    // Drag & drop reorder columns
     col.addEventListener("dragstart", e=>{
       e.dataTransfer.setData("col", index);
     });
-
     col.addEventListener("dragover", e=>e.preventDefault());
-
     col.addEventListener("drop", e=>{
-      const from = e.dataTransfer.getData("col");
+      const from = parseInt(e.dataTransfer.getData("col"),10);
       const to = index;
+      if(isNaN(from) || isNaN(to)) return;
       const temp = columns[from];
       columns[from] = columns[to];
       columns[to] = temp;
       render();
     });
 
+    // Header editable (segun tu comentario: codigo 1/2/3 editables; aqui dejamos TODOS editables)
     const header = document.createElement("div");
     header.className = "colHeader";
     header.contentEditable = true;
     header.innerText = name;
-    header.onblur = ()=> columns[index] = header.innerText;
+    header.addEventListener("blur", ()=> { columns[index] = header.innerText.trim() || columns[index]; });
 
     col.appendChild(header);
 
+    // Cells
     for(let r=0;r<rows;r++){
       const cell = document.createElement("div");
       cell.className = "cell";
       cell.contentEditable = true;
+      cell.dataset.col = index;
+      cell.dataset.row = r;
       col.appendChild(cell);
     }
 
@@ -223,30 +506,80 @@ function render(){
   });
 }
 
-/* Agregar columna */
+/* ========= PEGADO DESDE EXCEL ========= */
+grid.addEventListener("paste", (e)=>{
+  e.preventDefault();
+  const text = e.clipboardData.getData("text");
+  const matrix = text.split(/\r?\n/).filter(x=>x.length>0).map(r=>r.split("\t"));
+
+  // Si hay un focus, empezamos pegado desde esa celda
+  const active = document.activeElement;
+  let startCol = 0;
+  let startRow = 0;
+
+  if(active && active.classList && active.classList.contains("cell")){
+    startCol = parseInt(active.dataset.col,10) || 0;
+    startRow = parseInt(active.dataset.row,10) || 0;
+  }
+
+  matrix.forEach((rowArr, rIdx)=>{
+    rowArr.forEach((val, cIdx)=>{
+      const colIndex = startCol + cIdx;
+      const rowIndex = startRow + rIdx;
+      const col = grid.children[colIndex];
+      if(!col) return;
+      const cell = col.children[rowIndex + 1]; // +1 por header
+      if(!cell) return;
+      cell.innerText = val;
+    });
+  });
+});
+
+/* ========= ACCIONES ========= */
 function addColumn(){
   columns.push("NUEVA COLUMNA");
   render();
 }
 
-/* Pegado desde Excel */
-grid.addEventListener("paste", e=>{
-  e.preventDefault();
-  const text = e.clipboardData.getData("text");
-  const rows = text.split("\n").map(r=>r.split("\t"));
+function clearTable(){
+  [...grid.querySelectorAll(".cell")].forEach(c=>c.innerText = "");
+}
 
-  rows.forEach((r,rowIndex)=>{
-    r.forEach((val,colIndex)=>{
-      const col = grid.children[colIndex];
-      if(col){
-        const cell = col.children[rowIndex+1];
-        if(cell) cell.innerText = val;
-      }
-    });
-  });
-});
+/* ========= VENTAS MODE TOGGLE ========= */
+function toggleSalesMode(){
+  salesMode = (salesMode === "YEAR") ? "MONTH" : "YEAR";
 
-render();
+  document.getElementById("salesModeLabel").textContent = (salesMode === "YEAR") ? "AÑO" : "MES";
+  document.getElementById("btnSalesMode").textContent = (salesMode === "YEAR") ? "📌 Ventas: Por AÑO" : "📌 Ventas: Por MES";
+  document.getElementById("monthControls").style.display = (salesMode === "MONTH") ? "inline-flex" : "none";
+
+  // set default month input (mes actual)
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+  const sm = document.getElementById("startMonth");
+  if(sm && !sm.value) sm.value = ym;
+
+  buildColumns();
+  render();
+}
+
+function applyMonthMode(){
+  if(salesMode !== "MONTH") return;
+  buildColumns();
+  render();
+}
+
+/* ========= INIT ========= */
+(function init(){
+  // default month input
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+  const sm = document.getElementById("startMonth");
+  if(sm) sm.value = ym;
+
+  buildColumns();
+  render();
+})();
 </script>
 
 </body>
