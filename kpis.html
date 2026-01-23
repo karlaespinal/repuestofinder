@@ -660,17 +660,26 @@
     flex-wrap:wrap;
     margin-top:8px;
   }
-  .anaCheck{
+    .anaCheck{
     display:flex;
-    align-items:center;
+    align-items:flex-start;   /* antes center, para que el texto se vea alineado arriba */
     gap:10px;
     padding:10px 12px;
     border-radius:14px;
     border:1px solid rgba(230,232,240,.9);
     background:#fff;
-    font-weight:900;
+
+    font-weight:800;          /* un poco menos pesado */
+    font-size:13px;           /* ↓ tamaño de letra */
+    line-height:1.15;         /* más compacto */
+    word-break:break-word;    /* por si hay textos largos */
   }
-  .anaCheck input{ transform: translateY(1px); }
+  .anaCheck b{
+    font-size:13px;           /* que el bold no crezca */
+  }
+  .anaCheck input{
+    margin-top:2px;           /* alinea el checkbox con la primera línea */
+  }
 
   @media(max-width:980px){
     .anaRulesGrid{ grid-template-columns: 1fr; }
