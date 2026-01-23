@@ -14,7 +14,7 @@
     --pri:#2563eb;
     --pri2:#1d4ed8;
 
-    /* CONTROL DE TAMAÑO */
+    /* tamaño */
     --grid-font: 13px;
     --cell-pad-y: 7px;
     --cell-pad-x: 10px;
@@ -45,11 +45,8 @@
     gap:12px;
   }
 
-  /* NAV */
   .nav{
-    position:sticky;
-    top:0;
-    z-index:30;
+    position:sticky; top:0; z-index:30;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     background:rgba(246,247,251,.68);
@@ -57,10 +54,7 @@
     border-radius:18px;
     box-shadow:0 10px 26px rgba(2,6,23,.08);
     padding:12px 14px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
   }
   .brand{display:flex;align-items:center;gap:10px}
   .logo{
@@ -90,7 +84,6 @@
   .btnGhost{background:#fff;border:1px solid var(--line);color:#0f172a}
   .btnSoft{background:#eef2ff;border:1px solid rgba(37,99,235,.22);color:#1d4ed8}
 
-  /* TOP BLOCKS */
   .topGrid{
     display:grid;
     grid-template-columns: 1fr 1fr;
@@ -136,7 +129,7 @@
     display:flex;
     flex-direction:column;
     gap:8px;
-    min-width: 180px;
+    min-width: 220px;
     flex: 0;
   }
   .lg{
@@ -157,8 +150,8 @@
   }
   .lgLeft{display:flex;align-items:center;gap:8px}
   .lgVal{color:#1d4ed8}
+  .hint{font-size:12px;color:#64748b;font-weight:900}
 
-  /* ACTION BAR */
   .actionBar{
     border:1px solid var(--line);
     border-radius:18px;
@@ -196,7 +189,6 @@
   }
   .miniCtrl input[type="checkbox"]{ transform: translateY(1px); }
 
-  /* Slider + formato */
   .sizeCtrl{
     display:inline-flex; align-items:center; gap:10px;
     padding:8px 10px; border-radius:14px;
@@ -232,7 +224,7 @@
   .fmtBtn + .fmtBtn{ border-left:1px solid var(--line); }
   .fmtBtn:hover{ background:#f8fafc; }
 
-  /* TABLE */
+  /* ===== TABLA VIRTUAL ===== */
   .tableWrap{
     flex:1;
     border:1px solid var(--line);
@@ -261,52 +253,48 @@
     border-radius:16px;
     border:1px solid rgba(230,232,240,.9);
     background:rgba(255,255,255,.72);
+    position:relative;
   }
 
-  /* Freeze toggle */
-  .freezeOff .colHeader{ position:static !important; }
-  .freezeOff .col.rowcol{ position:static !important; left:auto !important; box-shadow:none !important; }
+  .freezeOff .hdrRow{ position:static !important; top:auto !important; }
+  .freezeOff .hdrRow{ box-shadow:none !important; }
 
-  /* GRID */
-  .grid{
-    display:flex;
-    align-items:flex-start;
-    min-width:max-content;
-  }
-  .col{
-    border-right:1px solid rgba(230,232,240,.9);
-    background:transparent;
-    width:170px;
-  }
-
-  .col.rowcol{
-    width: var(--rowcol-w);
-    position:sticky;
-    left:0;
-    z-index:5;
-    background:rgba(255,255,255,.92);
-    box-shadow: 8px 0 18px rgba(2,6,23,.06);
-  }
-  .col.rowcol .colHeader{
-    text-align:center;
-    background:#eaf0ff;
-  }
-
-  .colHeader{
+  /* header row */
+  .hdrRow{
     position:sticky;
     top:0;
-    z-index:3;
+    z-index:20;
     background:#f1f5f9;
+    border-bottom:1px solid rgba(230,232,240,.9);
+    display:grid;
+    align-items:stretch;
+    min-width:max-content;
+    box-shadow:0 6px 18px rgba(2,6,23,.05);
+  }
+
+  .hdrCell{
+    position:relative;
     padding:9px 10px;
     font-weight:900;
-    cursor:grab;
-    border-bottom:1px solid rgba(230,232,240,.9);
     user-select:none;
-    font-size: calc(var(--grid-font) + 1px);
+    cursor:grab;
+    border-right:1px solid rgba(230,232,240,.9);
     display:flex;
     align-items:center;
     justify-content:space-between;
     gap:8px;
+    font-size: calc(var(--grid-font) + 1px);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .hdrCell.rownum{
+    justify-content:center;
+    background:#eaf0ff;
+    position:sticky;
+    left:0;
+    z-index:25;
+    box-shadow:8px 0 18px rgba(2,6,23,.06);
   }
 
   .hdrText{
@@ -323,6 +311,7 @@
     border-radius:10px;
     background:transparent;
     position:relative;
+    flex:0 0 auto;
   }
   .resizer:before{
     content:"";
@@ -336,10 +325,24 @@
   }
   .resizer:hover{ background:rgba(37,99,235,.08); }
 
+  /* body virtual */
+  .bodyInner{
+    position:relative;
+    min-width:max-content;
+  }
+  .spacer{
+    height:0px;
+  }
+  .row{
+    display:grid;
+    align-items:stretch;
+    min-width:max-content;
+  }
   .cell{
     padding: var(--cell-pad-y) var(--cell-pad-x);
     min-height: var(--cell-minh);
     border-bottom:1px solid rgba(230,232,240,.9);
+    border-right:1px solid rgba(230,232,240,.9);
     outline:none;
     font-weight:800;
     color:#0f172a;
@@ -349,29 +352,29 @@
     font-size: var(--grid-font);
     display:flex;
     align-items:center;
+    background:transparent;
   }
   .cell:focus{
     background:#eef2ff;
     box-shadow: inset 0 0 0 2px rgba(37,99,235,.15);
   }
 
-  .salesCentered .colHeader{ text-align:center; justify-content:center; }
-  .salesCentered .hdrText{ text-align:center; }
-  .salesCentered .cell{ justify-content:center; text-align:center; }
-
-  /* SELECCION */
-  .colSelected .colHeader{
-    background:#dbeafe;
-    box-shadow: inset 0 0 0 2px rgba(37,99,235,.35);
-  }
-  .rowSelected .cell{ background:rgba(219,234,254,.35); }
-  .rowcol .cell.rowSel{
-    cursor:pointer;
+  .cell.rownum{
     justify-content:center;
     color:#1d4ed8;
     font-weight:900;
+    cursor:pointer;
+    background:rgba(255,255,255,.92);
+    position:sticky;
+    left:0;
+    z-index:10;
+    box-shadow:8px 0 18px rgba(2,6,23,.06);
   }
-  .rowcol .cell.rowSel:hover{ background:#eef2ff; }
+
+  .salesCentered .cell{ justify-content:center; text-align:center; }
+
+  .colSelected{ background:#dbeafe !important; box-shadow: inset 0 0 0 2px rgba(37,99,235,.35); }
+  .rowSelected .cell{ background:rgba(219,234,254,.35); }
 
   .rowHidden{ display:none !important; }
 
@@ -421,7 +424,7 @@
     font-weight:900;
   }
   .modalBody{ padding:14px; }
-  .row{
+  .rowFlex{
     display:flex;
     gap:10px;
     flex-wrap:wrap;
@@ -446,10 +449,6 @@
     padding:10px 10px;
     font-weight:900;
     outline:none;
-  }
-  .field input:focus, .field select:focus{
-    box-shadow:0 0 0 3px rgba(37,99,235,.12);
-    border-color:rgba(37,99,235,.45);
   }
   .modalFooter{
     display:flex;
@@ -481,11 +480,6 @@
     user-select:none;
   }
   .chipF small{color:#334155;font-weight:900}
-  .hint{
-    font-size:12px;
-    color:#64748b;
-    font-weight:900;
-  }
 
   @media(max-width:980px){
     .topGrid{ grid-template-columns:1fr; }
@@ -512,7 +506,6 @@
   </div>
 
   <div class="topGrid">
-    <!-- ✅ RENOMBRADO -->
     <div class="section">
       <div class="sectionTitle">
         <h2>CLASIFICACION ABC</h2>
@@ -521,17 +514,10 @@
 
       <div class="abcWrap">
         <div class="abcCard">
-          <!-- Pie 3D (SVG) -->
-          <svg id="abcPie" width="280" height="170" viewBox="0 0 280 170" aria-label="Clasificacion ABC">
-            <!-- se pinta con JS -->
-          </svg>
+          <svg id="abcPie" width="280" height="170" viewBox="0 0 280 170" aria-label="Clasificacion ABC"></svg>
         </div>
 
-        <div class="abcLegend">
-          <div class="lg"><div class="lgLeft"><span class="dot" style="background:#22c55e"></span> A</div> <div class="lgVal" id="cntA">0</div></div>
-          <div class="lg"><div class="lgLeft"><span class="dot" style="background:#f59e0b"></span> B</div> <div class="lgVal" id="cntB">0</div></div>
-          <div class="lg"><div class="lgLeft"><span class="dot" style="background:#ef4444"></span> C</div> <div class="lgVal" id="cntC">0</div></div>
-          <div class="lg"><div class="lgLeft"><span class="dot" style="background:#64748b"></span> S/CLASF</div> <div class="lgVal" id="cntS">0</div></div>
+        <div class="abcLegend" id="abcLegend">
           <div class="hint" id="abcHint">Pega/edita datos en “CATEGORIA ABC” para ver el grafico.</div>
         </div>
       </div>
@@ -586,9 +572,9 @@
   <div class="tableWrap">
     <div class="tableTop">
       <div>
-        <b>Tabla dinámica (tipo Excel)</b>
+        <b>Tabla dinámica (tipo Excel) — Optimizada</b>
         <div class="mutedNote">
-          Pegado crea filas automáticamente · Mover columnas · Ajustar ancho · Delete elimina (si no está protegida).
+          Virtualización activa (alto volumen) · Pegado crea filas · Delete elimina (si no está protegida) · Scroll fluido aunque pegues miles.
         </div>
       </div>
 
@@ -599,7 +585,12 @@
     </div>
 
     <div class="tableScroll" id="tableScroll">
-      <div id="grid" class="grid"></div>
+      <div id="hdrRow" class="hdrRow"></div>
+      <div id="bodyInner" class="bodyInner">
+        <div id="spacerTop" class="spacer"></div>
+        <div id="rowsMount"></div>
+        <div id="spacerBottom" class="spacer"></div>
+      </div>
     </div>
   </div>
 
@@ -615,7 +606,7 @@
     </div>
 
     <div class="modalBody">
-      <div class="row">
+      <div class="rowFlex">
         <div class="field">
           <label>Columna</label>
           <select id="filterCol"></select>
@@ -626,7 +617,7 @@
         </div>
       </div>
 
-      <div class="row" style="margin-top:6px;">
+      <div class="rowFlex" style="margin-top:6px;">
         <button class="btn btnPrimary" onclick="addFilter()">Aplicar filtro</button>
         <button class="btn btnGhost" onclick="clearFilters()">Limpiar filtros</button>
         <span class="hint">Puedes agregar varios filtros (AND). Click en un chip para removerlo.</span>
@@ -641,13 +632,19 @@
 </div>
 
 <script>
-/* ========= UTIL ========= */
+/* ================= UTIL ================= */
 document.getElementById("y").textContent = new Date().getFullYear();
 function goHome(){ window.location.href = "index.html"; }
-const grid = document.getElementById("grid");
-const tableScroll = document.getElementById("tableScroll");
 
-/* ========= COLUMNAS BASE ========= */
+const tableScroll = document.getElementById("tableScroll");
+const hdrRow = document.getElementById("hdrRow");
+const rowsMount = document.getElementById("rowsMount");
+const spacerTop = document.getElementById("spacerTop");
+const spacerBottom = document.getElementById("spacerBottom");
+
+let freezeOn = true;
+
+/* ================= COLUMNAS BASE ================= */
 const baseBeforeSales = [
   "CODIGO 1","CODIGO 2","CODIGO 3","DESCRIPCION","DEPARTAMENTO","MARCA","STOCK DISPONIBLE","CATEGORIA ABC"
 ];
@@ -658,7 +655,6 @@ const baseAfterSales = [
 ];
 
 function salesColsYear(){ return ["Ventas_2024","Ventas_2025","Ventas_2026"]; }
-
 function salesColsMonth(){
   const useCurrent = document.getElementById("useCurrentMonth")?.checked ?? true;
   const startMonthInput = document.getElementById("startMonth")?.value || "";
@@ -680,7 +676,7 @@ function salesColsMonth(){
   return cols;
 }
 
-/* ========= PROTECCIÓN DE COLUMNAS (sin iconos feos) ========= */
+/* ================= PROTECCIÓN ================= */
 function isProtectedColumnName(name){
   const n = (name || "").trim();
   if(n.startsWith("Ventas_")) return true;
@@ -699,31 +695,38 @@ function isProtectedColumnName(name){
 
   return protectedSet.has(n.toUpperCase());
 }
-function isProtectedIndex(idx){ return isProtectedColumnName(columns[idx]); }
 
-/* ========= ESTADO ========= */
+/* ================= ESTADO ================= */
 let salesMode = "YEAR";
 let columns = [];
 let colWidths = {};
-let freezeOn = true;
+let dataRows = [];  // Array<Array<string>>
 
 let selectedCol = null;
 let selectedRow = null;
 let activeCell = null;
 
-/* ✅ Modelo de datos para filas dinámicas */
-let dataRows = []; // Array< Array<string> >
-let activeFilters = [];
+/* filtros */
+let activeFilters = []; // {colIndex, value}
+let visibleRowIdx = []; // indices reales
+let rowHiddenFlags = []; // bool por fila real
 
-/* ========= HELPERS DATA ========= */
+/* virtual */
+let rowHeightPx = 34;     // se recalcula
+const overscan = 20;
+let visibleCount = 80;    // se recalcula
+let currentStart = 0;
+
+/* alineación (estado simple) */
+let alignMode = "left";
+
+/* ================= DATA HELPERS ================= */
 function ensureRowCount(n){
   while(dataRows.length < n){
-    const row = new Array(columns.length).fill("");
-    dataRows.push(row);
+    dataRows.push(new Array(columns.length).fill(""));
   }
 }
 function ensureColCount(n){
-  // Ajusta cada fila al nuevo número de columnas
   dataRows = dataRows.map(r=>{
     const nr = r.slice(0, n);
     while(nr.length < n) nr.push("");
@@ -731,8 +734,7 @@ function ensureColCount(n){
   });
 }
 function getCellData(r,c){
-  if(!dataRows[r] || dataRows[r][c] == null) return "";
-  return String(dataRows[r][c] ?? "");
+  return (dataRows[r] && dataRows[r][c] != null) ? String(dataRows[r][c]) : "";
 }
 function setCellData(r,c,val){
   ensureRowCount(r+1);
@@ -740,130 +742,96 @@ function setCellData(r,c,val){
   dataRows[r][c] = val;
 }
 
-/* ========= BUILD ========= */
+/* ================= BUILD COLUMNS ================= */
 function buildColumns(){
   const sales = (salesMode === "YEAR") ? salesColsYear() : salesColsMonth();
   columns = [...baseBeforeSales, ...sales, ...baseAfterSales];
 
   columns.forEach((_, i)=>{ if(!colWidths[i]) colWidths[i] = 170; });
 
-  // Ajusta data al nuevo (re)build
   ensureColCount(columns.length);
 
-  // si no hay datos, crea una base inicial de 22 filas
   if(dataRows.length === 0){
-    ensureRowCount(22);
+    ensureRowCount(200); // base inicial (ya virtualiza)
   }
 }
 
-/* ========= RENDER ========= */
-function render(){
-  grid.innerHTML = "";
-
-  // Columna #
-  const rowCol = document.createElement("div");
-  rowCol.className = "col rowcol";
-  const rowHdr = document.createElement("div");
-  rowHdr.className = "colHeader";
-  rowHdr.innerHTML = `<span class="hdrText">#</span>`;
-  rowCol.appendChild(rowHdr);
-
-  for(let r=0;r<dataRows.length;r++){
-    const c = document.createElement("div");
-    c.className = "cell rowSel";
-    c.textContent = (r+1);
-    c.dataset.row = r;
-    c.addEventListener("click", ()=> selectRow(r));
-    rowCol.appendChild(c);
+/* ================= GRID TEMPLATE ================= */
+function getGridTemplate(){
+  // # + columns
+  const parts = [ `var(--rowcol-w)` ];
+  for(let i=0;i<columns.length;i++){
+    parts.push((colWidths[i] || 170) + "px");
   }
-  grid.appendChild(rowCol);
+  return parts.join(" ");
+}
 
-  // Columnas normales
-  columns.forEach((name, index)=>{
-    const col = document.createElement("div");
-    col.className = "col";
-    col.style.width = (colWidths[index] || 170) + "px";
+/* ================= RENDER HEADER ================= */
+function renderHeader(){
+  hdrRow.innerHTML = "";
+  hdrRow.style.gridTemplateColumns = getGridTemplate();
 
-    const isSales = name.startsWith("Ventas_");
-    if(salesMode === "MONTH" && isSales){
-      col.classList.add("salesCentered");
-    }
+  // cell #
+  const h0 = document.createElement("div");
+  h0.className = "hdrCell rownum";
+  h0.textContent = "#";
+  hdrRow.appendChild(h0);
 
-    col.addEventListener("click", (e)=>{
-      const headerEl = e.target.closest(".colHeader");
-      if(headerEl){
-        if(e.target.classList.contains("resizer")) return;
-        selectCol(index);
-      }
+  columns.forEach((name, i)=>{
+    const hc = document.createElement("div");
+    hc.className = "hdrCell";
+    hc.draggable = true;
+    hc.dataset.col = i;
+
+    // seleccionar
+    hc.addEventListener("click", (e)=>{
+      if(e.target.classList.contains("resizer")) return;
+      selectCol(i);
     });
 
-    // DnD reorder
-    col.draggable = true;
-    col.addEventListener("dragstart", e=>{
-      e.dataTransfer.setData("col", index);
+    // drag reorder
+    hc.addEventListener("dragstart", (e)=>{
+      e.dataTransfer.setData("col", String(i));
     });
-    col.addEventListener("dragover", e=>e.preventDefault());
-    col.addEventListener("drop", e=>{
+    hc.addEventListener("dragover", (e)=>e.preventDefault());
+    hc.addEventListener("drop", (e)=>{
       const from = parseInt(e.dataTransfer.getData("col"),10);
-      const to = index;
-      if(isNaN(from) || isNaN(to)) return;
-
-      // swap columns names
-      [columns[from], columns[to]] = [columns[to], columns[from]];
-      // swap widths
-      [colWidths[from], colWidths[to]] = [colWidths[to], colWidths[from]];
-
-      // swap data by column
-      dataRows = dataRows.map(row=>{
-        const nr = row.slice();
-        [nr[from], nr[to]] = [nr[to], nr[from]];
-        return nr;
-      });
-
-      if(selectedCol === from) selectedCol = to;
-      else if(selectedCol === to) selectedCol = from;
-
-      render();
-      applyFilters();
-      updateMatchInfo();
-      updateABCChart();
+      const to = i;
+      if(isNaN(from) || isNaN(to) || from === to) return;
+      reorderColumns(from, to);
     });
 
-    // Header + resizer
-    const header = document.createElement("div");
-    header.className = "colHeader";
-
-    const hdrText = document.createElement("span");
-    hdrText.className = "hdrText";
-    hdrText.textContent = name;
+    const t = document.createElement("span");
+    t.className = "hdrText";
+    t.textContent = name;
 
     const protectedCol = isProtectedColumnName(name);
-    hdrText.contentEditable = !protectedCol;
+    t.contentEditable = !protectedCol;
 
-    hdrText.addEventListener("blur", ()=>{
-      if(isProtectedIndex(index)) { hdrText.textContent = columns[index]; return; }
-      const t = hdrText.textContent.trim();
-      columns[index] = t || columns[index];
+    t.addEventListener("blur", ()=>{
+      if(isProtectedColumnName(columns[i])){ t.textContent = columns[i]; return; }
+      const nv = (t.textContent || "").trim();
+      columns[i] = nv || columns[i];
       rebuildFilterColumnOptions();
       updateABCChart();
     });
 
-    const resizer = document.createElement("span");
-    resizer.className = "resizer";
-    resizer.title = "Arrastra para ajustar ancho";
-    resizer.addEventListener("mousedown", (e)=>{ e.preventDefault(); });
+    const res = document.createElement("span");
+    res.className = "resizer";
+    res.title = "Arrastra para ajustar ancho";
 
-    resizer.addEventListener("mousedown", (e)=>{
+    res.addEventListener("mousedown", (e)=>{
       e.preventDefault();
       e.stopPropagation();
       const startX = e.clientX;
-      const startW = col.getBoundingClientRect().width;
+      const startW = colWidths[i] || 170;
 
       const onMove = (ev)=>{
         const dx = ev.clientX - startX;
-        const nw = Math.max(90, Math.round(startW + dx));
-        col.style.width = nw + "px";
-        colWidths[index] = nw;
+        colWidths[i] = Math.max(90, Math.round(startW + dx));
+        hdrRow.style.gridTemplateColumns = getGridTemplate();
+        // rerender rows visibles para que cuadren
+        renderVisibleRows();
       };
       const onUp = ()=>{
         document.removeEventListener("mousemove", onMove);
@@ -873,132 +841,267 @@ function render(){
       document.addEventListener("mouseup", onUp);
     });
 
-    header.appendChild(hdrText);
-    header.appendChild(resizer);
-    col.appendChild(header);
-
-    // Cells
-    for(let r=0;r<dataRows.length;r++){
-      const cell = document.createElement("div");
-      cell.className = "cell";
-      cell.contentEditable = true;
-      cell.dataset.col = index;
-      cell.dataset.row = r;
-      cell.textContent = getCellData(r, index);
-
-      cell.addEventListener("focus", ()=>{
-        activeCell = cell;
-        selectedCol = null;
-        selectedRow = null;
-        paintSelection();
-      });
-      cell.addEventListener("click", ()=>{ activeCell = cell; });
-
-      // guardar data al escribir
-      cell.addEventListener("input", ()=>{
-        setCellData(r, index, cell.textContent);
-        applyFilters();
-        updateMatchInfo();
-        // si es categoria abc, refresca grafico
-        if(isCategoriaABCIndex(index)) updateABCChart();
-      });
-
-      if(salesMode === "MONTH" && isSales){
-        cell.style.justifyContent = "center";
-        cell.style.textAlign = "center";
-      }
-
-      col.appendChild(cell);
-    }
-
-    grid.appendChild(col);
+    hc.appendChild(t);
+    hc.appendChild(res);
+    hdrRow.appendChild(hc);
   });
 
-  paintSelection();
+  applyHeaderSelectionUI();
 }
 
-/* ========= SELECCIÓN ========= */
-function paintSelection(){
-  [...grid.querySelectorAll(".col")].forEach(c=>c.classList.remove("colSelected"));
-  [...grid.querySelectorAll(".cell")].forEach(c=>c.classList.remove("rowSelected"));
+/* ================= REORDER COLUMNS ================= */
+function reorderColumns(from, to){
+  // proteger: si sueltas no hay problema, solo reordena
+  const names = columns.slice();
+  const widths = colWidths;
+  const moved = names.splice(from,1)[0];
+  names.splice(to,0,moved);
 
-  if(selectedCol !== null){
-    const colEl = grid.children[selectedCol + 1];
-    if(colEl) colEl.classList.add("colSelected");
+  // widths reorder
+  const newW = {};
+  const oldW = [];
+  for(let i=0;i<columns.length;i++) oldW.push(widths[i] || 170);
+  const mw = oldW.splice(from,1)[0];
+  oldW.splice(to,0,mw);
+  names.forEach((_, idx)=> newW[idx] = oldW[idx]);
+
+  // data reorder
+  dataRows = dataRows.map(r=>{
+    const nr = r.slice();
+    const mv = nr.splice(from,1)[0];
+    nr.splice(to,0,mv);
+    return nr;
+  });
+
+  columns = names;
+  colWidths = newW;
+
+  // seleccion
+  if(selectedCol === from) selectedCol = to;
+  else if(selectedCol === to) selectedCol = from;
+
+  // refresh
+  renderHeader();
+  rebuildFilterColumnOptions();
+  applyFilters(); // recompute visibility
+  renderVisibleRows();
+  updateABCChart();
+}
+
+/* ================= VISIBLE ROWS (FILTERS) ================= */
+function applyFilters(){
+  rowHiddenFlags = new Array(dataRows.length).fill(false);
+
+  if(activeFilters.length === 0){
+    visibleRowIdx = Array.from({length:dataRows.length}, (_,i)=>i);
+    updateMatchInfo();
+    return;
   }
-  if(selectedRow !== null){
-    for(let i=0;i<grid.children.length;i++){
-      const colEl = grid.children[i];
-      const cell = colEl?.children[selectedRow + 1];
-      if(cell) cell.classList.add("rowSelected");
+
+  for(let r=0;r<dataRows.length;r++){
+    const ok = activeFilters.every(f=>{
+      const cellText = (getCellData(r, f.colIndex) || "").toLowerCase();
+      return cellText.includes(String(f.value).toLowerCase());
+    });
+    rowHiddenFlags[r] = !ok;
+  }
+
+  visibleRowIdx = [];
+  for(let r=0;r<dataRows.length;r++){
+    if(!rowHiddenFlags[r]) visibleRowIdx.push(r);
+  }
+  updateMatchInfo();
+}
+
+/* ================= VIRTUAL RENDER ================= */
+function recalcVirtual(){
+  // intenta estimar row height real
+  const minH = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--cell-minh"),10) || 30;
+  const padY = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--cell-pad-y"),10) || 7;
+  rowHeightPx = Math.max(24, minH + padY); // aproximación buena
+
+  const vh = tableScroll.clientHeight || 600;
+  visibleCount = Math.max(20, Math.ceil(vh / rowHeightPx) + overscan);
+}
+
+function renderVisibleRows(){
+  hdrRow.style.gridTemplateColumns = getGridTemplate();
+
+  // total visible
+  const totalVisible = visibleRowIdx.length;
+
+  // calcular start por scrollTop
+  const scrollTop = tableScroll.scrollTop;
+  const headerH = hdrRow.getBoundingClientRect().height || 40;
+
+  // ojo: scrollTop incluye header; pero como header es sticky, el body realmente empieza bajo header
+  // simplificamos usando scrollTop tal cual
+  const approxStart = Math.floor(Math.max(0, scrollTop - headerH) / rowHeightPx);
+  const start = Math.max(0, Math.min(totalVisible, approxStart));
+  currentStart = start;
+
+  const end = Math.min(totalVisible, start + visibleCount);
+
+  // spacers
+  spacerTop.style.height = (start * rowHeightPx) + "px";
+  spacerBottom.style.height = ((totalVisible - end) * rowHeightPx) + "px";
+
+  // mount rows
+  rowsMount.innerHTML = "";
+
+  for(let vi=start; vi<end; vi++){
+    const realRow = visibleRowIdx[vi];
+    const rowEl = document.createElement("div");
+    rowEl.className = "row";
+    rowEl.style.gridTemplateColumns = getGridTemplate();
+
+    if(selectedRow === realRow) rowEl.classList.add("rowSelected");
+
+    // row number
+    const rn = document.createElement("div");
+    rn.className = "cell rownum";
+    rn.textContent = String(realRow + 1);
+    rn.addEventListener("click", ()=> selectRow(realRow));
+    rowEl.appendChild(rn);
+
+    // data cells
+    for(let c=0;c<columns.length;c++){
+      const ce = document.createElement("div");
+      ce.className = "cell";
+      ce.contentEditable = true;
+      ce.dataset.row = String(realRow);
+      ce.dataset.col = String(c);
+
+      const isSales = (columns[c] || "").startsWith("Ventas_");
+      if(salesMode === "MONTH" && isSales){
+        ce.classList.add("salesCentered");
+        ce.style.justifyContent = "center";
+        ce.style.textAlign = "center";
+      }else{
+        // aplicar alineación actual
+        applyAlignToCellEl(ce, alignMode);
+      }
+
+      // valor
+      ce.textContent = getCellData(realRow, c);
+
+      ce.addEventListener("focus", ()=>{
+        activeCell = ce;
+        selectedRow = null;
+        selectedCol = null;
+        applyHeaderSelectionUI();
+      });
+
+      ce.addEventListener("input", ()=>{
+        const rr = parseInt(ce.dataset.row,10);
+        const cc = parseInt(ce.dataset.col,10);
+        setCellData(rr, cc, ce.textContent);
+
+        // filtros (si hay)
+        if(activeFilters.length){
+          applyFilters();
+          renderVisibleRows();
+        }
+
+        // grafico
+        if(isCategoriaABCIndex(cc)) updateABCChart();
+      });
+
+      rowEl.appendChild(ce);
     }
+
+    // pintar seleccion de col si aplica
+    if(selectedCol !== null){
+      // +1 por columna #
+      const idxInRow = selectedCol + 1;
+      const cellToMark = rowEl.children[idxInRow];
+      if(cellToMark) cellToMark.classList.add("colSelected");
+    }
+
+    rowsMount.appendChild(rowEl);
   }
 }
-function selectCol(idx){
-  selectedCol = idx;
+
+function scheduleRender(){
+  // evita render en exceso
+  if(scheduleRender._raf) return;
+  scheduleRender._raf = requestAnimationFrame(()=>{
+    scheduleRender._raf = null;
+    recalcVirtual();
+    renderVisibleRows();
+  });
+}
+
+/* ================= SELECCIÓN ================= */
+function selectCol(c){
+  selectedCol = c;
   selectedRow = null;
   activeCell = null;
-  paintSelection();
+  applyHeaderSelectionUI();
+  renderVisibleRows();
 }
 function selectRow(r){
   selectedRow = r;
   selectedCol = null;
   activeCell = null;
-  paintSelection();
+  applyHeaderSelectionUI();
+  renderVisibleRows();
+}
+function applyHeaderSelectionUI(){
+  // header: pintar seleccionado
+  [...hdrRow.querySelectorAll(".hdrCell")].forEach((el, idx)=>{
+    if(idx === 0) return;
+    el.classList.toggle("colSelected", selectedCol === (idx-1));
+  });
 }
 
-/* ========= PEGADO DESDE EXCEL (✅ filas dinámicas) ========= */
-grid.addEventListener("paste", (e)=>{
+/* ================= PEGADO (alto volumen) ================= */
+document.addEventListener("paste", (e)=>{
+  // solo si el foco está dentro de la tabla
+  if(!tableScroll.contains(document.activeElement)) return;
+
   e.preventDefault();
   const text = e.clipboardData.getData("text");
+  if(!text) return;
+
   const matrix = text.split(/\r?\n/).filter(x=>x.length>0).map(r=>r.split("\t"));
 
   let startCol = 0;
   let startRow = 0;
 
-  if(activeCell && activeCell.classList.contains("cell")){
+  if(activeCell && activeCell.classList.contains("cell") && activeCell.dataset.row != null){
     startCol = parseInt(activeCell.dataset.col,10) || 0;
     startRow = parseInt(activeCell.dataset.row,10) || 0;
+  }else if(selectedRow != null){
+    startRow = selectedRow;
   }
 
-  // ✅ expande filas según lo pegado
   const neededRows = startRow + matrix.length;
   ensureRowCount(neededRows);
 
-  matrix.forEach((rowArr, rIdx)=>{
-    rowArr.forEach((val, cIdx)=>{
-      const colIndex = startCol + cIdx;
-      const rowIndex = startRow + rIdx;
-      if(colIndex >= columns.length) return;
-
-      setCellData(rowIndex, colIndex, val);
-
-      // si existe la celda ya pintada, actualiza en DOM
-      const col = grid.children[colIndex + 1];
-      if(col){
-        const cell = col.children[rowIndex + 1];
-        if(cell) cell.textContent = val;
-      }
-    });
-  });
-
-  // si se expandió, toca re-render para crear nuevas celdas
-  if(neededRows > (grid.children[0]?.children.length - 1)){
-    render();
+  // escribir a dataRows (sin tocar DOM celda por celda)
+  for(let r=0;r<matrix.length;r++){
+    const rr = startRow + r;
+    const rowArr = matrix[r];
+    for(let c=0;c<rowArr.length;c++){
+      const cc = startCol + c;
+      if(cc >= columns.length) continue;
+      setCellData(rr, cc, rowArr[c]);
+    }
   }
 
+  // refrescos
   applyFilters();
-  updateMatchInfo();
+  scheduleRender();
   updateABCChart();
 });
 
-/* ========= DELETE KEY ========= */
+/* ================= DELETE KEY ================= */
 document.addEventListener("keydown", (e)=>{
   if(e.key !== "Delete") return;
 
-  // eliminar columna (si no protegida)
   if(selectedCol !== null){
-    if(isProtectedIndex(selectedCol)){
+    if(isProtectedColumnName(columns[selectedCol])){
       alert("Esta columna está protegida y no se puede eliminar.");
       return;
     }
@@ -1006,33 +1109,42 @@ document.addEventListener("keydown", (e)=>{
     return;
   }
 
-  // vaciar fila
   if(selectedRow !== null){
-    deleteRow(selectedRow);
+    // vaciar fila
+    if(dataRows[selectedRow]){
+      dataRows[selectedRow] = new Array(columns.length).fill("");
+    }
+    applyFilters();
+    scheduleRender();
+    updateABCChart();
+    selectedRow = null;
     return;
   }
 
-  // borrar celda activa
   if(activeCell && activeCell.classList.contains("cell")){
-    const r = parseInt(activeCell.dataset.row,10);
-    const c = parseInt(activeCell.dataset.col,10);
-    setCellData(r,c,"");
+    const rr = parseInt(activeCell.dataset.row,10);
+    const cc = parseInt(activeCell.dataset.col,10);
+    setCellData(rr, cc, "");
     activeCell.textContent = "";
-    applyFilters();
-    updateMatchInfo();
-    if(isCategoriaABCIndex(c)) updateABCChart();
+    if(isCategoriaABCIndex(cc)) updateABCChart();
+    if(activeFilters.length){
+      applyFilters();
+      scheduleRender();
+    }
   }
 });
 
 function deleteColumn(idx){
-  columns.splice(idx, 1);
+  columns.splice(idx,1);
 
-  // widths
+  // width rebuild
   const newW = {};
-  columns.forEach((_, i)=>{ newW[i] = colWidths[i] || 170; });
+  for(let i=0;i<columns.length;i++){
+    newW[i] = colWidths[i] || 170;
+  }
   colWidths = newW;
 
-  // data: remove column idx
+  // data remove
   dataRows = dataRows.map(r=>{
     const nr = r.slice();
     nr.splice(idx,1);
@@ -1040,46 +1152,32 @@ function deleteColumn(idx){
   });
 
   selectedCol = null;
-  render();
-  applyFilters();
+  renderHeader();
   rebuildFilterColumnOptions();
-  renderFilterChips();
-  updateMatchInfo();
-  updateABCChart();
-}
-
-function deleteRow(r){
-  // vaciar data de la fila
-  if(dataRows[r]){
-    dataRows[r] = new Array(columns.length).fill("");
-  }
-  render();
-  selectedRow = null;
   applyFilters();
-  updateMatchInfo();
+  scheduleRender();
   updateABCChart();
 }
 
-/* ========= ACCIONES ========= */
+/* ================= ACCIONES ================= */
 function addColumn(){
   columns.push("NUEVA COLUMNA");
-  colWidths[columns.length - 1] = 170;
+  colWidths[columns.length-1] = 170;
   ensureColCount(columns.length);
-  render();
+
+  renderHeader();
   rebuildFilterColumnOptions();
   applyFilters();
-  updateMatchInfo();
+  scheduleRender();
 }
-
 function clearTable(){
   dataRows = dataRows.map(()=> new Array(columns.length).fill(""));
-  render();
   applyFilters();
-  updateMatchInfo();
+  scheduleRender();
   updateABCChart();
 }
 
-/* ========= VENTAS MODE ========= */
+/* ================= VENTAS MODE ================= */
 function toggleSalesMode(){
   salesMode = (salesMode === "YEAR") ? "MONTH" : "YEAR";
 
@@ -1093,27 +1191,25 @@ function toggleSalesMode(){
   if(sm && !sm.value) sm.value = ym;
 
   buildColumns();
-  render();
-
+  renderHeader();
   rebuildFilterColumnOptions();
   applyFilters();
-  updateMatchInfo();
+  scheduleRender();
   updateABCChart();
 }
-
 function applyMonthMode(){
   if(salesMode !== "MONTH") return;
   buildColumns();
-  render();
+  renderHeader();
   rebuildFilterColumnOptions();
   applyFilters();
-  updateMatchInfo();
+  scheduleRender();
   updateABCChart();
 }
 
-/* ========= SLIDER ========= */
+/* ================= SLIDER ================= */
 function applySize(percent){
-  const p = parseInt(percent, 10) || 100;
+  const p = parseInt(percent,10) || 100;
   document.getElementById("sizeVal").textContent = p + "%";
   const scale = p / 100;
 
@@ -1126,45 +1222,30 @@ function applySize(percent){
   document.documentElement.style.setProperty("--cell-pad-y", padY + "px");
   document.documentElement.style.setProperty("--cell-pad-x", padX + "px");
   document.documentElement.style.setProperty("--cell-minh", minH + "px");
+
+  recalcVirtual();
+  scheduleRender();
 }
 
-/* ========= FORMATO ========= */
+/* ================= ALIGN ================= */
 function applyAlign(where){
-  if(selectedCol !== null){
-    const colEl = grid.children[selectedCol + 1];
-    if(!colEl) return;
-    const header = colEl.querySelector(".colHeader");
-    const hdrText = colEl.querySelector(".hdrText");
-    if(hdrText) hdrText.style.textAlign = where;
-    if(header) header.style.justifyContent = (where === "left") ? "space-between" : "center";
-
-    const cells = [...colEl.querySelectorAll(".cell")];
-    cells.forEach(cell=>{
-      cell.style.textAlign = where;
-      cell.style.justifyContent = (where === "left") ? "flex-start" : (where === "center" ? "center" : "flex-end");
-    });
-    return;
-  }
-
-  if(selectedRow !== null){
-    for(let c=0;c<columns.length;c++){
-      const colEl = grid.children[c + 1];
-      const cell = colEl?.children[selectedRow + 1];
-      if(cell){
-        cell.style.textAlign = where;
-        cell.style.justifyContent = (where === "left") ? "flex-start" : (where === "center" ? "center" : "flex-end");
-      }
-    }
-    return;
-  }
-
-  if(activeCell){
-    activeCell.style.textAlign = where;
-    activeCell.style.justifyContent = (where === "left") ? "flex-start" : (where === "center" ? "center" : "flex-end");
+  alignMode = where;
+  scheduleRender();
+}
+function applyAlignToCellEl(cellEl, where){
+  if(where === "left"){
+    cellEl.style.textAlign = "left";
+    cellEl.style.justifyContent = "flex-start";
+  }else if(where === "center"){
+    cellEl.style.textAlign = "center";
+    cellEl.style.justifyContent = "center";
+  }else{
+    cellEl.style.textAlign = "right";
+    cellEl.style.justifyContent = "flex-end";
   }
 }
 
-/* ========= FREEZE ========= */
+/* ================= FREEZE ================= */
 function toggleFreeze(){
   freezeOn = !freezeOn;
   if(freezeOn){
@@ -1176,7 +1257,7 @@ function toggleFreeze(){
   }
 }
 
-/* ========= FILTROS ========= */
+/* ================= FILTROS ================= */
 function openFilters(){
   rebuildFilterColumnOptions();
   document.getElementById("filterModal").style.display = "flex";
@@ -1195,9 +1276,8 @@ function rebuildFilterColumnOptions(){
     opt.textContent = name;
     sel.appendChild(opt);
   });
-
-  const defaultIdx = columns.findIndex(x => (x||"").toUpperCase() === "CODIGO 1");
-  if(defaultIdx >= 0) sel.value = String(defaultIdx);
+  const def = columns.findIndex(x => (x||"").toUpperCase() === "CODIGO 1");
+  if(def >= 0) sel.value = String(def);
 }
 function addFilter(){
   const colIndex = parseInt(document.getElementById("filterCol").value, 10);
@@ -1206,21 +1286,22 @@ function addFilter(){
 
   activeFilters.push({ colIndex, value });
   document.getElementById("filterVal").value = "";
+
   applyFilters();
   renderFilterChips();
-  updateMatchInfo();
+  scheduleRender();
 }
 function removeFilter(i){
-  activeFilters.splice(i, 1);
+  activeFilters.splice(i,1);
   applyFilters();
   renderFilterChips();
-  updateMatchInfo();
+  scheduleRender();
 }
 function clearFilters(){
   activeFilters = [];
   applyFilters();
   renderFilterChips();
-  updateMatchInfo();
+  scheduleRender();
 }
 function renderFilterChips(){
   const wrap = document.getElementById("activeChips");
@@ -1229,7 +1310,7 @@ function renderFilterChips(){
     wrap.innerHTML = `<span class="hint">Sin filtros activos</span>`;
     return;
   }
-  activeFilters.forEach((f, i)=>{
+  activeFilters.forEach((f,i)=>{
     const colName = columns[f.colIndex] || ("Col " + (f.colIndex+1));
     const chip = document.createElement("div");
     chip.className = "chipF";
@@ -1237,6 +1318,14 @@ function renderFilterChips(){
     chip.onclick = ()=> removeFilter(i);
     wrap.appendChild(chip);
   });
+}
+function updateMatchInfo(){
+  const info = document.getElementById("matchInfo");
+  if(activeFilters.length === 0){
+    info.textContent = `Mostrando ${visibleRowIdx.length} filas`;
+  }else{
+    info.textContent = `Coincidencias: ${visibleRowIdx.length} / ${dataRows.length}`;
+  }
 }
 function escapeHtml(str){
   return String(str)
@@ -1247,44 +1336,7 @@ function escapeHtml(str){
     .replaceAll("'","&#039;");
 }
 
-function applyFilters(){
-  if(activeFilters.length === 0){
-    for(let r=0; r<dataRows.length; r++) setRowHidden(r, false);
-    return;
-  }
-
-  for(let r=0; r<dataRows.length; r++){
-    const ok = activeFilters.every(f=>{
-      const cellText = getCellData(r, f.colIndex).toLowerCase();
-      return cellText.includes(String(f.value).toLowerCase());
-    });
-    setRowHidden(r, !ok);
-  }
-}
-function setRowHidden(r, hidden){
-  for(let c=0; c<grid.children.length; c++){
-    const colEl = grid.children[c];
-    const cell = colEl?.children[r + 1];
-    if(!cell) continue;
-    if(hidden) cell.classList.add("rowHidden");
-    else cell.classList.remove("rowHidden");
-  }
-}
-function updateMatchInfo(){
-  const info = document.getElementById("matchInfo");
-  if(activeFilters.length === 0){
-    info.textContent = `Mostrando ${dataRows.length} filas`;
-    return;
-  }
-  let count = 0;
-  for(let r=0;r<dataRows.length;r++){
-    const rowCell = grid.children[0]?.children[r + 1];
-    if(rowCell && !rowCell.classList.contains("rowHidden")) count++;
-  }
-  info.textContent = `Coincidencias: ${count} / ${dataRows.length}`;
-}
-
-/* ========= ABC CHART ========= */
+/* ================= GRAFICO (dinámico) ================= */
 function isCategoriaABCIndex(colIndex){
   return (columns[colIndex] || "").toUpperCase() === "CATEGORIA ABC";
 }
@@ -1292,52 +1344,95 @@ function getCategoriaABCIndex(){
   return columns.findIndex(c => (c||"").toUpperCase() === "CATEGORIA ABC");
 }
 
+const palette = [
+  {c:"#22c55e", d:"#16a34a"},
+  {c:"#f59e0b", d:"#d97706"},
+  {c:"#ef4444", d:"#dc2626"},
+  {c:"#3b82f6", d:"#2563eb"},
+  {c:"#a855f7", d:"#7c3aed"},
+  {c:"#06b6d4", d:"#0891b2"},
+  {c:"#f97316", d:"#ea580c"},
+  {c:"#64748b", d:"#475569"},
+  {c:"#84cc16", d:"#65a30d"},
+  {c:"#ec4899", d:"#db2777"}
+];
+
+function normalizeCat(v){
+  const t = (v || "").trim().toUpperCase();
+  if(!t) return "S/CLASF";
+  return t;
+}
+
 function updateABCChart(){
   const idx = getCategoriaABCIndex();
+  const legend = document.getElementById("abcLegend");
+  const svg = document.getElementById("abcPie");
+
   if(idx < 0){
-    paintPie3D({A:0,B:0,C:0,S:0});
+    legend.innerHTML = `<div class="hint">No existe la columna “CATEGORIA ABC”.</div>`;
+    svg.innerHTML = "";
     return;
   }
 
-  let A=0,B=0,C=0,S=0;
+  // contar dinámico (incluye D, F, etc)
+  const map = new Map();
   for(let r=0;r<dataRows.length;r++){
-    const v = (getCellData(r, idx) || "").trim().toUpperCase();
-    if(v === "A") A++;
-    else if(v === "B") B++;
-    else if(v === "C") C++;
-    else S++; // vacíos o cualquier cosa -> S/CLASF
+    const cat = normalizeCat(getCellData(r, idx));
+    map.set(cat, (map.get(cat)||0) + 1);
   }
 
-  document.getElementById("cntA").textContent = A;
-  document.getElementById("cntB").textContent = B;
-  document.getElementById("cntC").textContent = C;
-  document.getElementById("cntS").textContent = S;
+  // ordenar: letras primero, S/CLASF al final
+  const entries = [...map.entries()].sort((a,b)=>{
+    if(a[0] === "S/CLASF") return 1;
+    if(b[0] === "S/CLASF") return -1;
+    return a[0].localeCompare(b[0]);
+  });
 
-  paintPie3D({A,B,C,S});
+  // construir parts (limit práctico: si hay muchísimas categorías, agrupar)
+  let parts = entries.map(([k,v])=>({key:k, val:v}));
+  if(parts.length > 10){
+    // top 9 + OTROS
+    parts.sort((a,b)=>b.val-a.val);
+    const top = parts.slice(0,9);
+    const rest = parts.slice(9).reduce((s,p)=>s+p.val,0);
+    top.push({key:"OTROS", val:rest});
+    parts = top;
+  }
+
+  // legend
+  legend.innerHTML = "";
+  const hint = document.createElement("div");
+  hint.className = "hint";
+  hint.textContent = `Total filas: ${dataRows.length} · Categorías detectadas: ${entries.length}`;
+  legend.appendChild(hint);
+
+  parts.forEach((p, i)=>{
+    const col = palette[i % palette.length].c;
+    const row = document.createElement("div");
+    row.className = "lg";
+    row.innerHTML = `
+      <div class="lgLeft"><span class="dot" style="background:${col}"></span> ${escapeHtml(p.key)}</div>
+      <div class="lgVal">${p.val}</div>
+    `;
+    legend.appendChild(row);
+  });
+
+  // pie 3D
+  paintPie3D(parts);
 }
 
-function paintPie3D(counts){
+function paintPie3D(parts){
   const svg = document.getElementById("abcPie");
-  if(!svg) return;
+  svg.innerHTML = "";
 
-  const total = (counts.A + counts.B + counts.C + counts.S) || 1;
+  const total = parts.reduce((s,p)=>s+p.val,0) || 1;
 
   const centerX = 115;
   const centerY = 80;
   const radius = 62;
-  const depth = 12; // “3D” extrusión
+  const depth = 12;
 
-  const parts = [
-    { key:"A", label:"A", val:counts.A, color:"#22c55e", dark:"#16a34a" },
-    { key:"B", label:"B", val:counts.B, color:"#f59e0b", dark:"#d97706" },
-    { key:"C", label:"C", val:counts.C, color:"#ef4444", dark:"#dc2626" },
-    { key:"S", label:"S/CLASF", val:counts.S, color:"#64748b", dark:"#475569" }
-  ];
-
-  // limpia
-  svg.innerHTML = "";
-
-  // fondo suave
+  // sombra
   const bg = document.createElementNS("http://www.w3.org/2000/svg","ellipse");
   bg.setAttribute("cx", centerX);
   bg.setAttribute("cy", centerY + depth + 14);
@@ -1346,34 +1441,36 @@ function paintPie3D(counts){
   bg.setAttribute("fill", "rgba(2,6,23,.08)");
   svg.appendChild(bg);
 
-  let start = -Math.PI / 2;
+  let start = -Math.PI/2;
 
-  // 1) Capa “abajo” (oscura, desplazada) para efecto 3D
-  parts.forEach(p=>{
+  // bottom
+  parts.forEach((p, i)=>{
     const angle = (p.val / total) * Math.PI * 2;
     const end = start + angle;
     if(angle <= 0.000001){ return; }
+    const dark = palette[i % palette.length].d;
 
     const path = describeArc(centerX, centerY + depth, radius, start, end);
     const el = document.createElementNS("http://www.w3.org/2000/svg","path");
     el.setAttribute("d", path);
-    el.setAttribute("fill", p.dark);
+    el.setAttribute("fill", dark);
     svg.appendChild(el);
 
     start = end;
   });
 
-  // 2) Capa “arriba”
-  start = -Math.PI / 2;
-  parts.forEach(p=>{
+  // top
+  start = -Math.PI/2;
+  parts.forEach((p, i)=>{
     const angle = (p.val / total) * Math.PI * 2;
     const end = start + angle;
     if(angle <= 0.000001){ return; }
+    const col = palette[i % palette.length].c;
 
     const path = describeArc(centerX, centerY, radius, start, end);
     const el = document.createElementNS("http://www.w3.org/2000/svg","path");
     el.setAttribute("d", path);
-    el.setAttribute("fill", p.color);
+    el.setAttribute("fill", col);
     el.setAttribute("stroke", "rgba(255,255,255,.9)");
     el.setAttribute("stroke-width", "1");
     svg.appendChild(el);
@@ -1381,7 +1478,7 @@ function paintPie3D(counts){
     start = end;
   });
 
-  // highlight top
+  // highlight
   const hi = document.createElementNS("http://www.w3.org/2000/svg","ellipse");
   hi.setAttribute("cx", centerX - 10);
   hi.setAttribute("cy", centerY - 18);
@@ -1398,7 +1495,7 @@ function paintPie3D(counts){
   t.setAttribute("font-size","13");
   t.setAttribute("font-weight","900");
   t.setAttribute("fill","#0f172a");
-  t.textContent = total === 1 && (counts.A+counts.B+counts.C+counts.S)===0 ? "0" : String(counts.A+counts.B+counts.C+counts.S);
+  t.textContent = String(total);
   svg.appendChild(t);
 
   const t2 = document.createElementNS("http://www.w3.org/2000/svg","text");
@@ -1408,11 +1505,10 @@ function paintPie3D(counts){
   t2.setAttribute("font-size","10");
   t2.setAttribute("font-weight","900");
   t2.setAttribute("fill","#64748b");
-  t2.textContent = "filas";
+  t2.textContent = "conteos";
   svg.appendChild(t2);
 }
 
-// helpers arcs
 function polarToCartesian(cx, cy, r, angleRad){
   return { x: cx + (r * Math.cos(angleRad)), y: cy + (r * Math.sin(angleRad)) };
 }
@@ -1429,7 +1525,7 @@ function describeArc(cx, cy, r, startAngle, endAngle){
   ].join(" ");
 }
 
-/* ========= INIT ========= */
+/* ================= INIT ================= */
 (function init(){
   const now = new Date();
   const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
@@ -1437,17 +1533,23 @@ function describeArc(cx, cy, r, startAngle, endAngle){
   if(sm) sm.value = ym;
 
   applySize(document.getElementById("sizeRange").value);
+
   buildColumns();
-  render();
+  renderHeader();
   rebuildFilterColumnOptions();
-  renderFilterChips();
-  updateMatchInfo();
+  applyFilters();
+  recalcVirtual();
+  scheduleRender();
   updateABCChart();
+
+  tableScroll.addEventListener("scroll", ()=> scheduleRender());
+  window.addEventListener("resize", ()=> scheduleRender());
 })();
 </script>
 
 </body>
 </html>
+
 
 
 
