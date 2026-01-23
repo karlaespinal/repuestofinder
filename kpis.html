@@ -15,13 +15,14 @@
     --pri:#2563eb;
     --pri2:#1d4ed8;
     --shadow:0 16px 40px rgba(2,6,23,.10);
-    --r:16px;
 
-    /* ====== CONTROL DE TAMAÑO (slider) ====== */
+    /* CONTROL DE TAMAÑO (slider) */
     --grid-font: 13px;
     --cell-pad-y: 7px;
     --cell-pad-x: 10px;
     --cell-minh: 30px;
+
+    --rowcol-w: 56px; /* ancho columna # */
   }
   *{box-sizing:border-box}
   body{
@@ -62,7 +63,6 @@
     justify-content:space-between;
     gap:12px;
   }
-
   .brand{display:flex;align-items:center;gap:10px}
   .logo{
     width:42px;height:42px;border-radius:14px;
@@ -77,23 +77,13 @@
     display:block;font-size:12px;color:#94a3b8;font-weight:800;
     letter-spacing:.4px;text-transform:uppercase;margin-top:2px
   }
-
-  .navRight{
-    display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;
-  }
+  .navRight{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 
   .btn{
-    border:0;
-    cursor:pointer;
-    font-weight:900;
-    border-radius:12px;
-    padding:10px 12px;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-    user-select:none;
-    white-space:nowrap;
+    border:0; cursor:pointer; font-weight:900;
+    border-radius:12px; padding:10px 12px;
+    display:inline-flex; align-items:center; justify-content:center;
+    gap:8px; user-select:none; white-space:nowrap;
   }
   .btn:active{ transform: translateY(1px); }
   .btnPrimary{background:var(--pri);color:#fff}
@@ -101,13 +91,12 @@
   .btnGhost{background:#fff;border:1px solid var(--line);color:#0f172a}
   .btnSoft{background:#eef2ff;border:1px solid rgba(37,99,235,.22);color:#1d4ed8}
 
-  /* TOP BLOCKS SIDE BY SIDE */
+  /* TOP BLOCKS */
   .topGrid{
     display:grid;
     grid-template-columns: 1fr 1fr;
     gap:12px;
   }
-
   .section{
     border:1px solid var(--line);
     border-radius:22px;
@@ -118,20 +107,13 @@
     min-height:190px;
   }
   .sectionTitle{
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    gap:10px;
-    flex-wrap:wrap;
-    margin-bottom:10px;
+    display:flex; align-items:baseline; justify-content:space-between;
+    gap:10px; flex-wrap:wrap; margin-bottom:10px;
   }
   .sectionTitle h2{ margin:0; font-size:16px; font-weight:900; }
   .sectionTitle span{
-    font-size:12px;
-    color:#94a3b8;
-    font-weight:900;
-    letter-spacing:.4px;
-    text-transform:uppercase;
+    font-size:12px; color:#94a3b8; font-weight:900;
+    letter-spacing:.4px; text-transform:uppercase;
   }
   .placeholderChart{
     border:1px dashed rgba(100,116,139,.45);
@@ -147,7 +129,7 @@
     text-align:center;
   }
 
-  /* ACTION BAR (6 botones + slider) */
+  /* ACTION BAR */
   .actionBar{
     border:1px solid var(--line);
     border-radius:18px;
@@ -160,40 +142,21 @@
     gap:10px;
     flex-wrap:wrap;
   }
-  .actionLeft{
-    display:flex;
-    gap:8px;
-    flex-wrap:wrap;
-    align-items:center;
-  }
-  .actionRight{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    align-items:center;
-    justify-content:flex-end;
-  }
+  .actionLeft{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+  .actionRight{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end}
+
   .chip{
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    padding:8px 10px;
-    border-radius:14px;
-    background:#fff;
-    border:1px solid var(--line);
-    font-weight:900;
-    color:#0f172a;
+    display:inline-flex; align-items:center; gap:8px;
+    padding:8px 10px; border-radius:14px;
+    background:#fff; border:1px solid var(--line);
+    font-weight:900; color:#0f172a;
   }
   .chip small{font-weight:900;color:#64748b}
 
   .miniCtrl{
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    padding:8px 10px;
-    border-radius:14px;
-    background:#fff;
-    border:1px solid var(--line);
+    display:inline-flex; align-items:center; gap:8px;
+    padding:8px 10px; border-radius:14px;
+    background:#fff; border:1px solid var(--line);
   }
   .miniCtrl label{font-weight:900;color:#0f172a;font-size:12px}
   .miniCtrl input[type="month"]{
@@ -204,29 +167,41 @@
   }
   .miniCtrl input[type="checkbox"]{ transform: translateY(1px); }
 
-  /* ====== Slider control ====== */
+  /* Slider + formato */
   .sizeCtrl{
-    display:inline-flex;
-    align-items:center;
-    gap:10px;
-    padding:8px 10px;
-    border-radius:14px;
-    background:#fff;
-    border:1px solid var(--line);
-    font-weight:900;
-    color:#0f172a;
+    display:inline-flex; align-items:center; gap:10px;
+    padding:8px 10px; border-radius:14px;
+    background:#fff; border:1px solid var(--line);
+    font-weight:900; color:#0f172a;
   }
   .sizeCtrl small{color:#64748b}
-  .sizeCtrl input[type="range"]{
-    width:160px;
-    cursor:pointer;
-  }
+  .sizeCtrl input[type="range"]{ width:160px; cursor:pointer; }
   .sizeCtrl .val{
-    min-width:48px;
-    text-align:right;
-    font-weight:900;
-    color:#1d4ed8;
+    min-width:48px; text-align:right;
+    font-weight:900; color:#1d4ed8;
   }
+
+  .fmtGroup{
+    display:inline-flex;
+    border:1px solid var(--line);
+    border-radius:14px;
+    overflow:hidden;
+    background:#fff;
+  }
+  .fmtBtn{
+    border:0;
+    background:#fff;
+    padding:8px 10px;
+    cursor:pointer;
+    font-weight:900;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    color:#0f172a;
+  }
+  .fmtBtn + .fmtBtn{ border-left:1px solid var(--line); }
+  .fmtBtn:hover{ background:#f8fafc; }
 
   /* TABLE */
   .tableWrap{
@@ -249,6 +224,8 @@
     margin-bottom:10px;
   }
   .tableTop b{font-size:13px}
+  .mutedNote{font-size:12px;color:#64748b;font-weight:900}
+
   .tableScroll{
     flex:1;
     overflow:auto;
@@ -257,33 +234,74 @@
     background:rgba(255,255,255,.72);
   }
 
+  /* ✅ ahora usamos FLEX para que el ancho se pueda cambiar por columna */
   .grid{
-    display:grid;
-    grid-auto-flow:column;
-    grid-auto-columns: 170px;
+    display:flex;
+    align-items:flex-start;
     min-width:max-content;
   }
 
   .col{
     border-right:1px solid rgba(230,232,240,.9);
     background:transparent;
+    width:170px; /* default */
+  }
+
+  /* Columna # (fila) sticky */
+  .col.rowcol{
+    width: var(--rowcol-w);
+    position:sticky;
+    left:0;
+    z-index:5;
+    background:rgba(255,255,255,.92);
+    box-shadow: 8px 0 18px rgba(2,6,23,.06);
+  }
+  .col.rowcol .colHeader{
+    text-align:center;
+    background:#eaf0ff;
   }
 
   .colHeader{
     position:sticky;
     top:0;
-    z-index:2;
+    z-index:3;
     background:#f1f5f9;
     padding:9px 10px;
     font-weight:900;
     cursor:grab;
     border-bottom:1px solid rgba(230,232,240,.9);
     user-select:none;
-
     font-size: calc(var(--grid-font) + 1px);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
   }
   .colHeader[contenteditable="true"]{ user-select:text; cursor:text; }
   .colHeader:active{cursor:grabbing}
+
+  .hdrText{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+  /* Handle de resize */
+  .resizer{
+    width:10px;
+    align-self:stretch;
+    cursor:col-resize;
+    border-radius:10px;
+    background:transparent;
+    position:relative;
+  }
+  .resizer:before{
+    content:"";
+    position:absolute;
+    top:20%;
+    bottom:20%;
+    left:4px;
+    width:2px;
+    background:rgba(100,116,139,.35);
+    border-radius:2px;
+  }
+  .resizer:hover{ background:rgba(37,99,235,.08); }
 
   .cell{
     padding: var(--cell-pad-y) var(--cell-pad-x);
@@ -295,25 +313,35 @@
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
-
     font-size: var(--grid-font);
     display:flex;
-    align-items:center; /* para centrar verticalmente */
+    align-items:center; /* centra vertical */
   }
   .cell:focus{
     background:#eef2ff;
     box-shadow: inset 0 0 0 2px rgba(37,99,235,.15);
   }
 
-  /* ====== Centrados de Ventas en MODO MES ====== */
-  .salesCentered .colHeader{ text-align:center; }
+  /* Centrar ventas modo MES */
+  .salesCentered .colHeader{ text-align:center; justify-content:center; }
+  .salesCentered .hdrText{ text-align:center; }
   .salesCentered .cell{ justify-content:center; text-align:center; }
 
-  .mutedNote{
-    font-size:12px;
-    color:#64748b;
+  /* SELECCION */
+  .colSelected .colHeader{
+    background:#dbeafe;
+    box-shadow: inset 0 0 0 2px rgba(37,99,235,.35);
+  }
+  .rowSelected .cell{
+    background:rgba(219,234,254,.35);
+  }
+  .rowcol .cell.rowSel{
+    cursor:pointer;
+    justify-content:center;
+    color:#1d4ed8;
     font-weight:900;
   }
+  .rowcol .cell.rowSel:hover{ background:#eef2ff; }
 
   .footer{
     text-align:center;
@@ -331,7 +359,6 @@
 <body>
 <div class="page">
 
-  <!-- NAV -->
   <div class="nav">
     <div class="brand">
       <div class="logo">RF</div>
@@ -347,16 +374,13 @@
     </div>
   </div>
 
-  <!-- TOP BLOCKS -->
   <div class="topGrid">
     <div class="section">
       <div class="sectionTitle">
         <h2>Reporte de Busquedas</h2>
         <span>placeholder</span>
       </div>
-      <div class="placeholderChart">
-        Aqui ira un grafico (por fecha / marca / modelo) y filtros.
-      </div>
+      <div class="placeholderChart">Aqui ira un grafico (por fecha / marca / modelo) y filtros.</div>
     </div>
 
     <div class="section">
@@ -364,13 +388,10 @@
         <h2>Top Marcas y Repuestos</h2>
         <span>placeholder</span>
       </div>
-      <div class="placeholderChart">
-        Aqui ira una tabla ranking + comparativas.
-      </div>
+      <div class="placeholderChart">Aqui ira una tabla ranking + comparativas.</div>
     </div>
   </div>
 
-  <!-- ACTION BAR -->
   <div class="actionBar">
     <div class="actionLeft">
       <button id="btnSalesMode" class="btn btnSoft" onclick="toggleSalesMode()">📌 Ventas: Por AÑO</button>
@@ -380,11 +401,17 @@
       <button class="btn btnGhost" onclick="alert('Proximo: reglas/validaciones')">Boton 5</button>
       <button class="btn btnGhost" onclick="alert('Proximo: calculos automaticos')">Boton 6</button>
 
-      <!-- ✅ SLIDER DESPUÉS DEL BOTÓN 6 -->
       <div class="sizeCtrl" title="Ajusta tamaño de letras y altura de celdas">
         <small>Tamaño</small>
         <input id="sizeRange" type="range" min="80" max="140" value="100" oninput="applySize(this.value)">
         <span class="val" id="sizeVal">100%</span>
+      </div>
+
+      <!-- ✅ Botones tipo imagen (alineación) -->
+      <div class="fmtGroup" title="Formato de alineación">
+        <button class="fmtBtn" onclick="applyAlign('left')" title="Alinear izquierda">≡</button>
+        <button class="fmtBtn" onclick="applyAlign('center')" title="Centrar">≣</button>
+        <button class="fmtBtn" onclick="applyAlign('right')" title="Alinear derecha">≡</button>
       </div>
     </div>
 
@@ -400,12 +427,13 @@
     </div>
   </div>
 
-  <!-- TABLE -->
   <div class="tableWrap">
     <div class="tableTop">
       <div>
         <b>Tabla dinámica (tipo Excel)</b>
-        <div class="mutedNote">Arrastra headers para mover columnas · Edita nombre del header · Ctrl+V para pegar desde Excel</div>
+        <div class="mutedNote">
+          Arrastra headers para mover columnas · Arrastra borde del header para ajustar ancho · Click header para seleccionar columna · Click # para seleccionar fila · Delete elimina.
+        </div>
       </div>
 
       <div style="display:flex; gap:8px; flex-wrap:wrap">
@@ -426,53 +454,25 @@
 /* ========= UTIL ========= */
 document.getElementById("y").textContent = new Date().getFullYear();
 function goHome(){ window.location.href = "index.html"; }
-
 const grid = document.getElementById("grid");
 
 /* ========= CONFIG COLUMNS BASE ========= */
 const baseBeforeSales = [
-  "CODIGO 1",
-  "CODIGO 2",
-  "CODIGO 3",
-  "DESCRIPCION",
-  "DEPARTAMENTO",
-  "MARCA",
-  "STOCK DISPONIBLE",
-  "CATEGORIA POR DEMANDA"
+  "CODIGO 1","CODIGO 2","CODIGO 3","DESCRIPCION","DEPARTAMENTO","MARCA","STOCK DISPONIBLE","CATEGORIA POR DEMANDA"
 ];
-
 const baseAfterSales = [
-  "PENDIENTE DE DESPACHO",
-  "FECHA PREVS. DE LLEGADA",
-  "TRANSITO",
-  "MESES SIN VENTAS",
-  "EFECTIVIDAD DE VENTA",
-  "ULTIMO MES DE VENTA",
-  "AÑO DE VENTA",
-  "CANTIDAD MINIMA",
-  "MULTIPLO DE COMPRA",
-  "ULTIMA COMPRA",
-  "APLICACION PRINCIPAL",
-  "DESCRIPCION EN INGLES",
-  "LEAD TIME (DIAS)",
-  "PROMEDIO VENTA MENSUAL",
-  "MESES DE INVENTARIO",
-  "DATOS ADICIONALES",
-  "SUGERIDO",
-  "COMENTARIOS"
+  "PENDIENTE DE DESPACHO","FECHA PREVS. DE LLEGADA","TRANSITO","MESES SIN VENTAS","EFECTIVIDAD DE VENTA","ULTIMO MES DE VENTA",
+  "AÑO DE VENTA","CANTIDAD MINIMA","MULTIPLO DE COMPRA","ULTIMA COMPRA","APLICACION PRINCIPAL","DESCRIPCION EN INGLES",
+  "LEAD TIME (DIAS)","PROMEDIO VENTA MENSUAL","MESES DE INVENTARIO","DATOS ADICIONALES","SUGERIDO","COMENTARIOS"
 ];
 
-/* Ventas por AÑO: A2=2024, A1=2025, A0=2026 */
-function salesColsYear(){
-  return ["Ventas_2024", "Ventas_2025", "Ventas_2026"];
-}
+function salesColsYear(){ return ["Ventas_2024","Ventas_2025","Ventas_2026"]; }
 
-/* Ventas por MES: 12 meses hacia atrás */
 function salesColsMonth(){
   const useCurrent = document.getElementById("useCurrentMonth")?.checked ?? true;
   const startMonthInput = document.getElementById("startMonth")?.value || "";
-
   let end = new Date();
+
   if(!useCurrent && startMonthInput){
     const [yy, mm] = startMonthInput.split("-").map(n=>parseInt(n,10));
     end = new Date(yy, mm-1, 1);
@@ -484,41 +484,77 @@ function salesColsMonth(){
   for(let i=11;i>=0;i--){
     const d = new Date(end.getFullYear(), end.getMonth()-i, 1);
     const m = d.toLocaleString("es-DO", { month:"short" }).replace(".","");
-    const label = `${m.toUpperCase()}-${d.getFullYear()}`;
-    cols.push("Ventas_" + label);
+    cols.push("Ventas_" + `${m.toUpperCase()}-${d.getFullYear()}`);
   }
   return cols;
 }
 
 /* ========= ESTADO ========= */
-let salesMode = "YEAR"; // YEAR | MONTH
-let columns = [];
-let salesMeta = { start: 0, len: 0 };
+let salesMode = "YEAR";           // YEAR | MONTH
+let columns = [];                 // nombres
+let colWidths = {};               // index -> px
 const rows = 22;
 
-/* ========= BUILD COLUMNS ========= */
+let selectedCol = null;           // índice de columna (sin contar la #)
+let selectedRow = null;           // row index (0..rows-1)
+let activeCell = null;            // referencia celda activa
+
+/* ========= BUILD ========= */
 function buildColumns(){
   const sales = (salesMode === "YEAR") ? salesColsYear() : salesColsMonth();
   columns = [...baseBeforeSales, ...sales, ...baseAfterSales];
-  salesMeta = { start: baseBeforeSales.length, len: sales.length };
+
+  // asegura widths (si no existe)
+  columns.forEach((_, i)=>{ if(!colWidths[i]) colWidths[i] = 170; });
 }
 
-/* ========= RENDER GRID ========= */
+/* ========= RENDER ========= */
 function render(){
   grid.innerHTML = "";
 
+  // 1) Columna # (selección de filas)
+  const rowCol = document.createElement("div");
+  rowCol.className = "col rowcol";
+  const rowHdr = document.createElement("div");
+  rowHdr.className = "colHeader";
+  rowHdr.innerHTML = `<span class="hdrText">#</span>`;
+  rowCol.appendChild(rowHdr);
+
+  for(let r=0;r<rows;r++){
+    const c = document.createElement("div");
+    c.className = "cell rowSel";
+    c.textContent = (r+1);
+    c.dataset.row = r;
+    c.addEventListener("click", ()=>{
+      selectRow(r);
+    });
+    rowCol.appendChild(c);
+  }
+  grid.appendChild(rowCol);
+
+  // 2) Columnas reales
   columns.forEach((name, index)=>{
     const col = document.createElement("div");
     col.className = "col";
-    col.draggable = true;
+    col.style.width = (colWidths[index] || 170) + "px";
 
-    // Si es columna de ventas y estamos en modo MES => centramos
     const isSales = name.startsWith("Ventas_");
     if(salesMode === "MONTH" && isSales){
       col.classList.add("salesCentered");
     }
 
-    // Drag & drop reorder columns
+    // seleccionar columna con click en header
+    col.addEventListener("click", (e)=>{
+      const isHeaderClick = e.target.classList.contains("colHeader") || e.target.closest(".colHeader");
+      if(isHeaderClick){
+        // si el click fue en el resizer, no seleccionar
+        if(e.target.classList.contains("resizer")) return;
+        selectCol(index);
+      }
+    });
+
+    // Drag & drop reorder (solo si arrastra header)
+    col.draggable = true;
     col.addEventListener("dragstart", e=>{
       e.dataTransfer.setData("col", index);
     });
@@ -528,20 +564,68 @@ function render(){
       const to = index;
       if(isNaN(from) || isNaN(to)) return;
 
-      const temp = columns[from];
+      // swap columns
+      const tmp = columns[from];
       columns[from] = columns[to];
-      columns[to] = temp;
+      columns[to] = tmp;
+
+      // swap widths
+      const w = colWidths[from];
+      colWidths[from] = colWidths[to];
+      colWidths[to] = w;
+
+      // corrige selección si aplica
+      if(selectedCol === from) selectedCol = to;
+      else if(selectedCol === to) selectedCol = from;
 
       render();
     });
 
-    // Header editable
+    // Header (editable) + resizer
     const header = document.createElement("div");
     header.className = "colHeader";
     header.contentEditable = true;
-    header.innerText = name;
-    header.addEventListener("blur", ()=> { columns[index] = header.innerText.trim() || columns[index]; });
 
+    const hdrText = document.createElement("span");
+    hdrText.className = "hdrText";
+    hdrText.textContent = name;
+
+    const resizer = document.createElement("span");
+    resizer.className = "resizer";
+    resizer.title = "Arrastra para ajustar ancho";
+
+    // al blur, guarda nombre
+    header.addEventListener("blur", ()=>{
+      const t = hdrText.textContent.trim();
+      columns[index] = t || columns[index];
+    });
+
+    // prevenir que resizer afecte el contenteditable
+    resizer.addEventListener("mousedown", (e)=>{ e.preventDefault(); });
+
+    // Resize logic
+    resizer.addEventListener("mousedown", (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      const startX = e.clientX;
+      const startW = col.getBoundingClientRect().width;
+
+      const onMove = (ev)=>{
+        const dx = ev.clientX - startX;
+        const nw = Math.max(90, Math.round(startW + dx));
+        col.style.width = nw + "px";
+        colWidths[index] = nw;
+      };
+      const onUp = ()=>{
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+      };
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    });
+
+    header.appendChild(hdrText);
+    header.appendChild(resizer);
     col.appendChild(header);
 
     // Cells
@@ -551,6 +635,17 @@ function render(){
       cell.contentEditable = true;
       cell.dataset.col = index;
       cell.dataset.row = r;
+
+      // click/focus tracking
+      cell.addEventListener("focus", ()=>{
+        activeCell = cell;
+        selectedCol = null;
+        selectedRow = null;
+        paintSelection();
+      });
+      cell.addEventListener("click", ()=>{
+        activeCell = cell;
+      });
 
       // centrar ventas en modo MES
       if(salesMode === "MONTH" && isSales){
@@ -563,6 +658,45 @@ function render(){
 
     grid.appendChild(col);
   });
+
+  paintSelection();
+}
+
+/* ========= SELECCIÓN VISUAL ========= */
+function paintSelection(){
+  // limpia
+  [...grid.querySelectorAll(".col")].forEach(c=>c.classList.remove("colSelected","rowSelected"));
+
+  // columnas reales empiezan en child index 1 (por la col #)
+  if(selectedCol !== null){
+    const colEl = grid.children[selectedCol + 1];
+    if(colEl) colEl.classList.add("colSelected");
+  }
+
+  if(selectedRow !== null){
+    // marcar row en todas las columnas
+    for(let i=0;i<grid.children.length;i++){
+      const colEl = grid.children[i];
+      if(!colEl) continue;
+      // la celda de la fila está en (row+1) por el header
+      const cell = colEl.children[selectedRow + 1];
+      if(cell) cell.classList.add("rowSelected");
+    }
+  }
+}
+
+function selectCol(idx){
+  selectedCol = idx;
+  selectedRow = null;
+  activeCell = null;
+  paintSelection();
+}
+
+function selectRow(r){
+  selectedRow = r;
+  selectedCol = null;
+  activeCell = null;
+  paintSelection();
 }
 
 /* ========= PEGADO DESDE EXCEL ========= */
@@ -571,39 +705,90 @@ grid.addEventListener("paste", (e)=>{
   const text = e.clipboardData.getData("text");
   const matrix = text.split(/\r?\n/).filter(x=>x.length>0).map(r=>r.split("\t"));
 
-  const active = document.activeElement;
   let startCol = 0;
   let startRow = 0;
 
-  if(active && active.classList && active.classList.contains("cell")){
-    startCol = parseInt(active.dataset.col,10) || 0;
-    startRow = parseInt(active.dataset.row,10) || 0;
+  if(activeCell && activeCell.classList.contains("cell")){
+    startCol = parseInt(activeCell.dataset.col,10) || 0;
+    startRow = parseInt(activeCell.dataset.row,10) || 0;
   }
 
   matrix.forEach((rowArr, rIdx)=>{
     rowArr.forEach((val, cIdx)=>{
       const colIndex = startCol + cIdx;
       const rowIndex = startRow + rIdx;
-      const col = grid.children[colIndex];
+      // +1 porque col # está al inicio
+      const col = grid.children[colIndex + 1];
       if(!col) return;
       const cell = col.children[rowIndex + 1];
       if(!cell) return;
-      cell.innerText = val;
+      cell.textContent = val;
     });
   });
 });
 
+/* ========= DELETE KEY (eliminar filas/columnas) ========= */
+document.addEventListener("keydown", (e)=>{
+  if(e.key !== "Delete") return;
+
+  // si hay columna seleccionada, borrar columna
+  if(selectedCol !== null){
+    deleteColumn(selectedCol);
+    return;
+  }
+
+  // si hay fila seleccionada, borrar fila
+  if(selectedRow !== null){
+    deleteRow(selectedRow);
+    return;
+  }
+
+  // si hay celda activa, borrar contenido
+  if(activeCell && activeCell.classList.contains("cell")){
+    activeCell.textContent = "";
+  }
+});
+
+function deleteColumn(idx){
+  columns.splice(idx, 1);
+
+  // rehacer widths (reindex)
+  const newW = {};
+  columns.forEach((_, i)=>{ newW[i] = colWidths[i] || 170; });
+  colWidths = newW;
+
+  selectedCol = null;
+  render();
+}
+
+function deleteRow(r){
+  // borrar contenido de esa fila en todas las columnas (no elimina “estructura de fila” porque grid es fijo)
+  // estilo Excel-lite: deja la fila vacía.
+  for(let c=0;c<columns.length;c++){
+    const colEl = grid.children[c + 1];
+    if(!colEl) continue;
+    const cell = colEl.children[r + 1];
+    if(cell) cell.textContent = "";
+  }
+  selectedRow = null;
+  paintSelection();
+}
+
 /* ========= ACCIONES ========= */
 function addColumn(){
   columns.push("NUEVA COLUMNA");
+  colWidths[columns.length - 1] = 170;
   render();
 }
 
 function clearTable(){
-  [...grid.querySelectorAll(".cell")].forEach(c=>c.innerText = "");
+  [...grid.querySelectorAll(".cell")].forEach(c=>{
+    if(c.classList.contains("rowSel")) return;
+    c.textContent = "";
+  });
 }
 
-/* ========= VENTAS MODE TOGGLE ========= */
+/* ========= VENTAS MODE ========= */
 function toggleSalesMode(){
   salesMode = (salesMode === "YEAR") ? "MONTH" : "YEAR";
 
@@ -627,24 +812,62 @@ function applyMonthMode(){
   render();
 }
 
-/* ========= SLIDER (tamaño letras + celdas) ========= */
+/* ========= SLIDER ========= */
 function applySize(percent){
   const p = parseInt(percent, 10) || 100;
   document.getElementById("sizeVal").textContent = p + "%";
-
-  // Escalas: 80% (compacto) a 140% (grande)
   const scale = p / 100;
 
-  // Ajustes finos: tipografía y alto de fila
-  const font = Math.round(13 * scale);                 // base 13px
-  const padY = Math.round(7 * scale);                  // padding vertical
-  const padX = Math.round(10 * Math.min(scale, 1.2));  // padding horizontal (no demasiado)
-  const minH = Math.round(30 * scale);                 // alto mínimo
+  const font = Math.round(13 * scale);
+  const padY = Math.round(7 * scale);
+  const padX = Math.round(10 * Math.min(scale, 1.2));
+  const minH = Math.round(30 * scale);
 
   document.documentElement.style.setProperty("--grid-font", font + "px");
   document.documentElement.style.setProperty("--cell-pad-y", padY + "px");
   document.documentElement.style.setProperty("--cell-pad-x", padX + "px");
   document.documentElement.style.setProperty("--cell-minh", minH + "px");
+}
+
+/* ========= FORMATO: ALINEACIÓN ========= */
+function applyAlign(where){
+  // where: left|center|right
+
+  // 1) Columna seleccionada
+  if(selectedCol !== null){
+    const colEl = grid.children[selectedCol + 1];
+    if(!colEl) return;
+    // header
+    colEl.querySelector(".hdrText").style.textAlign = where;
+    colEl.querySelector(".colHeader").style.justifyContent = (where === "left") ? "space-between" : "center";
+
+    // cells
+    const cells = [...colEl.querySelectorAll(".cell")];
+    cells.forEach(cell=>{
+      cell.style.textAlign = where;
+      cell.style.justifyContent = (where === "left") ? "flex-start" : (where === "center" ? "center" : "flex-end");
+    });
+    return;
+  }
+
+  // 2) Fila seleccionada
+  if(selectedRow !== null){
+    for(let c=0;c<columns.length;c++){
+      const colEl = grid.children[c + 1];
+      const cell = colEl?.children[selectedRow + 1];
+      if(cell){
+        cell.style.textAlign = where;
+        cell.style.justifyContent = (where === "left") ? "flex-start" : (where === "center" ? "center" : "flex-end");
+      }
+    }
+    return;
+  }
+
+  // 3) Celda activa
+  if(activeCell){
+    activeCell.style.textAlign = where;
+    activeCell.style.justifyContent = (where === "left") ? "flex-start" : (where === "center" ? "center" : "flex-end");
+  }
 }
 
 /* ========= INIT ========= */
@@ -654,7 +877,6 @@ function applySize(percent){
   const sm = document.getElementById("startMonth");
   if(sm) sm.value = ym;
 
-  // inicializa slider
   applySize(document.getElementById("sizeRange").value);
 
   buildColumns();
@@ -664,4 +886,5 @@ function applySize(percent){
 
 </body>
 </html>
+
 
