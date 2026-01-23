@@ -20,6 +20,8 @@
     --cell-minh: 30px;
 
     --rowcol-w: 56px;
+
+    --max-top: 86px; /* altura aproximada nav + padding */
   }
 
   *{box-sizing:border-box}
@@ -244,6 +246,7 @@
     display:flex;
     flex-direction:column;
     overflow:hidden;
+    min-height:280px;
   }
   .tableTop{
     display:flex;
@@ -386,7 +389,7 @@
     font-weight:800;
   }
 
-  /* MODAL FILTROS */
+  /* MODAL (base) */
   .modalBackdrop{
     position:fixed;
     inset:0;
@@ -398,7 +401,7 @@
     padding:14px;
   }
   .modal{
-    width:min(760px, 100%);
+    width:min(820px, 100%);
     background:#fff;
     border:1px solid rgba(230,232,240,.9);
     border-radius:18px;
@@ -425,6 +428,18 @@
     font-weight:900;
   }
   .modalBody{ padding:14px; }
+  .modalFooter{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 14px;
+    border-top:1px solid rgba(230,232,240,.9);
+    background:#fff;
+  }
+
+  /* FILTROS */
   .rowFlex{
     display:flex;
     gap:10px;
@@ -450,16 +465,6 @@
     padding:10px 10px;
     font-weight:900;
     outline:none;
-  }
-  .modalFooter{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    justify-content:space-between;
-    align-items:center;
-    padding:12px 14px;
-    border-top:1px solid rgba(230,232,240,.9);
-    background:#fff;
   }
   .chips{
     display:flex;
@@ -533,8 +538,76 @@
     font-size:12px;
   }
 
+  /* ===== MAXIMIZAR TABLA ===== */
+  body.tableMax .topGrid,
+  body.tableMax .footer{
+    display:none !important;
+  }
+  body.tableMax .page{
+    height:100vh;
+  }
+  body.tableMax .tableWrap{
+    position:fixed;
+    z-index:80;
+    left:14px;
+    right:14px;
+    top: var(--max-top);
+    bottom:14px;
+    width:auto;
+    max-width:none;
+    margin:0;
+    border-radius:22px;
+  }
+
+  /* ===== MODAL OCULTAR COLUMNAS ===== */
+  .colsGrid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:10px;
+    max-height: 52vh;
+    overflow:auto;
+    padding-right:6px;
+  }
+  .colItem{
+    border:1px solid rgba(230,232,240,.95);
+    border-radius:14px;
+    padding:10px 10px;
+    background:#fff;
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+  }
+  .colItem b{
+    font-size:12px;
+    line-height:1.15;
+  }
+  .colItem small{
+    display:block;
+    font-weight:900;
+    color:#64748b;
+    margin-top:4px;
+  }
+  .colItem input{ transform: translateY(2px); }
+  .colSearch{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+  }
+  .colSearch input{
+    border:1px solid rgba(230,232,240,.95);
+    border-radius:12px;
+    padding:10px 10px;
+    font-weight:900;
+    outline:none;
+    flex:1;
+    min-width:240px;
+  }
+
   @media(max-width:980px){
     .topGrid{ grid-template-columns:1fr; }
+    .colsGrid{ grid-template-columns:1fr; }
   }
 </style>
 </head>
@@ -557,7 +630,7 @@
     </div>
   </div>
 
-  <div class="topGrid">
+  <div class="topGrid" id="topGrid">
     <!-- ABC -->
     <div class="section">
       <div class="sectionTitle">
@@ -608,14 +681,20 @@
     </div>
   </div>
 
-  <div class="actionBar">
+  <div class="actionBar" id="actionBar">
     <div class="actionLeft">
       <button id="btnSalesMode" class="btn btnSoft" onclick="toggleSalesMode()">📌 Ventas: Por AÑO</button>
+
       <button id="btnFilters" class="btn btnGhost" onclick="openFilters()">Filtros</button>
+
       <button id="btnFreeze" class="btn btnGhost" onclick="toggleFreeze()">Fijar: ON</button>
 
-      <button class="btn btnGhost" onclick="alert('Proximo: guardar configuracion de columnas por usuario')">Boton 4</button>
-      <button class="btn btnGhost" onclick="alert('Proximo: reglas/validaciones')">Boton 5</button>
+      <!-- BOTON 4: OCULTAR COLUMNAS -->
+      <button id="btnHideCols" class="btn btnGhost" onclick="openHideCols()">Ocultar</button>
+
+      <!-- BOTON 5: EXPORTAR EXCEL -->
+      <button id="btnExportExcel" class="btn btnGhost" onclick="exportExcel()">Exportar Excel</button>
+
       <button class="btn btnGhost" onclick="alert('Proximo: calculos automaticos')">Boton 6</button>
 
       <div class="sizeCtrl" title="Ajusta tamaño de letras y altura de celdas">
@@ -643,7 +722,7 @@
     </div>
   </div>
 
-  <div class="tableWrap">
+  <div class="tableWrap" id="tableWrap">
     <div class="tableTop">
       <div>
         <b>Tabla dinámica (tipo Excel) — Turbo + Virtualización</b>
@@ -653,6 +732,7 @@
       </div>
 
       <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <button class="btn btnGhost" id="btnMaxTable" onclick="toggleMaxTable()">🗖 Maximizar</button>
         <button class="btn btnPrimary" onclick="addColumn()">+ Agregar columna</button>
         <button class="btn btnGhost" onclick="clearTable()">Limpiar celdas</button>
       </div>
@@ -668,7 +748,7 @@
     </div>
   </div>
 
-  <div class="footer">© <span id="y"></span> RepuestoFinder</div>
+  <div class="footer" id="footer">© <span id="y"></span> RepuestoFinder</div>
 </div>
 
 <!-- MODAL FILTROS -->
@@ -705,6 +785,35 @@
   </div>
 </div>
 
+<!-- MODAL OCULTAR COLUMNAS -->
+<div class="modalBackdrop" id="hideColsModal">
+  <div class="modal">
+    <div class="modalHeader">
+      <b>Ocultar / Mostrar columnas</b>
+      <button onclick="closeHideCols()">Cerrar ✕</button>
+    </div>
+
+    <div class="modalBody">
+      <div class="colSearch">
+        <input id="colSearch" type="text" placeholder="Buscar columna..." oninput="renderHideColsList()">
+        <button class="btn btnGhost" onclick="showAllCols()">Mostrar todas</button>
+        <button class="btn btnGhost" onclick="hideAllNonProtected()">Ocultar (no protegidas)</button>
+      </div>
+
+      <div class="colsGrid" id="colsGrid"></div>
+
+      <div class="hint" style="margin-top:10px">
+        Tip: ocultar no elimina datos, solo oculta la columna. La exportación respeta columnas visibles.
+      </div>
+    </div>
+
+    <div class="modalFooter">
+      <div class="hint" id="colsInfo">—</div>
+      <button class="btn btnPrimary" onclick="applyHiddenCols()">Aplicar</button>
+    </div>
+  </div>
+</div>
+
 <!-- OVERLAY TURBO PASTE -->
 <div class="overlay" id="pasteOverlay">
   <div class="overlayCard">
@@ -719,6 +828,9 @@
     </div>
   </div>
 </div>
+
+<!-- SheetJS (Excel) -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <script>
 /* ================= UTIL ================= */
@@ -787,7 +899,7 @@ function isProtectedColumnName(name){
     "STOCK DISPONIBLE",
     "MESES DE INVENTARIO",
     "CATEGORIA ABC",
-    "MARCA" // ✅ bloqueada para TOP marcas
+    "MARCA"
   ]);
 
   return protectedSet.has(n.toUpperCase());
@@ -823,6 +935,23 @@ let topVisible = true;
 /* turbo paste */
 let pasteJob = null;
 
+/* ocultar columnas */
+let hiddenCols = new Set();       // columnas ocultas (index real)
+let pendingHiddenCols = new Set(); // selección temporal en modal
+
+/* maximizar tabla */
+let isTableMax = false;
+let savedScrollTop = 0;
+
+/* ================= VISIBILIDAD DE COLUMNAS ================= */
+function getVisibleColIndices(){
+  const out = [];
+  for(let i=0;i<columns.length;i++){
+    if(!hiddenCols.has(i)) out.push(i);
+  }
+  return out;
+}
+
 /* ================= DATA HELPERS ================= */
 function ensureRowCount(n){
   while(dataRows.length < n){
@@ -855,15 +984,22 @@ function buildColumns(){
   if(dataRows.length === 0){
     ensureRowCount(200);
   }else{
-    // asegurar que cada fila tenga el tamaño correcto (por si cambió modo ventas)
     ensureColCount(columns.length);
   }
+
+  // limpiar hiddenCols fuera de rango si cambió algo
+  const cleaned = new Set();
+  for(const idx of hiddenCols){
+    if(idx >= 0 && idx < columns.length) cleaned.add(idx);
+  }
+  hiddenCols = cleaned;
 }
 
 /* ================= GRID TEMPLATE ================= */
 function getGridTemplate(){
+  const vis = getVisibleColIndices();
   const parts = [ `var(--rowcol-w)` ];
-  for(let i=0;i<columns.length;i++) parts.push((colWidths[i] || 170) + "px");
+  for(const i of vis) parts.push((colWidths[i] || 170) + "px");
   return parts.join(" ");
 }
 
@@ -877,7 +1013,11 @@ function renderHeader(){
   h0.textContent = "#";
   hdrRow.appendChild(h0);
 
-  columns.forEach((name, i)=>{
+  const vis = getVisibleColIndices();
+
+  vis.forEach((i)=>{
+    const name = columns[i];
+
     const hc = document.createElement("div");
     hc.className = "hdrCell";
     hc.draggable = true;
@@ -913,6 +1053,7 @@ function renderHeader(){
       rebuildFilterColumnOptions();
       updateABCChart();
       updateTopBrandsChart();
+      renderHideColsList();
     });
 
     const res = document.createElement("span");
@@ -968,8 +1109,23 @@ function reorderColumns(from, to){
     return nr;
   });
 
+  // ajustar hiddenCols por reordenamiento
+  const newHidden = new Set();
+  for(let i=0;i<columns.length;i++){
+    if(hiddenCols.has(i)) newHidden.add(i);
+  }
+  // hiddenCols son indices, pero al reordenar, en realidad cambia el “contenido”
+  // Para mantener la intención (ocultar la columna que el usuario ocultó), debemos reordenar el set igual que columns.
+  const hiddenArr = [];
+  for(let i=0;i<columns.length;i++) hiddenArr.push(hiddenCols.has(i));
+  const movedHidden = hiddenArr.splice(from,1)[0];
+  hiddenArr.splice(to,0,movedHidden);
+  const rebuiltHidden = new Set();
+  hiddenArr.forEach((v, idx)=>{ if(v) rebuiltHidden.add(idx); });
+
   columns = names;
   colWidths = newW;
+  hiddenCols = rebuiltHidden;
 
   if(selectedCol === from) selectedCol = to;
   else if(selectedCol === to) selectedCol = from;
@@ -1034,6 +1190,8 @@ function renderVisibleRows(){
 
   rowsMount.innerHTML = "";
 
+  const visCols = getVisibleColIndices();
+
   for(let vi=start; vi<end; vi++){
     const realRow = visibleRowIdx[vi];
     const rowEl = document.createElement("div");
@@ -1048,7 +1206,7 @@ function renderVisibleRows(){
     rn.addEventListener("click", ()=> selectRow(realRow));
     rowEl.appendChild(rn);
 
-    for(let c=0;c<columns.length;c++){
+    for(const c of visCols){
       const ce = document.createElement("div");
       ce.className = "cell";
       ce.contentEditable = true;
@@ -1082,7 +1240,6 @@ function renderVisibleRows(){
           renderVisibleRows();
         }
 
-        // si cambió ventas o marca o categoría, actualizar charts
         if(isCategoriaABCIndex(cc)) updateABCChart();
         if(isMarcaIndex(cc) || isSalesIndex(cc)) updateTopBrandsChart();
       });
@@ -1090,10 +1247,14 @@ function renderVisibleRows(){
       rowEl.appendChild(ce);
     }
 
-    if(selectedCol !== null){
-      const idxInRow = selectedCol + 1;
-      const cellToMark = rowEl.children[idxInRow];
-      if(cellToMark) cellToMark.classList.add("colSelected");
+    if(selectedCol !== null && !hiddenCols.has(selectedCol)){
+      // marcar columna seleccionada dentro de visible
+      const pos = visCols.indexOf(selectedCol);
+      if(pos >= 0){
+        const idxInRow = pos + 1;
+        const cellToMark = rowEl.children[idxInRow];
+        if(cellToMark) cellToMark.classList.add("colSelected");
+      }
     }
 
     rowsMount.appendChild(rowEl);
@@ -1127,7 +1288,8 @@ function selectRow(r){
 function applyHeaderSelectionUI(){
   [...hdrRow.querySelectorAll(".hdrCell")].forEach((el, idx)=>{
     if(idx === 0) return;
-    el.classList.toggle("colSelected", selectedCol === (idx-1));
+    const col = parseInt(el.dataset.col,10);
+    el.classList.toggle("colSelected", selectedCol === col);
   });
 }
 
@@ -1144,10 +1306,8 @@ function hidePasteOverlay(){
 }
 
 function startTurboPaste(text){
-  // si ya hay job, lo cancelamos
   pasteJob = null;
 
-  // split de líneas (clipboard gigante igual ocupa memoria, pero el loop pesado lo chunk-eamos)
   const lines = text.split(/\r?\n/).filter(x=>x.length>0);
 
   let startCol = 0;
@@ -1161,7 +1321,6 @@ function startTurboPaste(text){
   }
 
   const totalRows = lines.length;
-  // estimación: columnas promedio (para contador)
   let cellsWritten = 0;
 
   ensureRowCount(startRow + totalRows);
@@ -1169,7 +1328,7 @@ function startTurboPaste(text){
 
   showPasteOverlay();
 
-  const CHUNK_ROWS = 800; // ajustable (800-1500 va muy bien)
+  const CHUNK_ROWS = 800;
 
   let i = 0;
   function step(){
@@ -1190,7 +1349,6 @@ function startTurboPaste(text){
     pasteRows.textContent = `${i} / ${totalRows} filas`;
     pasteCells.textContent = `${cellsWritten.toLocaleString("es-DO")} celdas`;
 
-    // refresco ligero mientras pega (no pesado)
     if(pct % 10 === 0){
       applyFilters();
       scheduleRender();
@@ -1201,7 +1359,6 @@ function startTurboPaste(text){
     if(i < totalRows){
       requestAnimationFrame(step);
     }else{
-      // final
       applyFilters();
       scheduleRender();
       if(abcVisible) updateABCChart();
@@ -1213,7 +1370,6 @@ function startTurboPaste(text){
   requestAnimationFrame(step);
 }
 
-/* pegado (solo si foco dentro de tabla) */
 document.addEventListener("paste", (e)=>{
   if(!tableScroll.contains(document.activeElement)) return;
   e.preventDefault();
@@ -1262,19 +1418,31 @@ document.addEventListener("keydown", (e)=>{
 });
 
 function deleteColumn(idx){
+  const wasHidden = hiddenCols.has(idx);
+
   columns.splice(idx,1);
 
+  // reajustar widths
   const newW = {};
   for(let i=0;i<columns.length;i++){
     newW[i] = colWidths[i] || 170;
   }
   colWidths = newW;
 
+  // eliminar dato
   dataRows = dataRows.map(r=>{
     const nr = r.slice();
     nr.splice(idx,1);
     return nr;
   });
+
+  // reajustar hiddenCols por shift
+  const newHidden = new Set();
+  for(const h of hiddenCols){
+    if(h === idx) continue;
+    newHidden.add(h > idx ? (h-1) : h);
+  }
+  hiddenCols = newHidden;
 
   selectedCol = null;
   renderHeader();
@@ -1283,6 +1451,8 @@ function deleteColumn(idx){
   scheduleRender();
   if(abcVisible) updateABCChart();
   if(topVisible) updateTopBrandsChart();
+
+  if(wasHidden) renderHideColsList();
 }
 
 /* ================= ACCIONES ================= */
@@ -1297,6 +1467,7 @@ function addColumn(){
   scheduleRender();
   if(abcVisible) updateABCChart();
   if(topVisible) updateTopBrandsChart();
+  renderHideColsList();
 }
 function clearTable(){
   dataRows = dataRows.map(()=> new Array(columns.length).fill(""));
@@ -1326,6 +1497,7 @@ function toggleSalesMode(){
   scheduleRender();
   if(abcVisible) updateABCChart();
   if(topVisible) updateTopBrandsChart();
+  renderHideColsList();
 }
 function applyMonthMode(){
   if(salesMode !== "MONTH") return;
@@ -1336,6 +1508,7 @@ function applyMonthMode(){
   scheduleRender();
   if(abcVisible) updateABCChart();
   if(topVisible) updateTopBrandsChart();
+  renderHideColsList();
 }
 
 /* ================= SLIDER ================= */
@@ -1463,8 +1636,160 @@ function escapeHtml(str){
     .replaceAll("&","&amp;")
     .replaceAll("<","&lt;")
     .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
+    .replaceAll('"',"quot;")
     .replaceAll("'","&#039;");
+}
+
+/* ================= OCULTAR COLUMNAS ================= */
+function openHideCols(){
+  pendingHiddenCols = new Set(hiddenCols);
+  document.getElementById("hideColsModal").style.display = "flex";
+  document.getElementById("colSearch").value = "";
+  renderHideColsList();
+}
+function closeHideCols(){
+  document.getElementById("hideColsModal").style.display = "none";
+}
+
+function renderHideColsList(){
+  const grid = document.getElementById("colsGrid");
+  const q = (document.getElementById("colSearch").value || "").trim().toLowerCase();
+  grid.innerHTML = "";
+
+  let shown = 0;
+  for(let i=0;i<columns.length;i++){
+    const name = columns[i] || ("Col " + (i+1));
+    if(q && !name.toLowerCase().includes(q)) continue;
+
+    const isHidden = pendingHiddenCols.has(i);
+    const prot = isProtectedColumnName(name);
+
+    const item = document.createElement("div");
+    item.className = "colItem";
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = !isHidden;
+    cb.title = "Marcado = visible";
+    cb.addEventListener("change", ()=>{
+      // checked => visible (remover de ocultas)
+      if(cb.checked) pendingHiddenCols.delete(i);
+      else pendingHiddenCols.add(i);
+      updateColsInfo();
+    });
+
+    const meta = document.createElement("div");
+    meta.style.flex = "1";
+
+    const title = document.createElement("b");
+    title.textContent = name;
+
+    const sub = document.createElement("small");
+    sub.textContent = prot ? "Protegida (no se puede eliminar/renombrar)" : "Editable";
+
+    meta.appendChild(title);
+    meta.appendChild(sub);
+
+    item.appendChild(cb);
+    item.appendChild(meta);
+    grid.appendChild(item);
+    shown++;
+  }
+
+  updateColsInfo(shown);
+}
+
+function updateColsInfo(shownCount){
+  const shown = typeof shownCount === "number" ? shownCount : null;
+  const hiddenCount = pendingHiddenCols.size;
+  const total = columns.length;
+  const visible = total - hiddenCount;
+  document.getElementById("colsInfo").textContent =
+    `Visibles: ${visible} / ${total} · Ocultas: ${hiddenCount}` + (shown !== null ? ` · Listadas: ${shown}` : "");
+}
+
+function showAllCols(){
+  pendingHiddenCols = new Set();
+  renderHideColsList();
+}
+function hideAllNonProtected(){
+  const next = new Set();
+  for(let i=0;i<columns.length;i++){
+    const name = columns[i];
+    if(!isProtectedColumnName(name)) next.add(i);
+  }
+  pendingHiddenCols = next;
+  renderHideColsList();
+}
+function applyHiddenCols(){
+  hiddenCols = new Set(pendingHiddenCols);
+
+  // si la columna seleccionada quedó oculta, limpiar selección
+  if(selectedCol !== null && hiddenCols.has(selectedCol)) selectedCol = null;
+  if(activeCell){
+    const cc = parseInt(activeCell.dataset.col,10);
+    if(hiddenCols.has(cc)) activeCell = null;
+  }
+
+  closeHideCols();
+  renderHeader();
+  scheduleRender();
+}
+
+/* ================= MAXIMIZAR TABLA ================= */
+function toggleMaxTable(){
+  isTableMax = !isTableMax;
+  const btn = document.getElementById("btnMaxTable");
+
+  if(isTableMax){
+    savedScrollTop = tableScroll.scrollTop;
+    document.body.classList.add("tableMax");
+    btn.textContent = "🗗 Minimizar";
+  }else{
+    document.body.classList.remove("tableMax");
+    btn.textContent = "🗖 Maximizar";
+    // restaurar scroll
+    requestAnimationFrame(()=>{
+      tableScroll.scrollTop = savedScrollTop || 0;
+    });
+  }
+
+  // recalcular virtual y re-render
+  requestAnimationFrame(()=>{
+    recalcVirtual();
+    scheduleRender();
+  });
+}
+
+/* ================= EXPORTAR EXCEL ================= */
+function exportExcel(){
+  if(!window.XLSX){
+    alert("No se pudo cargar la libreria de Excel (SheetJS). Revisa tu conexion.");
+    return;
+  }
+
+  const visCols = getVisibleColIndices();
+  const headers = visCols.map(i => columns[i] || ("Col " + (i+1)));
+
+  // exporta solo filas visibles segun filtros
+  const rows = [];
+  rows.push(headers);
+
+  for(const r of visibleRowIdx){
+    const row = [];
+    for(const c of visCols){
+      row.push(getCellData(r, c));
+    }
+    rows.push(row);
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "KPIs");
+
+  const now = new Date();
+  const stamp = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+  XLSX.writeFile(wb, `KPIs_${stamp}.xlsx`);
 }
 
 /* ================= CHARTS: ABC + TOP ================= */
@@ -1659,37 +1984,28 @@ function getSalesIndices(){
 }
 
 function parseNumberSmart(v){
-  // soporta "1,234", "1.234", "1,234.56", "1.234,56"
   if(v == null) return 0;
   let s = String(v).trim();
   if(!s) return 0;
-  // quitar espacios y símbolos
   s = s.replace(/[^\d.,\-]/g, "");
   if(!s) return 0;
 
-  // si tiene , y . -> decidir separador decimal por la última ocurrencia
   const lastComma = s.lastIndexOf(",");
   const lastDot = s.lastIndexOf(".");
   if(lastComma !== -1 && lastDot !== -1){
     if(lastComma > lastDot){
-      // decimal es coma
       s = s.replace(/\./g, "");
       s = s.replace(/,/g, ".");
     }else{
-      // decimal es punto
       s = s.replace(/,/g, "");
     }
   }else if(lastComma !== -1 && lastDot === -1){
-    // solo coma: asumir decimal si hay 1-2-3 decimales; si no, miles
     const parts = s.split(",");
     if(parts[parts.length-1].length <= 2){
       s = s.replace(/,/g, ".");
     }else{
       s = s.replace(/,/g, "");
     }
-  }else{
-    // solo punto o ninguno
-    // ok
   }
 
   const n = parseFloat(s);
@@ -1716,8 +2032,7 @@ function updateTopBrandsChart(){
     return;
   }
 
-  // agregar promedio por fila y acumular por marca
-  const agg = new Map(); // marca -> {sum, rows}
+  const agg = new Map();
   for(let r=0;r<dataRows.length;r++){
     const brand = (getCellData(r, brandIdx) || "").trim();
     if(!brand) continue;
@@ -1725,9 +2040,9 @@ function updateTopBrandsChart(){
     let sum = 0;
     let count = 0;
     for(const si of salesIdx){
-      const n = parseNumberSmart(getCellData(r, si));
-      // si está vacío, lo ignoramos (no lo contamos)
-      if(n !== 0 || String(getCellData(r, si)).trim() !== ""){
+      const raw = getCellData(r, si);
+      const n = parseNumberSmart(raw);
+      if(n !== 0 || String(raw).trim() !== ""){
         sum += n;
         count++;
       }
@@ -1738,7 +2053,6 @@ function updateTopBrandsChart(){
     const key = brand.toUpperCase();
     const prev = agg.get(key) || {label: brand, sum:0};
     prev.sum += avg;
-    // conservar label “bonito” (la primera vez)
     if(!prev.label) prev.label = brand;
     agg.set(key, prev);
   }
@@ -1780,7 +2094,6 @@ function updateTopBrandsChart(){
 }
 
 function formatCompact(n){
-  // formato compacto para valores grandes
   const v = Number(n) || 0;
   if(v >= 1_000_000) return (v/1_000_000).toFixed(2) + "M";
   if(v >= 1_000) return (v/1_000).toFixed(2) + "K";
@@ -1817,7 +2130,6 @@ function toggleTOP(){
   recalcVirtual();
   scheduleRender();
 
-  // charts
   updateABCChart();
   updateTopBrandsChart();
 
@@ -1828,6 +2140,7 @@ function toggleTOP(){
 
 </body>
 </html>
+
 
 
 
