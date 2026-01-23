@@ -14,7 +14,6 @@
     --pri:#2563eb;
     --pri2:#1d4ed8;
 
-    /* tamaño */
     --grid-font: 13px;
     --cell-pad-y: 7px;
     --cell-pad-x: 10px;
@@ -99,13 +98,23 @@
     min-height:190px;
   }
   .sectionTitle{
-    display:flex; align-items:baseline; justify-content:space-between;
+    display:flex; align-items:center; justify-content:space-between;
     gap:10px; flex-wrap:wrap; margin-bottom:10px;
   }
   .sectionTitle h2{ margin:0; font-size:16px; font-weight:900; }
-  .sectionTitle span{
-    font-size:12px; color:#94a3b8; font-weight:900;
-    letter-spacing:.4px; text-transform:uppercase;
+  .sectionTitle .rightTools{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .pill{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:8px 10px; border-radius:14px;
+    background:#fff; border:1px solid var(--line);
+    font-weight:900; color:#0f172a;
+  }
+  .pill select{
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:6px 8px;
+    font-weight:900;
+    outline:none;
   }
 
   .abcWrap{
@@ -129,7 +138,7 @@
     display:flex;
     flex-direction:column;
     gap:8px;
-    min-width: 220px;
+    min-width: 240px;
     flex: 0;
   }
   .lg{
@@ -259,7 +268,6 @@
   .freezeOff .hdrRow{ position:static !important; top:auto !important; }
   .freezeOff .hdrRow{ box-shadow:none !important; }
 
-  /* header row */
   .hdrRow{
     position:sticky;
     top:0;
@@ -325,14 +333,11 @@
   }
   .resizer:hover{ background:rgba(37,99,235,.08); }
 
-  /* body virtual */
   .bodyInner{
     position:relative;
     min-width:max-content;
   }
-  .spacer{
-    height:0px;
-  }
+  .spacer{ height:0px; }
   .row{
     display:grid;
     align-items:stretch;
@@ -371,12 +376,8 @@
     box-shadow:8px 0 18px rgba(2,6,23,.06);
   }
 
-  .salesCentered .cell{ justify-content:center; text-align:center; }
-
   .colSelected{ background:#dbeafe !important; box-shadow: inset 0 0 0 2px rgba(37,99,235,.35); }
   .rowSelected .cell{ background:rgba(219,234,254,.35); }
-
-  .rowHidden{ display:none !important; }
 
   .footer{
     text-align:center;
@@ -481,6 +482,57 @@
   }
   .chipF small{color:#334155;font-weight:900}
 
+  /* ===== OVERLAY TURBO PASTE ===== */
+  .overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(2,6,23,.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:120;
+    padding:18px;
+  }
+  .overlayCard{
+    width:min(520px, 100%);
+    background:#fff;
+    border:1px solid rgba(230,232,240,.9);
+    border-radius:18px;
+    box-shadow:0 22px 60px rgba(2,6,23,.25);
+    padding:14px;
+  }
+  .overlayTop{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:10px;
+  }
+  .overlayTop b{font-size:14px;}
+  .bar{
+    width:100%;
+    height:12px;
+    border-radius:999px;
+    background:#eef2ff;
+    border:1px solid rgba(37,99,235,.18);
+    overflow:hidden;
+  }
+  .bar > div{
+    height:100%;
+    width:0%;
+    background:var(--pri);
+  }
+  .overlayMeta{
+    margin-top:10px;
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    font-weight:900;
+    color:#334155;
+    font-size:12px;
+  }
+
   @media(max-width:980px){
     .topGrid{ grid-template-columns:1fr; }
   }
@@ -506,30 +558,52 @@
   </div>
 
   <div class="topGrid">
+    <!-- ABC -->
     <div class="section">
       <div class="sectionTitle">
         <h2>CLASIFICACION ABC</h2>
-        <span>dinamico</span>
+        <div class="rightTools">
+          <button class="btn btnGhost" id="btnToggleABC" onclick="toggleABC()">Ocultar</button>
+        </div>
       </div>
 
-      <div class="abcWrap">
+      <div class="abcWrap" id="abcWrap">
         <div class="abcCard">
           <svg id="abcPie" width="280" height="170" viewBox="0 0 280 170" aria-label="Clasificacion ABC"></svg>
         </div>
-
         <div class="abcLegend" id="abcLegend">
-          <div class="hint" id="abcHint">Pega/edita datos en “CATEGORIA ABC” para ver el grafico.</div>
+          <div class="hint">Pega/edita datos en “CATEGORIA ABC” para ver el gráfico.</div>
         </div>
       </div>
     </div>
 
+    <!-- TOP MARCAS -->
     <div class="section">
       <div class="sectionTitle">
         <h2>Top Marcas y Repuestos</h2>
-        <span>placeholder</span>
+        <div class="rightTools">
+          <div class="pill" title="Cantidad de marcas a mostrar">
+            TOP
+            <select id="topN" onchange="updateTopBrandsChart()">
+              <option value="5" selected>5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+            </select>
+          </div>
+          <button class="btn btnGhost" id="btnToggleTOP" onclick="toggleTOP()">Ocultar</button>
+        </div>
       </div>
-      <div class="abcCard" style="min-height:130px">
-        Aquí irá ranking + comparativas.
+
+      <div class="abcWrap" id="topWrap">
+        <div class="abcCard">
+          <svg id="topPie" width="280" height="170" viewBox="0 0 280 170" aria-label="Top Marcas"></svg>
+        </div>
+        <div class="abcLegend" id="topLegend">
+          <div class="hint">Calculando TOP por promedio de ventas…</div>
+        </div>
       </div>
     </div>
   </div>
@@ -572,9 +646,9 @@
   <div class="tableWrap">
     <div class="tableTop">
       <div>
-        <b>Tabla dinámica (tipo Excel) — Optimizada</b>
+        <b>Tabla dinámica (tipo Excel) — Turbo + Virtualización</b>
         <div class="mutedNote">
-          Virtualización activa (alto volumen) · Pegado crea filas · Delete elimina (si no está protegida) · Scroll fluido aunque pegues miles.
+          Pegado en CHUNKS (100k) · Virtualización activa · Delete elimina (si no está protegida).
         </div>
       </div>
 
@@ -631,6 +705,21 @@
   </div>
 </div>
 
+<!-- OVERLAY TURBO PASTE -->
+<div class="overlay" id="pasteOverlay">
+  <div class="overlayCard">
+    <div class="overlayTop">
+      <b>Pegando datos (Modo Turbo)…</b>
+      <span class="hint" id="pastePct">0%</span>
+    </div>
+    <div class="bar"><div id="pasteBar"></div></div>
+    <div class="overlayMeta">
+      <span id="pasteRows">0 / 0 filas</span>
+      <span id="pasteCells">0 celdas</span>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ================= UTIL ================= */
 document.getElementById("y").textContent = new Date().getFullYear();
@@ -641,6 +730,13 @@ const hdrRow = document.getElementById("hdrRow");
 const rowsMount = document.getElementById("rowsMount");
 const spacerTop = document.getElementById("spacerTop");
 const spacerBottom = document.getElementById("spacerBottom");
+
+/* overlay */
+const pasteOverlay = document.getElementById("pasteOverlay");
+const pasteBar = document.getElementById("pasteBar");
+const pastePct = document.getElementById("pastePct");
+const pasteRows = document.getElementById("pasteRows");
+const pasteCells = document.getElementById("pasteCells");
 
 let freezeOn = true;
 
@@ -690,7 +786,8 @@ function isProtectedColumnName(name){
     "LEAD TIME (DIAS)",
     "STOCK DISPONIBLE",
     "MESES DE INVENTARIO",
-    "CATEGORIA ABC"
+    "CATEGORIA ABC",
+    "MARCA" // ✅ bloqueada para TOP marcas
   ]);
 
   return protectedSet.has(n.toUpperCase());
@@ -712,13 +809,19 @@ let visibleRowIdx = []; // indices reales
 let rowHiddenFlags = []; // bool por fila real
 
 /* virtual */
-let rowHeightPx = 34;     // se recalcula
+let rowHeightPx = 34;
 const overscan = 20;
-let visibleCount = 80;    // se recalcula
+let visibleCount = 80;
 let currentStart = 0;
 
-/* alineación (estado simple) */
 let alignMode = "left";
+
+/* charts visibility */
+let abcVisible = true;
+let topVisible = true;
+
+/* turbo paste */
+let pasteJob = null;
 
 /* ================= DATA HELPERS ================= */
 function ensureRowCount(n){
@@ -737,8 +840,6 @@ function getCellData(r,c){
   return (dataRows[r] && dataRows[r][c] != null) ? String(dataRows[r][c]) : "";
 }
 function setCellData(r,c,val){
-  ensureRowCount(r+1);
-  ensureColCount(columns.length);
   dataRows[r][c] = val;
 }
 
@@ -752,17 +853,17 @@ function buildColumns(){
   ensureColCount(columns.length);
 
   if(dataRows.length === 0){
-    ensureRowCount(200); // base inicial (ya virtualiza)
+    ensureRowCount(200);
+  }else{
+    // asegurar que cada fila tenga el tamaño correcto (por si cambió modo ventas)
+    ensureColCount(columns.length);
   }
 }
 
 /* ================= GRID TEMPLATE ================= */
 function getGridTemplate(){
-  // # + columns
   const parts = [ `var(--rowcol-w)` ];
-  for(let i=0;i<columns.length;i++){
-    parts.push((colWidths[i] || 170) + "px");
-  }
+  for(let i=0;i<columns.length;i++) parts.push((colWidths[i] || 170) + "px");
   return parts.join(" ");
 }
 
@@ -771,7 +872,6 @@ function renderHeader(){
   hdrRow.innerHTML = "";
   hdrRow.style.gridTemplateColumns = getGridTemplate();
 
-  // cell #
   const h0 = document.createElement("div");
   h0.className = "hdrCell rownum";
   h0.textContent = "#";
@@ -783,13 +883,11 @@ function renderHeader(){
     hc.draggable = true;
     hc.dataset.col = i;
 
-    // seleccionar
     hc.addEventListener("click", (e)=>{
       if(e.target.classList.contains("resizer")) return;
       selectCol(i);
     });
 
-    // drag reorder
     hc.addEventListener("dragstart", (e)=>{
       e.dataTransfer.setData("col", String(i));
     });
@@ -814,6 +912,7 @@ function renderHeader(){
       columns[i] = nv || columns[i];
       rebuildFilterColumnOptions();
       updateABCChart();
+      updateTopBrandsChart();
     });
 
     const res = document.createElement("span");
@@ -830,7 +929,6 @@ function renderHeader(){
         const dx = ev.clientX - startX;
         colWidths[i] = Math.max(90, Math.round(startW + dx));
         hdrRow.style.gridTemplateColumns = getGridTemplate();
-        // rerender rows visibles para que cuadren
         renderVisibleRows();
       };
       const onUp = ()=>{
@@ -851,21 +949,18 @@ function renderHeader(){
 
 /* ================= REORDER COLUMNS ================= */
 function reorderColumns(from, to){
-  // proteger: si sueltas no hay problema, solo reordena
   const names = columns.slice();
-  const widths = colWidths;
   const moved = names.splice(from,1)[0];
   names.splice(to,0,moved);
 
-  // widths reorder
-  const newW = {};
   const oldW = [];
-  for(let i=0;i<columns.length;i++) oldW.push(widths[i] || 170);
+  for(let i=0;i<columns.length;i++) oldW.push(colWidths[i] || 170);
   const mw = oldW.splice(from,1)[0];
   oldW.splice(to,0,mw);
+
+  const newW = {};
   names.forEach((_, idx)=> newW[idx] = oldW[idx]);
 
-  // data reorder
   dataRows = dataRows.map(r=>{
     const nr = r.slice();
     const mv = nr.splice(from,1)[0];
@@ -876,19 +971,18 @@ function reorderColumns(from, to){
   columns = names;
   colWidths = newW;
 
-  // seleccion
   if(selectedCol === from) selectedCol = to;
   else if(selectedCol === to) selectedCol = from;
 
-  // refresh
   renderHeader();
   rebuildFilterColumnOptions();
-  applyFilters(); // recompute visibility
+  applyFilters();
   renderVisibleRows();
   updateABCChart();
+  updateTopBrandsChart();
 }
 
-/* ================= VISIBLE ROWS (FILTERS) ================= */
+/* ================= FILTERS -> visibleRowIdx ================= */
 function applyFilters(){
   rowHiddenFlags = new Array(dataRows.length).fill(false);
 
@@ -915,10 +1009,9 @@ function applyFilters(){
 
 /* ================= VIRTUAL RENDER ================= */
 function recalcVirtual(){
-  // intenta estimar row height real
   const minH = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--cell-minh"),10) || 30;
   const padY = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--cell-pad-y"),10) || 7;
-  rowHeightPx = Math.max(24, minH + padY); // aproximación buena
+  rowHeightPx = Math.max(24, minH + padY);
 
   const vh = tableScroll.clientHeight || 600;
   visibleCount = Math.max(20, Math.ceil(vh / rowHeightPx) + overscan);
@@ -927,26 +1020,18 @@ function recalcVirtual(){
 function renderVisibleRows(){
   hdrRow.style.gridTemplateColumns = getGridTemplate();
 
-  // total visible
   const totalVisible = visibleRowIdx.length;
-
-  // calcular start por scrollTop
   const scrollTop = tableScroll.scrollTop;
   const headerH = hdrRow.getBoundingClientRect().height || 40;
 
-  // ojo: scrollTop incluye header; pero como header es sticky, el body realmente empieza bajo header
-  // simplificamos usando scrollTop tal cual
   const approxStart = Math.floor(Math.max(0, scrollTop - headerH) / rowHeightPx);
   const start = Math.max(0, Math.min(totalVisible, approxStart));
   currentStart = start;
-
   const end = Math.min(totalVisible, start + visibleCount);
 
-  // spacers
   spacerTop.style.height = (start * rowHeightPx) + "px";
   spacerBottom.style.height = ((totalVisible - end) * rowHeightPx) + "px";
 
-  // mount rows
   rowsMount.innerHTML = "";
 
   for(let vi=start; vi<end; vi++){
@@ -957,14 +1042,12 @@ function renderVisibleRows(){
 
     if(selectedRow === realRow) rowEl.classList.add("rowSelected");
 
-    // row number
     const rn = document.createElement("div");
     rn.className = "cell rownum";
     rn.textContent = String(realRow + 1);
     rn.addEventListener("click", ()=> selectRow(realRow));
     rowEl.appendChild(rn);
 
-    // data cells
     for(let c=0;c<columns.length;c++){
       const ce = document.createElement("div");
       ce.className = "cell";
@@ -974,15 +1057,12 @@ function renderVisibleRows(){
 
       const isSales = (columns[c] || "").startsWith("Ventas_");
       if(salesMode === "MONTH" && isSales){
-        ce.classList.add("salesCentered");
         ce.style.justifyContent = "center";
         ce.style.textAlign = "center";
       }else{
-        // aplicar alineación actual
         applyAlignToCellEl(ce, alignMode);
       }
 
-      // valor
       ce.textContent = getCellData(realRow, c);
 
       ce.addEventListener("focus", ()=>{
@@ -997,22 +1077,20 @@ function renderVisibleRows(){
         const cc = parseInt(ce.dataset.col,10);
         setCellData(rr, cc, ce.textContent);
 
-        // filtros (si hay)
         if(activeFilters.length){
           applyFilters();
           renderVisibleRows();
         }
 
-        // grafico
+        // si cambió ventas o marca o categoría, actualizar charts
         if(isCategoriaABCIndex(cc)) updateABCChart();
+        if(isMarcaIndex(cc) || isSalesIndex(cc)) updateTopBrandsChart();
       });
 
       rowEl.appendChild(ce);
     }
 
-    // pintar seleccion de col si aplica
     if(selectedCol !== null){
-      // +1 por columna #
       const idxInRow = selectedCol + 1;
       const cellToMark = rowEl.children[idxInRow];
       if(cellToMark) cellToMark.classList.add("colSelected");
@@ -1023,7 +1101,6 @@ function renderVisibleRows(){
 }
 
 function scheduleRender(){
-  // evita render en exceso
   if(scheduleRender._raf) return;
   scheduleRender._raf = requestAnimationFrame(()=>{
     scheduleRender._raf = null;
@@ -1048,23 +1125,30 @@ function selectRow(r){
   renderVisibleRows();
 }
 function applyHeaderSelectionUI(){
-  // header: pintar seleccionado
   [...hdrRow.querySelectorAll(".hdrCell")].forEach((el, idx)=>{
     if(idx === 0) return;
     el.classList.toggle("colSelected", selectedCol === (idx-1));
   });
 }
 
-/* ================= PEGADO (alto volumen) ================= */
-document.addEventListener("paste", (e)=>{
-  // solo si el foco está dentro de la tabla
-  if(!tableScroll.contains(document.activeElement)) return;
+/* ================= TURBO PASTE (CHUNKS) ================= */
+function showPasteOverlay(){
+  pasteOverlay.style.display = "flex";
+  pasteBar.style.width = "0%";
+  pastePct.textContent = "0%";
+  pasteRows.textContent = "0 / 0 filas";
+  pasteCells.textContent = "0 celdas";
+}
+function hidePasteOverlay(){
+  pasteOverlay.style.display = "none";
+}
 
-  e.preventDefault();
-  const text = e.clipboardData.getData("text");
-  if(!text) return;
+function startTurboPaste(text){
+  // si ya hay job, lo cancelamos
+  pasteJob = null;
 
-  const matrix = text.split(/\r?\n/).filter(x=>x.length>0).map(r=>r.split("\t"));
+  // split de líneas (clipboard gigante igual ocupa memoria, pero el loop pesado lo chunk-eamos)
+  const lines = text.split(/\r?\n/).filter(x=>x.length>0);
 
   let startCol = 0;
   let startRow = 0;
@@ -1076,24 +1160,66 @@ document.addEventListener("paste", (e)=>{
     startRow = selectedRow;
   }
 
-  const neededRows = startRow + matrix.length;
-  ensureRowCount(neededRows);
+  const totalRows = lines.length;
+  // estimación: columnas promedio (para contador)
+  let cellsWritten = 0;
 
-  // escribir a dataRows (sin tocar DOM celda por celda)
-  for(let r=0;r<matrix.length;r++){
-    const rr = startRow + r;
-    const rowArr = matrix[r];
-    for(let c=0;c<rowArr.length;c++){
-      const cc = startCol + c;
-      if(cc >= columns.length) continue;
-      setCellData(rr, cc, rowArr[c]);
+  ensureRowCount(startRow + totalRows);
+  ensureColCount(columns.length);
+
+  showPasteOverlay();
+
+  const CHUNK_ROWS = 800; // ajustable (800-1500 va muy bien)
+
+  let i = 0;
+  function step(){
+    const end = Math.min(totalRows, i + CHUNK_ROWS);
+    for(; i<end; i++){
+      const rr = startRow + i;
+      const colsArr = lines[i].split("\t");
+      const maxC = Math.min(colsArr.length, columns.length - startCol);
+      for(let c=0;c<maxC;c++){
+        setCellData(rr, startCol + c, colsArr[c]);
+      }
+      cellsWritten += maxC;
+    }
+
+    const pct = Math.round((i / totalRows) * 100);
+    pasteBar.style.width = pct + "%";
+    pastePct.textContent = pct + "%";
+    pasteRows.textContent = `${i} / ${totalRows} filas`;
+    pasteCells.textContent = `${cellsWritten.toLocaleString("es-DO")} celdas`;
+
+    // refresco ligero mientras pega (no pesado)
+    if(pct % 10 === 0){
+      applyFilters();
+      scheduleRender();
+      if(abcVisible) updateABCChart();
+      if(topVisible) updateTopBrandsChart();
+    }
+
+    if(i < totalRows){
+      requestAnimationFrame(step);
+    }else{
+      // final
+      applyFilters();
+      scheduleRender();
+      if(abcVisible) updateABCChart();
+      if(topVisible) updateTopBrandsChart();
+      hidePasteOverlay();
     }
   }
 
-  // refrescos
-  applyFilters();
-  scheduleRender();
-  updateABCChart();
+  requestAnimationFrame(step);
+}
+
+/* pegado (solo si foco dentro de tabla) */
+document.addEventListener("paste", (e)=>{
+  if(!tableScroll.contains(document.activeElement)) return;
+  e.preventDefault();
+  const text = e.clipboardData.getData("text");
+  if(!text) return;
+  startTurboPaste(text);
 });
 
 /* ================= DELETE KEY ================= */
@@ -1110,13 +1236,13 @@ document.addEventListener("keydown", (e)=>{
   }
 
   if(selectedRow !== null){
-    // vaciar fila
     if(dataRows[selectedRow]){
       dataRows[selectedRow] = new Array(columns.length).fill("");
     }
     applyFilters();
     scheduleRender();
-    updateABCChart();
+    if(abcVisible) updateABCChart();
+    if(topVisible) updateTopBrandsChart();
     selectedRow = null;
     return;
   }
@@ -1126,7 +1252,8 @@ document.addEventListener("keydown", (e)=>{
     const cc = parseInt(activeCell.dataset.col,10);
     setCellData(rr, cc, "");
     activeCell.textContent = "";
-    if(isCategoriaABCIndex(cc)) updateABCChart();
+    if(isCategoriaABCIndex(cc) && abcVisible) updateABCChart();
+    if((isMarcaIndex(cc) || isSalesIndex(cc)) && topVisible) updateTopBrandsChart();
     if(activeFilters.length){
       applyFilters();
       scheduleRender();
@@ -1137,14 +1264,12 @@ document.addEventListener("keydown", (e)=>{
 function deleteColumn(idx){
   columns.splice(idx,1);
 
-  // width rebuild
   const newW = {};
   for(let i=0;i<columns.length;i++){
     newW[i] = colWidths[i] || 170;
   }
   colWidths = newW;
 
-  // data remove
   dataRows = dataRows.map(r=>{
     const nr = r.slice();
     nr.splice(idx,1);
@@ -1156,7 +1281,8 @@ function deleteColumn(idx){
   rebuildFilterColumnOptions();
   applyFilters();
   scheduleRender();
-  updateABCChart();
+  if(abcVisible) updateABCChart();
+  if(topVisible) updateTopBrandsChart();
 }
 
 /* ================= ACCIONES ================= */
@@ -1169,12 +1295,15 @@ function addColumn(){
   rebuildFilterColumnOptions();
   applyFilters();
   scheduleRender();
+  if(abcVisible) updateABCChart();
+  if(topVisible) updateTopBrandsChart();
 }
 function clearTable(){
   dataRows = dataRows.map(()=> new Array(columns.length).fill(""));
   applyFilters();
   scheduleRender();
-  updateABCChart();
+  if(abcVisible) updateABCChart();
+  if(topVisible) updateTopBrandsChart();
 }
 
 /* ================= VENTAS MODE ================= */
@@ -1195,7 +1324,8 @@ function toggleSalesMode(){
   rebuildFilterColumnOptions();
   applyFilters();
   scheduleRender();
-  updateABCChart();
+  if(abcVisible) updateABCChart();
+  if(topVisible) updateTopBrandsChart();
 }
 function applyMonthMode(){
   if(salesMode !== "MONTH") return;
@@ -1204,7 +1334,8 @@ function applyMonthMode(){
   rebuildFilterColumnOptions();
   applyFilters();
   scheduleRender();
-  updateABCChart();
+  if(abcVisible) updateABCChart();
+  if(topVisible) updateTopBrandsChart();
 }
 
 /* ================= SLIDER ================= */
@@ -1336,14 +1467,7 @@ function escapeHtml(str){
     .replaceAll("'","&#039;");
 }
 
-/* ================= GRAFICO (dinámico) ================= */
-function isCategoriaABCIndex(colIndex){
-  return (columns[colIndex] || "").toUpperCase() === "CATEGORIA ABC";
-}
-function getCategoriaABCIndex(){
-  return columns.findIndex(c => (c||"").toUpperCase() === "CATEGORIA ABC");
-}
-
+/* ================= CHARTS: ABC + TOP ================= */
 const palette = [
   {c:"#22c55e", d:"#16a34a"},
   {c:"#f59e0b", d:"#d97706"},
@@ -1357,73 +1481,20 @@ const palette = [
   {c:"#ec4899", d:"#db2777"}
 ];
 
+function isCategoriaABCIndex(colIndex){
+  return (columns[colIndex] || "").toUpperCase() === "CATEGORIA ABC";
+}
+function getCategoriaABCIndex(){
+  return columns.findIndex(c => (c||"").toUpperCase() === "CATEGORIA ABC");
+}
 function normalizeCat(v){
   const t = (v || "").trim().toUpperCase();
   if(!t) return "S/CLASF";
   return t;
 }
 
-function updateABCChart(){
-  const idx = getCategoriaABCIndex();
-  const legend = document.getElementById("abcLegend");
-  const svg = document.getElementById("abcPie");
-
-  if(idx < 0){
-    legend.innerHTML = `<div class="hint">No existe la columna “CATEGORIA ABC”.</div>`;
-    svg.innerHTML = "";
-    return;
-  }
-
-  // contar dinámico (incluye D, F, etc)
-  const map = new Map();
-  for(let r=0;r<dataRows.length;r++){
-    const cat = normalizeCat(getCellData(r, idx));
-    map.set(cat, (map.get(cat)||0) + 1);
-  }
-
-  // ordenar: letras primero, S/CLASF al final
-  const entries = [...map.entries()].sort((a,b)=>{
-    if(a[0] === "S/CLASF") return 1;
-    if(b[0] === "S/CLASF") return -1;
-    return a[0].localeCompare(b[0]);
-  });
-
-  // construir parts (limit práctico: si hay muchísimas categorías, agrupar)
-  let parts = entries.map(([k,v])=>({key:k, val:v}));
-  if(parts.length > 10){
-    // top 9 + OTROS
-    parts.sort((a,b)=>b.val-a.val);
-    const top = parts.slice(0,9);
-    const rest = parts.slice(9).reduce((s,p)=>s+p.val,0);
-    top.push({key:"OTROS", val:rest});
-    parts = top;
-  }
-
-  // legend
-  legend.innerHTML = "";
-  const hint = document.createElement("div");
-  hint.className = "hint";
-  hint.textContent = `Total filas: ${dataRows.length} · Categorías detectadas: ${entries.length}`;
-  legend.appendChild(hint);
-
-  parts.forEach((p, i)=>{
-    const col = palette[i % palette.length].c;
-    const row = document.createElement("div");
-    row.className = "lg";
-    row.innerHTML = `
-      <div class="lgLeft"><span class="dot" style="background:${col}"></span> ${escapeHtml(p.key)}</div>
-      <div class="lgVal">${p.val}</div>
-    `;
-    legend.appendChild(row);
-  });
-
-  // pie 3D
-  paintPie3D(parts);
-}
-
-function paintPie3D(parts){
-  const svg = document.getElementById("abcPie");
-  svg.innerHTML = "";
+function paintPie3D(svgEl, parts, centerLabel){
+  svgEl.innerHTML = "";
 
   const total = parts.reduce((s,p)=>s+p.val,0) || 1;
 
@@ -1432,18 +1503,16 @@ function paintPie3D(parts){
   const radius = 62;
   const depth = 12;
 
-  // sombra
   const bg = document.createElementNS("http://www.w3.org/2000/svg","ellipse");
   bg.setAttribute("cx", centerX);
   bg.setAttribute("cy", centerY + depth + 14);
   bg.setAttribute("rx", radius + 18);
   bg.setAttribute("ry", 18);
   bg.setAttribute("fill", "rgba(2,6,23,.08)");
-  svg.appendChild(bg);
+  svgEl.appendChild(bg);
 
   let start = -Math.PI/2;
 
-  // bottom
   parts.forEach((p, i)=>{
     const angle = (p.val / total) * Math.PI * 2;
     const end = start + angle;
@@ -1454,12 +1523,11 @@ function paintPie3D(parts){
     const el = document.createElementNS("http://www.w3.org/2000/svg","path");
     el.setAttribute("d", path);
     el.setAttribute("fill", dark);
-    svg.appendChild(el);
+    svgEl.appendChild(el);
 
     start = end;
   });
 
-  // top
   start = -Math.PI/2;
   parts.forEach((p, i)=>{
     const angle = (p.val / total) * Math.PI * 2;
@@ -1473,21 +1541,19 @@ function paintPie3D(parts){
     el.setAttribute("fill", col);
     el.setAttribute("stroke", "rgba(255,255,255,.9)");
     el.setAttribute("stroke-width", "1");
-    svg.appendChild(el);
+    svgEl.appendChild(el);
 
     start = end;
   });
 
-  // highlight
   const hi = document.createElementNS("http://www.w3.org/2000/svg","ellipse");
   hi.setAttribute("cx", centerX - 10);
   hi.setAttribute("cy", centerY - 18);
   hi.setAttribute("rx", radius - 20);
   hi.setAttribute("ry", 18);
   hi.setAttribute("fill", "rgba(255,255,255,.18)");
-  svg.appendChild(hi);
+  svgEl.appendChild(hi);
 
-  // texto total
   const t = document.createElementNS("http://www.w3.org/2000/svg","text");
   t.setAttribute("x", centerX);
   t.setAttribute("y", centerY + 6);
@@ -1495,8 +1561,8 @@ function paintPie3D(parts){
   t.setAttribute("font-size","13");
   t.setAttribute("font-weight","900");
   t.setAttribute("fill","#0f172a");
-  t.textContent = String(total);
-  svg.appendChild(t);
+  t.textContent = centerLabel ?? String(total);
+  svgEl.appendChild(t);
 
   const t2 = document.createElementNS("http://www.w3.org/2000/svg","text");
   t2.setAttribute("x", centerX);
@@ -1506,7 +1572,7 @@ function paintPie3D(parts){
   t2.setAttribute("font-weight","900");
   t2.setAttribute("fill","#64748b");
   t2.textContent = "conteos";
-  svg.appendChild(t2);
+  svgEl.appendChild(t2);
 }
 
 function polarToCartesian(cx, cy, r, angleRad){
@@ -1525,6 +1591,216 @@ function describeArc(cx, cy, r, startAngle, endAngle){
   ].join(" ");
 }
 
+/* ===== ABC chart ===== */
+function updateABCChart(){
+  if(!abcVisible) return;
+
+  const idx = getCategoriaABCIndex();
+  const legend = document.getElementById("abcLegend");
+  const svg = document.getElementById("abcPie");
+
+  if(idx < 0){
+    legend.innerHTML = `<div class="hint">No existe la columna “CATEGORIA ABC”.</div>`;
+    svg.innerHTML = "";
+    return;
+  }
+
+  const map = new Map();
+  for(let r=0;r<dataRows.length;r++){
+    const cat = normalizeCat(getCellData(r, idx));
+    map.set(cat, (map.get(cat)||0) + 1);
+  }
+
+  const entries = [...map.entries()].sort((a,b)=>{
+    if(a[0] === "S/CLASF") return 1;
+    if(b[0] === "S/CLASF") return -1;
+    return a[0].localeCompare(b[0]);
+  });
+
+  let parts = entries.map(([k,v])=>({key:k, val:v}));
+  if(parts.length > 10){
+    parts.sort((a,b)=>b.val-a.val);
+    const top = parts.slice(0,9);
+    const rest = parts.slice(9).reduce((s,p)=>s+p.val,0);
+    top.push({key:"OTROS", val:rest});
+    parts = top;
+  }
+
+  legend.innerHTML = "";
+  const hint = document.createElement("div");
+  hint.className = "hint";
+  hint.textContent = `Total filas: ${dataRows.length.toLocaleString("es-DO")} · Categorías detectadas: ${entries.length}`;
+  legend.appendChild(hint);
+
+  parts.forEach((p, i)=>{
+    const col = palette[i % palette.length].c;
+    const row = document.createElement("div");
+    row.className = "lg";
+    row.innerHTML = `
+      <div class="lgLeft"><span class="dot" style="background:${col}"></span> ${escapeHtml(p.key)}</div>
+      <div class="lgVal">${p.val}</div>
+    `;
+    legend.appendChild(row);
+  });
+
+  paintPie3D(svg, parts, String(dataRows.length));
+}
+
+/* ===== TOP MARCAS ===== */
+function isMarcaIndex(colIndex){ return (columns[colIndex] || "").toUpperCase() === "MARCA"; }
+function getMarcaIndex(){ return columns.findIndex(c => (c||"").toUpperCase() === "MARCA"); }
+function isSalesIndex(colIndex){ return (columns[colIndex] || "").startsWith("Ventas_"); }
+function getSalesIndices(){
+  const idx = [];
+  for(let i=0;i<columns.length;i++){
+    if((columns[i]||"").startsWith("Ventas_")) idx.push(i);
+  }
+  return idx;
+}
+
+function parseNumberSmart(v){
+  // soporta "1,234", "1.234", "1,234.56", "1.234,56"
+  if(v == null) return 0;
+  let s = String(v).trim();
+  if(!s) return 0;
+  // quitar espacios y símbolos
+  s = s.replace(/[^\d.,\-]/g, "");
+  if(!s) return 0;
+
+  // si tiene , y . -> decidir separador decimal por la última ocurrencia
+  const lastComma = s.lastIndexOf(",");
+  const lastDot = s.lastIndexOf(".");
+  if(lastComma !== -1 && lastDot !== -1){
+    if(lastComma > lastDot){
+      // decimal es coma
+      s = s.replace(/\./g, "");
+      s = s.replace(/,/g, ".");
+    }else{
+      // decimal es punto
+      s = s.replace(/,/g, "");
+    }
+  }else if(lastComma !== -1 && lastDot === -1){
+    // solo coma: asumir decimal si hay 1-2-3 decimales; si no, miles
+    const parts = s.split(",");
+    if(parts[parts.length-1].length <= 2){
+      s = s.replace(/,/g, ".");
+    }else{
+      s = s.replace(/,/g, "");
+    }
+  }else{
+    // solo punto o ninguno
+    // ok
+  }
+
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function updateTopBrandsChart(){
+  if(!topVisible) return;
+
+  const brandIdx = getMarcaIndex();
+  const salesIdx = getSalesIndices();
+  const legend = document.getElementById("topLegend");
+  const svg = document.getElementById("topPie");
+  const topN = parseInt(document.getElementById("topN").value,10) || 5;
+
+  if(brandIdx < 0){
+    legend.innerHTML = `<div class="hint">No existe la columna “MARCA”.</div>`;
+    svg.innerHTML = "";
+    return;
+  }
+  if(salesIdx.length === 0){
+    legend.innerHTML = `<div class="hint">No existen columnas de “Ventas_…”.</div>`;
+    svg.innerHTML = "";
+    return;
+  }
+
+  // agregar promedio por fila y acumular por marca
+  const agg = new Map(); // marca -> {sum, rows}
+  for(let r=0;r<dataRows.length;r++){
+    const brand = (getCellData(r, brandIdx) || "").trim();
+    if(!brand) continue;
+
+    let sum = 0;
+    let count = 0;
+    for(const si of salesIdx){
+      const n = parseNumberSmart(getCellData(r, si));
+      // si está vacío, lo ignoramos (no lo contamos)
+      if(n !== 0 || String(getCellData(r, si)).trim() !== ""){
+        sum += n;
+        count++;
+      }
+    }
+    if(count === 0) continue;
+    const avg = sum / count;
+
+    const key = brand.toUpperCase();
+    const prev = agg.get(key) || {label: brand, sum:0};
+    prev.sum += avg;
+    // conservar label “bonito” (la primera vez)
+    if(!prev.label) prev.label = brand;
+    agg.set(key, prev);
+  }
+
+  const list = [...agg.values()].sort((a,b)=>b.sum-a.sum);
+
+  if(list.length === 0){
+    legend.innerHTML = `<div class="hint">No hay datos suficientes (MARCA + Ventas).</div>`;
+    svg.innerHTML = "";
+    return;
+  }
+
+  const top = list.slice(0, topN);
+  const others = list.slice(topN);
+  let parts = top.map(x=>({key: x.label, val: x.sum}));
+  if(others.length){
+    const rest = others.reduce((s,x)=>s+x.sum,0);
+    parts.push({key:"OTROS", val: rest});
+  }
+
+  legend.innerHTML = "";
+  const hint = document.createElement("div");
+  hint.className = "hint";
+  hint.textContent = `Top ${Math.min(topN, list.length)} por promedio de ventas (${salesMode === "YEAR" ? "Año" : "Mes"}) · Marcas detectadas: ${list.length}`;
+  legend.appendChild(hint);
+
+  parts.forEach((p, i)=>{
+    const col = palette[i % palette.length].c;
+    const row = document.createElement("div");
+    row.className = "lg";
+    row.innerHTML = `
+      <div class="lgLeft"><span class="dot" style="background:${col}"></span> ${escapeHtml(p.key)}</div>
+      <div class="lgVal">${formatCompact(p.val)}</div>
+    `;
+    legend.appendChild(row);
+  });
+
+  paintPie3D(svg, parts, "TOP");
+}
+
+function formatCompact(n){
+  // formato compacto para valores grandes
+  const v = Number(n) || 0;
+  if(v >= 1_000_000) return (v/1_000_000).toFixed(2) + "M";
+  if(v >= 1_000) return (v/1_000).toFixed(2) + "K";
+  return v.toFixed(2);
+}
+
+/* ================= TOGGLES CHARTS ================= */
+function toggleABC(){
+  abcVisible = !abcVisible;
+  document.getElementById("abcWrap").style.display = abcVisible ? "flex" : "none";
+  document.getElementById("btnToggleABC").textContent = abcVisible ? "Ocultar" : "Mostrar";
+  if(abcVisible) updateABCChart();
+}
+function toggleTOP(){
+  topVisible = !topVisible;
+  document.getElementById("topWrap").style.display = topVisible ? "flex" : "none";
+  document.getElementById("btnToggleTOP").textContent = topVisible ? "Ocultar" : "Mostrar";
+  if(topVisible) updateTopBrandsChart();
+}
+
 /* ================= INIT ================= */
 (function init(){
   const now = new Date();
@@ -1540,7 +1816,10 @@ function describeArc(cx, cy, r, startAngle, endAngle){
   applyFilters();
   recalcVirtual();
   scheduleRender();
+
+  // charts
   updateABCChart();
+  updateTopBrandsChart();
 
   tableScroll.addEventListener("scroll", ()=> scheduleRender());
   window.addEventListener("resize", ()=> scheduleRender());
