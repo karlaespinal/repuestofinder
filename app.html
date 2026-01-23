@@ -24,11 +24,8 @@
     .ok{display:inline-flex;align-items:center;gap:8px;font-size:13px}
     .dot{width:10px;height:10px;border-radius:50%;background:#10b981;display:inline-block}
     table{width:100%;border-collapse:collapse;margin-top:10px}
-    th,td{border-bottom:1px solid #eef0f6;padding:10px;text-align:left;font-size:13px;vertical-align:top}
-    th{background:#fafbff}
-    .pill{background:#f3f4f6;border-radius:999px;padding:4px 10px;font-size:12px}
-    a{color:#2563eb;text-decoration:none}
-    a:hover{text-decoration:underline}
+    th,td{border-bottom:1px solid #eef0f6;padding:10px;text-align:left;font-size:13px;vertical-align:top;white-space:nowrap}
+    th{background:#fafbff;position:sticky;top:0;z-index:1}
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     @media(max-width:900px){.grid2{grid-template-columns:1fr}}
     .searchBox{max-width:420px}
@@ -48,6 +45,7 @@
     .accBody{margin-top:10px;}
     .chev{width:18px;height:18px;transition:transform .18s ease;opacity:.8;flex:0 0 auto;}
     .accRight{display:flex;align-items:center;gap:10px;}
+    .tableWrap{overflow:auto;border-radius:12px;border:1px solid #eef0f6}
 
     @media(max-width:1024px){
       .topbar{flex-direction:column;align-items:flex-start}
@@ -176,7 +174,6 @@
 
   const SUPABASE_URL = "https://pjkbipdjxxxzjiuyfkaq.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_G7uvRyHNLSew2HKJY_h6ag_M2NZDYx4";
-
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let lastPayload = null;
@@ -240,7 +237,7 @@
     const headers = tableObj.headers;
     const rows = tableObj.rows;
 
-    let html = '<table><thead><tr>';
+    let html = '<div class="tableWrap"><table><thead><tr>';
     for(const h of headers) html += '<th>' + escapeHtml_(h) + '</th>';
     html += '</tr></thead><tbody>';
 
@@ -253,7 +250,7 @@
       html += '</tr>';
     }
 
-    html += '</tbody></table>';
+    html += '</tbody></table></div>';
     wrap.innerHTML = html;
   }
 
@@ -268,7 +265,6 @@
     return lines.join("\n");
   }
 
-  // Normalizacion tolerante a signos: "8-777-25" -> "877725"
   function normalizeCode_(s){
     return String(s||"")
       .trim()
@@ -293,13 +289,7 @@
     return "https://www.google.com/search?q=" + encodeURIComponent(code);
   }
 
-  // === LOGICA DOBLE VIA ===
-  // 1) resuelve original_norms con cambios (si code es original o cambio)
-  // 2) trae vehicles por original_norms
-  // 3) trae cambios por original_norms
   async function resolveOriginals_(codeNorm){
-    // Si el usuario escribe ORIGINAL o CAMBIO, aquí resolvemos original_norm(s)
-    // - original_norm == codeNorm  OR  cambio_norm == codeNorm
     const { data, error } = await supabase
       .from("cambios")
       .select("original_norm")
@@ -309,16 +299,14 @@
     if(error) throw error;
 
     const originals = unique_((data || []).map(x => x.original_norm).filter(Boolean));
-    // Si no aparece en cambios, igual devolvemos el codeNorm como posible original (para buscar vehículos directo)
     if(originals.length === 0) return [codeNorm];
     return originals;
   }
 
   async function fetchCambiosByOriginals_(originalNorms){
-    // Trae la tabla de cambios ya ordenada: posicion asc, cambio asc
     const { data, error } = await supabase
       .from("cambios")
-      .select("cambio, owner, posicion, original_norm")
+      .select("cambio, owner, posicion")
       .in("original_norm", originalNorms)
       .order("posicion", { ascending: true, nullsFirst: false })
       .order("cambio", { ascending: true });
@@ -330,32 +318,53 @@
       r.owner || ""
     ]));
 
-    return {
-      headers: ["cambio", "owner"],
-      rows
-    };
+    return { headers: ["cambio", "owner"], rows };
   }
 
+  // ✅ AQUI ESTA EL CAMBIO CLAVE:
+  // Traer TODOS los campos de datos_vehiculares y renderizarlos dinámicamente
   async function fetchVehiclesByOriginals_(originalNorms){
     const { data, error } = await supabase
       .from("datos_vehiculares")
-      .select("original, original_norm, vehiculo, modelo, motor")
+      .select("*")
       .in("original_norm", originalNorms)
       .limit(5000);
 
     if(error) throw error;
 
-    const rows = (data || []).map(r => ([
-      r.original || "",
-      r.vehiculo || "",
-      r.modelo || "",
-      r.motor || ""
-    ]));
+    const rowsData = data || [];
+    if(rowsData.length === 0){
+      return { headers: [], rows: [] };
+    }
 
-    return {
-      headers: ["original", "vehiculo", "modelo", "motor"],
-      rows
-    };
+    // Orden recomendado de columnas (las que quieres ver primero)
+    const preferred = [
+      "original",
+      "vehiculo",
+      "modelo",
+      "motor",
+      "serie",
+      "anio_inicio",
+      "anio_final",
+      "cilindro",
+      "posicion",
+      "version",
+      "comercializacion",
+      "notas",
+      "original_norm"
+    ];
+
+    // Headers dinámicos: primero preferred que existan, luego el resto
+    const allKeys = Object.keys(rowsData[0] || {});
+    const preferredExisting = preferred.filter(k => allKeys.includes(k));
+    const rest = allKeys.filter(k => !preferredExisting.includes(k));
+
+    // Si no quieres que salga "id" puedes excluirlo aquí:
+    const headers = [...preferredExisting, ...rest].filter(k => k !== "id");
+
+    const rows = rowsData.map(obj => headers.map(h => (obj[h] ?? "")));
+
+    return { headers, rows };
   }
 
   window.limpiar = function(){
@@ -386,13 +395,10 @@
 
     setStatus("Buscando...");
     try{
-      // Tomamos el primer candidato como "codigo mostrado" pero el norm manda
       const codigoMostrado = candidates[0] || raw;
 
-      // 1) resolver originales
       const originalNorms = await resolveOriginals_(norm);
 
-      // 2) traer datos
       const [veh, camb] = await Promise.all([
         fetchVehiclesByOriginals_(originalNorms),
         fetchCambiosByOriginals_(originalNorms),
@@ -443,12 +449,8 @@
       "Vehicles: " + (hasVeh ? vehicles.rows.length : 0) +
       " | Cambios: " + (hasCamb ? cambios.rows.length : 0);
 
-    // Nota interna (no molesta al usuario)
-    const origs = (payload.original_norms || []).slice(0, 4).join(", ");
-    document.getElementById("notes").textContent =
-      (payload.original_norms && payload.original_norms.length > 0)
-        ? ("Original(es): " + origs + (payload.original_norms.length > 4 ? " ..." : ""))
-        : "";
+    // Puedes quitar esto si no quieres mostrar nada adicional:
+    document.getElementById("notes").textContent = "";
 
     document.getElementById("btnExport").disabled = !(hasVeh || hasCamb);
 
@@ -506,7 +508,6 @@
     a.remove();
   };
 
-  // === INIT ===
   await initAuth_();
   supabase.auth.onAuthStateChange((event, session) => {
     if (!session) window.location.href = "/?stay=1";
@@ -514,8 +515,6 @@
 </script>
 </body>
 </html>
-
-
 
 
 
