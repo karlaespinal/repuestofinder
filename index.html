@@ -808,8 +808,10 @@
 
     const DEMO_MAX = 10;
     const KEY = "rf_demo_attempts_left";
+    const PROMO_SHOWN_KEY = "rf_promo_shown"; // 👈 AQUÍ
 
     const $ = (id)=>document.getElementById(id);
+
 
     function setMsg(el, text, isErr){
       if(!el) return;
@@ -1420,7 +1422,10 @@
       await initCarousels();
 
       // promos
-      await initPromotions();
+      if (!sessionStorage.getItem(PROMO_SHOWN_KEY)) {
+        await initPromotions();
+        sessionStorage.setItem(PROMO_SHOWN_KEY, "1");
+      }
     }
 
     init();
