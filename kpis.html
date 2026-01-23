@@ -7,23 +7,22 @@
 
 <style>
   :root{
-    --bg:#f6f7fb;
     --card:rgba(255,255,255,.94);
     --line:rgba(230,232,240,.95);
     --txt:#0f172a;
     --mut:#64748b;
     --pri:#2563eb;
     --pri2:#1d4ed8;
-    --shadow:0 16px 40px rgba(2,6,23,.10);
 
-    /* CONTROL DE TAMAÑO (slider) */
+    /* CONTROL DE TAMAÑO */
     --grid-font: 13px;
     --cell-pad-y: 7px;
     --cell-pad-x: 10px;
     --cell-minh: 30px;
 
-    --rowcol-w: 56px; /* ancho columna # */
+    --rowcol-w: 56px;
   }
+
   *{box-sizing:border-box}
   body{
     margin:0;
@@ -115,19 +114,49 @@
     font-size:12px; color:#94a3b8; font-weight:900;
     letter-spacing:.4px; text-transform:uppercase;
   }
-  .placeholderChart{
+
+  .abcWrap{
+    display:flex;
+    gap:16px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .abcCard{
     border:1px dashed rgba(100,116,139,.45);
     border-radius:18px;
-    padding:18px;
+    padding:12px;
     background:rgba(255,255,255,.72);
-    color:#334155;
-    font-weight:900;
-    min-height:130px;
+    flex: 1;
+    min-width: 320px;
     display:flex;
     align-items:center;
     justify-content:center;
-    text-align:center;
   }
+  .abcLegend{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    min-width: 180px;
+    flex: 0;
+  }
+  .lg{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:8px 10px;
+    border-radius:14px;
+    border:1px solid rgba(230,232,240,.9);
+    background:#fff;
+    font-weight:900;
+  }
+  .dot{
+    width:12px;height:12px;border-radius:4px;
+    display:inline-block;
+    margin-right:8px;
+  }
+  .lgLeft{display:flex;align-items:center;gap:8px}
+  .lgVal{color:#1d4ed8}
 
   /* ACTION BAR */
   .actionBar{
@@ -234,24 +263,22 @@
     background:rgba(255,255,255,.72);
   }
 
-  /* Toggle de “Fijar encabezados” */
+  /* Freeze toggle */
   .freezeOff .colHeader{ position:static !important; }
   .freezeOff .col.rowcol{ position:static !important; left:auto !important; box-shadow:none !important; }
 
-  /* GRID: flex (ancho ajustable por columna) */
+  /* GRID */
   .grid{
     display:flex;
     align-items:flex-start;
     min-width:max-content;
   }
-
   .col{
     border-right:1px solid rgba(230,232,240,.9);
     background:transparent;
-    width:170px; /* default */
+    width:170px;
   }
 
-  /* Columna # sticky */
   .col.rowcol{
     width: var(--rowcol-w);
     position:sticky;
@@ -289,18 +316,6 @@
   }
   .hdrText[contenteditable="true"]{ cursor:text; }
 
-  .hdrLock{
-    font-size:12px;
-    color:#64748b;
-    font-weight:900;
-    padding:2px 6px;
-    border-radius:10px;
-    border:1px solid rgba(100,116,139,.20);
-    background:rgba(255,255,255,.75);
-    user-select:none;
-  }
-
-  /* Handle resize */
   .resizer{
     width:10px;
     align-self:stretch;
@@ -340,7 +355,6 @@
     box-shadow: inset 0 0 0 2px rgba(37,99,235,.15);
   }
 
-  /* Centrar ventas modo MES */
   .salesCentered .colHeader{ text-align:center; justify-content:center; }
   .salesCentered .hdrText{ text-align:center; }
   .salesCentered .cell{ justify-content:center; text-align:center; }
@@ -359,7 +373,6 @@
   }
   .rowcol .cell.rowSel:hover{ background:#eef2ff; }
 
-  /* Filas ocultas por filtros */
   .rowHidden{ display:none !important; }
 
   .footer{
@@ -499,12 +512,29 @@
   </div>
 
   <div class="topGrid">
+    <!-- ✅ RENOMBRADO -->
     <div class="section">
       <div class="sectionTitle">
-        <h2>Reporte de Busquedas</h2>
-        <span>placeholder</span>
+        <h2>CLASIFICACION ABC</h2>
+        <span>dinamico</span>
       </div>
-      <div class="placeholderChart">Aqui ira un grafico (por fecha / marca / modelo) y filtros.</div>
+
+      <div class="abcWrap">
+        <div class="abcCard">
+          <!-- Pie 3D (SVG) -->
+          <svg id="abcPie" width="280" height="170" viewBox="0 0 280 170" aria-label="Clasificacion ABC">
+            <!-- se pinta con JS -->
+          </svg>
+        </div>
+
+        <div class="abcLegend">
+          <div class="lg"><div class="lgLeft"><span class="dot" style="background:#22c55e"></span> A</div> <div class="lgVal" id="cntA">0</div></div>
+          <div class="lg"><div class="lgLeft"><span class="dot" style="background:#f59e0b"></span> B</div> <div class="lgVal" id="cntB">0</div></div>
+          <div class="lg"><div class="lgLeft"><span class="dot" style="background:#ef4444"></span> C</div> <div class="lgVal" id="cntC">0</div></div>
+          <div class="lg"><div class="lgLeft"><span class="dot" style="background:#64748b"></span> S/CLASF</div> <div class="lgVal" id="cntS">0</div></div>
+          <div class="hint" id="abcHint">Pega/edita datos en “CATEGORIA ABC” para ver el grafico.</div>
+        </div>
+      </div>
     </div>
 
     <div class="section">
@@ -512,18 +542,16 @@
         <h2>Top Marcas y Repuestos</h2>
         <span>placeholder</span>
       </div>
-      <div class="placeholderChart">Aqui ira una tabla ranking + comparativas.</div>
+      <div class="abcCard" style="min-height:130px">
+        Aquí irá ranking + comparativas.
+      </div>
     </div>
   </div>
 
   <div class="actionBar">
     <div class="actionLeft">
       <button id="btnSalesMode" class="btn btnSoft" onclick="toggleSalesMode()">📌 Ventas: Por AÑO</button>
-
-      <!-- ✅ BOTÓN 2: FILTROS -->
       <button id="btnFilters" class="btn btnGhost" onclick="openFilters()">Filtros</button>
-
-      <!-- ✅ BOTÓN 3: FIJAR -->
       <button id="btnFreeze" class="btn btnGhost" onclick="toggleFreeze()">Fijar: ON</button>
 
       <button class="btn btnGhost" onclick="alert('Proximo: guardar configuracion de columnas por usuario')">Boton 4</button>
@@ -560,7 +588,7 @@
       <div>
         <b>Tabla dinámica (tipo Excel)</b>
         <div class="mutedNote">
-          Arrastra headers para mover columnas · Arrastra borde del header para ajustar ancho · Click header selecciona columna · Click # selecciona fila · Delete elimina (si no está protegida).
+          Pegado crea filas automáticamente · Mover columnas · Ajustar ancho · Delete elimina (si no está protegida).
         </div>
       </div>
 
@@ -601,7 +629,7 @@
       <div class="row" style="margin-top:6px;">
         <button class="btn btnPrimary" onclick="addFilter()">Aplicar filtro</button>
         <button class="btn btnGhost" onclick="clearFilters()">Limpiar filtros</button>
-        <span class="hint">Tip: puedes agregar varios filtros (AND). Click en un chip para removerlo.</span>
+        <span class="hint">Puedes agregar varios filtros (AND). Click en un chip para removerlo.</span>
       </div>
     </div>
 
@@ -621,7 +649,7 @@ const tableScroll = document.getElementById("tableScroll");
 
 /* ========= COLUMNAS BASE ========= */
 const baseBeforeSales = [
-  "CODIGO 1","CODIGO 2","CODIGO 3","DESCRIPCION","DEPARTAMENTO","MARCA","STOCK DISPONIBLE","CATEGORIA POR DEMANDA"
+  "CODIGO 1","CODIGO 2","CODIGO 3","DESCRIPCION","DEPARTAMENTO","MARCA","STOCK DISPONIBLE","CATEGORIA ABC"
 ];
 const baseAfterSales = [
   "PENDIENTE DE DESPACHO","FECHA PREVS. DE LLEGADA","TRANSITO","MESES SIN VENTAS","EFECTIVIDAD DE VENTA","ULTIMO MES DE VENTA",
@@ -652,11 +680,9 @@ function salesColsMonth(){
   return cols;
 }
 
-/* ========= PROTECCIÓN DE COLUMNAS ========= */
+/* ========= PROTECCIÓN DE COLUMNAS (sin iconos feos) ========= */
 function isProtectedColumnName(name){
   const n = (name || "").trim();
-
-  // todas las ventas
   if(n.startsWith("Ventas_")) return true;
 
   const protectedSet = new Set([
@@ -667,31 +693,490 @@ function isProtectedColumnName(name){
     "MULTIPLO DE COMPRA",
     "LEAD TIME (DIAS)",
     "STOCK DISPONIBLE",
-    "MESES DE INVENTARIO"
+    "MESES DE INVENTARIO",
+    "CATEGORIA ABC"
   ]);
 
   return protectedSet.has(n.toUpperCase());
 }
-
-function isProtectedIndex(idx){
-  const name = columns[idx];
-  return isProtectedColumnName(name);
-}
+function isProtectedIndex(idx){ return isProtectedColumnName(columns[idx]); }
 
 /* ========= ESTADO ========= */
-let salesMode = "YEAR";           // YEAR | MONTH
-let columns = [];                 // nombres
-let colWidths = {};               // index -> px
-const rows = 22;
-
-let selectedCol = null;           // índice de columna (sin contar la #)
-let selectedRow = null;           // row index (0..rows-1)
-let activeCell = null;            // referencia celda activa
-
+let salesMode = "YEAR";
+let columns = [];
+let colWidths = {};
 let freezeOn = true;
 
+let selectedCol = null;
+let selectedRow = null;
+let activeCell = null;
+
+/* ✅ Modelo de datos para filas dinámicas */
+let dataRows = []; // Array< Array<string> >
+let activeFilters = [];
+
+/* ========= HELPERS DATA ========= */
+function ensureRowCount(n){
+  while(dataRows.length < n){
+    const row = new Array(columns.length).fill("");
+    dataRows.push(row);
+  }
+}
+function ensureColCount(n){
+  // Ajusta cada fila al nuevo número de columnas
+  dataRows = dataRows.map(r=>{
+    const nr = r.slice(0, n);
+    while(nr.length < n) nr.push("");
+    return nr;
+  });
+}
+function getCellData(r,c){
+  if(!dataRows[r] || dataRows[r][c] == null) return "";
+  return String(dataRows[r][c] ?? "");
+}
+function setCellData(r,c,val){
+  ensureRowCount(r+1);
+  ensureColCount(columns.length);
+  dataRows[r][c] = val;
+}
+
+/* ========= BUILD ========= */
+function buildColumns(){
+  const sales = (salesMode === "YEAR") ? salesColsYear() : salesColsMonth();
+  columns = [...baseBeforeSales, ...sales, ...baseAfterSales];
+
+  columns.forEach((_, i)=>{ if(!colWidths[i]) colWidths[i] = 170; });
+
+  // Ajusta data al nuevo (re)build
+  ensureColCount(columns.length);
+
+  // si no hay datos, crea una base inicial de 22 filas
+  if(dataRows.length === 0){
+    ensureRowCount(22);
+  }
+}
+
+/* ========= RENDER ========= */
+function render(){
+  grid.innerHTML = "";
+
+  // Columna #
+  const rowCol = document.createElement("div");
+  rowCol.className = "col rowcol";
+  const rowHdr = document.createElement("div");
+  rowHdr.className = "colHeader";
+  rowHdr.innerHTML = `<span class="hdrText">#</span>`;
+  rowCol.appendChild(rowHdr);
+
+  for(let r=0;r<dataRows.length;r++){
+    const c = document.createElement("div");
+    c.className = "cell rowSel";
+    c.textContent = (r+1);
+    c.dataset.row = r;
+    c.addEventListener("click", ()=> selectRow(r));
+    rowCol.appendChild(c);
+  }
+  grid.appendChild(rowCol);
+
+  // Columnas normales
+  columns.forEach((name, index)=>{
+    const col = document.createElement("div");
+    col.className = "col";
+    col.style.width = (colWidths[index] || 170) + "px";
+
+    const isSales = name.startsWith("Ventas_");
+    if(salesMode === "MONTH" && isSales){
+      col.classList.add("salesCentered");
+    }
+
+    col.addEventListener("click", (e)=>{
+      const headerEl = e.target.closest(".colHeader");
+      if(headerEl){
+        if(e.target.classList.contains("resizer")) return;
+        selectCol(index);
+      }
+    });
+
+    // DnD reorder
+    col.draggable = true;
+    col.addEventListener("dragstart", e=>{
+      e.dataTransfer.setData("col", index);
+    });
+    col.addEventListener("dragover", e=>e.preventDefault());
+    col.addEventListener("drop", e=>{
+      const from = parseInt(e.dataTransfer.getData("col"),10);
+      const to = index;
+      if(isNaN(from) || isNaN(to)) return;
+
+      // swap columns names
+      [columns[from], columns[to]] = [columns[to], columns[from]];
+      // swap widths
+      [colWidths[from], colWidths[to]] = [colWidths[to], colWidths[from]];
+
+      // swap data by column
+      dataRows = dataRows.map(row=>{
+        const nr = row.slice();
+        [nr[from], nr[to]] = [nr[to], nr[from]];
+        return nr;
+      });
+
+      if(selectedCol === from) selectedCol = to;
+      else if(selectedCol === to) selectedCol = from;
+
+      render();
+      applyFilters();
+      updateMatchInfo();
+      updateABCChart();
+    });
+
+    // Header + resizer
+    const header = document.createElement("div");
+    header.className = "colHeader";
+
+    const hdrText = document.createElement("span");
+    hdrText.className = "hdrText";
+    hdrText.textContent = name;
+
+    const protectedCol = isProtectedColumnName(name);
+    hdrText.contentEditable = !protectedCol;
+
+    hdrText.addEventListener("blur", ()=>{
+      if(isProtectedIndex(index)) { hdrText.textContent = columns[index]; return; }
+      const t = hdrText.textContent.trim();
+      columns[index] = t || columns[index];
+      rebuildFilterColumnOptions();
+      updateABCChart();
+    });
+
+    const resizer = document.createElement("span");
+    resizer.className = "resizer";
+    resizer.title = "Arrastra para ajustar ancho";
+    resizer.addEventListener("mousedown", (e)=>{ e.preventDefault(); });
+
+    resizer.addEventListener("mousedown", (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      const startX = e.clientX;
+      const startW = col.getBoundingClientRect().width;
+
+      const onMove = (ev)=>{
+        const dx = ev.clientX - startX;
+        const nw = Math.max(90, Math.round(startW + dx));
+        col.style.width = nw + "px";
+        colWidths[index] = nw;
+      };
+      const onUp = ()=>{
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+      };
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    });
+
+    header.appendChild(hdrText);
+    header.appendChild(resizer);
+    col.appendChild(header);
+
+    // Cells
+    for(let r=0;r<dataRows.length;r++){
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.contentEditable = true;
+      cell.dataset.col = index;
+      cell.dataset.row = r;
+      cell.textContent = getCellData(r, index);
+
+      cell.addEventListener("focus", ()=>{
+        activeCell = cell;
+        selectedCol = null;
+        selectedRow = null;
+        paintSelection();
+      });
+      cell.addEventListener("click", ()=>{ activeCell = cell; });
+
+      // guardar data al escribir
+      cell.addEventListener("input", ()=>{
+        setCellData(r, index, cell.textContent);
+        applyFilters();
+        updateMatchInfo();
+        // si es categoria abc, refresca grafico
+        if(isCategoriaABCIndex(index)) updateABCChart();
+      });
+
+      if(salesMode === "MONTH" && isSales){
+        cell.style.justifyContent = "center";
+        cell.style.textAlign = "center";
+      }
+
+      col.appendChild(cell);
+    }
+
+    grid.appendChild(col);
+  });
+
+  paintSelection();
+}
+
+/* ========= SELECCIÓN ========= */
+function paintSelection(){
+  [...grid.querySelectorAll(".col")].forEach(c=>c.classList.remove("colSelected"));
+  [...grid.querySelectorAll(".cell")].forEach(c=>c.classList.remove("rowSelected"));
+
+  if(selectedCol !== null){
+    const colEl = grid.children[selectedCol + 1];
+    if(colEl) colEl.classList.add("colSelected");
+  }
+  if(selectedRow !== null){
+    for(let i=0;i<grid.children.length;i++){
+      const colEl = grid.children[i];
+      const cell = colEl?.children[selectedRow + 1];
+      if(cell) cell.classList.add("rowSelected");
+    }
+  }
+}
+function selectCol(idx){
+  selectedCol = idx;
+  selectedRow = null;
+  activeCell = null;
+  paintSelection();
+}
+function selectRow(r){
+  selectedRow = r;
+  selectedCol = null;
+  activeCell = null;
+  paintSelection();
+}
+
+/* ========= PEGADO DESDE EXCEL (✅ filas dinámicas) ========= */
+grid.addEventListener("paste", (e)=>{
+  e.preventDefault();
+  const text = e.clipboardData.getData("text");
+  const matrix = text.split(/\r?\n/).filter(x=>x.length>0).map(r=>r.split("\t"));
+
+  let startCol = 0;
+  let startRow = 0;
+
+  if(activeCell && activeCell.classList.contains("cell")){
+    startCol = parseInt(activeCell.dataset.col,10) || 0;
+    startRow = parseInt(activeCell.dataset.row,10) || 0;
+  }
+
+  // ✅ expande filas según lo pegado
+  const neededRows = startRow + matrix.length;
+  ensureRowCount(neededRows);
+
+  matrix.forEach((rowArr, rIdx)=>{
+    rowArr.forEach((val, cIdx)=>{
+      const colIndex = startCol + cIdx;
+      const rowIndex = startRow + rIdx;
+      if(colIndex >= columns.length) return;
+
+      setCellData(rowIndex, colIndex, val);
+
+      // si existe la celda ya pintada, actualiza en DOM
+      const col = grid.children[colIndex + 1];
+      if(col){
+        const cell = col.children[rowIndex + 1];
+        if(cell) cell.textContent = val;
+      }
+    });
+  });
+
+  // si se expandió, toca re-render para crear nuevas celdas
+  if(neededRows > (grid.children[0]?.children.length - 1)){
+    render();
+  }
+
+  applyFilters();
+  updateMatchInfo();
+  updateABCChart();
+});
+
+/* ========= DELETE KEY ========= */
+document.addEventListener("keydown", (e)=>{
+  if(e.key !== "Delete") return;
+
+  // eliminar columna (si no protegida)
+  if(selectedCol !== null){
+    if(isProtectedIndex(selectedCol)){
+      alert("Esta columna está protegida y no se puede eliminar.");
+      return;
+    }
+    deleteColumn(selectedCol);
+    return;
+  }
+
+  // vaciar fila
+  if(selectedRow !== null){
+    deleteRow(selectedRow);
+    return;
+  }
+
+  // borrar celda activa
+  if(activeCell && activeCell.classList.contains("cell")){
+    const r = parseInt(activeCell.dataset.row,10);
+    const c = parseInt(activeCell.dataset.col,10);
+    setCellData(r,c,"");
+    activeCell.textContent = "";
+    applyFilters();
+    updateMatchInfo();
+    if(isCategoriaABCIndex(c)) updateABCChart();
+  }
+});
+
+function deleteColumn(idx){
+  columns.splice(idx, 1);
+
+  // widths
+  const newW = {};
+  columns.forEach((_, i)=>{ newW[i] = colWidths[i] || 170; });
+  colWidths = newW;
+
+  // data: remove column idx
+  dataRows = dataRows.map(r=>{
+    const nr = r.slice();
+    nr.splice(idx,1);
+    return nr;
+  });
+
+  selectedCol = null;
+  render();
+  applyFilters();
+  rebuildFilterColumnOptions();
+  renderFilterChips();
+  updateMatchInfo();
+  updateABCChart();
+}
+
+function deleteRow(r){
+  // vaciar data de la fila
+  if(dataRows[r]){
+    dataRows[r] = new Array(columns.length).fill("");
+  }
+  render();
+  selectedRow = null;
+  applyFilters();
+  updateMatchInfo();
+  updateABCChart();
+}
+
+/* ========= ACCIONES ========= */
+function addColumn(){
+  columns.push("NUEVA COLUMNA");
+  colWidths[columns.length - 1] = 170;
+  ensureColCount(columns.length);
+  render();
+  rebuildFilterColumnOptions();
+  applyFilters();
+  updateMatchInfo();
+}
+
+function clearTable(){
+  dataRows = dataRows.map(()=> new Array(columns.length).fill(""));
+  render();
+  applyFilters();
+  updateMatchInfo();
+  updateABCChart();
+}
+
+/* ========= VENTAS MODE ========= */
+function toggleSalesMode(){
+  salesMode = (salesMode === "YEAR") ? "MONTH" : "YEAR";
+
+  document.getElementById("salesModeLabel").textContent = (salesMode === "YEAR") ? "AÑO" : "MES";
+  document.getElementById("btnSalesMode").textContent = (salesMode === "YEAR") ? "📌 Ventas: Por AÑO" : "📌 Ventas: Por MES";
+  document.getElementById("monthControls").style.display = (salesMode === "MONTH") ? "inline-flex" : "none";
+
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
+  const sm = document.getElementById("startMonth");
+  if(sm && !sm.value) sm.value = ym;
+
+  buildColumns();
+  render();
+
+  rebuildFilterColumnOptions();
+  applyFilters();
+  updateMatchInfo();
+  updateABCChart();
+}
+
+function applyMonthMode(){
+  if(salesMode !== "MONTH") return;
+  buildColumns();
+  render();
+  rebuildFilterColumnOptions();
+  applyFilters();
+  updateMatchInfo();
+  updateABCChart();
+}
+
+/* ========= SLIDER ========= */
+function applySize(percent){
+  const p = parseInt(percent, 10) || 100;
+  document.getElementById("sizeVal").textContent = p + "%";
+  const scale = p / 100;
+
+  const font = Math.round(13 * scale);
+  const padY = Math.round(7 * scale);
+  const padX = Math.round(10 * Math.min(scale, 1.2));
+  const minH = Math.round(30 * scale);
+
+  document.documentElement.style.setProperty("--grid-font", font + "px");
+  document.documentElement.style.setProperty("--cell-pad-y", padY + "px");
+  document.documentElement.style.setProperty("--cell-pad-x", padX + "px");
+  document.documentElement.style.setProperty("--cell-minh", minH + "px");
+}
+
+/* ========= FORMATO ========= */
+function applyAlign(where){
+  if(selectedCol !== null){
+    const colEl = grid.children[selectedCol + 1];
+    if(!colEl) return;
+    const header = colEl.querySelector(".colHeader");
+    const hdrText = colEl.querySelector(".hdrText");
+    if(hdrText) hdrText.style.textAlign = where;
+    if(header) header.style.justifyContent = (where === "left") ? "space-between" : "center";
+
+    const cells = [...colEl.querySelectorAll(".cell")];
+    cells.forEach(cell=>{
+      cell.style.textAlign = where;
+      cell.style.justifyContent = (where === "left") ? "flex-start" : (where === "center" ? "center" : "flex-end");
+    });
+    return;
+  }
+
+  if(selectedRow !== null){
+    for(let c=0;c<columns.length;c++){
+      const colEl = grid.children[c + 1];
+      const cell = colEl?.children[selectedRow + 1];
+      if(cell){
+        cell.style.textAlign = where;
+        cell.style.justifyContent = (where === "left") ? "flex-start" : (where === "center" ? "center" : "flex-end");
+      }
+    }
+    return;
+  }
+
+  if(activeCell){
+    activeCell.style.textAlign = where;
+    activeCell.style.justifyContent = (where === "left") ? "flex-start" : (where === "center" ? "center" : "flex-end");
+  }
+}
+
+/* ========= FREEZE ========= */
+function toggleFreeze(){
+  freezeOn = !freezeOn;
+  if(freezeOn){
+    tableScroll.classList.remove("freezeOff");
+    document.getElementById("btnFreeze").textContent = "Fijar: ON";
+  }else{
+    tableScroll.classList.add("freezeOff");
+    document.getElementById("btnFreeze").textContent = "Fijar: OFF";
+  }
+}
+
 /* ========= FILTROS ========= */
-let activeFilters = []; // { colIndex, value }
 function openFilters(){
   rebuildFilterColumnOptions();
   document.getElementById("filterModal").style.display = "flex";
@@ -699,9 +1184,8 @@ function openFilters(){
   renderFilterChips();
   updateMatchInfo();
 }
-function closeFilters(){
-  document.getElementById("filterModal").style.display = "none";
-}
+function closeFilters(){ document.getElementById("filterModal").style.display = "none"; }
+
 function rebuildFilterColumnOptions(){
   const sel = document.getElementById("filterCol");
   sel.innerHTML = "";
@@ -712,8 +1196,7 @@ function rebuildFilterColumnOptions(){
     sel.appendChild(opt);
   });
 
-  // default: CODIGO 1 si existe
-  const defaultIdx = columns.findIndex(x => (x || "").toUpperCase() === "CODIGO 1");
+  const defaultIdx = columns.findIndex(x => (x||"").toUpperCase() === "CODIGO 1");
   if(defaultIdx >= 0) sel.value = String(defaultIdx);
 }
 function addFilter(){
@@ -750,7 +1233,7 @@ function renderFilterChips(){
     const colName = columns[f.colIndex] || ("Col " + (f.colIndex+1));
     const chip = document.createElement("div");
     chip.className = "chipF";
-    chip.innerHTML = `<small>${colName}:</small> <span>${escapeHtml(f.value)}</span> <b>✕</b>`;
+    chip.innerHTML = `<small>${escapeHtml(colName)}:</small> <span>${escapeHtml(f.value)}</span> <b>✕</b>`;
     chip.onclick = ()=> removeFilter(i);
     wrap.appendChild(chip);
   });
@@ -764,37 +1247,21 @@ function escapeHtml(str){
     .replaceAll("'","&#039;");
 }
 
-function getCellText(colIndex, rowIndex){
-  const colEl = grid.children[colIndex + 1]; // +1 por columna #
-  if(!colEl) return "";
-  const cell = colEl.children[rowIndex + 1]; // +1 por header
-  if(!cell) return "";
-  return (cell.textContent || "").trim();
-}
-
 function applyFilters(){
-  // si no hay filtros => mostrar todo
   if(activeFilters.length === 0){
-    for(let r=0; r<rows; r++){
-      setRowHidden(r, false);
-    }
+    for(let r=0; r<dataRows.length; r++) setRowHidden(r, false);
     return;
   }
 
-  let matches = 0;
-  for(let r=0; r<rows; r++){
+  for(let r=0; r<dataRows.length; r++){
     const ok = activeFilters.every(f=>{
-      const cellText = getCellText(f.colIndex, r).toLowerCase();
+      const cellText = getCellData(r, f.colIndex).toLowerCase();
       return cellText.includes(String(f.value).toLowerCase());
     });
     setRowHidden(r, !ok);
-    if(ok) matches++;
   }
-  return matches;
 }
-
 function setRowHidden(r, hidden){
-  // columna # (rowcol) está en index 0
   for(let c=0; c<grid.children.length; c++){
     const colEl = grid.children[c];
     const cell = colEl?.children[r + 1];
@@ -803,428 +1270,163 @@ function setRowHidden(r, hidden){
     else cell.classList.remove("rowHidden");
   }
 }
-
 function updateMatchInfo(){
   const info = document.getElementById("matchInfo");
   if(activeFilters.length === 0){
-    info.textContent = `Mostrando ${rows} filas`;
+    info.textContent = `Mostrando ${dataRows.length} filas`;
     return;
   }
   let count = 0;
-  for(let r=0;r<rows;r++){
-    // si la celda # está oculta, row está oculta
+  for(let r=0;r<dataRows.length;r++){
     const rowCell = grid.children[0]?.children[r + 1];
     if(rowCell && !rowCell.classList.contains("rowHidden")) count++;
   }
-  info.textContent = `Coincidencias: ${count} / ${rows}`;
+  info.textContent = `Coincidencias: ${count} / ${dataRows.length}`;
 }
 
-/* ========= BUILD ========= */
-function buildColumns(){
-  const sales = (salesMode === "YEAR") ? salesColsYear() : salesColsMonth();
-  columns = [...baseBeforeSales, ...sales, ...baseAfterSales];
-
-  // widths default
-  columns.forEach((_, i)=>{ if(!colWidths[i]) colWidths[i] = 170; });
+/* ========= ABC CHART ========= */
+function isCategoriaABCIndex(colIndex){
+  return (columns[colIndex] || "").toUpperCase() === "CATEGORIA ABC";
+}
+function getCategoriaABCIndex(){
+  return columns.findIndex(c => (c||"").toUpperCase() === "CATEGORIA ABC");
 }
 
-/* ========= RENDER ========= */
-function render(){
-  grid.innerHTML = "";
-
-  // Columna #
-  const rowCol = document.createElement("div");
-  rowCol.className = "col rowcol";
-  const rowHdr = document.createElement("div");
-  rowHdr.className = "colHeader";
-  rowHdr.innerHTML = `<span class="hdrText">#</span>`;
-  rowCol.appendChild(rowHdr);
-
-  for(let r=0;r<rows;r++){
-    const c = document.createElement("div");
-    c.className = "cell rowSel";
-    c.textContent = (r+1);
-    c.dataset.row = r;
-    c.addEventListener("click", ()=> selectRow(r));
-    rowCol.appendChild(c);
+function updateABCChart(){
+  const idx = getCategoriaABCIndex();
+  if(idx < 0){
+    paintPie3D({A:0,B:0,C:0,S:0});
+    return;
   }
-  grid.appendChild(rowCol);
 
-  // Columnas normales
-  columns.forEach((name, index)=>{
-    const col = document.createElement("div");
-    col.className = "col";
-    col.style.width = (colWidths[index] || 170) + "px";
+  let A=0,B=0,C=0,S=0;
+  for(let r=0;r<dataRows.length;r++){
+    const v = (getCellData(r, idx) || "").trim().toUpperCase();
+    if(v === "A") A++;
+    else if(v === "B") B++;
+    else if(v === "C") C++;
+    else S++; // vacíos o cualquier cosa -> S/CLASF
+  }
 
-    const isSales = name.startsWith("Ventas_");
-    if(salesMode === "MONTH" && isSales){
-      col.classList.add("salesCentered");
-    }
+  document.getElementById("cntA").textContent = A;
+  document.getElementById("cntB").textContent = B;
+  document.getElementById("cntC").textContent = C;
+  document.getElementById("cntS").textContent = S;
 
-    // seleccionar columna
-    col.addEventListener("click", (e)=>{
-      const headerEl = e.target.closest(".colHeader");
-      if(headerEl){
-        // si click en resizer, no seleccionar
-        if(e.target.classList.contains("resizer")) return;
-        selectCol(index);
-      }
-    });
+  paintPie3D({A,B,C,S});
+}
 
-    // DnD reorder
-    col.draggable = true;
-    col.addEventListener("dragstart", e=>{
-      e.dataTransfer.setData("col", index);
-    });
-    col.addEventListener("dragover", e=>e.preventDefault());
-    col.addEventListener("drop", e=>{
-      const from = parseInt(e.dataTransfer.getData("col"),10);
-      const to = index;
-      if(isNaN(from) || isNaN(to)) return;
+function paintPie3D(counts){
+  const svg = document.getElementById("abcPie");
+  if(!svg) return;
 
-      const tmp = columns[from];
-      columns[from] = columns[to];
-      columns[to] = tmp;
+  const total = (counts.A + counts.B + counts.C + counts.S) || 1;
 
-      const w = colWidths[from];
-      colWidths[from] = colWidths[to];
-      colWidths[to] = w;
+  const centerX = 115;
+  const centerY = 80;
+  const radius = 62;
+  const depth = 12; // “3D” extrusión
 
-      if(selectedCol === from) selectedCol = to;
-      else if(selectedCol === to) selectedCol = from;
+  const parts = [
+    { key:"A", label:"A", val:counts.A, color:"#22c55e", dark:"#16a34a" },
+    { key:"B", label:"B", val:counts.B, color:"#f59e0b", dark:"#d97706" },
+    { key:"C", label:"C", val:counts.C, color:"#ef4444", dark:"#dc2626" },
+    { key:"S", label:"S/CLASF", val:counts.S, color:"#64748b", dark:"#475569" }
+  ];
 
-      render();
-      applyFilters();
-      updateMatchInfo();
-    });
+  // limpia
+  svg.innerHTML = "";
 
-    // Header + resizer
-    const header = document.createElement("div");
-    header.className = "colHeader";
+  // fondo suave
+  const bg = document.createElementNS("http://www.w3.org/2000/svg","ellipse");
+  bg.setAttribute("cx", centerX);
+  bg.setAttribute("cy", centerY + depth + 14);
+  bg.setAttribute("rx", radius + 18);
+  bg.setAttribute("ry", 18);
+  bg.setAttribute("fill", "rgba(2,6,23,.08)");
+  svg.appendChild(bg);
 
-    const hdrText = document.createElement("span");
-    hdrText.className = "hdrText";
-    hdrText.textContent = name;
+  let start = -Math.PI / 2;
 
-    // Protección rename
-    const protectedCol = isProtectedColumnName(name);
-    hdrText.contentEditable = !protectedCol;
+  // 1) Capa “abajo” (oscura, desplazada) para efecto 3D
+  parts.forEach(p=>{
+    const angle = (p.val / total) * Math.PI * 2;
+    const end = start + angle;
+    if(angle <= 0.000001){ return; }
 
-    if(protectedCol){
-      const lock = document.createElement("span");
-      lock.className = "hdrLock";
-      lock.textContent = "LOCK";
-      lock.title = "Columna protegida: no se puede renombrar ni eliminar.";
-      header.appendChild(lock);
-    }
+    const path = describeArc(centerX, centerY + depth, radius, start, end);
+    const el = document.createElementNS("http://www.w3.org/2000/svg","path");
+    el.setAttribute("d", path);
+    el.setAttribute("fill", p.dark);
+    svg.appendChild(el);
 
-    // al salir (si editable) => guardar nombre
-    hdrText.addEventListener("blur", ()=>{
-      if(isProtectedIndex(index)) return;
-      const t = hdrText.textContent.trim();
-      columns[index] = t || columns[index];
-      // rearmar select de filtros (si está abierto)
-      rebuildFilterColumnOptions();
-    });
-
-    const resizer = document.createElement("span");
-    resizer.className = "resizer";
-    resizer.title = "Arrastra para ajustar ancho";
-    resizer.addEventListener("mousedown", (e)=>{ e.preventDefault(); });
-
-    // Resize logic
-    resizer.addEventListener("mousedown", (e)=>{
-      e.preventDefault();
-      e.stopPropagation();
-      const startX = e.clientX;
-      const startW = col.getBoundingClientRect().width;
-
-      const onMove = (ev)=>{
-        const dx = ev.clientX - startX;
-        const nw = Math.max(90, Math.round(startW + dx));
-        col.style.width = nw + "px";
-        colWidths[index] = nw;
-      };
-      const onUp = ()=>{
-        document.removeEventListener("mousemove", onMove);
-        document.removeEventListener("mouseup", onUp);
-      };
-      document.addEventListener("mousemove", onMove);
-      document.addEventListener("mouseup", onUp);
-    });
-
-    header.appendChild(hdrText);
-    header.appendChild(resizer);
-    col.appendChild(header);
-
-    // Cells
-    for(let r=0;r<rows;r++){
-      const cell = document.createElement("div");
-      cell.className = "cell";
-      cell.contentEditable = true;
-      cell.dataset.col = index;
-      cell.dataset.row = r;
-
-      cell.addEventListener("focus", ()=>{
-        activeCell = cell;
-        selectedCol = null;
-        selectedRow = null;
-        paintSelection();
-      });
-      cell.addEventListener("click", ()=>{ activeCell = cell; });
-
-      if(salesMode === "MONTH" && isSales){
-        cell.style.justifyContent = "center";
-        cell.style.textAlign = "center";
-      }
-
-      col.appendChild(cell);
-    }
-
-    grid.appendChild(col);
+    start = end;
   });
 
-  paintSelection();
-}
+  // 2) Capa “arriba”
+  start = -Math.PI / 2;
+  parts.forEach(p=>{
+    const angle = (p.val / total) * Math.PI * 2;
+    const end = start + angle;
+    if(angle <= 0.000001){ return; }
 
-/* ========= SELECCIÓN ========= */
-function paintSelection(){
-  [...grid.querySelectorAll(".col")].forEach(c=>c.classList.remove("colSelected"));
-  [...grid.querySelectorAll(".cell")].forEach(c=>c.classList.remove("rowSelected"));
+    const path = describeArc(centerX, centerY, radius, start, end);
+    const el = document.createElementNS("http://www.w3.org/2000/svg","path");
+    el.setAttribute("d", path);
+    el.setAttribute("fill", p.color);
+    el.setAttribute("stroke", "rgba(255,255,255,.9)");
+    el.setAttribute("stroke-width", "1");
+    svg.appendChild(el);
 
-  if(selectedCol !== null){
-    const colEl = grid.children[selectedCol + 1];
-    if(colEl) colEl.classList.add("colSelected");
-  }
-
-  if(selectedRow !== null){
-    for(let i=0;i<grid.children.length;i++){
-      const colEl = grid.children[i];
-      const cell = colEl?.children[selectedRow + 1];
-      if(cell) cell.classList.add("rowSelected");
-    }
-  }
-}
-
-function selectCol(idx){
-  selectedCol = idx;
-  selectedRow = null;
-  activeCell = null;
-  paintSelection();
-}
-
-function selectRow(r){
-  selectedRow = r;
-  selectedCol = null;
-  activeCell = null;
-  paintSelection();
-}
-
-/* ========= PEGADO DESDE EXCEL ========= */
-grid.addEventListener("paste", (e)=>{
-  e.preventDefault();
-  const text = e.clipboardData.getData("text");
-  const matrix = text.split(/\r?\n/).filter(x=>x.length>0).map(r=>r.split("\t"));
-
-  let startCol = 0;
-  let startRow = 0;
-
-  if(activeCell && activeCell.classList.contains("cell")){
-    startCol = parseInt(activeCell.dataset.col,10) || 0;
-    startRow = parseInt(activeCell.dataset.row,10) || 0;
-  }
-
-  matrix.forEach((rowArr, rIdx)=>{
-    rowArr.forEach((val, cIdx)=>{
-      const colIndex = startCol + cIdx;
-      const rowIndex = startRow + rIdx;
-
-      const col = grid.children[colIndex + 1]; // +1 por #
-      if(!col) return;
-
-      const cell = col.children[rowIndex + 1];
-      if(!cell) return;
-
-      cell.textContent = val;
-    });
+    start = end;
   });
 
-  applyFilters();
-  updateMatchInfo();
-});
+  // highlight top
+  const hi = document.createElementNS("http://www.w3.org/2000/svg","ellipse");
+  hi.setAttribute("cx", centerX - 10);
+  hi.setAttribute("cy", centerY - 18);
+  hi.setAttribute("rx", radius - 20);
+  hi.setAttribute("ry", 18);
+  hi.setAttribute("fill", "rgba(255,255,255,.18)");
+  svg.appendChild(hi);
 
-/* ========= DELETE KEY ========= */
-document.addEventListener("keydown", (e)=>{
-  if(e.key !== "Delete") return;
+  // texto total
+  const t = document.createElementNS("http://www.w3.org/2000/svg","text");
+  t.setAttribute("x", centerX);
+  t.setAttribute("y", centerY + 6);
+  t.setAttribute("text-anchor","middle");
+  t.setAttribute("font-size","13");
+  t.setAttribute("font-weight","900");
+  t.setAttribute("fill","#0f172a");
+  t.textContent = total === 1 && (counts.A+counts.B+counts.C+counts.S)===0 ? "0" : String(counts.A+counts.B+counts.C+counts.S);
+  svg.appendChild(t);
 
-  // columna seleccionada => borrar columna si no está protegida
-  if(selectedCol !== null){
-    if(isProtectedIndex(selectedCol)){
-      alert("Esta columna está protegida y no se puede eliminar.");
-      return;
-    }
-    deleteColumn(selectedCol);
-    return;
-  }
-
-  // fila seleccionada => vaciar fila (no elimina estructura)
-  if(selectedRow !== null){
-    deleteRow(selectedRow);
-    return;
-  }
-
-  // celda activa => borrar contenido
-  if(activeCell && activeCell.classList.contains("cell")){
-    activeCell.textContent = "";
-    applyFilters();
-    updateMatchInfo();
-  }
-});
-
-function deleteColumn(idx){
-  columns.splice(idx, 1);
-
-  const newW = {};
-  columns.forEach((_, i)=>{ newW[i] = colWidths[i] || 170; });
-  colWidths = newW;
-
-  selectedCol = null;
-  render();
-  applyFilters();
-  rebuildFilterColumnOptions();
-  renderFilterChips();
-  updateMatchInfo();
+  const t2 = document.createElementNS("http://www.w3.org/2000/svg","text");
+  t2.setAttribute("x", centerX);
+  t2.setAttribute("y", centerY + 24);
+  t2.setAttribute("text-anchor","middle");
+  t2.setAttribute("font-size","10");
+  t2.setAttribute("font-weight","900");
+  t2.setAttribute("fill","#64748b");
+  t2.textContent = "filas";
+  svg.appendChild(t2);
 }
 
-function deleteRow(r){
-  for(let c=0;c<columns.length;c++){
-    const colEl = grid.children[c + 1];
-    const cell = colEl?.children[r + 1];
-    if(cell) cell.textContent = "";
-  }
-  selectedRow = null;
-  paintSelection();
-  applyFilters();
-  updateMatchInfo();
+// helpers arcs
+function polarToCartesian(cx, cy, r, angleRad){
+  return { x: cx + (r * Math.cos(angleRad)), y: cy + (r * Math.sin(angleRad)) };
 }
+function describeArc(cx, cy, r, startAngle, endAngle){
+  const start = polarToCartesian(cx, cy, r, endAngle);
+  const end = polarToCartesian(cx, cy, r, startAngle);
+  const largeArcFlag = (endAngle - startAngle) <= Math.PI ? "0" : "1";
 
-/* ========= ACCIONES ========= */
-function addColumn(){
-  columns.push("NUEVA COLUMNA");
-  colWidths[columns.length - 1] = 170;
-  render();
-  rebuildFilterColumnOptions();
-  applyFilters();
-  updateMatchInfo();
-}
-
-function clearTable(){
-  [...grid.querySelectorAll(".cell")].forEach(c=>{
-    if(c.classList.contains("rowSel")) return;
-    c.textContent = "";
-  });
-  applyFilters();
-  updateMatchInfo();
-}
-
-/* ========= VENTAS MODE ========= */
-function toggleSalesMode(){
-  salesMode = (salesMode === "YEAR") ? "MONTH" : "YEAR";
-
-  document.getElementById("salesModeLabel").textContent = (salesMode === "YEAR") ? "AÑO" : "MES";
-  document.getElementById("btnSalesMode").textContent = (salesMode === "YEAR") ? "📌 Ventas: Por AÑO" : "📌 Ventas: Por MES";
-  document.getElementById("monthControls").style.display = (salesMode === "MONTH") ? "inline-flex" : "none";
-
-  // default month
-  const now = new Date();
-  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
-  const sm = document.getElementById("startMonth");
-  if(sm && !sm.value) sm.value = ym;
-
-  buildColumns();
-  render();
-
-  // refresca filtros
-  rebuildFilterColumnOptions();
-  applyFilters();
-  updateMatchInfo();
-}
-
-function applyMonthMode(){
-  if(salesMode !== "MONTH") return;
-  buildColumns();
-  render();
-  rebuildFilterColumnOptions();
-  applyFilters();
-  updateMatchInfo();
-}
-
-/* ========= SLIDER ========= */
-function applySize(percent){
-  const p = parseInt(percent, 10) || 100;
-  document.getElementById("sizeVal").textContent = p + "%";
-  const scale = p / 100;
-
-  const font = Math.round(13 * scale);
-  const padY = Math.round(7 * scale);
-  const padX = Math.round(10 * Math.min(scale, 1.2));
-  const minH = Math.round(30 * scale);
-
-  document.documentElement.style.setProperty("--grid-font", font + "px");
-  document.documentElement.style.setProperty("--cell-pad-y", padY + "px");
-  document.documentElement.style.setProperty("--cell-pad-x", padX + "px");
-  document.documentElement.style.setProperty("--cell-minh", minH + "px");
-}
-
-/* ========= FORMATO: ALINEACIÓN ========= */
-function applyAlign(where){
-  // Columna seleccionada
-  if(selectedCol !== null){
-    const colEl = grid.children[selectedCol + 1];
-    if(!colEl) return;
-    const header = colEl.querySelector(".colHeader");
-    const hdrText = colEl.querySelector(".hdrText");
-    if(hdrText) hdrText.style.textAlign = where;
-    if(header) header.style.justifyContent = (where === "left") ? "space-between" : "center";
-
-    const cells = [...colEl.querySelectorAll(".cell")];
-    cells.forEach(cell=>{
-      cell.style.textAlign = where;
-      cell.style.justifyContent = (where === "left") ? "flex-start" : (where === "center" ? "center" : "flex-end");
-    });
-    return;
-  }
-
-  // Fila seleccionada
-  if(selectedRow !== null){
-    for(let c=0;c<columns.length;c++){
-      const colEl = grid.children[c + 1];
-      const cell = colEl?.children[selectedRow + 1];
-      if(cell){
-        cell.style.textAlign = where;
-        cell.style.justifyContent = (where === "left") ? "flex-start" : (where === "center" ? "center" : "flex-end");
-      }
-    }
-    return;
-  }
-
-  // Celda activa
-  if(activeCell){
-    activeCell.style.textAlign = where;
-    activeCell.style.justifyContent = (where === "left") ? "flex-start" : (where === "center" ? "center" : "flex-end");
-  }
-}
-
-/* ========= FIJAR ENCABEZADOS ========= */
-function toggleFreeze(){
-  freezeOn = !freezeOn;
-  if(freezeOn){
-    tableScroll.classList.remove("freezeOff");
-    document.getElementById("btnFreeze").textContent = "Fijar: ON";
-  }else{
-    tableScroll.classList.add("freezeOff");
-    document.getElementById("btnFreeze").textContent = "Fijar: OFF";
-  }
+  return [
+    "M", cx, cy,
+    "L", start.x, start.y,
+    "A", r, r, 0, largeArcFlag, 0, end.x, end.y,
+    "Z"
+  ].join(" ");
 }
 
 /* ========= INIT ========= */
@@ -1235,19 +1437,18 @@ function toggleFreeze(){
   if(sm) sm.value = ym;
 
   applySize(document.getElementById("sizeRange").value);
-
   buildColumns();
   render();
-
-  // init filtros
   rebuildFilterColumnOptions();
   renderFilterChips();
   updateMatchInfo();
+  updateABCChart();
 })();
 </script>
 
 </body>
 </html>
+
 
 
 
