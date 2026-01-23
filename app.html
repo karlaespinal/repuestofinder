@@ -348,10 +348,9 @@
     return "otros";
   }
 
-    // ✅ Clasifica por "posicion" cuando el query es un código (mejor que keywords)
+  // ✅ Clasifica por "posicion" cuando el query es un código (mejor que keywords)
   function classifyCategoryFromPosition_(posText){
     const s = String(posText || "").toLowerCase();
-
     const has = (...words) => words.some(w => s.includes(w));
 
     // FRENOS
@@ -391,12 +390,10 @@
   function extractBestPosition_(vehiclesTable){
     if(!vehiclesTable || !Array.isArray(vehiclesTable.headers) || !Array.isArray(vehiclesTable.rows)) return null;
 
-    // Ubica la columna "Posicion" (o "Position")
     const headers = vehiclesTable.headers.map(h => String(h||"").toLowerCase());
     let idx = headers.findIndex(h => h === "posicion" || h.includes("posicion") || h === "position" || h.includes("position"));
     if(idx < 0) return null;
 
-    // Toma el primer valor no vacío (o el más repetido si quieres luego)
     for(const r of vehiclesTable.rows){
       const v = r && r[idx] !== undefined ? String(r[idx] || "").trim() : "";
       if(v) return v;
@@ -404,6 +401,32 @@
     return null;
   }
 
+  // 🔥 NUEVO: extrae un resumen del vehículo (make/model/años/motor/serie)
+  function extractVehicleSummary_(vehiclesTable){
+    if(!vehiclesTable || !Array.isArray(vehiclesTable.headers) || !Array.isArray(vehiclesTable.rows)) return null;
+
+    const headers = vehiclesTable.headers.map(h => String(h||"").toLowerCase());
+    const idx = (name) => headers.findIndex(h => h === name || h.includes(name));
+
+    const iMake   = idx("vehiculo");
+    const iModel  = idx("modelo");
+    const iYFrom  = idx("año inicio");
+    const iYTo    = idx("año final");
+    const iEngine = idx("motor");
+    const iSerie  = idx("serie");
+
+    for(const r of vehiclesTable.rows){
+      return {
+        make:   iMake  >=0 ? r[iMake]  : null,
+        model:  iModel >=0 ? r[iModel] : null,
+        year_from: iYFrom >=0 ? r[iYFrom] : null,
+        year_to:   iYTo   >=0 ? r[iYTo]   : null,
+        engine: iEngine>=0 ? r[iEngine] : null,
+        serie:  iSerie >=0 ? r[iSerie]  : null
+      };
+    }
+    return null;
+  }
 
   async function getCurrentUserId_(){
     try{
@@ -432,7 +455,6 @@
       .single();
 
     if(error){
-      // No rompas la app por el log; solo reporta en consola
       console.warn("No pude crear search_session:", error.message);
       return null;
     }
@@ -613,6 +635,8 @@
       // ✅ Si no se pudo por posicion, cae al clasificador por texto
       const category = catFromPos || classifyCategory_(raw);
 
+      // 🔥 NUEVO: resumen del vehículo (make/model/años/motor/serie)
+      const vehSummary = extractVehicleSummary_(veh);
 
       const t1 = performance.now();
       const responseMs = Math.round(t1 - t0);
@@ -629,7 +653,19 @@
         meta: {
           original_norms_count: Array.isArray(originalNorms) ? originalNorms.length : 0,
           vehicles_count: vehCount,
-          cambios_count: cambCount
+          cambios_count: cambCount,
+
+          // 🔥 NUEVO: fuente de categoria + muestra de posicion
+          position_sample: pos || null,
+          category_source: catFromPos ? "posicion" : "query",
+
+          // 🔥 NUEVO: inteligencia por vehículo
+          vehicle_make: vehSummary?.make || null,
+          vehicle_model: vehSummary?.model || null,
+          vehicle_year_from: vehSummary?.year_from || null,
+          vehicle_year_to: vehSummary?.year_to || null,
+          vehicle_engine: vehSummary?.engine || null,
+          vehicle_serie: vehSummary?.serie || null
         }
       });
 
@@ -638,8 +674,9 @@
       setStatus("Error: " + (e && e.message ? e.message : e));
       alert("Error consultando: " + (e && e.message ? e.message : e));
 
-      // también logueamos el error como not_found/unknown
       const t1 = performance.now();
+
+      // también logueamos el error como not_found/unknown
       await logSearchEvent_({
         queryRaw: raw,
         queryType: "oem",
@@ -648,7 +685,9 @@
         resultStatus: "unknown",
         resultsCount: 0,
         responseTimeMs: Math.round(t1 - t0),
-        meta: { error: (e && e.message) ? e.message : String(e) }
+        meta: {
+          error: (e && e.message) ? e.message : String(e)
+        }
       });
     }
   };
