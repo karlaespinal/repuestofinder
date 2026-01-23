@@ -321,8 +321,7 @@
     return { headers: ["cambio", "owner"], rows };
   }
 
-  // ✅ AQUI ESTA EL CAMBIO CLAVE:
-  // Traer TODOS los campos de datos_vehiculares y renderizarlos dinámicamente
+  // ✅ Vehicles: quitar columnas + reordenar + renombrar headers
   async function fetchVehiclesByOriginals_(originalNorms){
     const { data, error } = await supabase
       .from("datos_vehiculares")
@@ -333,36 +332,50 @@
     if(error) throw error;
 
     const rowsData = data || [];
-    if(rowsData.length === 0){
-      return { headers: [], rows: [] };
-    }
+    if(rowsData.length === 0) return { headers: [], rows: [] };
 
-    // Orden recomendado de columnas (las que quieres ver primero)
-    const preferred = [
+    // Columnas que NO quieres ver
+    const exclude = new Set([
+      "id",
       "original",
+      "original_norm",
+      "comercializacion",
+      "created_at",
+      "createdAt"
+    ]);
+
+    // Orden deseado: Vehiculo -> Año inicio -> Año final -> Modelo -> resto
+    const preferred = [
       "vehiculo",
+      "anio_inicio",
+      "anio_final",
       "modelo",
       "motor",
       "serie",
-      "anio_inicio",
-      "anio_final",
       "cilindro",
       "posicion",
       "version",
-      "comercializacion",
-      "notas",
-      "original_norm"
+      "notas"
     ];
 
-    // Headers dinámicos: primero preferred que existan, luego el resto
-    const allKeys = Object.keys(rowsData[0] || {});
+    // headers base según keys reales
+    const allKeys = Object.keys(rowsData[0] || {}).filter(k => !exclude.has(k));
+
     const preferredExisting = preferred.filter(k => allKeys.includes(k));
     const rest = allKeys.filter(k => !preferredExisting.includes(k));
 
-    // Si no quieres que salga "id" puedes excluirlo aquí:
-    const headers = [...preferredExisting, ...rest].filter(k => k !== "id");
+    const headersKeys = [...preferredExisting, ...rest];
 
-    const rows = rowsData.map(obj => headers.map(h => (obj[h] ?? "")));
+    // Renombrar headers visibles
+    const headerLabel = (k) => {
+      if(k === "anio_inicio") return "Año inicio";
+      if(k === "anio_final") return "Año final";
+      // default: Capitalizar primera letra y reemplazar _ por espacio
+      return k.replace(/_/g," ").replace(/^./, c => c.toUpperCase());
+    };
+
+    const headers = headersKeys.map(headerLabel);
+    const rows = rowsData.map(obj => headersKeys.map(k => (obj[k] ?? "")));
 
     return { headers, rows };
   }
@@ -396,7 +409,6 @@
     setStatus("Buscando...");
     try{
       const codigoMostrado = candidates[0] || raw;
-
       const originalNorms = await resolveOriginals_(norm);
 
       const [veh, camb] = await Promise.all([
@@ -409,10 +421,7 @@
         codigo_norm: norm,
         original_norms: originalNorms,
         productUrl: buildGoogleUrl_(codigoMostrado),
-        tablas: {
-          vehicles: veh,
-          cambios: camb
-        }
+        tablas: { vehicles: veh, cambios: camb }
       };
 
       render(payload);
@@ -449,9 +458,7 @@
       "Vehicles: " + (hasVeh ? vehicles.rows.length : 0) +
       " | Cambios: " + (hasCamb ? cambios.rows.length : 0);
 
-    // Puedes quitar esto si no quieres mostrar nada adicional:
     document.getElementById("notes").textContent = "";
-
     document.getElementById("btnExport").disabled = !(hasVeh || hasCamb);
 
     setStatus("Listo ✅");
