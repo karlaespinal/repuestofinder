@@ -399,6 +399,22 @@
               <button class="btn btnOk" id="btnGoApp">Entrar a la App</button>
               <button class="btn btnPrimary" id="btnGoLogin">Iniciar sesión</button>
             </div>
+                        <!-- ✅ NUEVO: Bienvenida (ya logueado) -->
+            <div class="notice ok" id="welcomeCard" style="display:none;margin-top:10px;">
+              <div style="font-weight:1000;font-size:14px;margin-bottom:6px;">
+                ¡Bienvenido/a, <span id="welcomeName">—</span>! ✅
+              </div>
+              <div style="font-weight:800;line-height:1.45;">
+                Gracias por suscribirte a <b>RepuestoFinder</b>.  
+                <b>Tu sesión ya está iniciada</b> y puedes continuar cuando quieras.
+              </div>
+
+              <div class="actions" style="justify-content:flex-start;margin-top:12px;">
+                <button class="btn btnPrimary" id="btnGoDashboard">Ir al Dashboard</button>
+                <button class="btn btnOk" id="btnGoNowApp">Ir a la App</button>
+              </div>
+            </div>
+
 
             <div class="notice bad" id="payErr" style="display:none;margin-top:10px;"></div>
           </div>
@@ -452,6 +468,22 @@
     b.style.display = "block";
     b.textContent = text;
   }
+
+  function showWelcomeLoggedIn(){
+  const first = (el("first_name").value || "").trim();
+  const last  = (el("last_name").value || "").trim();
+  const fullName = (first + " " + last).trim() || "cliente";
+
+  el("welcomeName").textContent = fullName;
+  el("welcomeCard").style.display = "block";
+
+  // Dashboard = tu index.html
+  el("btnGoDashboard").onclick = () => location.href = "index.html";
+
+  // App
+  el("btnGoNowApp").onclick = () => location.href = "app.html";
+  }
+
 
   function setPayOkActions(visible){
     el("payOkActions").style.display = visible ? "flex" : "none";
@@ -666,10 +698,16 @@
             const { data: loginData, error: loginErr } = await supabase.auth.signInWithPassword({ email, password });
 
             if(!loginErr && loginData?.session){
-              showMsg("Listo ✅ Sesión iniciada. Entrando a la App…", "ok");
-              setTimeout(()=> location.href = "app.html", 900);
-              return;
-            }
+            // ✅ Mensaje + tarjeta con nombre y confirmación de login
+            showMsg("Perfecto ✅ Tu cuenta está activa y ya estás logueado.", "ok");
+            showPayOk("Pago confirmado ✅ Cuenta activa y sesión iniciada.");
+            setPayOkActions(false); // opcional: ocultar botones viejos si quieres
+            showWelcomeLoggedIn();
+
+            // ✅ NO redirigir automático: que el usuario elija con botones
+            return;
+          }
+
 
             // Si no pudo auto-loguear, dejamos el botón visible
             showMsg("Cuenta activa ✅ Ahora puedes iniciar sesión.", "ok");
@@ -694,6 +732,5 @@
 </script>
 </body>
 </html>
-
 
 
