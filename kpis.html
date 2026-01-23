@@ -16,6 +16,12 @@
     --pri2:#1d4ed8;
     --shadow:0 16px 40px rgba(2,6,23,.10);
     --r:16px;
+
+    /* ====== CONTROL DE TAMAÑO (slider) ====== */
+    --grid-font: 13px;
+    --cell-pad-y: 7px;
+    --cell-pad-x: 10px;
+    --cell-minh: 30px;
   }
   *{box-sizing:border-box}
   body{
@@ -95,7 +101,7 @@
   .btnGhost{background:#fff;border:1px solid var(--line);color:#0f172a}
   .btnSoft{background:#eef2ff;border:1px solid rgba(37,99,235,.22);color:#1d4ed8}
 
-  /* TOP BLOCKS */
+  /* TOP BLOCKS SIDE BY SIDE */
   .topGrid{
     display:grid;
     grid-template-columns: 1fr 1fr;
@@ -141,7 +147,7 @@
     text-align:center;
   }
 
-  /* ACTION BAR (6 botones) */
+  /* ACTION BAR (6 botones + slider) */
   .actionBar{
     border:1px solid var(--line);
     border-radius:18px;
@@ -179,6 +185,7 @@
     color:#0f172a;
   }
   .chip small{font-weight:900;color:#64748b}
+
   .miniCtrl{
     display:inline-flex;
     align-items:center;
@@ -196,6 +203,30 @@
     font-weight:900;
   }
   .miniCtrl input[type="checkbox"]{ transform: translateY(1px); }
+
+  /* ====== Slider control ====== */
+  .sizeCtrl{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    padding:8px 10px;
+    border-radius:14px;
+    background:#fff;
+    border:1px solid var(--line);
+    font-weight:900;
+    color:#0f172a;
+  }
+  .sizeCtrl small{color:#64748b}
+  .sizeCtrl input[type="range"]{
+    width:160px;
+    cursor:pointer;
+  }
+  .sizeCtrl .val{
+    min-width:48px;
+    text-align:right;
+    font-weight:900;
+    color:#1d4ed8;
+  }
 
   /* TABLE */
   .tableWrap{
@@ -225,16 +256,19 @@
     border:1px solid rgba(230,232,240,.9);
     background:rgba(255,255,255,.72);
   }
+
   .grid{
     display:grid;
     grid-auto-flow:column;
     grid-auto-columns: 170px;
     min-width:max-content;
   }
+
   .col{
     border-right:1px solid rgba(230,232,240,.9);
     background:transparent;
   }
+
   .colHeader{
     position:sticky;
     top:0;
@@ -245,15 +279,15 @@
     cursor:grab;
     border-bottom:1px solid rgba(230,232,240,.9);
     user-select:none;
+
+    font-size: calc(var(--grid-font) + 1px);
   }
-  .colHeader[contenteditable="true"]{
-    user-select:text;
-    cursor:text;
-  }
+  .colHeader[contenteditable="true"]{ user-select:text; cursor:text; }
   .colHeader:active{cursor:grabbing}
+
   .cell{
-    padding:7px 10px;
-    min-height:30px;
+    padding: var(--cell-pad-y) var(--cell-pad-x);
+    min-height: var(--cell-minh);
     border-bottom:1px solid rgba(230,232,240,.9);
     outline:none;
     font-weight:800;
@@ -261,11 +295,19 @@
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
+
+    font-size: var(--grid-font);
+    display:flex;
+    align-items:center; /* para centrar verticalmente */
   }
   .cell:focus{
     background:#eef2ff;
     box-shadow: inset 0 0 0 2px rgba(37,99,235,.15);
   }
+
+  /* ====== Centrados de Ventas en MODO MES ====== */
+  .salesCentered .colHeader{ text-align:center; }
+  .salesCentered .cell{ justify-content:center; text-align:center; }
 
   .mutedNote{
     font-size:12px;
@@ -305,7 +347,7 @@
     </div>
   </div>
 
-  <!-- TOP BLOCKS SIDE BY SIDE -->
+  <!-- TOP BLOCKS -->
   <div class="topGrid">
     <div class="section">
       <div class="sectionTitle">
@@ -328,7 +370,7 @@
     </div>
   </div>
 
-  <!-- ACTION BAR (6 BOTONES) -->
+  <!-- ACTION BAR -->
   <div class="actionBar">
     <div class="actionLeft">
       <button id="btnSalesMode" class="btn btnSoft" onclick="toggleSalesMode()">📌 Ventas: Por AÑO</button>
@@ -337,6 +379,13 @@
       <button class="btn btnGhost" onclick="alert('Proximo: guardar configuracion de columnas por usuario')">Boton 4</button>
       <button class="btn btnGhost" onclick="alert('Proximo: reglas/validaciones')">Boton 5</button>
       <button class="btn btnGhost" onclick="alert('Proximo: calculos automaticos')">Boton 6</button>
+
+      <!-- ✅ SLIDER DESPUÉS DEL BOTÓN 6 -->
+      <div class="sizeCtrl" title="Ajusta tamaño de letras y altura de celdas">
+        <small>Tamaño</small>
+        <input id="sizeRange" type="range" min="80" max="140" value="100" oninput="applySize(this.value)">
+        <span class="val" id="sizeVal">100%</span>
+      </div>
     </div>
 
     <div class="actionRight">
@@ -380,7 +429,7 @@ function goHome(){ window.location.href = "index.html"; }
 
 const grid = document.getElementById("grid");
 
-/* ========= CONFIG COLUMNS BASE (segun tu imagen) ========= */
+/* ========= CONFIG COLUMNS BASE ========= */
 const baseBeforeSales = [
   "CODIGO 1",
   "CODIGO 2",
@@ -413,16 +462,12 @@ const baseAfterSales = [
   "COMENTARIOS"
 ];
 
-/* Ventas por AÑO segun tu pedido:
-   A0=2026, A1=2025, A2=2024  */
+/* Ventas por AÑO: A2=2024, A1=2025, A0=2026 */
 function salesColsYear(){
   return ["Ventas_2024", "Ventas_2025", "Ventas_2026"];
 }
 
-/* Ventas por MES: 12 meses hacia atras.
-   - Si "Desde hoy": usa mes actual como final y calcula 12.
-   - Si no: usa el mes elegido como final.
-*/
+/* Ventas por MES: 12 meses hacia atrás */
 function salesColsMonth(){
   const useCurrent = document.getElementById("useCurrentMonth")?.checked ?? true;
   const startMonthInput = document.getElementById("startMonth")?.value || "";
@@ -430,14 +475,11 @@ function salesColsMonth(){
   let end = new Date();
   if(!useCurrent && startMonthInput){
     const [yy, mm] = startMonthInput.split("-").map(n=>parseInt(n,10));
-    // end = ultimo dia del mes seleccionado (pero label solo necesita mes)
     end = new Date(yy, mm-1, 1);
   }else{
-    // normal: mes actual
     end = new Date(end.getFullYear(), end.getMonth(), 1);
   }
 
-  // generar 12 meses hacia atras incluyendo el mes "end"
   const cols = [];
   for(let i=11;i>=0;i--){
     const d = new Date(end.getFullYear(), end.getMonth()-i, 1);
@@ -450,13 +492,15 @@ function salesColsMonth(){
 
 /* ========= ESTADO ========= */
 let salesMode = "YEAR"; // YEAR | MONTH
-let columns = [];       // se arma en buildColumns()
+let columns = [];
+let salesMeta = { start: 0, len: 0 };
 const rows = 22;
 
 /* ========= BUILD COLUMNS ========= */
 function buildColumns(){
   const sales = (salesMode === "YEAR") ? salesColsYear() : salesColsMonth();
   columns = [...baseBeforeSales, ...sales, ...baseAfterSales];
+  salesMeta = { start: baseBeforeSales.length, len: sales.length };
 }
 
 /* ========= RENDER GRID ========= */
@@ -468,6 +512,12 @@ function render(){
     col.className = "col";
     col.draggable = true;
 
+    // Si es columna de ventas y estamos en modo MES => centramos
+    const isSales = name.startsWith("Ventas_");
+    if(salesMode === "MONTH" && isSales){
+      col.classList.add("salesCentered");
+    }
+
     // Drag & drop reorder columns
     col.addEventListener("dragstart", e=>{
       e.dataTransfer.setData("col", index);
@@ -477,13 +527,15 @@ function render(){
       const from = parseInt(e.dataTransfer.getData("col"),10);
       const to = index;
       if(isNaN(from) || isNaN(to)) return;
+
       const temp = columns[from];
       columns[from] = columns[to];
       columns[to] = temp;
+
       render();
     });
 
-    // Header editable (segun tu comentario: codigo 1/2/3 editables; aqui dejamos TODOS editables)
+    // Header editable
     const header = document.createElement("div");
     header.className = "colHeader";
     header.contentEditable = true;
@@ -499,6 +551,13 @@ function render(){
       cell.contentEditable = true;
       cell.dataset.col = index;
       cell.dataset.row = r;
+
+      // centrar ventas en modo MES
+      if(salesMode === "MONTH" && isSales){
+        cell.style.justifyContent = "center";
+        cell.style.textAlign = "center";
+      }
+
       col.appendChild(cell);
     }
 
@@ -512,7 +571,6 @@ grid.addEventListener("paste", (e)=>{
   const text = e.clipboardData.getData("text");
   const matrix = text.split(/\r?\n/).filter(x=>x.length>0).map(r=>r.split("\t"));
 
-  // Si hay un focus, empezamos pegado desde esa celda
   const active = document.activeElement;
   let startCol = 0;
   let startRow = 0;
@@ -528,7 +586,7 @@ grid.addEventListener("paste", (e)=>{
       const rowIndex = startRow + rIdx;
       const col = grid.children[colIndex];
       if(!col) return;
-      const cell = col.children[rowIndex + 1]; // +1 por header
+      const cell = col.children[rowIndex + 1];
       if(!cell) return;
       cell.innerText = val;
     });
@@ -553,7 +611,7 @@ function toggleSalesMode(){
   document.getElementById("btnSalesMode").textContent = (salesMode === "YEAR") ? "📌 Ventas: Por AÑO" : "📌 Ventas: Por MES";
   document.getElementById("monthControls").style.display = (salesMode === "MONTH") ? "inline-flex" : "none";
 
-  // set default month input (mes actual)
+  // default month input
   const now = new Date();
   const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
   const sm = document.getElementById("startMonth");
@@ -569,13 +627,35 @@ function applyMonthMode(){
   render();
 }
 
+/* ========= SLIDER (tamaño letras + celdas) ========= */
+function applySize(percent){
+  const p = parseInt(percent, 10) || 100;
+  document.getElementById("sizeVal").textContent = p + "%";
+
+  // Escalas: 80% (compacto) a 140% (grande)
+  const scale = p / 100;
+
+  // Ajustes finos: tipografía y alto de fila
+  const font = Math.round(13 * scale);                 // base 13px
+  const padY = Math.round(7 * scale);                  // padding vertical
+  const padX = Math.round(10 * Math.min(scale, 1.2));  // padding horizontal (no demasiado)
+  const minH = Math.round(30 * scale);                 // alto mínimo
+
+  document.documentElement.style.setProperty("--grid-font", font + "px");
+  document.documentElement.style.setProperty("--cell-pad-y", padY + "px");
+  document.documentElement.style.setProperty("--cell-pad-x", padX + "px");
+  document.documentElement.style.setProperty("--cell-minh", minH + "px");
+}
+
 /* ========= INIT ========= */
 (function init(){
-  // default month input
   const now = new Date();
   const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`;
   const sm = document.getElementById("startMonth");
   if(sm) sm.value = ym;
+
+  // inicializa slider
+  applySize(document.getElementById("sizeRange").value);
 
   buildColumns();
   render();
