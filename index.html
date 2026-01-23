@@ -114,6 +114,73 @@
     }
     .btnSmall{ padding:8px 10px; border-radius:10px; font-size:12px; }
 
+    /* ===== Dropdown Herramientas ===== */
+    .dd{
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+    }
+    .ddMenu{
+      position:absolute;
+      right:0;
+      top:calc(100% + 10px);
+      width:min(320px, 82vw);
+      background:rgba(255,255,255,.96);
+      border:1px solid rgba(230,232,240,.95);
+      border-radius:16px;
+      box-shadow:0 22px 70px rgba(2,6,23,.18);
+      overflow:hidden;
+      display:none;
+      z-index:60;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .ddMenuHeader{
+      padding:10px 12px;
+      font-size:12px;
+      font-weight:900;
+      letter-spacing:.4px;
+      text-transform:uppercase;
+      color:#94a3b8;
+      background:rgba(246,247,251,.7);
+      border-bottom:1px solid rgba(230,232,240,.95);
+    }
+    .ddItem{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:11px 12px;
+      cursor:pointer;
+      user-select:none;
+      font-weight:900;
+      color:#0f172a;
+      border-bottom:1px solid rgba(230,232,240,.75);
+      background:transparent;
+    }
+    .ddItem:last-child{border-bottom:0}
+    .ddItem:hover{ background:rgba(37,99,235,.06); }
+    .ddItem small{
+      font-weight:900;
+      color:#64748b;
+      font-size:11px;
+    }
+    .ddItem.disabled{
+      opacity:.55;
+      cursor:not-allowed;
+    }
+    .ddItem.disabled:hover{ background:transparent; }
+    .pill{
+      font-size:11px;
+      font-weight:900;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(230,232,240,.95);
+      background:rgba(37,99,235,.08);
+      color:var(--pri);
+      white-space:nowrap;
+    }
+
     .hero{
       border:1px solid var(--line);
       border-radius:22px;
@@ -489,6 +556,7 @@
         justify-content:center;
       }
       .navRight{ gap:8px; }
+      .ddMenu{ right:auto; left:50%; transform:translateX(-50%); }
     }
     @media(max-width:520px){
       .brandSlide{min-width:210px}
@@ -513,6 +581,45 @@
       </div>
 
       <div class="navRight">
+        <!-- ✅ Herramientas (dropdown) -->
+        <div class="dd" id="toolsDD">
+          <button class="btn btnGhost" id="btnTools" onclick="toggleToolsMenu(event)">
+            Herramientas <span style="opacity:.7">▾</span>
+          </button>
+
+          <div class="ddMenu" id="toolsMenu" role="menu" aria-label="Herramientas">
+            <div class="ddMenuHeader">Accesos rapidos</div>
+
+            <div class="ddItem" role="menuitem" onclick="goKpis()">
+              <div>
+                KPIs y Analisis
+                <div style="margin-top:2px">
+                  <small>Panel de métricas y reportes</small>
+                </div>
+              </div>
+              <span class="pill">Nuevo</span>
+            </div>
+
+            <!-- ✅ 4 puestos vacíos (Proximamente) -->
+            <div class="ddItem disabled" role="menuitem" aria-disabled="true">
+              <div>— Proximamente <div style="margin-top:2px"><small>Espacio reservado</small></div></div>
+              <small>—</small>
+            </div>
+            <div class="ddItem disabled" role="menuitem" aria-disabled="true">
+              <div>— Proximamente <div style="margin-top:2px"><small>Espacio reservado</small></div></div>
+              <small>—</small>
+            </div>
+            <div class="ddItem disabled" role="menuitem" aria-disabled="true">
+              <div>— Proximamente <div style="margin-top:2px"><small>Espacio reservado</small></div></div>
+              <small>—</small>
+            </div>
+            <div class="ddItem disabled" role="menuitem" aria-disabled="true">
+              <div>— Proximamente <div style="margin-top:2px"><small>Espacio reservado</small></div></div>
+              <small>—</small>
+            </div>
+          </div>
+        </div>
+
         <!-- ✅ Login (solo si NO hay sesion) -->
         <button class="btn btnGhost" id="btnLogin" style="display:none" onclick="openAuth()">Login</button>
 
@@ -731,6 +838,34 @@
         btnDemo.style.cursor = (left <= 0) ? "not-allowed" : "pointer";
       }
     }
+
+    // ===== Herramientas (dropdown) =====
+    function openTools(){
+      const m = $("toolsMenu");
+      if(!m) return;
+      m.style.display = "block";
+    }
+    function closeTools(){
+      const m = $("toolsMenu");
+      if(!m) return;
+      m.style.display = "none";
+    }
+    window.toggleToolsMenu = function(ev){
+      ev?.stopPropagation?.();
+      const m = $("toolsMenu");
+      if(!m) return;
+      const isOpen = (m.style.display === "block");
+      if(isOpen) closeTools();
+      else openTools();
+    }
+    window.goKpis = function(){
+      closeTools();
+      window.location.href = "kpis.html";
+    }
+    document.addEventListener("click", ()=> closeTools());
+    document.addEventListener("keydown", (e)=>{
+      if(e.key === "Escape") closeTools();
+    });
 
     window.navTo = function(id){
       if(id === "buscador"){
@@ -1285,6 +1420,8 @@
   </script>
 </body>
 </html>
+
+
 
 
 
