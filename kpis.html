@@ -609,37 +609,17 @@
     .topGrid{ grid-template-columns:1fr; }
     .colsGrid{ grid-template-columns:1fr; }
   }
-    /* ===== MODAL ANALISIS (BOTON 6) ===== */
-  .anaGrid{
+  /* ===== MODAL ANALISIS (REGLAS) ===== */
+  .anaRulesGrid{
     display:grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap:10px;
-    margin-bottom:12px;
-  }
-  .anaCard{
-    border:1px solid rgba(230,232,240,.95);
-    background:#fff;
-    border-radius:16px;
-    padding:12px;
-    box-shadow:0 10px 26px rgba(2,6,23,.04);
-  }
-  .anaCard small{
-    display:block;
-    font-weight:900;
-    color:#64748b;
-    margin-bottom:6px;
-  }
-  .anaCard b{
-    font-size:18px;
-    font-weight:900;
-    color:#0f172a;
+    grid-template-columns: 1fr 1fr;
+    gap:12px;
   }
   .anaBox{
     border:1px solid rgba(230,232,240,.95);
-    background:rgba(255,255,255,.72);
-    border-radius:16px;
+    background:rgba(255,255,255,.78);
+    border-radius:18px;
     padding:12px;
-    margin-top:10px;
   }
   .anaBoxTop{
     display:flex;
@@ -647,17 +627,36 @@
     justify-content:space-between;
     gap:10px;
     flex-wrap:wrap;
-    margin-bottom:8px;
+    margin-bottom:10px;
   }
-  .anaList{
+  .anaField{
     display:flex;
     flex-direction:column;
-    gap:8px;
+    gap:6px;
+    min-width:220px;
+    flex:1;
   }
-  .anaRow{
+  .anaField label{
+    font-size:12px;
+    color:#64748b;
+    font-weight:900;
+  }
+  .anaField select, .anaField input{
+    border:1px solid rgba(230,232,240,.95);
+    border-radius:12px;
+    padding:10px 10px;
+    font-weight:900;
+    outline:none;
+  }
+  .anaRow2{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:8px;
+  }
+  .anaCheck{
     display:flex;
     align-items:center;
-    justify-content:space-between;
     gap:10px;
     padding:10px 12px;
     border-radius:14px;
@@ -665,10 +664,10 @@
     background:#fff;
     font-weight:900;
   }
-  .anaRow .k{color:#0f172a}
-  .anaRow .v{color:#1d4ed8}
+  .anaCheck input{ transform: translateY(1px); }
+
   @media(max-width:980px){
-    .anaGrid{ grid-template-columns: 1fr 1fr; }
+    .anaRulesGrid{ grid-template-columns: 1fr; }
   }
 
 </style>
@@ -757,7 +756,7 @@
       <!-- BOTON 5: EXPORTAR EXCEL -->
       <button id="btnExportExcel" class="btn btnGhost" onclick="exportExcel()">Exportar Excel</button>
 
-      <button class="btn btnGhost" onclick="openAnalysisModal()">📊 Analisis</button>
+      <button class="btn btnGhost" onclick="openAnalysisRules()">📦 Analisis</button>
 
       <div class="sizeCtrl" title="Ajusta tamaño de letras y altura de celdas">
         <small>Tamaño</small>
@@ -890,62 +889,188 @@
     </div>
   </div>
 </div>
-
-<!-- MODAL ANALISIS (BOTON 6) -->
-<div class="modalBackdrop" id="analysisModal">
-  <div class="modal">
+<!-- MODAL ANALISIS (REGLAS DE PEDIDOS) -->
+<div class="modalBackdrop" id="analysisRulesModal">
+  <div class="modal" style="width:min(980px, 100%);">
     <div class="modalHeader">
-      <b>📊 Analisis rapido</b>
-      <button onclick="closeAnalysisModal()">Cerrar ✕</button>
+      <b>📦 Analisis — Reglas de pedidos (tu logica)</b>
+      <button onclick="closeAnalysisRules()">Cerrar ✕</button>
     </div>
 
     <div class="modalBody">
-      <div class="anaGrid">
-        <div class="anaCard">
-          <small>Filas (visibles)</small>
-          <b id="ana_rows_visible">0</b>
+      <div class="anaRulesGrid">
+
+        <div class="anaBox">
+          <div class="anaBoxTop">
+            <b>1) Stock para analisis</b>
+            <span class="hint">define qué componentes entran al stock “real”</span>
+          </div>
+
+          <label class="anaCheck">
+            <input type="checkbox" id="ar_addPendiente">
+            Agregar <b>PENDIENTE DE DESPACHO</b> al stock
+          </label>
+
+          <label class="anaCheck">
+            <input type="checkbox" id="ar_addTransito">
+            Agregar <b>TRANSITO</b> al stock
+          </label>
+
+          <div class="anaRow2">
+            <div class="anaField">
+              <label>Columna STOCK base</label>
+              <select id="ar_colStock"></select>
+            </div>
+            <div class="anaField">
+              <label>Columna PENDIENTE</label>
+              <select id="ar_colPendiente"></select>
+            </div>
+          </div>
+
+          <div class="anaRow2">
+            <div class="anaField">
+              <label>Columna TRANSITO</label>
+              <select id="ar_colTransito"></select>
+            </div>
+            <div class="anaField">
+              <label>Guardar “Stock Analisis” en columna</label>
+              <select id="ar_colStockOut"></select>
+            </div>
+          </div>
         </div>
 
-        <div class="anaCard">
-          <small>Filas (totales)</small>
-          <b id="ana_rows_total">0</b>
+        <div class="anaBox">
+          <div class="anaBoxTop">
+            <b>2) Lead time</b>
+            <span class="hint">meses de seguridad o % del lead time</span>
+          </div>
+
+          <div class="anaRow2">
+            <div class="anaField">
+              <label>Columna LEAD TIME (DIAS)</label>
+              <select id="ar_colLeadDays"></select>
+            </div>
+            <div class="anaField">
+              <label>Modo</label>
+              <select id="ar_ltMode">
+                <option value="FULL">Leadtime completo</option>
+                <option value="PCT">% del leadtime</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="anaRow2">
+            <div class="anaField">
+              <label>% lead time (si aplica)</label>
+              <input id="ar_ltPct" type="number" min="0" max="200" step="1" value="100">
+            </div>
+            <div class="anaField">
+              <label>Mes(es) de seguridad</label>
+              <input id="ar_safetyMonths" type="number" min="0" max="12" step="1" value="0">
+            </div>
+          </div>
         </div>
 
-        <div class="anaCard">
-          <small>Columnas (visibles)</small>
-          <b id="ana_cols_visible">0</b>
+        <div class="anaBox">
+          <div class="anaBoxTop">
+            <b>3) Promedio de venta mensual</b>
+            <span class="hint">por AÑO: suma/12 · por MES: total / meses con venta</span>
+          </div>
+
+          <div class="anaRow2">
+            <div class="anaField">
+              <label>Modo de cálculo en MES</label>
+              <select id="ar_monthAvgMode">
+                <option value="SOLD_MONTHS" selected>Total / Meses con venta</option>
+                <option value="ALWAYS_12">Total / 12</option>
+              </select>
+            </div>
+
+            <div class="anaField">
+              <label>Guardar “Promedio Venta Mensual” en columna</label>
+              <select id="ar_colAvgOut"></select>
+            </div>
+          </div>
+
+          <div class="hint">
+            Ejemplo: total 100 en 4 meses con venta → promedio = 25
+          </div>
         </div>
 
-        <div class="anaCard">
-          <small>Marcas distintas</small>
-          <b id="ana_brands">0</b>
-        </div>
-      </div>
+        <div class="anaBox">
+          <div class="anaBoxTop">
+            <b>4) Meses con/sin venta (Efectividad)</b>
+            <span class="hint">solo aplica bien cuando estás en Ventas por MES</span>
+          </div>
 
-      <div class="anaBox">
-        <div class="anaBoxTop">
-          <b>Top 5 marcas por promedio de ventas</b>
-          <span class="hint">usa MARCA + columnas Ventas_*</span>
-        </div>
-        <div id="ana_top5" class="anaList"></div>
-      </div>
+          <div class="anaRow2">
+            <div class="anaField">
+              <label>Guardar “Efectividad de venta” en columna</label>
+              <select id="ar_colEffOut"></select>
+            </div>
+            <div class="anaField">
+              <label>Guardar “Meses sin ventas” en columna</label>
+              <select id="ar_colNoSaleOut"></select>
+            </div>
+          </div>
 
-      <div class="anaBox">
-        <div class="anaBoxTop">
-          <b>Distribucion ABC (conteo)</b>
-          <span class="hint">usa CATEGORIA ABC</span>
+          <div class="hint">
+            Efectividad = (# meses con venta en los 12 meses). Meses sin venta = meses desde la última venta (si este mes hubo venta = 0).
+          </div>
         </div>
-        <div id="ana_abc" class="anaList"></div>
+
+        <div class="anaBox">
+          <div class="anaBoxTop">
+            <b>5) Excluir pedidos recientes</b>
+            <span class="hint">si “SI”, excluye artículos con compra reciente</span>
+          </div>
+
+          <div class="anaRow2">
+            <div class="anaField">
+              <label>¿Tomar en cuenta pedidos recientes?</label>
+              <select id="ar_recentOn" onchange="toggleRecentUI()">
+                <option value="NO" selected>NO</option>
+                <option value="SI">SI</option>
+              </select>
+            </div>
+            <div class="anaField">
+              <label>Ventana (meses)</label>
+              <select id="ar_recentMonths" disabled>
+                <option value="1">1 mes</option>
+                <option value="2" selected>2 meses</option>
+                <option value="3">3 meses</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="anaRow2">
+            <div class="anaField">
+              <label>Columna fecha “último pedido/compra”</label>
+              <select id="ar_colRecentDate" disabled></select>
+            </div>
+            <div class="anaField">
+              <label>Guardar bandera “Excluido” en columna</label>
+              <select id="ar_colExcludedOut" disabled></select>
+            </div>
+          </div>
+
+          <div class="hint">
+            Ejemplo: fecha 12/12/2025 y ventana 2 meses → queda fuera (excluido).
+          </div>
+        </div>
+
       </div>
     </div>
 
     <div class="modalFooter">
-      <span class="hint" id="ana_note">—</span>
-      <button class="btn btnPrimary" onclick="refreshAnalysis()">Actualizar</button>
+      <div class="hint" id="ar_status">Configura y aplica. Se guarda en tu navegador.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btnGhost" onclick="resetAnalysisRules()">Reset</button>
+        <button class="btn btnPrimary" onclick="applyAnalysisRules()">Aplicar reglas</button>
+      </div>
     </div>
   </div>
 </div>
-
 
 <!-- SheetJS (Excel) -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -2254,139 +2379,358 @@ function toggleTOP(){
   tableScroll.addEventListener("scroll", ()=> scheduleRender());
   window.addEventListener("resize", ()=> scheduleRender());
 })();
+/* ============================================================
+   ANALISIS (BOTON 6) — REGLAS DE PEDIDOS (CONFIGURABLE)
+   Guarda configuración en localStorage y calcula:
+   - Stock Analisis = stock + (pendiente?) + (transito?)
+   - Promedio venta mensual:
+        YEAR: (sum ventas)/12
+        MONTH: total / (meses con venta)  o total/12 (según setting)
+   - Efectividad: # meses con venta (en 12)
+   - Meses sin ventas: meses desde última venta (si este mes hay venta -> 0)  [solo MES]
+   - Excluir pedidos recientes: marca excluido si fecha dentro de N meses
+============================================================ */
 
-/* ===== MODAL ANALISIS (BOTON 6) ===== */
-function openAnalysisModal(){
-  document.getElementById("analysisModal").style.display = "flex";
-  refreshAnalysis();
+const AR_KEY = "rf_kpis_analysis_rules_v1";
+
+function openAnalysisRules(){
+  document.getElementById("analysisRulesModal").style.display = "flex";
+  fillAnalysisSelects();
+  loadAnalysisRulesToUI();
+  toggleRecentUI();
 }
-function closeAnalysisModal(){
-  document.getElementById("analysisModal").style.display = "none";
+function closeAnalysisRules(){
+  document.getElementById("analysisRulesModal").style.display = "none";
 }
 
-function refreshAnalysis(){
-  // filas
-  const totalRows = dataRows.length;
-  const visibleRows = visibleRowIdx.length;
+function getAllColumnNames(){
+  return columns.map(c => (c || "").trim());
+}
+function fillSelectWithColumns(selId, preferredName){
+  const sel = document.getElementById(selId);
+  const names = getAllColumnNames();
+  sel.innerHTML = "";
+  names.forEach((n, i)=>{
+    const opt = document.createElement("option");
+    opt.value = String(i);
+    opt.textContent = n || ("Col " + (i+1));
+    sel.appendChild(opt);
+  });
 
-  // columnas visibles
-  const visCols = getVisibleColIndices();
-  const visibleCols = visCols.length;
+  const p = (preferredName || "").toUpperCase();
+  const idx = names.findIndex(x => (x||"").toUpperCase() === p);
+  if(idx >= 0) sel.value = String(idx);
+}
 
-  // indices clave
-  const brandIdx = getMarcaIndex();
-  const abcIdx = getCategoriaABCIndex();
-  const salesIdx = getSalesIndices();
+function fillAnalysisSelects(){
+  // Inputs base
+  fillSelectWithColumns("ar_colStock", "STOCK DISPONIBLE");
+  fillSelectWithColumns("ar_colPendiente", "PENDIENTE DE DESPACHO");
+  fillSelectWithColumns("ar_colTransito", "TRANSITO");
+  fillSelectWithColumns("ar_colLeadDays", "LEAD TIME (DIAS)");
 
-  // marcas distintas (en filas visibles)
-  const brandSet = new Set();
-  if(brandIdx >= 0){
-    for(const r of visibleRowIdx){
-      const b = (getCellData(r, brandIdx) || "").trim();
-      if(b) brandSet.add(b.toUpperCase());
-    }
+  // Outputs (por defecto usan las columnas existentes del template)
+  fillSelectWithColumns("ar_colStockOut", "STOCK DISPONIBLE");
+  fillSelectWithColumns("ar_colAvgOut", "PROMEDIO VENTA MENSUAL");
+  fillSelectWithColumns("ar_colEffOut", "EFECTIVIDAD DE VENTA");
+  fillSelectWithColumns("ar_colNoSaleOut", "MESES SIN VENTAS");
+
+  // Pedidos recientes: por defecto usa ULTIMA COMPRA (ya existe)
+  fillSelectWithColumns("ar_colRecentDate", "ULTIMA COMPRA");
+
+  // Columna para escribir “EXCLUIDO”: si no existe, usa COMENTARIOS (default)
+  fillSelectWithColumns("ar_colExcludedOut", "COMENTARIOS");
+}
+
+function defaultAnalysisRules(){
+  return {
+    addPendiente: true,
+    addTransito: true,
+
+    colStock: getColIdxByName("STOCK DISPONIBLE"),
+    colPendiente: getColIdxByName("PENDIENTE DE DESPACHO"),
+    colTransito: getColIdxByName("TRANSITO"),
+    colStockOut: getColIdxByName("STOCK DISPONIBLE"),
+
+    colLeadDays: getColIdxByName("LEAD TIME (DIAS)"),
+    ltMode: "FULL",        // FULL | PCT
+    ltPct: 100,
+    safetyMonths: 0,
+
+    monthAvgMode: "SOLD_MONTHS", // SOLD_MONTHS | ALWAYS_12
+    colAvgOut: getColIdxByName("PROMEDIO VENTA MENSUAL"),
+    colEffOut: getColIdxByName("EFECTIVIDAD DE VENTA"),
+    colNoSaleOut: getColIdxByName("MESES SIN VENTAS"),
+
+    recentOn: "NO",
+    recentMonths: 2,
+    colRecentDate: getColIdxByName("ULTIMA COMPRA"),
+    colExcludedOut: getColIdxByName("COMENTARIOS"),
+  };
+}
+
+function getColIdxByName(nameUpper){
+  const idx = columns.findIndex(c => (c||"").toUpperCase() === String(nameUpper).toUpperCase());
+  return idx >= 0 ? idx : 0;
+}
+
+function saveAnalysisRulesFromUI(){
+  const r = defaultAnalysisRules();
+
+  r.addPendiente = !!document.getElementById("ar_addPendiente").checked;
+  r.addTransito  = !!document.getElementById("ar_addTransito").checked;
+
+  r.colStock     = parseInt(document.getElementById("ar_colStock").value,10);
+  r.colPendiente = parseInt(document.getElementById("ar_colPendiente").value,10);
+  r.colTransito  = parseInt(document.getElementById("ar_colTransito").value,10);
+  r.colStockOut  = parseInt(document.getElementById("ar_colStockOut").value,10);
+
+  r.colLeadDays  = parseInt(document.getElementById("ar_colLeadDays").value,10);
+  r.ltMode       = document.getElementById("ar_ltMode").value;
+  r.ltPct        = clampNum(parseNumberSmart(document.getElementById("ar_ltPct").value), 0, 200);
+  r.safetyMonths = clampNum(parseNumberSmart(document.getElementById("ar_safetyMonths").value), 0, 12);
+
+  r.monthAvgMode = document.getElementById("ar_monthAvgMode").value;
+  r.colAvgOut    = parseInt(document.getElementById("ar_colAvgOut").value,10);
+  r.colEffOut    = parseInt(document.getElementById("ar_colEffOut").value,10);
+  r.colNoSaleOut = parseInt(document.getElementById("ar_colNoSaleOut").value,10);
+
+  r.recentOn       = document.getElementById("ar_recentOn").value;
+  r.recentMonths   = parseInt(document.getElementById("ar_recentMonths").value,10) || 2;
+  r.colRecentDate  = parseInt(document.getElementById("ar_colRecentDate").value,10);
+  r.colExcludedOut = parseInt(document.getElementById("ar_colExcludedOut").value,10);
+
+  localStorage.setItem(AR_KEY, JSON.stringify(r));
+  return r;
+}
+
+function loadAnalysisRules(){
+  try{
+    const raw = localStorage.getItem(AR_KEY);
+    if(!raw) return defaultAnalysisRules();
+    const obj = JSON.parse(raw);
+    return { ...defaultAnalysisRules(), ...obj };
+  }catch(e){
+    return defaultAnalysisRules();
   }
+}
 
-  // Top 5 marcas (por promedio ventas) usando tus funciones ya existentes
-  const topList = computeTopBrandsVisibleRows(5);
+function loadAnalysisRulesToUI(){
+  const r = loadAnalysisRules();
 
-  // ABC conteo (visible)
-  const abcCounts = computeABCCategoryCountsVisible();
+  document.getElementById("ar_addPendiente").checked = !!r.addPendiente;
+  document.getElementById("ar_addTransito").checked  = !!r.addTransito;
 
-  // pintar métricas
-  document.getElementById("ana_rows_visible").textContent = String(visibleRows);
-  document.getElementById("ana_rows_total").textContent = String(totalRows);
-  document.getElementById("ana_cols_visible").textContent = String(visibleCols);
-  document.getElementById("ana_brands").textContent = String(brandSet.size);
+  setSel("ar_colStock", r.colStock);
+  setSel("ar_colPendiente", r.colPendiente);
+  setSel("ar_colTransito", r.colTransito);
+  setSel("ar_colStockOut", r.colStockOut);
 
-  // pintar top 5
-  const topWrap = document.getElementById("ana_top5");
-  topWrap.innerHTML = "";
-  if(brandIdx < 0 || salesIdx.length === 0){
-    topWrap.innerHTML = `<div class="hint">Falta la columna MARCA o columnas Ventas_*</div>`;
-  }else if(topList.length === 0){
-    topWrap.innerHTML = `<div class="hint">No hay datos suficientes para calcular Top.</div>`;
-  }else{
-    topList.forEach((x, i)=>{
-      const row = document.createElement("div");
-      row.className = "anaRow";
-      row.innerHTML = `<span class="k">${i+1}. ${escapeHtml(x.label)}</span><span class="v">${formatCompact(x.value)}</span>`;
-      topWrap.appendChild(row);
-    });
-  }
+  setSel("ar_colLeadDays", r.colLeadDays);
+  setSelVal("ar_ltMode", r.ltMode);
+  document.getElementById("ar_ltPct").value = String(r.ltPct ?? 100);
+  document.getElementById("ar_safetyMonths").value = String(r.safetyMonths ?? 0);
 
-  // pintar abc
-  const abcWrap = document.getElementById("ana_abc");
-  abcWrap.innerHTML = "";
-  if(abcIdx < 0){
-    abcWrap.innerHTML = `<div class="hint">No existe la columna “CATEGORIA ABC”.</div>`;
-  }else{
-    const entries = Object.entries(abcCounts).sort((a,b)=> b[1]-a[1]);
-    if(entries.length === 0){
-      abcWrap.innerHTML = `<div class="hint">No hay categorias ABC en filas visibles.</div>`;
+  setSelVal("ar_monthAvgMode", r.monthAvgMode);
+  setSel("ar_colAvgOut", r.colAvgOut);
+  setSel("ar_colEffOut", r.colEffOut);
+  setSel("ar_colNoSaleOut", r.colNoSaleOut);
+
+  setSelVal("ar_recentOn", r.recentOn);
+  setSelVal("ar_recentMonths", String(r.recentMonths ?? 2));
+  setSel("ar_colRecentDate", r.colRecentDate);
+  setSel("ar_colExcludedOut", r.colExcludedOut);
+
+  setStatusAR("Configuración cargada. Ajusta y aplica.");
+}
+
+function setSel(id, idx){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const v = String(clampNum(Number(idx), 0, columns.length-1));
+  el.value = v;
+}
+function setSelVal(id, val){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.value = String(val);
+}
+
+function toggleRecentUI(){
+  const on = document.getElementById("ar_recentOn").value === "SI";
+  ["ar_recentMonths","ar_colRecentDate","ar_colExcludedOut"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.disabled = !on;
+  });
+}
+
+function resetAnalysisRules(){
+  localStorage.removeItem(AR_KEY);
+  loadAnalysisRulesToUI();
+}
+
+function setStatusAR(msg){
+  const el = document.getElementById("ar_status");
+  if(el) el.textContent = msg;
+}
+
+function clampNum(n, a, b){
+  n = Number(n);
+  if(isNaN(n)) n = a;
+  return Math.max(a, Math.min(b, n));
+}
+
+/* ========= CALCULOS ========= */
+
+function applyAnalysisRules(){
+  const rules = saveAnalysisRulesFromUI();
+
+  // trabajamos sobre filas visibles (respeta filtros)
+  const rows = visibleRowIdx.length ? visibleRowIdx : Array.from({length:dataRows.length}, (_,i)=>i);
+
+  const salesIdx = getSalesIndices(); // Ventas_*
+  const isMonthMode = (salesMode === "MONTH");
+
+  let excludedCount = 0;
+  let computed = 0;
+
+  for(const r of rows){
+    // 1) Stock Analisis
+    const baseStock = parseNumberSmart(getCellData(r, rules.colStock));
+    const pend = parseNumberSmart(getCellData(r, rules.colPendiente));
+    const tran = parseNumberSmart(getCellData(r, rules.colTransito));
+
+    let stockAnalisis = baseStock;
+    if(rules.addPendiente) stockAnalisis += pend;
+    if(rules.addTransito) stockAnalisis += tran;
+    setCellData(r, rules.colStockOut, String(round2(stockAnalisis)));
+
+    // 3) Promedio venta mensual + 4) efectividad + meses sin venta
+    const salesVals = salesIdx.map(i => parseNumberSmart(getCellData(r, i)));
+    const totalSales = salesVals.reduce((s,x)=>s+x,0);
+
+    const monthsWithSale = salesVals.filter(x=>x>0).length;
+
+    let avgMonthly = 0;
+    if(salesMode === "YEAR"){
+      // sum / 12
+      avgMonthly = totalSales / 12;
+      setCellData(r, rules.colNoSaleOut, "");   // meses sin ventas no aplica bien en YEAR
+      setCellData(r, rules.colEffOut, "");      // efectividad mensual no aplica bien en YEAR
     }else{
-      entries.forEach(([k,v])=>{
-        const row = document.createElement("div");
-        row.className = "anaRow";
-        row.innerHTML = `<span class="k">${escapeHtml(k)}</span><span class="v">${v}</span>`;
-        abcWrap.appendChild(row);
-      });
+      // MONTH
+      if(rules.monthAvgMode === "ALWAYS_12"){
+        avgMonthly = totalSales / 12;
+      }else{
+        // total / meses con venta
+        avgMonthly = monthsWithSale > 0 ? (totalSales / monthsWithSale) : 0;
+      }
+
+      setCellData(r, rules.colEffOut, String(monthsWithSale)); // “efectividad” = meses con venta (0..12)
+
+      // meses sin ventas: meses desde última venta, si este mes hay venta => 0
+      const monthsNoSale = calcMonthsNoSaleFromSalesArray(salesVals);
+      setCellData(r, rules.colNoSaleOut, String(monthsNoSale));
     }
-  }
 
-  // nota
-  const note = document.getElementById("ana_note");
-  const salesInfo = (salesIdx.length ? `${salesIdx.length} col(s) Ventas_` : "0 col(s) Ventas_");
-  note.textContent = `Filas visibles por filtros: ${visibleRows} · ${salesInfo} · Modo ventas: ${salesMode === "YEAR" ? "AÑO" : "MES"}`;
-}
+    setCellData(r, rules.colAvgOut, String(round2(avgMonthly)));
 
-function computeTopBrandsVisibleRows(limit){
-  const brandIdx = getMarcaIndex();
-  const salesIdx = getSalesIndices();
-  if(brandIdx < 0 || salesIdx.length === 0) return [];
+    // 5) Excluir pedidos recientes (si aplica)
+    if(rules.recentOn === "SI"){
+      const d = parseDateSmart(getCellData(r, rules.colRecentDate));
+      const isRecent = d ? (monthsBetween(d, new Date()) < (rules.recentMonths + 0.0001)) : false;
 
-  const agg = new Map();
-
-  for(const r of visibleRowIdx){
-    const brandRaw = (getCellData(r, brandIdx) || "").trim();
-    if(!brandRaw) continue;
-
-    let sum = 0;
-    let count = 0;
-    for(const si of salesIdx){
-      const raw = getCellData(r, si);
-      const n = parseNumberSmart(raw);
-      if(n !== 0 || String(raw).trim() !== ""){
-        sum += n;
-        count++;
+      if(isRecent){
+        excludedCount++;
+        // escribe “EXCLUIDO” (sin borrar lo anterior, si lo mandaste a COMENTARIOS)
+        const cur = (getCellData(r, rules.colExcludedOut) || "").trim();
+        const tag = `EXCLUIDO (${rules.recentMonths}m)`;
+        setCellData(r, rules.colExcludedOut, cur ? (cur + " | " + tag) : tag);
       }
     }
-    if(count === 0) continue;
 
-    const avg = sum / count;
-    const key = brandRaw.toUpperCase();
-
-    const prev = agg.get(key) || { label: brandRaw, sum: 0 };
-    prev.sum += avg;
-    agg.set(key, prev);
+    computed++;
   }
 
-  return [...agg.values()]
-    .sort((a,b)=> b.sum - a.sum)
-    .slice(0, limit)
-    .map(x=>({ label: x.label, value: x.sum }));
+  // re-render + charts si aplica
+  scheduleRender();
+  if(abcVisible) updateABCChart();
+  if(topVisible) updateTopBrandsChart();
+
+  setStatusAR(`Aplicado a ${computed} fila(s). Excluidos por pedidos recientes: ${excludedCount}.`);
 }
 
-function computeABCCategoryCountsVisible(){
-  const idx = getCategoriaABCIndex();
-  if(idx < 0) return {};
+/* meses sin ventas:
+   - salesVals = [12 meses] ordenados de mas viejo->mas nuevo (tu salesColsMonth los crea así)
+   - si el último mes (más reciente) >0 => 0
+   - si no, cuenta hacia atrás hasta encontrar un mes con venta
+*/
+function calcMonthsNoSaleFromSalesArray(salesVals){
+  if(!salesVals || !salesVals.length) return 0;
+  const last = salesVals[salesVals.length-1];
+  if(last > 0) return 0;
 
-  const out = {};
-  for(const r of visibleRowIdx){
-    const cat = normalizeCat(getCellData(r, idx));
-    out[cat] = (out[cat] || 0) + 1;
+  for(let i=salesVals.length-1; i>=0; i--){
+    if(salesVals[i] > 0){
+      return (salesVals.length-1) - i;
+    }
   }
-  return out;
+  // nunca vendió en los 12 meses
+  return salesVals.length;
+}
+
+function round2(n){
+  n = Number(n) || 0;
+  return Math.round(n * 100) / 100;
+}
+
+/* ========= FECHAS =========
+   soporta:
+   - dd/mm/yyyy
+   - dd-mm-yyyy
+   - yyyy-mm-dd
+   - yyyy/mm/dd
+*/
+function parseDateSmart(v){
+  if(!v) return null;
+  const s = String(v).trim();
+  if(!s) return null;
+
+  // yyyy-mm-dd o yyyy/mm/dd
+  let m = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if(m){
+    const yy = parseInt(m[1],10);
+    const mm = parseInt(m[2],10)-1;
+    const dd = parseInt(m[3],10);
+    const d = new Date(yy, mm, dd);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // dd/mm/yyyy o dd-mm-yyyy
+  m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if(m){
+    const dd = parseInt(m[1],10);
+    const mm = parseInt(m[2],10)-1;
+    const yy = parseInt(m[3],10);
+    const d = new Date(yy, mm, dd);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // fallback Date.parse
+  const t = Date.parse(s);
+  if(!isNaN(t)) return new Date(t);
+
+  return null;
+}
+
+function monthsBetween(d1, d2){
+  // d2 - d1 en meses aproximados
+  const a = new Date(d1.getFullYear(), d1.getMonth(), 1);
+  const b = new Date(d2.getFullYear(), d2.getMonth(), 1);
+  const months = (b.getFullYear()-a.getFullYear())*12 + (b.getMonth()-a.getMonth());
+  // ajuste fino por días
+  const dayAdj = (d2.getDate() - d1.getDate()) / 30;
+  return months + dayAdj;
 }
 
 </script>
