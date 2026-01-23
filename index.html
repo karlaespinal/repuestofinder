@@ -582,6 +582,8 @@
 
       <div class="navRight">
         <!-- ✅ Herramientas (dropdown) -->
+        <!-- ✅ Herramientas (solo con sesion) -->
+<div id="toolsWrap" style="display:none">
         <div class="dd" id="toolsDD">
           <button class="btn btnGhost" id="btnTools" onclick="toggleToolsMenu(event)">
             Herramientas <span style="opacity:.7">▾</span>
@@ -600,7 +602,6 @@
               <span class="pill">Nuevo</span>
             </div>
 
-            <!-- ✅ 4 puestos vacíos (Proximamente) -->
             <div class="ddItem disabled" role="menuitem" aria-disabled="true">
               <div>— Proximamente <div style="margin-top:2px"><small>Espacio reservado</small></div></div>
               <small>—</small>
@@ -619,6 +620,8 @@
             </div>
           </div>
         </div>
+      </div>
+
 
         <!-- ✅ Login (solo si NO hay sesion) -->
         <button class="btn btnGhost" id="btnLogin" style="display:none" onclick="openAuth()">Login</button>
@@ -1243,6 +1246,7 @@
       const btnLogin  = $("btnLogin");
       const btnDemo   = $("btnDemo");
       const btnSignup = $("btnSignup");
+      const toolsWrap = $("toolsWrap");
 
       const { data: ses } = await supabase.auth.getSession();
       const user = ses?.session?.user;
@@ -1250,14 +1254,17 @@
       // Salir solo con sesion
       if(btnLogout) btnLogout.style.display = user ? "" : "none";
 
+      // Herramientas solo con sesion
+      if(toolsWrap) toolsWrap.style.display = user ? "" : "none";
+
       // Login / Registrarme / Demo solo SIN sesion
       if(btnLogin)  btnLogin.style.display  = user ? "none" : "";
       if(btnSignup) btnSignup.style.display = user ? "none" : "";
       if(btnDemo)   btnDemo.style.display   = user ? "none" : "";
 
-      // Pintar contador del demo (si aplica)
       paint();
     }
+
 
     function looksLikeRecoveryUrl(){
       const u = new URL(window.location.href);
@@ -1420,6 +1427,8 @@
   </script>
 </body>
 </html>
+
+
 
 
 
