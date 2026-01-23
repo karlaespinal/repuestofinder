@@ -177,6 +177,7 @@
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let lastPayload = null;
+  let currentSearchSessionId = null; // <- session en DB (search_sessions)
 
   function setStatus(txt){ document.getElementById("status").textContent = txt; }
 
@@ -210,27 +211,21 @@
   };
 
   async function initAuth_(){
-  const logoutLink = document.getElementById("logoutLink");
+    const logoutLink = document.getElementById("logoutLink");
+    const params = new URLSearchParams(window.location.search);
+    const isDemo = params.get("demo") === "1";
+    const { data } = await supabase.auth.getSession();
 
-  const params = new URLSearchParams(window.location.search);
-  const isDemo = params.get("demo") === "1";
-
-  const { data } = await supabase.auth.getSession();
-
-  // ✅ Si NO hay sesión pero es DEMO => permitir entrar
-  if(!data || !data.session){
-    if(isDemo){
-      if(logoutLink) logoutLink.style.display = "none";
+    if(!data || !data.session){
+      if(isDemo){
+        if(logoutLink) logoutLink.style.display = "none";
+        return;
+      }
+      window.location.href = "/?stay=1";
       return;
     }
-    // ❌ No hay sesión y NO es demo => fuera
-    window.location.href = "/?stay=1";
-    return;
+    if(logoutLink) logoutLink.style.display = "inline-flex";
   }
-
-  // ✅ hay sesión => mostrar logout
-  if(logoutLink) logoutLink.style.display = "inline-flex";
-}
 
   function escapeHtml_(s){
     return String(s ?? "")
@@ -302,6 +297,120 @@
     return "https://www.google.com/search?q=" + encodeURIComponent(code);
   }
 
+  // ======================================================
+  // ✅ MARKET INTEL: anon_id + session + category + logging
+  // ======================================================
+
+  function getOrCreateAnonId_(){
+    try{
+      const key = "rf_anon_id";
+      let v = localStorage.getItem(key);
+      if(v) return v;
+      v = "anon_" + crypto.getRandomValues(new Uint32Array(4)).join("-");
+      localStorage.setItem(key, v);
+      return v;
+    }catch(e){
+      return "anon_" + Math.random().toString(16).slice(2);
+    }
+  }
+
+  function detectDevice_(){
+    const w = Math.min(window.innerWidth || 9999, screen.width || 9999);
+    const isTouch = (window.matchMedia && window.matchMedia("(pointer:coarse)").matches) ||
+                    (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
+    return ((w <= 1024) || isTouch) ? "mobile" : "desktop";
+  }
+
+  // Clasificador simple por keywords (ajústalo a tu gusto)
+  function classifyCategory_(q){
+    const s = String(q||"").toLowerCase();
+
+    const has = (...words) => words.some(w => s.includes(w));
+
+    if(has("amortigu", "shock", "rotula", "buje", "bushing", "stabil", "terminal", "cremallera", "rack", "biela", "suspension")){
+      return "suspension";
+    }
+    if(has("pastilla", "disco", "caliper", "caliper", "zapata", "freno", "brake", "cilindro maestro", "master cylinder")){
+      return "frenos";
+    }
+    if(has("piston", "anillo", "ring", "junta", "empaque", "culata", "head gasket", "bomba aceite", "oil pump", "cadena tiempo", "timing")){
+      return "motor";
+    }
+    if(has("filtro", "filter", "mann", "mahle", "aceite", "oil filter", "air filter", "cabina")){
+      return "filtros";
+    }
+    if(has("alternador", "arranque", "starter", "sensor", "bobina", "coil", "bujia", "spark", "relay", "rele", "fusible")){
+      return "electrico";
+    }
+    if(has("radiador", "bomba agua", "water pump", "termostato", "coolant", "manguera", "fan", "abanico")){
+      return "cooling";
+    }
+    return "otros";
+  }
+
+  async function getCurrentUserId_(){
+    try{
+      const { data } = await supabase.auth.getSession();
+      return data?.session?.user?.id || null;
+    }catch(e){
+      return null;
+    }
+  }
+
+  async function ensureSearchSession_(){
+    if(currentSearchSessionId) return currentSearchSessionId;
+
+    const anonId = getOrCreateAnonId_();
+    const userId = await getCurrentUserId_();
+
+    const { data, error } = await supabase
+      .from("search_sessions")
+      .insert([{
+        user_id: userId,
+        anon_id: anonId,
+        source: "web",
+        device: detectDevice_()
+      }])
+      .select("id")
+      .single();
+
+    if(error){
+      // No rompas la app por el log; solo reporta en consola
+      console.warn("No pude crear search_session:", error.message);
+      return null;
+    }
+
+    currentSearchSessionId = data?.id || null;
+    return currentSearchSessionId;
+  }
+
+  async function logSearchEvent_({ queryRaw, queryType, normalizedQuery, category, resultStatus, resultsCount, responseTimeMs, meta }){
+    try{
+      const sessionId = await ensureSearchSession_();
+      const userId = await getCurrentUserId_();
+
+      const payload = {
+        session_id: sessionId,
+        user_id: userId,
+        query_raw: queryRaw,
+        query_type: queryType || "mixed",
+        normalized_query: normalizedQuery || null,
+        category: category || null,
+        result_status: resultStatus || "unknown",
+        results_count: Number.isFinite(resultsCount) ? resultsCount : 0,
+        response_time_ms: Number.isFinite(responseTimeMs) ? responseTimeMs : null,
+        meta: meta || {}
+      };
+
+      const { error } = await supabase.from("search_events").insert([payload]);
+      if(error) console.warn("No pude insertar search_event:", error.message);
+    }catch(e){
+      console.warn("Error logSearchEvent_:", e?.message || e);
+    }
+  }
+
+  // ======================================================
+
   async function resolveOriginals_(codeNorm){
     const { data, error } = await supabase
       .from("cambios")
@@ -334,7 +443,6 @@
     return { headers: ["cambio", "owner"], rows };
   }
 
-  // ✅ Vehicles: quitar columnas + reordenar + renombrar headers
   async function fetchVehiclesByOriginals_(originalNorms){
     const { data, error } = await supabase
       .from("datos_vehiculares")
@@ -347,7 +455,6 @@
     const rowsData = data || [];
     if(rowsData.length === 0) return { headers: [], rows: [] };
 
-    // Columnas que NO quieres ver
     const exclude = new Set([
       "id",
       "original",
@@ -357,7 +464,6 @@
       "createdAt"
     ]);
 
-    // Orden deseado: Vehiculo -> Año inicio -> Año final -> Modelo -> resto
     const preferred = [
       "vehiculo",
       "anio_inicio",
@@ -371,19 +477,14 @@
       "notas"
     ];
 
-    // headers base según keys reales
     const allKeys = Object.keys(rowsData[0] || {}).filter(k => !exclude.has(k));
-
     const preferredExisting = preferred.filter(k => allKeys.includes(k));
     const rest = allKeys.filter(k => !preferredExisting.includes(k));
-
     const headersKeys = [...preferredExisting, ...rest];
 
-    // Renombrar headers visibles
     const headerLabel = (k) => {
       if(k === "anio_inicio") return "Año inicio";
       if(k === "anio_final") return "Año final";
-      // default: Capitalizar primera letra y reemplazar _ por espacio
       return k.replace(/_/g," ").replace(/^./, c => c.toUpperCase());
     };
 
@@ -413,6 +514,8 @@
   };
 
   window.buscar = async function(){
+    const t0 = performance.now();
+
     const raw = (document.getElementById("code").value || "").trim();
     if(!raw){ setStatus("Escribe un codigo."); return; }
 
@@ -438,10 +541,51 @@
       };
 
       render(payload);
+
+      // ✅ calcular status + counts
+      const vehCount = (veh && Array.isArray(veh.rows)) ? veh.rows.length : 0;
+      const cambCount = (camb && Array.isArray(camb.rows)) ? camb.rows.length : 0;
+      const totalResults = vehCount + cambCount;
+
+      const resultStatus = totalResults > 0 ? "found" : "not_found";
+      const category = classifyCategory_(raw);
+
+      const t1 = performance.now();
+      const responseMs = Math.round(t1 - t0);
+
+      // ✅ log evento (NO rompe la app si falla)
+      await logSearchEvent_({
+        queryRaw: raw,
+        queryType: "oem",
+        normalizedQuery: norm,
+        category,
+        resultStatus,
+        resultsCount: totalResults,
+        responseTimeMs: responseMs,
+        meta: {
+          original_norms_count: Array.isArray(originalNorms) ? originalNorms.length : 0,
+          vehicles_count: vehCount,
+          cambios_count: cambCount
+        }
+      });
+
     }catch(e){
       console.error(e);
       setStatus("Error: " + (e && e.message ? e.message : e));
       alert("Error consultando: " + (e && e.message ? e.message : e));
+
+      // también logueamos el error como not_found/unknown
+      const t1 = performance.now();
+      await logSearchEvent_({
+        queryRaw: raw,
+        queryType: "oem",
+        normalizedQuery: norm,
+        category: classifyCategory_(raw),
+        resultStatus: "unknown",
+        resultsCount: 0,
+        responseTimeMs: Math.round(t1 - t0),
+        meta: { error: (e && e.message) ? e.message : String(e) }
+      });
     }
   };
 
@@ -532,14 +676,14 @@
   supabase.auth.onAuthStateChange((event, session) => {
     const params = new URLSearchParams(window.location.search);
     const isDemo = params.get("demo") === "1";
-
-    // ✅ Si es demo, no rebotes aunque no haya sesión
     if (!session && !isDemo) window.location.href = "/?stay=1";
   });
 
 </script>
 </body>
 </html>
+
+
 
 
 
