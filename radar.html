@@ -89,9 +89,10 @@
     .hero h1{ margin:0; font-size:26px; letter-spacing:-.2px; }
     .hero p{ margin:10px 0 0; color:var(--mut); font-size:14px; line-height:1.45; max-width:900px; }
 
+    /* 4 tarjetas -> 2 columnas en desktop */
     .grid{
       display:grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: 1fr 1fr;
       gap:12px;
       margin-top:14px;
     }
@@ -170,6 +171,10 @@
       background:rgba(37,99,235,.08);
       color:var(--pri);
       white-space:nowrap;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      margin:2px 4px 2px 0;
     }
     .bOk{ background:rgba(16,185,129,.10); color:var(--ok); border-color:rgba(16,185,129,.25); }
     .bBad{ background:rgba(239,68,68,.10); color:var(--bad); border-color:rgba(239,68,68,.25); }
@@ -218,11 +223,11 @@
     </div>
 
     <div class="hero">
-      <h1>Radar de Demanda RD & eBay</h1>
+      <h1>Radar de Demanda RD (Interno + Señales Externas)</h1>
       <p>
-        Este panel combina: (1) lo que la gente busca dentro de RepuestoFinder y (2) una señal externa (eBay) para detectar
-        modelos, años, motores y oportunidades por línea (frenos, suspensión, motor, etc.).
-        <b>No depende de precios</b>: detecta tendencia y demanda.
+        Este panel combina: (1) lo que la gente busca dentro de RepuestoFinder y (2) señales externas:
+        <b>eBay (sandbox por ahora)</b> y <b>Google Autocomplete</b> para descubrir demanda real.
+        <b>No depende de precios</b>: detecta intención y tendencia.
       </p>
 
       <div class="filters">
@@ -243,7 +248,7 @@
           <option value="otros">Otros</option>
         </select>
 
-        <input id="q" class="inp text" placeholder="Filtrar / eBay query (ej: corolla 2014 2017 brake pads)" />
+        <input id="q" class="inp text" placeholder="Filtrar / query (ej: corolla 2014 2017 brake pads)" />
 
         <button class="btn btnGhost" onclick="resetFilters()">Limpiar</button>
       </div>
@@ -270,6 +275,7 @@
     </div>
 
     <div class="grid">
+      <!-- 1) Top interno -->
       <div class="card">
         <h2>Top Búsquedas (interno)</h2>
         <div class="sub">Lo más buscado en tu sistema</div>
@@ -288,6 +294,7 @@
         </div>
       </div>
 
+      <!-- 2) Oportunidades -->
       <div class="card">
         <h2>Oportunidades (alto “no encontrado”)</h2>
         <div class="sub">Demanda sin cobertura (ideal para importación)</div>
@@ -307,13 +314,12 @@
         </div>
       </div>
 
+      <!-- 3) Señal eBay -->
       <div class="card">
         <h2>Señal eBay (externo)</h2>
         <div class="sub">Resultados desde Edge Function (keys seguras)</div>
 
-        <div class="msg" id="ebMsg" style="display:block">
-          Cargando señal eBay...
-        </div>
+        <div class="msg" id="ebMsg" style="display:block">Cargando señal eBay...</div>
 
         <div class="tableWrap" style="margin-top:10px">
           <table id="tEbay">
@@ -328,6 +334,33 @@
             <tbody>
               <tr>
                 <td class="mut">—</td>
+                <td class="mut">—</td>
+                <td class="mut">—</td>
+                <td class="mut">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 4) Señal Google Suggest -->
+      <div class="card">
+        <h2>Señal Google (autocomplete)</h2>
+        <div class="sub">Lo que la gente realmente está buscando</div>
+
+        <div class="msg" id="gMsg" style="display:block">Cargando sugerencias...</div>
+
+        <div class="tableWrap" style="margin-top:10px">
+          <table id="tGoogle">
+            <thead>
+              <tr>
+                <th>Query base</th>
+                <th>Sugerencias</th>
+                <th>Insights</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
                 <td class="mut">—</td>
                 <td class="mut">—</td>
                 <td class="mut">—</td>
@@ -356,6 +389,14 @@
 
     function setEbayMsg(text, isErr){
       const el = $("ebMsg");
+      if(!el) return;
+      el.textContent = text || "";
+      el.classList.toggle("err", !!isErr);
+      el.style.display = text ? "block" : "none";
+    }
+
+    function setGoogleMsg(text, isErr){
+      const el = $("gMsg");
       if(!el) return;
       el.textContent = text || "";
       el.classList.toggle("err", !!isErr);
@@ -451,7 +492,7 @@
         </tr>
       `).join("") || `<tr><td colspan="4" style="color:#64748b;font-weight:800">Sin datos para el filtro.</td></tr>`;
 
-      return rows; // <- para usarlo como fallback en eBay
+      return rows; // <- para usarlo como fallback externo
     }
 
     async function loadOpp(){
@@ -506,23 +547,44 @@
     }
 
     function normalizeCategory(cat){
-      // lo que tu UI usa -> lo que queremos mandar a la función
-      // (la función puede ignorarlo si todavía no lo usa)
       const c = String(cat||"").trim().toLowerCase();
       if(!c) return "";
       return c;
     }
 
-    async function loadEbay(topRows){
-      // 1) tomar query desde input; si está vacío, usar el top #1 interno
-      const userQ = ($("q").value || "").trim();
-      const fallback = (topRows && topRows.length) ? String(topRows[0].query_raw || "").trim() : "";
-      const q = userQ || fallback;
+    function isNumericOrCodeLike(s){
+      const x = String(s||"").trim();
+      if(!x) return false;
+      // solo numeros (min 4)
+      if(/^\d{4,}$/.test(x)) return true;
+      // tipo codigo: letras/numeros/guion (min 6)
+      if(/^[A-Z0-9\-]{6,}$/i.test(x)) return true;
+      return false;
+    }
 
-      // 2) category (opcional)
+    function demoQueryByCategory(category){
+      const c = String(category||"").trim().toLowerCase();
+      if(c === "frenos") return "Toyota Corolla 2014-2017 brake pads";
+      if(c === "suspension") return "Honda Civic 2012-2015 suspension control arm";
+      if(c === "motor") return "Hyundai Elantra 2013-2016 engine mount";
+      if(c === "electrico") return "Toyota Corolla 2014-2017 oxygen sensor";
+      if(c === "cooling") return "Honda Civic 2012-2015 radiator";
+      if(c === "transmision") return "Nissan Sentra 2013-2017 transmission mount";
+      return "Toyota Corolla 2014-2017 brake pads";
+    }
+
+    async function loadEbay(topRows){
+      // 1) tomar query desde input; si está vacío, usar top #1 interno
+      const userQ = ($("q").value || "").trim();
+      let fallback = (topRows && topRows.length) ? String(topRows[0].query_raw || "").trim() : "";
       const category = normalizeCategory($("category").value);
 
-      // 3) pintar mensaje y llamar Edge Function
+      // Evitar mandar a eBay un código/numero puro (ej: 111242)
+      if(!userQ && isNumericOrCodeLike(fallback)){
+        fallback = demoQueryByCategory(category);
+      }
+      const q = userQ || fallback;
+
       const tbody = $("tEbay").querySelector("tbody");
       tbody.innerHTML = `
         <tr>
@@ -535,30 +597,19 @@
 
       if(!q){
         setEbayMsg("No hay query para consultar eBay todavía. Haz una búsqueda en la app o escribe algo en el filtro.", false);
-        tbody.innerHTML = `
-          <tr><td colspan="4" class="mut">Sin query para eBay.</td></tr>
-        `;
+        tbody.innerHTML = `<tr><td colspan="4" class="mut">Sin query para eBay.</td></tr>`;
         return;
       }
 
       try{
         setEbayMsg(`Consultando eBay (vía Edge Function) para: "${q}"...`, false);
 
-        const payload = {
-          q,
-          limit: 20,
-          category: category || undefined
-        };
+        const payload = { q, limit: 20, category: category || undefined };
 
-        const { data, error } = await supabase.functions.invoke("ebay-radar", {
-          body: payload
-        });
-
+        const { data, error } = await supabase.functions.invoke("ebay-radar", { body: payload });
         if(error) throw error;
         if(!data) throw new Error("Respuesta vacía de ebay-radar.");
 
-        // data esperado:
-        // { env, marketplaceId, q, total, price:{low,median,high,currency}, top_brands:[], sample:[] }
         const total = Number(data.total || 0);
         const env = data.env || "—";
         const mp = data.marketplaceId || "—";
@@ -613,6 +664,80 @@
       }
     }
 
+    function wordInsights(list){
+      const stop = new Set(["de","la","el","y","para","con","en","por","un","una","del","los","las","o","a"]);
+      const counts = new Map();
+      for(const s of list){
+        const parts = String(s||"")
+          .toLowerCase()
+          .split(/\s+/)
+          .map(x=>x.replace(/[^a-z0-9áéíóúñ\-]/gi,""))
+          .filter(Boolean);
+        for(const p of parts){
+          if(p.length < 3) continue;
+          if(stop.has(p)) continue;
+          counts.set(p, (counts.get(p)||0)+1);
+        }
+      }
+      return Array.from(counts.entries()).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    }
+
+    async function loadGoogleSuggest(topRows){
+      const userQ = ($("q").value || "").trim();
+      let fallback = (topRows && topRows.length) ? String(topRows[0].query_raw || "").trim() : "";
+      const category = normalizeCategory($("category").value);
+
+      if(!userQ && isNumericOrCodeLike(fallback)){
+        fallback = demoQueryByCategory(category);
+      }
+      const baseQ = userQ || fallback;
+
+      const tbody = $("tGoogle").querySelector("tbody");
+
+      if(!baseQ){
+        setGoogleMsg("No hay query para Google Suggest todavía.", false);
+        tbody.innerHTML = `<tr><td colspan="3" class="mut">Sin query.</td></tr>`;
+        return;
+      }
+
+      try{
+        setGoogleMsg(`Consultando Google Suggest para: "${baseQ}"...`, false);
+
+        // Edge Function: google-suggest
+        const { data, error } = await supabase.functions.invoke("google-suggest", {
+          body: { q: baseQ, hl: "es", gl: "DO", limit: 10 }
+        });
+
+        if(error) throw error;
+
+        const sug = Array.isArray(data?.suggestions) ? data.suggestions : [];
+        const sugHtml = sug.length
+          ? sug.map(x=>`<div style="margin-bottom:6px"><span class="badge">${esc(x)}</span></div>`).join("")
+          : `<span class="badge bWarn">sin sugerencias</span>`;
+
+        const ins = wordInsights(sug);
+        const insHtml = ins.length
+          ? ins.map(([w,n])=> `<span class="badge">${esc(w)} · ${n}</span>`).join(" ")
+          : `<span class="badge bWarn">sin insights</span>`;
+
+        tbody.innerHTML = `
+          <tr>
+            <td>
+              <b>${esc(baseQ)}</b>
+              <div class="mut" style="margin-top:4px">país: DO · idioma: es</div>
+            </td>
+            <td style="min-width:320px">${sugHtml}</td>
+            <td>${insHtml}</td>
+          </tr>
+        `;
+
+        setGoogleMsg("", false);
+      }catch(e){
+        setGoogleMsg("Error Google: " + (e?.message || e), true);
+        tbody.innerHTML = `<tr><td colspan="3" class="mut">No se pudo cargar Google Suggest.</td></tr>`;
+      }
+    }
+
     window.goIndex = function(){ window.location.href = "index.html"; };
     window.goApp = function(){ window.location.href = "app.html"; };
 
@@ -630,6 +755,7 @@
         const topRows = await loadTop();
         await loadOpp();
         await loadEbay(topRows);
+        await loadGoogleSuggest(topRows);
         setMsg("", false);
       }catch(e){
         setMsg("Error: " + (e?.message || e), true);
@@ -640,7 +766,7 @@
       $(id).addEventListener("change", ()=> refreshAll());
     });
 
-    // Para no spamear la función en cada tecla, hacemos debounce
+    // Debounce para no spamear en cada tecla
     let tDeb = null;
     $("q").addEventListener("input", ()=>{
       clearTimeout(tDeb);
