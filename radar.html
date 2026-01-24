@@ -188,6 +188,14 @@
     }
     .msg.err{ background:rgba(239,68,68,.08); border-color:rgba(239,68,68,.18); }
 
+    .mut{ color:#64748b; font-weight:800; }
+    .link{
+      color:var(--pri);
+      font-weight:900;
+      text-decoration:none;
+    }
+    .link:hover{ text-decoration:underline; }
+
     .footer{ margin-top:14px; text-align:center; color:#94a3b8; font-size:12px; font-weight:800; }
   </style>
 </head>
@@ -235,7 +243,7 @@
           <option value="otros">Otros</option>
         </select>
 
-        <input id="q" class="inp text" placeholder="Filtrar (ej: corolla, civic, 2012, rear axle brake)" />
+        <input id="q" class="inp text" placeholder="Filtrar / eBay query (ej: corolla 2014 2017 brake pads)" />
 
         <button class="btn btnGhost" onclick="resetFilters()">Limpiar</button>
       </div>
@@ -301,34 +309,33 @@
 
       <div class="card">
         <h2>Señal eBay (externo)</h2>
-        <div class="sub">Preparado para traer tendencias por modelos/años/motores</div>
+        <div class="sub">Resultados desde Edge Function (keys seguras)</div>
 
-        <div class="msg" style="display:block">
-          eBay no se consulta directo desde el navegador (para no exponer keys).
-          Lo correcto es usar una <b>Supabase Edge Function</b> que consulte eBay y devuelva:
-          top modelos, años, motores y marcas por categoría.
+        <div class="msg" id="ebMsg" style="display:block">
+          Cargando señal eBay...
         </div>
 
         <div class="tableWrap" style="margin-top:10px">
           <table id="tEbay">
             <thead>
               <tr>
-                <th>Modelo / Motor</th>
-                <th>Línea</th>
+                <th>Query</th>
                 <th>Señal</th>
-                <th>Notas</th>
+                <th>Top marcas</th>
+                <th>Muestra</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td><span class="badge bWarn">Pendiente</span></td>
-                <td>—</td>
-                <td>—</td>
-                <td>Conectaremos eBay vía Edge Function.</td>
+                <td class="mut">—</td>
+                <td class="mut">—</td>
+                <td class="mut">—</td>
+                <td class="mut">—</td>
               </tr>
             </tbody>
           </table>
         </div>
+
       </div>
     </div>
 
@@ -341,6 +348,14 @@
 
     function setMsg(text, isErr){
       const el = $("msg");
+      if(!el) return;
+      el.textContent = text || "";
+      el.classList.toggle("err", !!isErr);
+      el.style.display = text ? "block" : "none";
+    }
+
+    function setEbayMsg(text, isErr){
+      const el = $("ebMsg");
       if(!el) return;
       el.textContent = text || "";
       el.classList.toggle("err", !!isErr);
@@ -435,6 +450,8 @@
           <td>${badgeStatus(r.last_status)}</td>
         </tr>
       `).join("") || `<tr><td colspan="4" style="color:#64748b;font-weight:800">Sin datos para el filtro.</td></tr>`;
+
+      return rows; // <- para usarlo como fallback en eBay
     }
 
     async function loadOpp(){
@@ -480,6 +497,122 @@
       `).join("") || `<tr><td colspan="5" style="color:#64748b;font-weight:800">Sin oportunidades para el filtro.</td></tr>`;
     }
 
+    function fmtMoney(v, cur){
+      if(v === null || v === undefined) return "—";
+      const n = Number(v);
+      if(Number.isNaN(n)) return "—";
+      const c = (cur || "USD").toUpperCase();
+      return `${n.toFixed(2)} ${c}`;
+    }
+
+    function normalizeCategory(cat){
+      // lo que tu UI usa -> lo que queremos mandar a la función
+      // (la función puede ignorarlo si todavía no lo usa)
+      const c = String(cat||"").trim().toLowerCase();
+      if(!c) return "";
+      return c;
+    }
+
+    async function loadEbay(topRows){
+      // 1) tomar query desde input; si está vacío, usar el top #1 interno
+      const userQ = ($("q").value || "").trim();
+      const fallback = (topRows && topRows.length) ? String(topRows[0].query_raw || "").trim() : "";
+      const q = userQ || fallback;
+
+      // 2) category (opcional)
+      const category = normalizeCategory($("category").value);
+
+      // 3) pintar mensaje y llamar Edge Function
+      const tbody = $("tEbay").querySelector("tbody");
+      tbody.innerHTML = `
+        <tr>
+          <td class="mut">—</td>
+          <td class="mut">—</td>
+          <td class="mut">—</td>
+          <td class="mut">Cargando…</td>
+        </tr>
+      `;
+
+      if(!q){
+        setEbayMsg("No hay query para consultar eBay todavía. Haz una búsqueda en la app o escribe algo en el filtro.", false);
+        tbody.innerHTML = `
+          <tr><td colspan="4" class="mut">Sin query para eBay.</td></tr>
+        `;
+        return;
+      }
+
+      try{
+        setEbayMsg(`Consultando eBay (vía Edge Function) para: "${q}"...`, false);
+
+        const payload = {
+          q,
+          limit: 20,
+          category: category || undefined
+        };
+
+        const { data, error } = await supabase.functions.invoke("ebay-radar", {
+          body: payload
+        });
+
+        if(error) throw error;
+        if(!data) throw new Error("Respuesta vacía de ebay-radar.");
+
+        // data esperado:
+        // { env, marketplaceId, q, total, price:{low,median,high,currency}, top_brands:[], sample:[] }
+        const total = Number(data.total || 0);
+        const env = data.env || "—";
+        const mp = data.marketplaceId || "—";
+
+        const median = fmtMoney(data?.price?.median, data?.price?.currency);
+        const low = fmtMoney(data?.price?.low, data?.price?.currency);
+        const high = fmtMoney(data?.price?.high, data?.price?.currency);
+
+        const brands = Array.isArray(data.top_brands) ? data.top_brands : [];
+        const brandsHtml = brands.length
+          ? brands.slice(0,8).map(b=> `<span class="badge">${esc(b)}</span>`).join(" ")
+          : `<span class="badge bWarn">sin data</span>`;
+
+        const sample = Array.isArray(data.sample) ? data.sample : [];
+        const sampleHtml = sample.length
+          ? sample.slice(0,5).map(it=>{
+              const title = esc(it.title || "Item");
+              const url = it.url || "";
+              const price = (it.price && it.price.currency && it.price.value!=null)
+                ? `${Number(it.price.value).toFixed(2)} ${esc(it.price.currency)}`
+                : "—";
+              const link = url ? `<a class="link" href="${esc(url)}" target="_blank" rel="noopener">ver</a>` : "";
+              return `<div style="margin-bottom:6px"><b>${title}</b> <span class="mut">(${price})</span> ${link}</div>`;
+            }).join("")
+          : `<span class="badge bWarn">sin items</span>`;
+
+        const signalBadge = total > 0 ? `<span class="badge bOk">total ${total}</span>` : `<span class="badge bWarn">total 0</span>`;
+
+        tbody.innerHTML = `
+          <tr>
+            <td>
+              <div><b>${esc(q)}</b></div>
+              <div class="mut" style="margin-top:4px">env: ${esc(env)} · marketplace: ${esc(mp)} · categoría: ${esc(category || "—")}</div>
+            </td>
+            <td>
+              <div>${signalBadge}</div>
+              <div style="margin-top:6px" class="mut">median: <b>${esc(median)}</b></div>
+              <div class="mut">low: ${esc(low)} · high: ${esc(high)}</div>
+              <div class="mut" style="margin-top:6px">
+                Nota: en <b>Sandbox</b> eBay suele devolver <b>0</b> resultados aunque esté “OK”.
+              </div>
+            </td>
+            <td>${brandsHtml}</td>
+            <td style="min-width:320px">${sampleHtml}</td>
+          </tr>
+        `;
+
+        setEbayMsg("", false);
+      }catch(e){
+        setEbayMsg("Error eBay: " + (e?.message || e), true);
+        tbody.innerHTML = `<tr><td colspan="4" class="mut">No se pudo cargar señal eBay.</td></tr>`;
+      }
+    }
+
     window.goIndex = function(){ window.location.href = "index.html"; };
     window.goApp = function(){ window.location.href = "app.html"; };
 
@@ -494,8 +627,9 @@
       try{
         setMsg("Cargando radar...", false);
         await loadKpis();
-        await loadTop();
+        const topRows = await loadTop();
         await loadOpp();
+        await loadEbay(topRows);
         setMsg("", false);
       }catch(e){
         setMsg("Error: " + (e?.message || e), true);
@@ -505,10 +639,12 @@
     ["range","category"].forEach(id=>{
       $(id).addEventListener("change", ()=> refreshAll());
     });
+
+    // Para no spamear la función en cada tecla, hacemos debounce
+    let tDeb = null;
     $("q").addEventListener("input", ()=>{
-      // filtra sin re-consultar: solo vuelve a pintar tablas con data actual sería mejor,
-      // pero por simpleza recargamos (si luego quieres optimizamos)
-      refreshAll();
+      clearTimeout(tDeb);
+      tDeb = setTimeout(()=> refreshAll(), 450);
     });
 
     document.getElementById("y").textContent = new Date().getFullYear();
