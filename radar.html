@@ -13,7 +13,6 @@
       --mut:#64748b;
       --pri:#2563eb;
       --pri2:#1d4ed8;
-      --dark:#111;
       --shadow:0 16px 40px rgba(2,6,23,.10);
       --r:16px;
       --ok:#10b981;
@@ -89,7 +88,6 @@
     .hero h1{ margin:0; font-size:26px; letter-spacing:-.2px; }
     .hero p{ margin:10px 0 0; color:var(--mut); font-size:14px; line-height:1.45; max-width:900px; }
 
-    /* 4 tarjetas -> 2 columnas en desktop */
     .grid{
       display:grid;
       grid-template-columns: 1fr 1fr;
@@ -194,16 +192,13 @@
     .msg.err{ background:rgba(239,68,68,.08); border-color:rgba(239,68,68,.18); }
 
     .mut{ color:#64748b; font-weight:800; }
-    .link{
-      color:var(--pri);
-      font-weight:900;
-      text-decoration:none;
-    }
+    .link{ color:var(--pri); font-weight:900; text-decoration:none; }
     .link:hover{ text-decoration:underline; }
 
     .footer{ margin-top:14px; text-align:center; color:#94a3b8; font-size:12px; font-weight:800; }
   </style>
 </head>
+
 <body>
   <div class="page">
     <div class="nav">
@@ -223,11 +218,10 @@
     </div>
 
     <div class="hero">
-      <h1>Radar de Demanda RD (Interno + Señales Externas)</h1>
+      <h1>Radar Mundial (Interno + Señales Externas por País)</h1>
       <p>
-        Este panel combina: (1) lo que la gente busca dentro de RepuestoFinder y (2) señales externas:
-        <b>eBay (sandbox por ahora)</b> y <b>Google Autocomplete</b> para descubrir demanda real.
-        <b>No depende de precios</b>: detecta intención y tendencia.
+        El país se toma del <b>perfil</b> (profiles.country) y el usuario puede cambiarlo aquí.
+        Google Suggest usa <b>gl</b> (país) e <b>hl</b> (idioma) para reflejar mercado local.
       </p>
 
       <div class="filters">
@@ -248,8 +242,27 @@
           <option value="otros">Otros</option>
         </select>
 
-        <input id="q" class="inp text" placeholder="Filtrar / query (ej: corolla 2014 2017 brake pads)" />
+        <!-- NUEVO: País e idioma -->
+        <select id="gl" class="inp select" title="País (Google gl)">
+          <option value="DO">🇩🇴 República Dominicana (DO)</option>
+          <option value="US">🇺🇸 Estados Unidos (US)</option>
+          <option value="MX">🇲🇽 México (MX)</option>
+          <option value="CO">🇨🇴 Colombia (CO)</option>
+          <option value="CL">🇨🇱 Chile (CL)</option>
+          <option value="PE">🇵🇪 Perú (PE)</option>
+          <option value="AR">🇦🇷 Argentina (AR)</option>
+          <option value="BR">🇧🇷 Brasil (BR)</option>
+          <option value="ES">🇪🇸 España (ES)</option>
+          <option value="CA">🇨🇦 Canadá (CA)</option>
+        </select>
 
+        <select id="hl" class="inp select" title="Idioma (Google hl)">
+          <option value="es" selected>Español (es)</option>
+          <option value="en">English (en)</option>
+          <option value="pt">Português (pt)</option>
+        </select>
+
+        <input id="q" class="inp text" placeholder="Filtrar / query (ej: corolla 2014 2017 brake pads)" />
         <button class="btn btnGhost" onclick="resetFilters()">Limpiar</button>
       </div>
 
@@ -257,7 +270,7 @@
         <div class="kpi">
           <div class="t">Búsquedas</div>
           <div class="v" id="k1">—</div>
-          <div class="s">Total en el rango seleccionado.</div>
+          <div class="s">Total en el rango.</div>
         </div>
         <div class="kpi">
           <div class="t">No encontrado</div>
@@ -275,100 +288,58 @@
     </div>
 
     <div class="grid">
-      <!-- 1) Top interno -->
       <div class="card">
         <h2>Top Búsquedas (interno)</h2>
-        <div class="sub">Lo más buscado en tu sistema</div>
+        <div class="sub">Lo más buscado en tu sistema (por rango)</div>
         <div class="tableWrap">
           <table id="tTop">
             <thead>
-              <tr>
-                <th>Query</th>
-                <th>Línea</th>
-                <th>Veces</th>
-                <th>Estado</th>
-              </tr>
+              <tr><th>Query</th><th>Línea</th><th>Veces</th><th>Estado</th></tr>
             </thead>
             <tbody></tbody>
           </table>
         </div>
       </div>
 
-      <!-- 2) Oportunidades -->
       <div class="card">
         <h2>Oportunidades (alto “no encontrado”)</h2>
-        <div class="sub">Demanda sin cobertura (ideal para importación)</div>
+        <div class="sub">Demanda sin cobertura</div>
         <div class="tableWrap">
           <table id="tOpp">
             <thead>
-              <tr>
-                <th>Query</th>
-                <th>Línea</th>
-                <th>Veces</th>
-                <th>No encontrado</th>
-                <th>%</th>
-              </tr>
+              <tr><th>Query</th><th>Línea</th><th>Veces</th><th>No encontrado</th><th>%</th></tr>
             </thead>
             <tbody></tbody>
           </table>
         </div>
       </div>
 
-      <!-- 3) Señal eBay -->
       <div class="card">
         <h2>Señal eBay (externo)</h2>
-        <div class="sub">Resultados desde Edge Function (keys seguras)</div>
-
+        <div class="sub">Edge Function (sandbox por ahora)</div>
         <div class="msg" id="ebMsg" style="display:block">Cargando señal eBay...</div>
-
         <div class="tableWrap" style="margin-top:10px">
           <table id="tEbay">
-            <thead>
-              <tr>
-                <th>Query</th>
-                <th>Señal</th>
-                <th>Top marcas</th>
-                <th>Muestra</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Query</th><th>Señal</th><th>Top marcas</th><th>Muestra</th></tr></thead>
             <tbody>
-              <tr>
-                <td class="mut">—</td>
-                <td class="mut">—</td>
-                <td class="mut">—</td>
-                <td class="mut">—</td>
-              </tr>
+              <tr><td class="mut">—</td><td class="mut">—</td><td class="mut">—</td><td class="mut">—</td></tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <!-- 4) Señal Google Suggest -->
       <div class="card">
         <h2>Señal Google (autocomplete)</h2>
-        <div class="sub">Lo que la gente realmente está buscando</div>
-
+        <div class="sub">Mercado local por país e idioma</div>
         <div class="msg" id="gMsg" style="display:block">Cargando sugerencias...</div>
-
         <div class="tableWrap" style="margin-top:10px">
           <table id="tGoogle">
-            <thead>
-              <tr>
-                <th>Query base</th>
-                <th>Sugerencias</th>
-                <th>Insights</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Query base</th><th>Sugerencias</th><th>Insights</th></tr></thead>
             <tbody>
-              <tr>
-                <td class="mut">—</td>
-                <td class="mut">—</td>
-                <td class="mut">—</td>
-              </tr>
+              <tr><td class="mut">—</td><td class="mut">—</td><td class="mut">—</td></tr>
             </tbody>
           </table>
         </div>
-
       </div>
     </div>
 
@@ -386,7 +357,6 @@
       el.classList.toggle("err", !!isErr);
       el.style.display = text ? "block" : "none";
     }
-
     function setEbayMsg(text, isErr){
       const el = $("ebMsg");
       if(!el) return;
@@ -394,7 +364,6 @@
       el.classList.toggle("err", !!isErr);
       el.style.display = text ? "block" : "none";
     }
-
     function setGoogleMsg(text, isErr){
       const el = $("gMsg");
       if(!el) return;
@@ -408,11 +377,9 @@
       d.setDate(d.getDate() - Number(days || 7));
       return d.toISOString();
     }
-
     function esc(s){
       return String(s||"").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
     }
-
     function badgeStatus(result_status){
       if(result_status === "found") return `<span class="badge bOk">found</span>`;
       if(result_status === "not_found") return `<span class="badge bBad">not_found</span>`;
@@ -430,6 +397,73 @@
         }
         return true;
       });
+    }
+
+    function normalizeCategory(cat){
+      const c = String(cat||"").trim().toLowerCase();
+      return c || "";
+    }
+    function isNumericOrCodeLike(s){
+      const x = String(s||"").trim();
+      if(!x) return false;
+      if(/^\d{4,}$/.test(x)) return true;
+      if(/^[A-Z0-9\-]{6,}$/i.test(x)) return true;
+      return false;
+    }
+    function demoQueryByCategory(category){
+      const c = String(category||"").trim().toLowerCase();
+      if(c === "frenos") return "Toyota Corolla 2014-2017 brake pads";
+      if(c === "suspension") return "Honda Civic 2012-2015 suspension control arm";
+      if(c === "motor") return "Hyundai Elantra 2013-2016 engine mount";
+      if(c === "electrico") return "Toyota Corolla 2014-2017 oxygen sensor";
+      if(c === "cooling") return "Honda Civic 2012-2015 radiator";
+      if(c === "transmision") return "Nissan Sentra 2013-2017 transmission mount";
+      return "Toyota Corolla 2014-2017 brake pads";
+    }
+
+    function getLocale(){
+      const gl = ($("gl").value || "DO").toUpperCase();
+      const hl = ($("hl").value || "es").toLowerCase();
+      return { gl, hl };
+    }
+    function saveLocale(){
+      const { gl, hl } = getLocale();
+      localStorage.setItem("rf_radar_gl", gl);
+      localStorage.setItem("rf_radar_hl", hl);
+    }
+    function loadLocaleFromLocalStorage(){
+      const gl = (localStorage.getItem("rf_radar_gl") || "").toUpperCase();
+      const hl = (localStorage.getItem("rf_radar_hl") || "").toLowerCase();
+      if(gl) $("gl").value = gl;
+      if(hl) $("hl").value = hl;
+    }
+
+    async function loadProfileLocaleIfAny(){
+      // Si el usuario no ha seleccionado manualmente, usamos profile.country
+      const alreadyChosen = localStorage.getItem("rf_radar_gl");
+      if(alreadyChosen) return;
+
+      const { data: ses } = await supabase.auth.getSession();
+      if(!ses?.session) return;
+
+      const userId = ses.session.user.id;
+      // Ajusta campos según tu tabla profiles: country (ISO2)
+      const { data: prof, error } = await supabase
+        .from("profiles")
+        .select("country")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if(error) return;
+
+      const c = String(prof?.country || "").trim().toUpperCase();
+      if(c && Array.from($("gl").options).some(o => o.value === c)){
+        $("gl").value = c;
+        localStorage.setItem("rf_radar_gl", c);
+      }else if(c){
+        // Si el país no está en el dropdown, lo guardamos igual y caemos a DO en UI
+        localStorage.setItem("rf_radar_gl", c);
+      }
     }
 
     async function loadKpis(){
@@ -469,7 +503,6 @@
       const { data, error } = await q;
       if(error) throw error;
 
-      // Agrupar por query_raw + category y contar
       const map = new Map();
       for(const r of (data||[])){
         const key = (r.query_raw||"") + "||" + (r.category||"");
@@ -479,7 +512,6 @@
         map.set(key, cur);
       }
       let rows = Array.from(map.values()).sort((a,b)=> b.n - a.n);
-
       rows = filterRows(rows);
 
       const tbody = $("tTop").querySelector("tbody");
@@ -490,9 +522,9 @@
           <td><b>${r.n}</b></td>
           <td>${badgeStatus(r.last_status)}</td>
         </tr>
-      `).join("") || `<tr><td colspan="4" style="color:#64748b;font-weight:800">Sin datos para el filtro.</td></tr>`;
+      `).join("") || `<tr><td colspan="4" class="mut">Sin datos para el filtro.</td></tr>`;
 
-      return rows; // <- para usarlo como fallback externo
+      return rows;
     }
 
     async function loadOpp(){
@@ -509,7 +541,6 @@
       const { data, error } = await q;
       if(error) throw error;
 
-      // Agrupar y medir not_found
       const map = new Map();
       for(const r of (data||[])){
         const key = (r.query_raw||"") + "||" + (r.category||"");
@@ -521,7 +552,7 @@
 
       let rows = Array.from(map.values())
         .map(x=>({ ...x, pct: x.n ? Math.round((x.nf/x.n)*1000)/10 : 0 }))
-        .filter(x=> x.n >= 2) // mínimo 2 ocurrencias
+        .filter(x=> x.n >= 2)
         .sort((a,b)=> (b.pct - a.pct) || (b.n - a.n));
 
       rows = filterRows(rows);
@@ -535,7 +566,7 @@
           <td><span class="badge bBad">${r.nf}</span></td>
           <td><span class="badge bWarn">${r.pct.toFixed(1)}%</span></td>
         </tr>
-      `).join("") || `<tr><td colspan="5" style="color:#64748b;font-weight:800">Sin oportunidades para el filtro.</td></tr>`;
+      `).join("") || `<tr><td colspan="5" class="mut">Sin oportunidades para el filtro.</td></tr>`;
     }
 
     function fmtMoney(v, cur){
@@ -546,63 +577,27 @@
       return `${n.toFixed(2)} ${c}`;
     }
 
-    function normalizeCategory(cat){
-      const c = String(cat||"").trim().toLowerCase();
-      if(!c) return "";
-      return c;
-    }
-
-    function isNumericOrCodeLike(s){
-      const x = String(s||"").trim();
-      if(!x) return false;
-      // solo numeros (min 4)
-      if(/^\d{4,}$/.test(x)) return true;
-      // tipo codigo: letras/numeros/guion (min 6)
-      if(/^[A-Z0-9\-]{6,}$/i.test(x)) return true;
-      return false;
-    }
-
-    function demoQueryByCategory(category){
-      const c = String(category||"").trim().toLowerCase();
-      if(c === "frenos") return "Toyota Corolla 2014-2017 brake pads";
-      if(c === "suspension") return "Honda Civic 2012-2015 suspension control arm";
-      if(c === "motor") return "Hyundai Elantra 2013-2016 engine mount";
-      if(c === "electrico") return "Toyota Corolla 2014-2017 oxygen sensor";
-      if(c === "cooling") return "Honda Civic 2012-2015 radiator";
-      if(c === "transmision") return "Nissan Sentra 2013-2017 transmission mount";
-      return "Toyota Corolla 2014-2017 brake pads";
-    }
-
     async function loadEbay(topRows){
-      // 1) tomar query desde input; si está vacío, usar top #1 interno
       const userQ = ($("q").value || "").trim();
       let fallback = (topRows && topRows.length) ? String(topRows[0].query_raw || "").trim() : "";
       const category = normalizeCategory($("category").value);
 
-      // Evitar mandar a eBay un código/numero puro (ej: 111242)
       if(!userQ && isNumericOrCodeLike(fallback)){
         fallback = demoQueryByCategory(category);
       }
       const q = userQ || fallback;
 
       const tbody = $("tEbay").querySelector("tbody");
-      tbody.innerHTML = `
-        <tr>
-          <td class="mut">—</td>
-          <td class="mut">—</td>
-          <td class="mut">—</td>
-          <td class="mut">Cargando…</td>
-        </tr>
-      `;
+      tbody.innerHTML = `<tr><td class="mut">—</td><td class="mut">—</td><td class="mut">—</td><td class="mut">Cargando…</td></tr>`;
 
       if(!q){
-        setEbayMsg("No hay query para consultar eBay todavía. Haz una búsqueda en la app o escribe algo en el filtro.", false);
+        setEbayMsg("No hay query para consultar eBay todavía.", false);
         tbody.innerHTML = `<tr><td colspan="4" class="mut">Sin query para eBay.</td></tr>`;
         return;
       }
 
       try{
-        setEbayMsg(`Consultando eBay (vía Edge Function) para: "${q}"...`, false);
+        setEbayMsg(`Consultando eBay para: "${q}"...`, false);
 
         const payload = { q, limit: 20, category: category || undefined };
 
@@ -668,11 +663,8 @@
       const stop = new Set(["de","la","el","y","para","con","en","por","un","una","del","los","las","o","a"]);
       const counts = new Map();
       for(const s of list){
-        const parts = String(s||"")
-          .toLowerCase()
-          .split(/\s+/)
-          .map(x=>x.replace(/[^a-z0-9áéíóúñ\-]/gi,""))
-          .filter(Boolean);
+        const parts = String(s||"").toLowerCase().split(/\s+/)
+          .map(x=>x.replace(/[^a-z0-9áéíóúñ\-]/gi,"")).filter(Boolean);
         for(const p of parts){
           if(p.length < 3) continue;
           if(stop.has(p)) continue;
@@ -683,6 +675,8 @@
     }
 
     async function loadGoogleSuggest(topRows){
+      const { gl, hl } = getLocale();
+
       const userQ = ($("q").value || "").trim();
       let fallback = (topRows && topRows.length) ? String(topRows[0].query_raw || "").trim() : "";
       const category = normalizeCategory($("category").value);
@@ -701,13 +695,11 @@
       }
 
       try{
-        setGoogleMsg(`Consultando Google Suggest para: "${baseQ}"...`, false);
+        setGoogleMsg(`Google Suggest (${gl}/${hl}) para: "${baseQ}"...`, false);
 
-        // Edge Function: google-suggest
         const { data, error } = await supabase.functions.invoke("google-suggest", {
-          body: { q: baseQ, hl: "es", gl: "DO", limit: 10 }
+          body: { q: baseQ, hl, gl, limit: 10 }
         });
-
         if(error) throw error;
 
         const sug = Array.isArray(data?.suggestions) ? data.suggestions : [];
@@ -724,7 +716,7 @@
           <tr>
             <td>
               <b>${esc(baseQ)}</b>
-              <div class="mut" style="margin-top:4px">país: DO · idioma: es</div>
+              <div class="mut" style="margin-top:4px">país: ${esc(gl)} · idioma: ${esc(hl)}</div>
             </td>
             <td style="min-width:320px">${sugHtml}</td>
             <td>${insHtml}</td>
@@ -766,15 +758,26 @@
       $(id).addEventListener("change", ()=> refreshAll());
     });
 
-    // Debounce para no spamear en cada tecla
     let tDeb = null;
     $("q").addEventListener("input", ()=>{
       clearTimeout(tDeb);
       tDeb = setTimeout(()=> refreshAll(), 450);
     });
 
+    // NUEVO: cambios de país/idioma
+    ["gl","hl"].forEach(id=>{
+      $(id).addEventListener("change", ()=>{
+        saveLocale();
+        refreshAll();
+      });
+    });
+
+    // init
     document.getElementById("y").textContent = new Date().getFullYear();
+    loadLocaleFromLocalStorage();
+    await loadProfileLocaleIfAny();
     refreshAll();
   </script>
 </body>
 </html>
+
