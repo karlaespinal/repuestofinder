@@ -47,6 +47,12 @@
     .accRight{display:flex;align-items:center;gap:10px;}
     .tableWrap{overflow:auto;border-radius:12px;border:1px solid #eef0f6}
 
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border-radius:999px;border:1px solid #e6e8f0;
+      background:#fff;font-weight:900;font-size:12px;color:#111
+    }
+
     @media(max-width:1024px){
       .topbar{flex-direction:column;align-items:flex-start}
       .card.menuCard{padding:14px 16px}
@@ -102,6 +108,11 @@
 
     <div style="margin-top:10px" class="ok">
       <span class="dot"></span><span id="status">Listo</span>
+    </div>
+
+    <div style="margin-top:8px" class="muted">
+      Mercado (pais): <span class="pill" id="pillCountry">—</span>
+      <span id="pillCityWrap" style="display:none"> · ciudad: <span class="pill" id="pillCity">—</span></span>
     </div>
   </div>
 
@@ -177,7 +188,11 @@
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let lastPayload = null;
-  let currentSearchSessionId = null; // <- session en DB (search_sessions)
+  let currentSearchSessionId = null; // session en DB (search_sessions)
+
+  // ✅ Perfil (country/city) para “mercado por país”
+  let profileCountry = null;
+  let profileCity = null;
 
   function setStatus(txt){ document.getElementById("status").textContent = txt; }
 
@@ -298,7 +313,7 @@
   }
 
   // ======================================================
-  // ✅ MARKET INTEL: anon_id + session + category + logging
+  // ✅ MARKET INTEL: anon_id + session + country + logging
   // ======================================================
 
   function getOrCreateAnonId_(){
@@ -321,16 +336,14 @@
     return ((w <= 1024) || isTouch) ? "mobile" : "desktop";
   }
 
-  // Clasificador simple por keywords (ajústalo a tu gusto)
   function classifyCategory_(q){
     const s = String(q||"").toLowerCase();
-
     const has = (...words) => words.some(w => s.includes(w));
 
     if(has("amortigu", "shock", "rotula", "buje", "bushing", "stabil", "terminal", "cremallera", "rack", "biela", "suspension")){
       return "suspension";
     }
-    if(has("pastilla", "disco", "caliper", "caliper", "zapata", "freno", "brake", "cilindro maestro", "master cylinder")){
+    if(has("pastilla", "disco", "caliper", "zapata", "freno", "brake", "cilindro maestro", "master cylinder")){
       return "frenos";
     }
     if(has("piston", "anillo", "ring", "junta", "empaque", "culata", "head gasket", "bomba aceite", "oil pump", "cadena tiempo", "timing")){
@@ -348,45 +361,31 @@
     return "otros";
   }
 
-  // ✅ Clasifica por "posicion" cuando el query es un código (mejor que keywords)
   function classifyCategoryFromPosition_(posText){
     const s = String(posText || "").toLowerCase();
     const has = (...words) => words.some(w => s.includes(w));
 
-    // FRENOS
     if (has("brake","freno","rear axle brake","front brake","disc","pad","caliper","zapata","drum","rotor","master cylinder","abs")) {
       return "frenos";
     }
-
-    // SUSPENSION / DIRECCION
     if (has("suspension","shock","strut","control arm","arm","ball joint","rotula","bushing","buje","stabilizer","stabilizer link","tie rod","rack","steering","terminal")) {
       return "suspension";
     }
-
-    // MOTOR (interno)
     if (has("engine","timing","gasket","head","piston","ring","bearing","oil pump","camshaft","crankshaft","valve","culata","empaque","anillo")) {
       return "motor";
     }
-
-    // TRANSMISION
     if (has("transmission","gear","clutch","cv joint","driveshaft","axle shaft","differential")) {
       return "transmision";
     }
-
-    // ELECTRICO
     if (has("sensor","ignition","coil","spark","alternator","starter","relay","fuse","wiring")) {
       return "electrico";
     }
-
-    // COOLING
     if (has("radiator","water pump","thermostat","coolant","fan","hose")) {
       return "cooling";
     }
-
-    return null; // si no podemos inferir
+    return null;
   }
 
-  // ✅ Busca una "posicion" representativa dentro de la tabla Vehicles
   function extractBestPosition_(vehiclesTable){
     if(!vehiclesTable || !Array.isArray(vehiclesTable.headers) || !Array.isArray(vehiclesTable.rows)) return null;
 
@@ -401,7 +400,6 @@
     return null;
   }
 
-  // 🔥 NUEVO: extrae un resumen del vehículo (make/model/años/motor/serie)
   function extractVehicleSummary_(vehiclesTable){
     if(!vehiclesTable || !Array.isArray(vehiclesTable.headers) || !Array.isArray(vehiclesTable.rows)) return null;
 
@@ -437,6 +435,68 @@
     }
   }
 
+  // ✅ carga country/city desde profiles y lo muestra en UI
+  async function loadProfileMarket_(){
+    const params = new URLSearchParams(window.location.search);
+    const isDemo = params.get("demo") === "1";
+
+    // demo: usa DO por defecto solo para no romper la UI
+    if(isDemo){
+      profileCountry = "DO";
+      profileCity = null;
+      paintMarketPills_();
+      return;
+    }
+
+    const userId = await getCurrentUserId_();
+    if(!userId){
+      profileCountry = null;
+      profileCity = null;
+      paintMarketPills_();
+      return;
+    }
+
+    // Trae country/city del perfil
+    // Si city no existe en tu tabla, no pasa nada: lo atrapamos en try/catch.
+    try{
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("country, city")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if(error){
+        console.warn("No pude leer profiles.country:", error.message);
+        profileCountry = null;
+        profileCity = null;
+      }else{
+        profileCountry = (data?.country || null);
+        profileCity = (data?.city || null);
+      }
+    }catch(e){
+      console.warn("No pude leer profiles:", e?.message || e);
+      profileCountry = null;
+      profileCity = null;
+    }
+
+    paintMarketPills_();
+  }
+
+  function paintMarketPills_(){
+    const elC = document.getElementById("pillCountry");
+    const elCity = document.getElementById("pillCity");
+    const wrap = document.getElementById("pillCityWrap");
+
+    if(elC) elC.textContent = profileCountry ? String(profileCountry).toUpperCase() : "—";
+
+    if(profileCity){
+      if(elCity) elCity.textContent = String(profileCity);
+      if(wrap) wrap.style.display = "inline";
+    }else{
+      if(wrap) wrap.style.display = "none";
+    }
+  }
+
   async function ensureSearchSession_(){
     if(currentSearchSessionId) return currentSearchSessionId;
 
@@ -449,7 +509,11 @@
         user_id: userId,
         anon_id: anonId,
         source: "web",
-        device: detectDevice_()
+        device: detectDevice_(),
+
+        // ✅ mercado
+        country: profileCountry,
+        city: profileCity
       }])
       .select("id")
       .single();
@@ -478,7 +542,13 @@
         result_status: resultStatus || "unknown",
         results_count: Number.isFinite(resultsCount) ? resultsCount : 0,
         response_time_ms: Number.isFinite(responseTimeMs) ? responseTimeMs : null,
-        meta: meta || {}
+
+        // ✅ meta con contexto de país (para analítica global)
+        meta: {
+          ...(meta || {}),
+          market_country: profileCountry || null,
+          market_city: profileCity || null
+        }
       };
 
       const { error } = await supabase.from("search_events").insert([payload]);
@@ -621,27 +691,20 @@
 
       render(payload);
 
-      // ✅ calcular status + counts
       const vehCount = (veh && Array.isArray(veh.rows)) ? veh.rows.length : 0;
       const cambCount = (camb && Array.isArray(camb.rows)) ? camb.rows.length : 0;
       const totalResults = vehCount + cambCount;
-
       const resultStatus = totalResults > 0 ? "found" : "not_found";
 
-      // ✅ Primero intenta inferir desde "posicion" (Vehicles)
       const pos = extractBestPosition_(veh);
       const catFromPos = classifyCategoryFromPosition_(pos);
-
-      // ✅ Si no se pudo por posicion, cae al clasificador por texto
       const category = catFromPos || classifyCategory_(raw);
 
-      // 🔥 NUEVO: resumen del vehículo (make/model/años/motor/serie)
       const vehSummary = extractVehicleSummary_(veh);
 
       const t1 = performance.now();
       const responseMs = Math.round(t1 - t0);
 
-      // ✅ log evento (NO rompe la app si falla)
       await logSearchEvent_({
         queryRaw: raw,
         queryType: "oem",
@@ -654,12 +717,8 @@
           original_norms_count: Array.isArray(originalNorms) ? originalNorms.length : 0,
           vehicles_count: vehCount,
           cambios_count: cambCount,
-
-          // 🔥 NUEVO: fuente de categoria + muestra de posicion
           position_sample: pos || null,
           category_source: catFromPos ? "posicion" : "query",
-
-          // 🔥 NUEVO: inteligencia por vehículo
           vehicle_make: vehSummary?.make || null,
           vehicle_model: vehSummary?.model || null,
           vehicle_year_from: vehSummary?.year_from || null,
@@ -676,7 +735,6 @@
 
       const t1 = performance.now();
 
-      // también logueamos el error como not_found/unknown
       await logSearchEvent_({
         queryRaw: raw,
         queryType: "oem",
@@ -775,7 +833,10 @@
     a.remove();
   };
 
+  // ✅ init
   await initAuth_();
+  await loadProfileMarket_();
+
   supabase.auth.onAuthStateChange((event, session) => {
     const params = new URLSearchParams(window.location.search);
     const isDemo = params.get("demo") === "1";
@@ -785,6 +846,8 @@
 </script>
 </body>
 </html>
+
+
 
 
 
