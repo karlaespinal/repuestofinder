@@ -900,159 +900,240 @@ async function loadModelTop(){
 }
 
 
-    async function loadEbay(topRows){
-      const userQ = ($("q").value || "").trim();
-      let fallback = (topRows && topRows.length) ? String(topRows[0].query_raw || "").trim() : "";
-      const category = normalizeCategory($("category").value);
+    // ==============================
+// TOP 20 MODELOS (vehiculo) - usando 4 tablas
+// cambios, cambios_v2, datos_vehiculares, datos_vehiculares_v2
+// ==============================
 
-      if(!userQ && isNumericOrCodeLike(fallback)){
-        fallback = demoQueryByCategory(category);
-      }
-      const q = userQ || fallback;
+const TABLE_DV_1 = "datos_vehiculares";
+const TABLE_DV_2 = "datos_vehiculares_v2";
+const TABLE_C_1  = "cambios";
+const TABLE_C_2  = "cambios_v2";
 
-      const tbody = $("tEbay").querySelector("tbody");
-      tbody.innerHTML = `<tr><td class="mut">—</td><td class="mut">Cargando…</td><td class="mut">—</td><td class="mut">—</td></tr>`;
+// columnas reales (según tu screenshot)
+const DV_COL_ORIG_NORM = "original_norm";
+const DV_COL_ORIG      = "original";
+const DV_COL_VEH       = "vehiculo";
 
-      if(!q){
-        setEbayMsg("No hay query para consultar eBay todavía.", false);
-        tbody.innerHTML = `<tr><td colspan="4" class="mut">Sin query para eBay.</td></tr>`;
-        return;
-      }
+// Para cambios, asumimos estas columnas típicas.
+// Si alguna no existe, la query igual puede fallar. Pero en tu proyecto anterior ya usabas cambios/original/cambio.
+const C_COL_ORIG_NORM  = "original_norm";
+const C_COL_CAMB_NORM  = "cambio_norm";
+const C_COL_ORIG       = "original";
+const C_COL_CAMB       = "cambio";
 
-      try{
-        setEbayMsg(`Consultando eBay para: "${q}"...`, false);
+function isCodeLike(s){
+  const x = String(s||"").trim();
+  if(!x) return false;
+  if(/^\d{3,}$/.test(x)) return true;                 // números
+  if(/^[A-Z0-9\-]{5,}$/i.test(x)) return true;        // A2730904040 / BL1060 / etc
+  return false;
+}
 
-        const { gl } = getLocale();
-        const payload = {
-          q,
-          limit: 20,
-          marketplaceId: marketplaceByGL(gl),
-          category: category || undefined
-        };
+// trocea arrays para .in() (evita límites)
+function chunk(arr, size=250){
+  const out = [];
+  for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size));
+  return out;
+}
 
-        const { data, error } = await supabase.functions.invoke("ebay-radar", { body: payload });
-        if(error) throw error;
-        if(!data) throw new Error("Respuesta vacía de ebay-radar.");
+// Normaliza a mayúscula y quita espacios
+function normKey(s){
+  return String(s||"").trim().toUpperCase();
+}
 
-        const total = Number(data.total || 0);
-        const env = data.env || "—";
-        const mp = data.marketplaceId || "—";
+/**
+ * Paso A: dado un listado de queries (códigos), intenta mapear a "original_norm"
+ * - Si el query ya existe como original_norm en datos_vehiculares => ok
+ * - Si el query es un cambio => busca en cambios/cambios_v2 y trae su original_norm
+ * Retorna: Map(query -> original_norm)
+ */
+async function resolveToOriginalNorm(queries){
+  const qList = Array.from(new Set(queries.map(normKey).filter(Boolean)));
+  const out = new Map();
 
-        const median = fmtMoney(data?.price?.median, data?.price?.currency);
-        const low = fmtMoney(data?.price?.low, data?.price?.currency);
-        const high = fmtMoney(data?.price?.high, data?.price?.currency);
+  // 1) Si el query ya es un original_norm en datos_vehiculares(_v2), lo damos por bueno
+  async function probeDV(table){
+    for(const part of chunk(qList, 250)){
+      const { data, error } = await supabase
+        .from(table)
+        .select(`${DV_COL_ORIG_NORM}, ${DV_COL_ORIG}`)
+        .or(`${DV_COL_ORIG_NORM}.in.(${part.join(",")}),${DV_COL_ORIG}.in.(${part.join(",")})`);
 
-        const signalBadge = total > 0
-          ? `<span class="badge bOk">total ${total}</span>`
-          : `<span class="badge bWarn">total 0</span>`;
-
-        /* ✅ Compacto: sin top_brands ni sample */
-        tbody.innerHTML = `
-          <tr>
-            <td>
-              <div><b>${esc(q)}</b></div>
-              <div class="mut" style="margin-top:4px">gl: ${esc(getLocale().gl)} · env: ${esc(env)} · marketplace: ${esc(mp)} · categoría: ${esc(category || "—")}</div>
-            </td>
-            <td>
-              <div>${signalBadge}</div>
-              <div style="margin-top:6px" class="mut">median: <b>${esc(median)}</b></div>
-              <div class="mut">low: ${esc(low)} · high: ${esc(high)}</div>
-              <div class="mut" style="margin-top:6px">
-                Nota: en <b>Sandbox</b> eBay suele devolver <b>0</b> resultados aunque esté “OK”.
-              </div>
-            </td>
-            <td class="mut">—</td>
-            <td class="mut">—</td>
-          </tr>
-        `;
-
-        setEbayMsg("", false);
-      }catch(e){
-        setEbayMsg("Error eBay: " + (e?.message || e), true);
-        tbody.innerHTML = `<tr><td colspan="4" class="mut">No se pudo cargar señal eBay.</td></tr>`;
-      }
-    }
-
-    function wordInsights(list){
-      const stop = new Set(["de","la","el","y","para","con","en","por","un","una","del","los","las","o","a"]);
-      const counts = new Map();
-      for(const s of list){
-        const parts = String(s||"").toLowerCase().split(/\s+/)
-          .map(x=>x.replace(/[^a-z0-9áéíóúñ\-]/gi,"")).filter(Boolean);
-        for(const p of parts){
-          if(p.length < 3) continue;
-          if(stop.has(p)) continue;
-          counts.set(p, (counts.get(p)||0)+1);
+      if(!error && Array.isArray(data)){
+        for(const r of data){
+          const on = normKey(r?.[DV_COL_ORIG_NORM]);
+          const o  = normKey(r?.[DV_COL_ORIG]);
+          // si el query matchea por original_norm u original, lo resolvemos a original_norm (prioridad)
+          if(on){
+            if(on && qList.includes(on)) out.set(on, on);
+            if(o && qList.includes(o) && !out.has(o)) out.set(o, on);
+          }else if(o && qList.includes(o)){
+            // si no hay original_norm, usamos original como fallback
+            out.set(o, o);
+          }
         }
       }
-      return Array.from(counts.entries()).sort((a,b)=>b[1]-a[1]).slice(0,8);
     }
+  }
 
-    async function loadGoogleSuggest(topRows){
-      const { gl, hl } = getLocale();
+  await probeDV(TABLE_DV_2); // prioridad v2 primero
+  await probeDV(TABLE_DV_1);
 
-      const userQ = ($("q").value || "").trim();
-      let fallback = (topRows && topRows.length) ? String(topRows[0].query_raw || "").trim() : "";
-      const category = normalizeCategory($("category").value);
+  const missing = qList.filter(x => !out.has(x));
+  if(!missing.length) return out;
 
-      if(!userQ && isNumericOrCodeLike(fallback)){
-        fallback = demoQueryByCategory(category);
-      }
-      const baseQ = userQ || fallback;
+  // 2) Buscar en cambios/cambios_v2: query puede ser cambio_norm o cambio o incluso original*
+  async function probeCambios(table){
+    for(const part of chunk(missing, 200)){
+      // usamos .or para intentar todas las columnas típicas
+      const orExpr = [
+        `${C_COL_CAMB_NORM}.in.(${part.join(",")})`,
+        `${C_COL_CAMB}.in.(${part.join(",")})`,
+        `${C_COL_ORIG_NORM}.in.(${part.join(",")})`,
+        `${C_COL_ORIG}.in.(${part.join(",")})`,
+      ].join(",");
 
-      const tbody = $("tGoogle").querySelector("tbody");
+      const { data, error } = await supabase
+        .from(table)
+        .select(`${C_COL_ORIG_NORM}, ${C_COL_ORIG}, ${C_COL_CAMB_NORM}, ${C_COL_CAMB}`)
+        .or(orExpr);
 
-      if(!baseQ){
-        setGoogleMsg("No hay query para Google Suggest todavía.", false);
-        tbody.innerHTML = `<tr><td colspan="3" class="mut">Sin query.</td></tr>`;
-        return;
-      }
+      if(!error && Array.isArray(data)){
+        for(const r of data){
+          const origNorm = normKey(r?.[C_COL_ORIG_NORM]) || normKey(r?.[C_COL_ORIG]);
+          if(!origNorm) continue;
 
-      try{
-        setGoogleMsg(`Google Suggest (${gl}/${hl}) para: "${baseQ}"...`, false);
+          const cambNorm = normKey(r?.[C_COL_CAMB_NORM]);
+          const camb     = normKey(r?.[C_COL_CAMB]);
+          const orig     = normKey(r?.[C_COL_ORIG]);
+          const oNorm    = normKey(r?.[C_COL_ORIG_NORM]);
 
-        const { data, error } = await supabase.functions.invoke("google-suggest", {
-          body: { q: baseQ, hl, gl, limit: 10 }
-        });
-        if(error) throw error;
-
-        const sug = Array.isArray(data?.suggestions) ? data.suggestions : [];
-        const sugHtml = sug.length
-          ? sug.map(x=>`<div style="margin-bottom:6px"><span class="badge">${esc(x)}</span></div>`).join("")
-          : `<span class="badge bWarn">sin sugerencias</span>`;
-
-        const ins = wordInsights(sug);
-        const insHtml = ins.length
-          ? ins.map(([w,n])=> `<span class="badge">${esc(w)} · ${n}</span>`).join(" ")
-          : `<span class="badge bWarn">sin insights</span>`;
-
-        tbody.innerHTML = `
-          <tr>
-            <td>
-              <b>${esc(baseQ)}</b>
-              <div class="mut" style="margin-top:4px">país: ${esc(gl)} · idioma: ${esc(hl)}</div>
-            </td>
-            <td style="min-width:320px">${sugHtml}</td>
-            <td>${insHtml}</td>
-          </tr>
-        `;
-
-        setGoogleMsg("", false);
-      }catch(e){
-        setGoogleMsg("Error Google: " + (e?.message || e), true);
-        tbody.innerHTML = `<tr><td colspan="3" class="mut">No se pudo cargar Google Suggest.</td></tr>`;
+          // si el query coincide con cualquiera, lo mapeamos a origNorm
+          if(cambNorm && !out.has(cambNorm)) out.set(cambNorm, origNorm);
+          if(camb && !out.has(camb)) out.set(camb, origNorm);
+          if(oNorm && !out.has(oNorm)) out.set(oNorm, origNorm);
+          if(orig && !out.has(orig)) out.set(orig, origNorm);
+        }
       }
     }
+  }
 
-    window.goIndex = function(){ window.location.href = "index.html"; };
-    window.goApp = function(){ window.location.href = "app.html"; };
+  await probeCambios(TABLE_C_2); // prioridad v2
+  await probeCambios(TABLE_C_1);
 
-    window.resetFilters = function(){
-      $("range").value = "7";
-      $("category").value = "";
-      $("q").value = "";
-      refreshAll();
-    };
+  return out;
+}
+
+/**
+ * Paso B: dado un listado de original_norm, buscar vehiculo en datos_vehiculares(_v2)
+ * Retorna: Map(original_norm -> vehiculo)
+ */
+async function resolveVehiculoForOriginalNorm(originalNorms){
+  const list = Array.from(new Set(originalNorms.map(normKey).filter(Boolean)));
+  const out = new Map();
+
+  async function probe(table){
+    for(const part of chunk(list, 250)){
+      const { data, error } = await supabase
+        .from(table)
+        .select(`${DV_COL_ORIG_NORM}, ${DV_COL_VEH}`)
+        .in(DV_COL_ORIG_NORM, part);
+
+      if(!error && Array.isArray(data)){
+        for(const r of data){
+          const on = normKey(r?.[DV_COL_ORIG_NORM]);
+          const veh = String(r?.[DV_COL_VEH] || "").trim();
+          if(on && veh && !out.has(on)) out.set(on, veh);
+        }
+      }
+    }
+  }
+
+  await probe(TABLE_DV_2); // prioridad v2
+  await probe(TABLE_DV_1);
+
+  return out;
+}
+
+async function loadModelTop(){
+  // UI
+  const tbody = document.getElementById("tBrands")?.querySelector("tbody");
+  if(tbody) tbody.innerHTML = `<tr><td class="mut">—</td><td class="mut">—</td></tr>`;
+  const bMsg = document.getElementById("bMsg");
+  if(bMsg){ bMsg.textContent = "Calculando modelos..."; bMsg.style.display="block"; }
+
+  const from = dtFromRange(document.getElementById("range").value);
+  const cat = (document.getElementById("category").value || "").trim();
+
+  let q = supabase
+    .from("search_events")
+    .select("query_raw, category, searched_at")
+    .gte("searched_at", from);
+
+  if(cat) q = q.eq("category", cat);
+
+  const { data, error } = await q;
+  if(error) throw error;
+
+  const events = (data||[]);
+  const queries = events
+    .map(r => normKey(r.query_raw))
+    .filter(x => isCodeLike(x));
+
+  if(!queries.length){
+    if(tbody) tbody.innerHTML = `<tr><td colspan="2" class="mut">No hay búsquedas tipo código en este rango.</td></tr>`;
+    if(bMsg) bMsg.style.display="none";
+    return;
+  }
+
+  // 1) query -> original_norm
+  if(bMsg) bMsg.textContent = "Resolviendo códigos (cambios + datos_vehiculares)...";
+  const qToOrigNorm = await resolveToOriginalNorm(queries);
+
+  // 2) original_norm -> vehiculo
+  const origNorms = Array.from(new Set(Array.from(qToOrigNorm.values())));
+  if(bMsg) bMsg.textContent = "Buscando vehiculo por original_norm...";
+  const origNormToVeh = await resolveVehiculoForOriginalNorm(origNorms);
+
+  // 3) Contar vehiculo
+  const count = new Map();
+  for(const ev of events){
+    const qx = normKey(ev.query_raw);
+    if(!isCodeLike(qx)) continue;
+
+    const on = qToOrigNorm.get(qx);
+    if(!on) continue;
+
+    const veh = origNormToVeh.get(on);
+    if(!veh) continue;
+
+    count.set(veh, (count.get(veh)||0) + 1);
+  }
+
+  const rows = Array.from(count.entries())
+    .map(([veh, n]) => ({ veh, n }))
+    .sort((a,b)=> b.n - a.n)
+    .slice(0,20);
+
+  if(!rows.length){
+    if(tbody) tbody.innerHTML = `<tr><td colspan="2" class="mut">No se pudo mapear a vehiculo (revisa si tus búsquedas están entrando como códigos reales).</td></tr>`;
+    if(bMsg) bMsg.style.display="none";
+    return;
+  }
+
+  if(tbody){
+    tbody.innerHTML = rows.map(r=>`
+      <tr>
+        <td><span class="badge">${esc(r.veh)}</span></td>
+        <td><b>${r.n}</b></td>
+      </tr>
+    `).join("");
+  }
+
+  if(bMsg) bMsg.style.display="none";
+}
+
 
     window.refreshAll = async function(){
       try{
