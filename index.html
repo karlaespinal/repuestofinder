@@ -612,6 +612,16 @@
               <span class="pill">Pro</span>
             </div>
 
+            <div class="ddItem" role="menuitem" onclick="goPerfil()">
+              <div>
+                Perfil
+                <div style="margin-top:2px">
+                  <small>Mis datos y mi membresía</small>
+                </div>
+              </div>
+              <span class="pill">Cuenta</span>
+            </div>
+
 
             <div class="ddItem disabled" role="menuitem" aria-disabled="true">
               <div>— Proximamente <div style="margin-top:2px"><small>Espacio reservado</small></div></div>
@@ -882,6 +892,11 @@
     window.goRadar = function(){
       closeTools();
       window.location.href = "radar.html";
+    }
+
+    window.goPerfil = function(){
+      closeTools();
+      window.location.href = "perfil.html";
     }
 
     document.addEventListener("click", ()=> closeTools());
@@ -1449,6 +1464,8 @@
   </script>
 </body>
 </html>
+
+
 
 
 
