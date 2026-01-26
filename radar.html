@@ -426,6 +426,31 @@
       const hl = ($("hl").value || "es").toLowerCase();
       return { gl, hl };
     }
+    function marketplaceByGL(gl){
+      const c = String(gl || "US").toUpperCase().trim();
+      const map = {
+        US: "EBAY_US",
+        DO: "EBAY_US", // RD normalmente consulta bien en EBAY_US
+        PR: "EBAY_US",
+        CA: "EBAY_CA",
+        MX: "EBAY_US",
+        CO: "EBAY_US",
+        CL: "EBAY_US",
+        PE: "EBAY_US",
+        AR: "EBAY_US",
+        BR: "EBAY_US",
+        ES: "EBAY_ES",
+        GB: "EBAY_GB",
+        DE: "EBAY_DE",
+        FR: "EBAY_FR",
+        IT: "EBAY_IT",
+        AU: "EBAY_AU"
+      };
+      return map[c] || "EBAY_US";
+    }
+
+
+
     function saveLocale(){
       const { gl, hl } = getLocale();
       localStorage.setItem("rf_radar_gl", gl);
@@ -599,9 +624,16 @@
       try{
         setEbayMsg(`Consultando eBay para: "${q}"...`, false);
 
-        const payload = { q, limit: 20, category: category || undefined };
+        const { gl } = getLocale();
+        const payload = {
+          q,
+          limit: 20,
+          marketplaceId: marketplaceByGL(gl),
+          category: category || undefined
+        };
 
         const { data, error } = await supabase.functions.invoke("ebay-radar", { body: payload });
+
         if(error) throw error;
         if(!data) throw new Error("Respuesta vacía de ebay-radar.");
 
@@ -637,7 +669,7 @@
           <tr>
             <td>
               <div><b>${esc(q)}</b></div>
-              <div class="mut" style="margin-top:4px">env: ${esc(env)} · marketplace: ${esc(mp)} · categoría: ${esc(category || "—")}</div>
+              <div class="mut" style="margin-top:4px">gl: ${esc(getLocale().gl)} · env: ${esc(env)} · marketplace: ${esc(mp)} · categoría: ${esc(category || "—")}</div>
             </td>
             <td>
               <div>${signalBadge}</div>
@@ -780,4 +812,3 @@
   </script>
 </body>
 </html>
-
