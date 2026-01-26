@@ -34,8 +34,20 @@
       background-repeat:no-repeat;
       background-attachment:fixed;
       min-height:100vh;
+      overflow-x:hidden;
     }
-    .page{ width:min(1180px, 100%); margin:0 auto; padding:18px 18px 28px; }
+
+    /* ✅ Antes: width:min(1180px,100%) -> encajonaba el radar */
+    .page{
+      width:100%;
+      max-width: 100vw;
+      margin:0 auto;
+      padding:18px 22px 28px;
+    }
+    /* En monitores grandes, lo dejamos respirar sin verse “vacío” */
+    @media(min-width:1400px){
+      .page{ padding-left:34px; padding-right:34px; }
+    }
 
     .nav{
       position:sticky; top:0; z-index:30;
@@ -86,37 +98,7 @@
       position:relative;
     }
     .hero h1{ margin:0; font-size:26px; letter-spacing:-.2px; }
-    .hero p{ margin:10px 0 0; color:var(--mut); font-size:14px; line-height:1.45; max-width:900px; }
-
-    .grid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:12px;
-      margin-top:14px;
-    }
-    @media(max-width:980px){ .grid{grid-template-columns:1fr} }
-
-    .card{
-      border:1px solid var(--line);
-      border-radius:18px;
-      background:rgba(255,255,255,.88);
-      box-shadow:0 10px 26px rgba(2,6,23,.06);
-      padding:14px;
-    }
-    .card h2{margin:0;font-size:14px;font-weight:900}
-    .sub{font-size:12px;color:#94a3b8;font-weight:900;letter-spacing:.4px;text-transform:uppercase;margin-top:4px}
-
-    .kpiRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-    .kpi{
-      flex:1 1 160px;
-      border:1px solid rgba(230,232,240,.9);
-      border-radius:16px;
-      padding:12px;
-      background:#fff;
-    }
-    .kpi .t{font-size:12px;color:#94a3b8;font-weight:900;text-transform:uppercase;letter-spacing:.4px}
-    .kpi .v{font-size:18px;font-weight:900;margin-top:6px}
-    .kpi .s{font-size:12px;color:var(--mut);margin-top:6px;line-height:1.35}
+    .hero p{ margin:10px 0 0; color:var(--mut); font-size:14px; line-height:1.45; max-width:1000px; }
 
     .filters{
       display:flex; gap:10px; flex-wrap:wrap;
@@ -136,7 +118,59 @@
       box-shadow:0 0 0 4px rgba(37,99,235,.10);
     }
     .select{ min-width:180px; }
-    .text{ min-width:220px; flex:1 1 240px; }
+    .text{ min-width:240px; flex:1 1 320px; }
+
+    .kpiRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+    .kpi{
+      flex:1 1 220px;
+      border:1px solid rgba(230,232,240,.9);
+      border-radius:16px;
+      padding:12px;
+      background:#fff;
+    }
+    .kpi .t{font-size:12px;color:#94a3b8;font-weight:900;text-transform:uppercase;letter-spacing:.4px}
+    .kpi .v{font-size:18px;font-weight:900;margin-top:6px}
+    .kpi .s{font-size:12px;color:var(--mut);margin-top:6px;line-height:1.35}
+
+    /* ✅ NUEVO: Layout tipo BI con sidebar izquierda */
+    .gridMain{
+      display:grid;
+      grid-template-columns: 340px 1fr 1fr;
+      grid-template-areas:
+        "brands top opp"
+        "brands ebay google";
+      gap:12px;
+      margin-top:14px;
+      align-items:start;
+    }
+    .areaBrands{ grid-area: brands; }
+    .areaTop{ grid-area: top; }
+    .areaOpp{ grid-area: opp; }
+    .areaEbay{ grid-area: ebay; }
+    .areaGoogle{ grid-area: google; }
+
+    @media(max-width:1200px){
+      .gridMain{
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "brands"
+          "top"
+          "opp"
+          "ebay"
+          "google";
+      }
+    }
+
+    .card{
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:rgba(255,255,255,.88);
+      box-shadow:0 10px 26px rgba(2,6,23,.06);
+      padding:14px;
+      overflow:hidden;
+    }
+    .card h2{margin:0;font-size:14px;font-weight:900}
+    .sub{font-size:12px;color:#94a3b8;font-weight:900;letter-spacing:.4px;text-transform:uppercase;margin-top:4px}
 
     .tableWrap{
       margin-top:10px;
@@ -145,6 +179,17 @@
       overflow:auto;
       background:#fff;
     }
+
+    /* ✅ para que no se vean “gigantes” */
+    .tableWrap.compact{
+      max-height: 340px;
+    }
+    @media(min-width:1200px){
+      .tableWrap.tall{
+        max-height: 540px;
+      }
+    }
+
     table{width:100%;border-collapse:collapse}
     th,td{
       padding:10px;
@@ -160,6 +205,7 @@
       font-weight:900;
       color:#0f172a;
     }
+
     .badge{
       font-size:11px;
       font-weight:900;
@@ -196,6 +242,14 @@
     .link:hover{ text-decoration:underline; }
 
     .footer{ margin-top:14px; text-align:center; color:#94a3b8; font-size:12px; font-weight:800; }
+
+    /* ✅ eBay: ocultar columnas pesadas (Top marcas + Muestra) */
+    .hideEbayCols th:nth-child(3),
+    .hideEbayCols th:nth-child(4),
+    .hideEbayCols td:nth-child(3),
+    .hideEbayCols td:nth-child(4){
+      display:none;
+    }
   </style>
 </head>
 
@@ -242,7 +296,6 @@
           <option value="otros">Otros</option>
         </select>
 
-        <!-- NUEVO: País e idioma -->
         <select id="gl" class="inp select" title="País (Google gl)">
           <option value="DO">🇩🇴 República Dominicana (DO)</option>
           <option value="US">🇺🇸 Estados Unidos (US)</option>
@@ -287,11 +340,35 @@
       <div class="msg" id="msg"></div>
     </div>
 
-    <div class="grid">
-      <div class="card">
+    <!-- ✅ NUEVO GRID PRINCIPAL con sidebar izquierda -->
+    <div class="gridMain">
+
+      <!-- ✅ Top Marcas a la izquierda -->
+      <div class="card areaBrands">
+        <h2>Top Marcas (interno)</h2>
+        <div class="sub">Top 20 marcas más buscadas (por rango)</div>
+        <div class="msg" id="bMsg" style="display:block">Calculando marcas...</div>
+        <div class="tableWrap tall">
+          <table id="tBrands">
+            <thead>
+              <tr><th>Marca</th><th>Consultas</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="mut">—</td><td class="mut">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="mut" style="font-size:12px;margin-top:10px;line-height:1.4">
+          * Nota: Si el usuario busca solo un <b>código</b> sin texto, para sacar la marca al 100%,
+          lo ideal es cruzarlo con tu catálogo (tabla de ítems / maestro).  
+          Por ahora esto detecta marcas por texto (ej: “Mahle”, “Bosch”, “Mann”, etc.).
+        </div>
+      </div>
+
+      <div class="card areaTop">
         <h2>Top Búsquedas (interno)</h2>
         <div class="sub">Lo más buscado en tu sistema (por rango)</div>
-        <div class="tableWrap">
+        <div class="tableWrap compact">
           <table id="tTop">
             <thead>
               <tr><th>Query</th><th>Línea</th><th>Veces</th><th>Estado</th></tr>
@@ -301,10 +378,10 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card areaOpp">
         <h2>Oportunidades (alto “no encontrado”)</h2>
         <div class="sub">Demanda sin cobertura</div>
-        <div class="tableWrap">
+        <div class="tableWrap compact">
           <table id="tOpp">
             <thead>
               <tr><th>Query</th><th>Línea</th><th>Veces</th><th>No encontrado</th><th>%</th></tr>
@@ -314,12 +391,12 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card areaEbay">
         <h2>Señal eBay (externo)</h2>
-        <div class="sub">Edge Function (sandbox por ahora)</div>
+        <div class="sub">Compacto (sin Top marcas / Muestra)</div>
         <div class="msg" id="ebMsg" style="display:block">Cargando señal eBay...</div>
-        <div class="tableWrap" style="margin-top:10px">
-          <table id="tEbay">
+        <div class="tableWrap compact" style="margin-top:10px">
+          <table id="tEbay" class="hideEbayCols">
             <thead><tr><th>Query</th><th>Señal</th><th>Top marcas</th><th>Muestra</th></tr></thead>
             <tbody>
               <tr><td class="mut">—</td><td class="mut">—</td><td class="mut">—</td><td class="mut">—</td></tr>
@@ -328,11 +405,11 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card areaGoogle">
         <h2>Señal Google (autocomplete)</h2>
         <div class="sub">Mercado local por país e idioma</div>
         <div class="msg" id="gMsg" style="display:block">Cargando sugerencias...</div>
-        <div class="tableWrap" style="margin-top:10px">
+        <div class="tableWrap compact" style="margin-top:10px">
           <table id="tGoogle">
             <thead><tr><th>Query base</th><th>Sugerencias</th><th>Insights</th></tr></thead>
             <tbody>
@@ -341,6 +418,7 @@
           </table>
         </div>
       </div>
+
     </div>
 
     <div class="footer">© <span id="y"></span> RepuestoFinder</div>
@@ -366,6 +444,13 @@
     }
     function setGoogleMsg(text, isErr){
       const el = $("gMsg");
+      if(!el) return;
+      el.textContent = text || "";
+      el.classList.toggle("err", !!isErr);
+      el.style.display = text ? "block" : "none";
+    }
+    function setBrandMsg(text, isErr){
+      const el = $("bMsg");
       if(!el) return;
       el.textContent = text || "";
       el.classList.toggle("err", !!isErr);
@@ -430,7 +515,7 @@
       const c = String(gl || "US").toUpperCase().trim();
       const map = {
         US: "EBAY_US",
-        DO: "EBAY_US", // RD normalmente consulta bien en EBAY_US
+        DO: "EBAY_US",
         PR: "EBAY_US",
         CA: "EBAY_CA",
         MX: "EBAY_US",
@@ -449,8 +534,6 @@
       return map[c] || "EBAY_US";
     }
 
-
-
     function saveLocale(){
       const { gl, hl } = getLocale();
       localStorage.setItem("rf_radar_gl", gl);
@@ -464,7 +547,6 @@
     }
 
     async function loadProfileLocaleIfAny(){
-      // Si el usuario no ha seleccionado manualmente, usamos profile.country
       const alreadyChosen = localStorage.getItem("rf_radar_gl");
       if(alreadyChosen) return;
 
@@ -472,21 +554,17 @@
       if(!ses?.session) return;
 
       const userId = ses.session.user.id;
-      // Ajusta campos según tu tabla profiles: country (ISO2)
-      const { data: prof, error } = await supabase
+      const { data: prof } = await supabase
         .from("profiles")
         .select("country")
         .eq("id", userId)
         .maybeSingle();
-
-      if(error) return;
 
       const c = String(prof?.country || "").trim().toUpperCase();
       if(c && Array.from($("gl").options).some(o => o.value === c)){
         $("gl").value = c;
         localStorage.setItem("rf_radar_gl", c);
       }else if(c){
-        // Si el país no está en el dropdown, lo guardamos igual y caemos a DO en UI
         localStorage.setItem("rf_radar_gl", c);
       }
     }
@@ -602,6 +680,88 @@
       return `${n.toFixed(2)} ${c}`;
     }
 
+    /* ✅ NUEVO: Top marcas interno (heurístico por texto) */
+    function extractBrandCandidates(query){
+      const s = String(query||"").toLowerCase();
+
+      // Lista base (la puedes ampliar sin romper nada)
+      const known = [
+        "mercedes", "mercedes-benz", "benz", "mb",
+        "bosch", "mahle", "mann", "bilstein", "febi", "ngk",
+        "denso", "delphi", "vale o", "valeo", "brembo",
+        "ate", "trw", "lemforder", "sachs", "luk", "ina",
+        "gates", "continental", "contitech", "hella",
+        "magneti", "monroe", "kyb", "kayaba",
+        "toyota", "honda", "hyundai", "kia", "nissan", "bmw"
+      ];
+
+      // Si el usuario buscó un código puro, aquí NO inventamos marca:
+      // (la marca real debe salir del catálogo; esto evita datos falsos)
+      if(isNumericOrCodeLike(query) && !known.some(k => s.includes(k.replace(/\s+/g,'')) || s.includes(k))){
+        return [];
+      }
+
+      const hits = [];
+      for(const k of known){
+        const kk = k.toLowerCase();
+        if(s.includes(kk)) hits.push(k.toUpperCase());
+      }
+
+      // Normalizaciones pequeñas
+      return hits.map(x=>{
+        if(x === "BENZ" || x === "MB") return "MERCEDES-BENZ";
+        if(x === "MERCEDES") return "MERCEDES-BENZ";
+        if(x === "MERCEDES-BENZ") return "MERCEDES-BENZ";
+        if(x === "VALE O") return "VALEO";
+        if(x === "KAYABA") return "KYB";
+        return x;
+      });
+    }
+
+    async function loadBrandTop(){
+      const from = dtFromRange($("range").value);
+      const cat = ($("category").value || "").trim();
+
+      let q = supabase
+        .from("search_events")
+        .select("query_raw, category, searched_at")
+        .gte("searched_at", from);
+
+      if(cat) q = q.eq("category", cat);
+
+      const { data, error } = await q;
+      if(error) throw error;
+
+      const map = new Map();
+      for(const r of (data||[])){
+        const brands = extractBrandCandidates(r.query_raw);
+        for(const b of brands){
+          map.set(b, (map.get(b)||0) + 1);
+        }
+      }
+
+      const rows = Array.from(map.entries())
+        .map(([brand,n])=>({ brand, n }))
+        .sort((a,b)=> b.n - a.n)
+        .slice(0,20);
+
+      const tbody = $("tBrands").querySelector("tbody");
+      if(!rows.length){
+        tbody.innerHTML = `<tr><td colspan="2" class="mut">Sin marcas detectables en este rango (muchas búsquedas son códigos puros).</td></tr>`;
+        setBrandMsg("", false);
+        return;
+      }
+
+      tbody.innerHTML = rows.map(r=>`
+        <tr>
+          <td><span class="badge">${esc(r.brand)}</span></td>
+          <td><b>${r.n}</b></td>
+        </tr>
+      `).join("");
+
+      setBrandMsg("", false);
+    }
+
     async function loadEbay(topRows){
       const userQ = ($("q").value || "").trim();
       let fallback = (topRows && topRows.length) ? String(topRows[0].query_raw || "").trim() : "";
@@ -613,7 +773,7 @@
       const q = userQ || fallback;
 
       const tbody = $("tEbay").querySelector("tbody");
-      tbody.innerHTML = `<tr><td class="mut">—</td><td class="mut">—</td><td class="mut">—</td><td class="mut">Cargando…</td></tr>`;
+      tbody.innerHTML = `<tr><td class="mut">—</td><td class="mut">Cargando…</td><td class="mut">—</td><td class="mut">—</td></tr>`;
 
       if(!q){
         setEbayMsg("No hay query para consultar eBay todavía.", false);
@@ -633,7 +793,6 @@
         };
 
         const { data, error } = await supabase.functions.invoke("ebay-radar", { body: payload });
-
         if(error) throw error;
         if(!data) throw new Error("Respuesta vacía de ebay-radar.");
 
@@ -645,26 +804,11 @@
         const low = fmtMoney(data?.price?.low, data?.price?.currency);
         const high = fmtMoney(data?.price?.high, data?.price?.currency);
 
-        const brands = Array.isArray(data.top_brands) ? data.top_brands : [];
-        const brandsHtml = brands.length
-          ? brands.slice(0,8).map(b=> `<span class="badge">${esc(b)}</span>`).join(" ")
-          : `<span class="badge bWarn">sin data</span>`;
+        const signalBadge = total > 0
+          ? `<span class="badge bOk">total ${total}</span>`
+          : `<span class="badge bWarn">total 0</span>`;
 
-        const sample = Array.isArray(data.sample) ? data.sample : [];
-        const sampleHtml = sample.length
-          ? sample.slice(0,5).map(it=>{
-              const title = esc(it.title || "Item");
-              const url = it.url || "";
-              const price = (it.price && it.price.currency && it.price.value!=null)
-                ? `${Number(it.price.value).toFixed(2)} ${esc(it.price.currency)}`
-                : "—";
-              const link = url ? `<a class="link" href="${esc(url)}" target="_blank" rel="noopener">ver</a>` : "";
-              return `<div style="margin-bottom:6px"><b>${title}</b> <span class="mut">(${price})</span> ${link}</div>`;
-            }).join("")
-          : `<span class="badge bWarn">sin items</span>`;
-
-        const signalBadge = total > 0 ? `<span class="badge bOk">total ${total}</span>` : `<span class="badge bWarn">total 0</span>`;
-
+        /* ✅ Compacto: sin top_brands ni sample */
         tbody.innerHTML = `
           <tr>
             <td>
@@ -679,8 +823,8 @@
                 Nota: en <b>Sandbox</b> eBay suele devolver <b>0</b> resultados aunque esté “OK”.
               </div>
             </td>
-            <td>${brandsHtml}</td>
-            <td style="min-width:320px">${sampleHtml}</td>
+            <td class="mut">—</td>
+            <td class="mut">—</td>
           </tr>
         `;
 
@@ -775,7 +919,9 @@
     window.refreshAll = async function(){
       try{
         setMsg("Cargando radar...", false);
+        setBrandMsg("Calculando marcas...", false);
         await loadKpis();
+        await loadBrandTop();          // ✅ nuevo
         const topRows = await loadTop();
         await loadOpp();
         await loadEbay(topRows);
@@ -796,7 +942,6 @@
       tDeb = setTimeout(()=> refreshAll(), 450);
     });
 
-    // NUEVO: cambios de país/idioma
     ["gl","hl"].forEach(id=>{
       $(id).addEventListener("change", ()=>{
         saveLocale();
@@ -804,7 +949,6 @@
       });
     });
 
-    // init
     document.getElementById("y").textContent = new Date().getFullYear();
     loadLocaleFromLocalStorage();
     await loadProfileLocaleIfAny();
@@ -812,3 +956,4 @@
   </script>
 </body>
 </html>
+
