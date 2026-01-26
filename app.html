@@ -619,68 +619,78 @@
   }
 
   async function fetchVehiclesByOriginals_(originalNorms){
-    // Solo traemos columnas necesarias (y descripcion)
-    const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion";
+  // Solo traemos columnas necesarias (y descripcion)
+  const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion";
 
-    let all = [];
-    for(const t of VEH_TABLES){
-      const { data, error } = await supabase
-        .from(t)
-        .select(selectCols)
-        .in("original_norm", originalNorms)
-        .limit(5000);
+  let all = [];
+  for(const t of VEH_TABLES){
+    const { data, error } = await supabase
+      .from(t)
+      .select(selectCols)
+      .in("original_norm", originalNorms)
+      .limit(5000);
 
-      // Si alguna tabla no tiene original_norm indexado o da error, lo veremos en consola.
-      if(error) throw error;
-      all = all.concat(data || []);
-    }
-
-    if(all.length === 0) return { headers: [], rows: [] };
-
-    // Dedupe razonable para no repetir la misma fila si existe en v1 y v2:
-    // clave = vehiculo|anio_inicio|anio_final|modelo|motor|serie|cilindro|posicion|version
-    all = dedupeByKey_(all, r => [
-      r.vehiculo, r.anio_inicio, r.anio_final, r.modelo, r.motor,
-      r.serie, r.cilindro, r.posicion, r.version
-    ].map(x => String(x ?? "")).join("|").toUpperCase());
-
-    // Orden base: vehiculo, modelo, anio_inicio
-    all.sort((a,b)=>{
-      const va = String(a?.vehiculo||"");
-      const vb = String(b?.vehiculo||"");
-      if(va !== vb) return va.localeCompare(vb);
-      const ma = String(a?.modelo||"");
-      const mb = String(b?.modelo||"");
-      if(ma !== mb) return ma.localeCompare(mb);
-      const ya = Number(a?.anio_inicio || 0);
-      const yb = Number(b?.anio_inicio || 0);
-      return ya - yb;
-    });
-
-    // ✅ Headers EXACTOS (sin notas / sin com_ / sin fs id / etc.)
-    const headersKeys = [
-      "vehiculo","anio_inicio","anio_final","modelo","motor","serie","cilindro","posicion","version","descripcion"
-    ];
-
-    const headerLabel = (k) => {
-      if(k === "anio_inicio") return "Año inicio";
-      if(k === "anio_final") return "Año final";
-      if(k === "vehiculo") return "Vehiculo";
-      if(k === "modelo") return "Modelo";
-      if(k === "motor") return "Motor";
-      if(k === "serie") return "Serie";
-      if(k === "cilindro") return "Cilindro";
-      if(k === "posicion") return "Posicion";
-      if(k === "version") return "Version";
-      if(k === "descripcion") return "Descripcion";
-      return k.replace(/_/g," ").replace(/^./, c => c.toUpperCase());
-    };
-
-    const headers = headersKeys.map(headerLabel);
-    const rows = all.map(obj => headersKeys.map(k => (obj?.[k] ?? "")));
-
-    return { headers, rows };
+    if(error) throw error;
+    all = all.concat(data || []);
   }
+
+  if(all.length === 0) return { headers: [], rows: [] };
+
+  // ✅ 1) Sacar una descripcion "canon" del grupo (si existe al menos 1)
+  const canonDesc = (all.find(r => String(r?.descripcion ?? "").trim() !== "")?.descripcion ?? "").toString().trim();
+
+  // ✅ 2) Dedupe para no repetir la misma fila si existe en v1 y v2
+  all = dedupeByKey_(all, r => [
+    r.vehiculo, r.anio_inicio, r.anio_final, r.modelo, r.motor,
+    r.serie, r.cilindro, r.posicion, r.version
+  ].map(x => String(x ?? "")).join("|").toUpperCase());
+
+  // ✅ 3) Orden base: vehiculo, modelo, anio_inicio
+  all.sort((a,b)=>{
+    const va = String(a?.vehiculo||"");
+    const vb = String(b?.vehiculo||"");
+    if(va !== vb) return va.localeCompare(vb);
+    const ma = String(a?.modelo||"");
+    const mb = String(b?.modelo||"");
+    if(ma !== mb) return ma.localeCompare(mb);
+    const ya = Number(a?.anio_inicio || 0);
+    const yb = Number(b?.anio_inicio || 0);
+    return ya - yb;
+  });
+
+  // ✅ 4) Aplicar la descripcion canon a todas las filas (si existe)
+  if(canonDesc){
+    for(const r of all){
+      const cur = String(r?.descripcion ?? "").trim();
+      if(!cur) r.descripcion = canonDesc;
+    }
+  }
+
+  // ✅ Headers EXACTOS
+  const headersKeys = [
+    "vehiculo","anio_inicio","anio_final","modelo","motor","serie","cilindro","posicion","version","descripcion"
+  ];
+
+  const headerLabel = (k) => {
+    if(k === "anio_inicio") return "Año inicio";
+    if(k === "anio_final") return "Año final";
+    if(k === "vehiculo") return "Vehiculo";
+    if(k === "modelo") return "Modelo";
+    if(k === "motor") return "Motor";
+    if(k === "serie") return "Serie";
+    if(k === "cilindro") return "Cilindro";
+    if(k === "posicion") return "Posicion";
+    if(k === "version") return "Version";
+    if(k === "descripcion") return "Descripcion";
+    return k.replace(/_/g," ").replace(/^./, c => c.toUpperCase());
+  };
+
+  const headers = headersKeys.map(headerLabel);
+  const rows = all.map(obj => headersKeys.map(k => (obj?.[k] ?? "")));
+
+  return { headers, rows };
+}
+
 
   // ======================================================
 
@@ -895,6 +905,7 @@
 </script>
 </body>
 </html>
+
 
 
 
