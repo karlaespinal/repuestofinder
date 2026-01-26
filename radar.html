@@ -345,25 +345,26 @@
 
       <!-- ✅ Top Marcas a la izquierda -->
       <div class="card areaBrands">
-        <h2>Top Marcas (interno)</h2>
-        <div class="sub">Top 20 marcas más buscadas (por rango)</div>
-        <div class="msg" id="bMsg" style="display:block">Calculando marcas...</div>
-        <div class="tableWrap tall">
-          <table id="tBrands">
-            <thead>
-              <tr><th>Marca</th><th>Consultas</th></tr>
-            </thead>
-            <tbody>
-              <tr><td class="mut">—</td><td class="mut">—</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="mut" style="font-size:12px;margin-top:10px;line-height:1.4">
-          * Nota: Si el usuario busca solo un <b>código</b> sin texto, para sacar la marca al 100%,
-          lo ideal es cruzarlo con tu catálogo (tabla de ítems / maestro).  
-          Por ahora esto detecta marcas por texto (ej: “Mahle”, “Bosch”, “Mann”, etc.).
-        </div>
+      <h2>Top Modelos (interno)</h2>
+      <div class="sub">Top 20 modelos/vehículos más consultados (por rango)</div>
+      <div class="msg" id="bMsg" style="display:block">Calculando modelos...</div>
+
+      <div class="tableWrap tall">
+        <table id="tBrands">
+          <thead>
+            <tr><th>Modelo</th><th>Consultas</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="mut">—</td><td class="mut">—</td></tr>
+          </tbody>
+        </table>
       </div>
+
+      <div class="mut" style="font-size:12px;margin-top:10px;line-height:1.4">
+        * Este ranking se calcula resolviendo cada búsqueda a su <b>modelo</b> desde tu catálogo en Supabase.
+      </div>
+    </div>
+
 
       <div class="card areaTop">
         <h2>Top Búsquedas (interno)</h2>
@@ -718,49 +719,186 @@
       });
     }
 
-    async function loadBrandTop(){
-      const from = dtFromRange($("range").value);
-      const cat = ($("category").value || "").trim();
+    // ==============================
+// CONFIG (AJUSTA SOLO ESTO)
+// ==============================
+// 1) Tabla que tiene la relación código -> modelo/vehículo
+//    Ejemplos típicos: datos_vehiculares, maestro, catalogo, items
+const TABLE_VEH = "datos_vehiculares";
 
-      let q = supabase
-        .from("search_events")
-        .select("query_raw, category, searched_at")
-        .gte("searched_at", from);
+// 2) Columna donde está el código OEM/original (el que el usuario busca)
+//    Ajusta según tu tabla: "codigo", "oem", "original", "codigo_original", etc.
+const COL_CODE = "codigo_original";
 
-      if(cat) q = q.eq("category", cat);
+// 3) Columna del modelo (Toyota, Honda, Hyundai, Mitsubishi, etc.)
+//    Ajusta: "vehiculo", "marca", "modelo", "make", "vehicle_model"
+const COL_MODEL = "vehiculo"; // <-- si tu campo se llama "modelo", cámbialo a "modelo"
 
-      const { data, error } = await q;
-      if(error) throw error;
+// 4) (Opcional) Si tu modelo está en otra tabla y necesitas puente por 'cambios'
+const TABLE_CAMBIOS = "cambios";
+const CAMBIOS_COL_ORIGINAL = "original";
+const CAMBIOS_COL_CAMBIO = "cambio";
 
-      const map = new Map();
-      for(const r of (data||[])){
-        const brands = extractBrandCandidates(r.query_raw);
-        for(const b of brands){
-          map.set(b, (map.get(b)||0) + 1);
+function isCodeLike(s){
+  const x = String(s||"").trim();
+  if(!x) return false;
+  // números largos
+  if(/^\d{4,}$/.test(x)) return true;
+  // patrones tipo A2730904040 / 111242 / A-1234 etc.
+  if(/^[A-Z0-9\-]{5,}$/i.test(x)) return true;
+  return false;
+}
+
+/**
+ * Resuelve un listado de códigos a un mapa code -> model (vehiculo)
+ * Estrategia:
+ *  A) Busca directo en TABLE_VEH (columna COL_CODE)
+ *  B) Si no aparece, intenta por TABLE_CAMBIOS para encontrar el "original" y vuelve a TABLE_VEH
+ */
+async function resolveModelsForCodes(codes){
+  const clean = Array.from(new Set((codes||[]).map(x=>String(x||"").trim()).filter(Boolean)));
+
+  if(!clean.length) return new Map();
+
+  const out = new Map();
+
+  // ---- A) Directo a datos_vehiculares (o tabla que uses)
+  try{
+    // OJO: Supabase limita el tamaño del IN; si tienes demasiados, se puede trocear.
+    const { data: veh, error: e1 } = await supabase
+      .from(TABLE_VEH)
+      .select(`${COL_CODE}, ${COL_MODEL}`)
+      .in(COL_CODE, clean);
+
+    if(!e1 && Array.isArray(veh)){
+      for(const r of veh){
+        const code = String(r?.[COL_CODE] ?? "").trim();
+        const model = String(r?.[COL_MODEL] ?? "").trim();
+        if(code && model) out.set(code, model);
+      }
+    }
+  }catch(_){}
+
+  // Si ya resolvimos casi todo, retornamos
+  const missing = clean.filter(c => !out.has(c));
+  if(!missing.length) return out;
+
+  // ---- B) Puente por cambios: si el usuario buscó "cambio" o un código que exista ahí
+  try{
+    const { data: cambios, error: e2 } = await supabase
+      .from(TABLE_CAMBIOS)
+      .select(`${CAMBIOS_COL_ORIGINAL}, ${CAMBIOS_COL_CAMBIO}`)
+      .or([
+        `${CAMBIOS_COL_ORIGINAL}.in.(${missing.join(",")})`,
+        `${CAMBIOS_COL_CAMBIO}.in.(${missing.join(",")})`
+      ].join(","));
+
+    if(!e2 && Array.isArray(cambios) && cambios.length){
+      // construimos un mapa de lookup: buscado -> original
+      const toOriginal = new Map();
+      for(const r of cambios){
+        const orig = String(r?.[CAMBIOS_COL_ORIGINAL] ?? "").trim();
+        const camb = String(r?.[CAMBIOS_COL_CAMBIO] ?? "").trim();
+        if(orig){
+          if(orig) toOriginal.set(orig, orig);
+          if(camb) toOriginal.set(camb, orig);
         }
       }
 
-      const rows = Array.from(map.entries())
-        .map(([brand,n])=>({ brand, n }))
-        .sort((a,b)=> b.n - a.n)
-        .slice(0,20);
+      const originals = Array.from(new Set(missing.map(m => toOriginal.get(m)).filter(Boolean)));
 
-      const tbody = $("tBrands").querySelector("tbody");
-      if(!rows.length){
-        tbody.innerHTML = `<tr><td colspan="2" class="mut">Sin marcas detectables en este rango (muchas búsquedas son códigos puros).</td></tr>`;
-        setBrandMsg("", false);
-        return;
+      if(originals.length){
+        const { data: veh2, error: e3 } = await supabase
+          .from(TABLE_VEH)
+          .select(`${COL_CODE}, ${COL_MODEL}`)
+          .in(COL_CODE, originals);
+
+        if(!e3 && Array.isArray(veh2)){
+          const origToModel = new Map();
+          for(const r of veh2){
+            const code = String(r?.[COL_CODE] ?? "").trim();
+            const model = String(r?.[COL_MODEL] ?? "").trim();
+            if(code && model) origToModel.set(code, model);
+          }
+          // Asignamos al buscado el modelo del original
+          for(const m of missing){
+            const o = toOriginal.get(m);
+            const model = o ? origToModel.get(o) : null;
+            if(model) out.set(m, model);
+          }
+        }
       }
-
-      tbody.innerHTML = rows.map(r=>`
-        <tr>
-          <td><span class="badge">${esc(r.brand)}</span></td>
-          <td><b>${r.n}</b></td>
-        </tr>
-      `).join("");
-
-      setBrandMsg("", false);
     }
+  }catch(_){}
+
+  return out;
+}
+
+/**
+ * TOP 20 MODELOS:
+ * 1) Lee search_events del rango
+ * 2) Se queda con queries tipo código
+ * 3) Resuelve cada código a un modelo
+ * 4) Cuenta y pinta Top 20
+ */
+async function loadModelTop(){
+  const from = dtFromRange($("range").value);
+  const cat = ($("category").value || "").trim();
+
+  let q = supabase
+    .from("search_events")
+    .select("query_raw, category, searched_at")
+    .gte("searched_at", from);
+
+  if(cat) q = q.eq("category", cat);
+
+  const { data, error } = await q;
+  if(error) throw error;
+
+  const events = (data||[]);
+  const codes = events
+    .map(r => String(r.query_raw||"").trim())
+    .filter(isCodeLike);
+
+  // Resolver modelos
+  setBrandMsg("Resolviendo modelos desde Supabase...", false);
+  const codeToModel = await resolveModelsForCodes(codes);
+
+  // Contar
+  const count = new Map();
+  for(const r of events){
+    const code = String(r.query_raw||"").trim();
+    if(!isCodeLike(code)) continue;
+
+    const model = codeToModel.get(code);
+    if(!model) continue;
+
+    count.set(model, (count.get(model)||0) + 1);
+  }
+
+  const rows = Array.from(count.entries())
+    .map(([model,n]) => ({ model, n }))
+    .sort((a,b)=> b.n - a.n)
+    .slice(0,20);
+
+  const tbody = $("tBrands").querySelector("tbody");
+
+  if(!rows.length){
+    tbody.innerHTML = `<tr><td colspan="2" class="mut">No hay modelos detectables aún (revisa config: tabla/columnas).</td></tr>`;
+    setBrandMsg("", false);
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r=>`
+    <tr>
+      <td><span class="badge">${esc(r.model)}</span></td>
+      <td><b>${r.n}</b></td>
+    </tr>
+  `).join("");
+
+  setBrandMsg("", false);
+}
+
 
     async function loadEbay(topRows){
       const userQ = ($("q").value || "").trim();
@@ -921,7 +1059,7 @@
         setMsg("Cargando radar...", false);
         setBrandMsg("Calculando marcas...", false);
         await loadKpis();
-        await loadBrandTop();          // ✅ nuevo
+        await loadModelTop();          // ✅ nuevo
         const topRows = await loadTop();
         await loadOpp();
         await loadEbay(topRows);
