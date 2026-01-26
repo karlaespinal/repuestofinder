@@ -1179,16 +1179,10 @@
     async function resolveEmailForLogin(identifier){
       const id = String(identifier||"").trim();
       if(!id) return "";
-      if(id.includes("@")) return id.toLowerCase();
-
-      const { data, error } = await supabase.functions.invoke("login-lookup", {
-        body: { identifier: id }
-      });
-
-      if(error) throw new Error("No se pudo validar username: " + error.message);
-      if(!data || !data.email) return "";
-      return String(data.email).toLowerCase();
+      if(!id.includes("@")) return "";
+      return id.toLowerCase();
     }
+
 
     window.doLogin = async function(){
       try{
