@@ -219,6 +219,8 @@
       </div>
     </div>
 
+    <div class="msg err" id="banExpired" style="display:none"></div>
+
     <div class="grid">
       <div class="card">
         <h2>Mis datos</h2>
@@ -432,27 +434,82 @@
     }
 
     function fillSubscription(s, profile){
-      const status = (s?.status || (profile?.is_active ? "active" : "inactive") || "—").toString();
+      const now = new Date();
+
+      const rawStatus = (s?.status || "").toString().toLowerCase();
       const plan = (s?.plan_id ?? profile?.active_plan_id ?? "—");
 
-      $("current_period_start").value = fmtDate(s?.current_period_start);
-      $("current_period_end").value = fmtDate(s?.current_period_end);
-      $("last_payment_at").value = fmtDate(s?.last_payment_at);
-      $("grace_end").value = fmtDate(s?.grace_end);
+      const startISO = s?.current_period_start || null;
+      const endISO   = s?.current_period_end || null;
+      const graceISO = s?.grace_end || null;
 
-      const dleft = s?.current_period_end ? daysBetween(new Date(), s.current_period_end) : null;
+      $("current_period_start").value = fmtDate(startISO);
+      $("current_period_end").value   = fmtDate(endISO);
+      $("last_payment_at").value      = fmtDate(s?.last_payment_at);
+      $("grace_end").value            = fmtDate(graceISO);
 
-      // isActive se deriva del status / fechas
-      // Clasificar pill por días
-      let kind = "warn";
-      if(dleft === null) kind = "warn";
-      else if(dleft <= 0) kind = "bad";
-      else if(dleft <= 5) kind = "warn";
-      else kind = "ok";
+      const daysToEnd = endISO ? daysBetween(now, endISO) : null;
+      const daysToGrace = graceISO ? daysBetween(now, graceISO) : null;
 
-      setPill($("pillStatus"), "Estado: " + status, (status==="active" ? "ok" : (status==="canceled" || status==="expired" ? "bad" : "warn")));
+      // Determinar estado real por fechas (aunque el status venga raro)
+      // - active: hoy <= fin
+      // - grace: hoy > fin y hoy <= grace_end
+      // - expired: hoy > grace_end (o fin sin grace)
+      let computed = "unknown";
+      if(endISO){
+        if(new Date(now).getTime() <= new Date(endISO).getTime()){
+          computed = "active";
+        }else{
+          if(graceISO && new Date(now).getTime() <= new Date(graceISO).getTime()){
+            computed = "grace";
+          }else{
+            computed = "expired";
+          }
+        }
+      }
+
+      // Si el backend ya trae status, lo usamos solo si es "active/canceled/expired"
+      // pero la fecha manda para "expired/grace".
+      let finalStatus = rawStatus || computed;
+      if(computed === "expired") finalStatus = "expired";
+      if(computed === "grace") finalStatus = "grace";
+      if(!finalStatus) finalStatus = "unknown";
+
+      // Pills
+      let statusKind = "warn";
+      if(finalStatus === "active") statusKind = "ok";
+      if(finalStatus === "expired" || finalStatus === "canceled") statusKind = "bad";
+      if(finalStatus === "grace") statusKind = "warn";
+
+      setPill($("pillStatus"), "Estado: " + finalStatus, statusKind);
       setPill($("pillPlan"), "Plan: " + plan, null);
-      setPill($("pillDays"), "Días restantes: " + (dleft===null ? "—" : dleft), kind);
+
+      // Días restantes (al fin del periodo; si ya pasó, mostrar 0)
+      const shownDays = (daysToEnd === null) ? "—" : String(Math.max(0, daysToEnd));
+      let daysKind = "warn";
+      if(daysToEnd === null) daysKind = "warn";
+      else if(daysToEnd <= 0) daysKind = (finalStatus === "grace") ? "warn" : "bad";
+      else if(daysToEnd <= 5) daysKind = "warn";
+      else daysKind = "ok";
+
+      setPill($("pillDays"), "Días restantes: " + shownDays, daysKind);
+
+      // Banner crítico si está vencida
+      const ban = $("banExpired");
+      if(finalStatus === "expired"){
+        ban.style.display = "block";
+        ban.innerHTML = `Tu membresía está <b>VENCIDA</b>. Para usar el sistema, renueva tu plan. 
+          <button class="btn btnPrimary btnSmall" style="margin-left:10px" onclick="goRenovar()">Renovar</button>`;
+      }else if(finalStatus === "grace"){
+        ban.style.display = "block";
+        const dg = (daysToGrace===null) ? "—" : String(Math.max(0, daysToGrace));
+        ban.classList.remove("err");
+        ban.style.display = "block";
+        ban.innerHTML = `Estás en <b>GRACE</b>. Te quedan <b>${dg}</b> días de gracia para renovar. 
+          <button class="btn btnPrimary btnSmall" style="margin-left:10px" onclick="goRenovar()">Renovar</button>`;
+      }else{
+        ban.style.display = "none";
+      }
     }
 
     function escapeHtml(s){
