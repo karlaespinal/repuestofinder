@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>RepuestoFinder - Perfil</title>
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:rgba(255,255,255,.92);
+      --line:rgba(230,232,240,.95);
+      --txt:#0f172a;
+      --mut:#64748b;
+      --pri:#2563eb;
+      --pri2:#1d4ed8;
+      --ok:#16a34a;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --shadow:0 16px 40px rgba(2,6,23,.10);
+      --r:16px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Arial,Helvetica,sans-serif;
+      color:var(--txt);
+      background:
+        radial-gradient(1200px 600px at 20% 0%, rgba(37,99,235,.15), transparent 60%),
+        radial-gradient(900px 500px at 80% 20%, rgba(16,185,129,.12), transparent 55%),
+        linear-gradient(rgba(246,247,251,.92), rgba(246,247,251,.92)),
+        url("assets/bg.jpg");
+      background-size:cover;
+      background-position:center;
+      background-repeat:no-repeat;
+      background-attachment:fixed;
+      min-height:100vh;
+    }
+    .page{ width:min(1180px, 100%); margin:0 auto; padding:18px 18px 28px; }
+
+    .nav{
+      position:sticky; top:0; z-index:30;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      background:rgba(246,247,251,.68);
+      border:1px solid rgba(230,232,240,.75);
+      border-radius:18px;
+      box-shadow:0 10px 26px rgba(2,6,23,.08);
+      padding:12px 14px;
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{
+      width:42px;height:42px;border-radius:14px;
+      background:#111;color:#fff;
+      display:flex;align-items:center;justify-content:center;
+      font-weight:900; user-select:none;
+      box-shadow:0 10px 25px rgba(0,0,0,.12);
+    }
+    .brandTitle{line-height:1}
+    .brandTitle b{display:block;font-size:15px}
+    .brandTitle span{display:block;font-size:12px;color:#94a3b8;font-weight:800;letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
+
+    .navRight{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .btn{
+      border:0; cursor:pointer; font-weight:900;
+      border-radius:12px; padding:10px 12px;
+      display:inline-flex; align-items:center; justify-content:center;
+      gap:8px; user-select:none; white-space:nowrap;
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btnPrimary{background:var(--pri);color:#fff}
+    .btnPrimary:hover{background:var(--pri2)}
+    .btnGhost{background:#fff;border:1px solid var(--line);color:#0f172a}
+    .btnSmall{ padding:8px 10px; border-radius:10px; font-size:12px; }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+    }
+    @media(max-width:980px){ .grid{grid-template-columns:1fr} }
+
+    .card{
+      border:1px solid var(--line);
+      border-radius:22px;
+      background:var(--card);
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+    .card h2{margin:0;font-size:16px;font-weight:900}
+    .muted{color:var(--mut);font-size:12px;font-weight:800}
+    .row{display:grid;grid-template-columns: 1fr 1fr; gap:10px; margin-top:12px}
+    @media(max-width:700px){ .row{grid-template-columns:1fr} }
+
+    .field label{display:block;font-size:12px;color:#334155;font-weight:900;margin-bottom:6px}
+    .inp{
+      width:100%;
+      padding:11px 12px;
+      border-radius:12px;
+      border:1px solid rgba(230,232,240,.95);
+      background:#fff;
+      outline:none;
+      font-weight:800;
+      color:#0f172a;
+    }
+    .inp:focus{
+      border-color:rgba(37,99,235,.35);
+      box-shadow:0 0 0 4px rgba(37,99,235,.10);
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-size:11px;
+      font-weight:900;
+      padding:5px 10px;
+      border-radius:999px;
+      border:1px solid rgba(230,232,240,.95);
+      background:#fff;
+      color:#0f172a;
+      white-space:nowrap;
+    }
+    .pill.ok{ background:rgba(22,163,74,.10); border-color:rgba(22,163,74,.20); color:var(--ok); }
+    .pill.warn{ background:rgba(245,158,11,.12); border-color:rgba(245,158,11,.22); color:#a16207; }
+    .pill.bad{ background:rgba(239,68,68,.10); border-color:rgba(239,68,68,.18); color:#991b1b; }
+
+    .msg{
+      margin-top:10px;
+      font-size:12px;
+      font-weight:900;
+      color:#0f172a;
+      background:rgba(37,99,235,.08);
+      border:1px solid rgba(37,99,235,.18);
+      padding:10px 12px;
+      border-radius:14px;
+      display:none;
+    }
+    .msg.err{
+      background:rgba(239,68,68,.08);
+      border-color:rgba(239,68,68,.18);
+    }
+
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+    .tab{
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid rgba(230,232,240,.95);
+      background:#fff;
+      font-weight:900;
+      cursor:pointer;
+      font-size:12px;
+    }
+    .tab.active{
+      background:rgba(37,99,235,.10);
+      border-color:rgba(37,99,235,.20);
+      color:var(--pri);
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:12px;
+      background:#fff;
+      border:1px solid rgba(230,232,240,.95);
+      border-radius:14px;
+      overflow:hidden;
+    }
+    th,td{padding:10px;border-bottom:1px solid rgba(230,232,240,.75);text-align:left}
+    th{
+      background:rgba(246,247,251,.8);
+      font-size:11px;
+      letter-spacing:.4px;
+      text-transform:uppercase;
+      color:#94a3b8;
+      font-weight:900;
+    }
+    tr:last-child td{border-bottom:0}
+
+    .topLine{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="nav">
+      <div class="brand">
+        <div class="logo">RF</div>
+        <div class="brandTitle">
+          <b>RepuestoFinder</b>
+          <span>Perfil</span>
+        </div>
+      </div>
+
+      <div class="navRight">
+        <button class="btn btnGhost" onclick="goDashboard()">Dashboard</button>
+        <button class="btn btnGhost" id="btnLogout" style="display:none" onclick="logout()">Salir</button>
+        <button class="btn btnPrimary" id="btnLogin" style="display:none" onclick="goLogin()">Login</button>
+      </div>
+    </div>
+
+    <div class="topLine">
+      <div>
+        <div class="pill" id="whoPill">Cargando sesión…</div>
+        <div class="muted" id="whoSub" style="margin-top:6px"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btnGhost btnSmall" onclick="refresh()">Actualizar</button>
+        <button class="btn btnGhost btnSmall" onclick="openEdit()">Editar mis datos</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Mis datos</h2>
+        <div class="muted">Solo tú ves tus datos. El administrador ve todo.</div>
+
+        <div class="row">
+          <div class="field">
+            <label>Nombre</label>
+            <input class="inp" id="first_name" disabled>
+          </div>
+          <div class="field">
+            <label>Apellido</label>
+            <input class="inp" id="last_name" disabled>
+          </div>
+          <div class="field">
+            <label>Empresa</label>
+            <input class="inp" id="company_name" disabled>
+          </div>
+          <div class="field">
+            <label>Teléfono</label>
+            <input class="inp" id="phone" disabled>
+          </div>
+          <div class="field">
+            <label>Username</label>
+            <input class="inp" id="username" disabled>
+          </div>
+          <div class="field">
+            <label>Email</label>
+            <input class="inp" id="email" disabled>
+          </div>
+        </div>
+
+        <div class="msg" id="msgProfile"></div>
+      </div>
+
+      <div class="card">
+        <h2>Mi membresía</h2>
+        <div class="muted">Estado del plan, fechas y días restantes.</div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+          <span class="pill" id="pillStatus">—</span>
+          <span class="pill" id="pillPlan">Plan: —</span>
+          <span class="pill" id="pillDays">Días restantes: —</span>
+        </div>
+
+        <div class="row" style="margin-top:12px">
+          <div class="field">
+            <label>Inicio del período</label>
+            <input class="inp" id="current_period_start" disabled>
+          </div>
+          <div class="field">
+            <label>Fin del período</label>
+            <input class="inp" id="current_period_end" disabled>
+          </div>
+          <div class="field">
+            <label>Último pago</label>
+            <input class="inp" id="last_payment_at" disabled>
+          </div>
+          <div class="field">
+            <label>Grace (si aplica)</label>
+            <input class="inp" id="grace_end" disabled>
+          </div>
+        </div>
+
+        <div class="msg" id="msgSub"></div>
+      </div>
+    </div>
+
+    <!-- Admin -->
+    <div class="card" id="adminCard" style="display:none;margin-top:14px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <h2>Administrador</h2>
+        <div class="muted">Lista de usuarios y membresías (solo admin).</div>
+      </div>
+
+      <div class="tabs" style="margin-top:12px">
+        <button class="tab active" id="tabUsers" onclick="switchAdminTab('users')">Usuarios</button>
+        <button class="tab" id="tabSubs" onclick="switchAdminTab('subs')">Suscripciones</button>
+      </div>
+
+      <div id="paneUsers">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Empresa</th>
+              <th>Teléfono</th>
+              <th>Username</th>
+              <th>Rol</th>
+              <th>Activo</th>
+            </tr>
+          </thead>
+          <tbody id="adminUsersBody">
+            <tr><td colspan="6" class="muted">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="paneSubs" style="display:none">
+        <table>
+          <thead>
+            <tr>
+              <th>User ID</th>
+              <th>Plan</th>
+              <th>Status</th>
+              <th>Inicio</th>
+              <th>Fin</th>
+              <th>Pago</th>
+            </tr>
+          </thead>
+          <tbody id="adminSubsBody">
+            <tr><td colspan="6" class="muted">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="msg" id="msgAdmin"></div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { supabase } from "./assets/supabaseClient.js";
+
+    const $ = (id)=>document.getElementById(id);
+
+    function setMsg(el, text, isErr){
+      if(!el) return;
+      el.textContent = text || "";
+      el.classList.toggle("err", !!isErr);
+      el.style.display = text ? "block" : "none";
+    }
+
+    function fmtDate(s){
+      if(!s) return "—";
+      const d = new Date(s);
+      if(isNaN(d.getTime())) return String(s);
+      return d.toLocaleString("es-DO", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+    }
+
+    function daysBetween(now, end){
+      try{
+        const a = new Date(now).getTime();
+        const b = new Date(end).getTime();
+        if(isNaN(a) || isNaN(b)) return null;
+        const diff = Math.ceil((b - a) / (1000*60*60*24));
+        return diff;
+      }catch(_){ return null; }
+    }
+
+    function setPill(el, text, kind){
+      el.textContent = text;
+      el.classList.remove("ok","warn","bad");
+      if(kind) el.classList.add(kind);
+    }
+
+    window.goDashboard = ()=> window.location.href = "index.html";
+    window.goLogin = ()=> window.location.href = "login.html"; // si tienes login.html (si no, puedes quitar este botón)
+    window.logout = async ()=>{ await supabase.auth.signOut(); window.location.href = "index.html"; };
+
+    window.openEdit = ()=> {
+      // Por ahora solo habilita campos básicos para editar y guardar
+      ["first_name","last_name","company_name","phone"].forEach(id=>{
+        const el = $(id);
+        if(el) el.disabled = false;
+      });
+      setMsg($("msgProfile"), "Edita tus datos y luego presiona 'Actualizar' (por ahora guardado se agrega en el siguiente paso).", false);
+    };
+
+    window.switchAdminTab = (tab)=>{
+      $("tabUsers").classList.toggle("active", tab==="users");
+      $("tabSubs").classList.toggle("active", tab==="subs");
+      $("paneUsers").style.display = (tab==="users") ? "block" : "none";
+      $("paneSubs").style.display  = (tab==="subs")  ? "block" : "none";
+    };
+
+    async function loadMyProfile(userId){
+      // profiles: columnas conocidas (según tu CSV):
+      // id, first_name, last_name, company_name, phone, role, status, created_at, updated_at, username, email, country, active_plan_id, activated_at, is_active
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id,first_name,last_name,company_name,phone,role,status,username,email,country,active_plan_id,activated_at,is_active,created_at,updated_at")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if(error) throw error;
+      return data || null;
+    }
+
+    async function loadMySubscription(userId){
+      // subscriptions: id,user_id,plan_id,status,current_period_start,current_period_end,grace_end,last_payment_at,paypal_subscription_id,paypal_order_id,reminded_before,reminded_after,updated_at
+      const { data, error } = await supabase
+        .from("subscriptions")
+        .select("id,user_id,plan_id,status,current_period_start,current_period_end,grace_end,last_payment_at,paypal_subscription_id,paypal_order_id,updated_at")
+        .eq("user_id", userId)
+        .order("updated_at", { ascending:false })
+        .limit(1)
+        .maybeSingle();
+
+      if(error) throw error;
+      return data || null;
+    }
+
+    function fillProfile(p){
+      $("first_name").value = p?.first_name || "";
+      $("last_name").value = p?.last_name || "";
+      $("company_name").value = p?.company_name || "";
+      $("phone").value = p?.phone || "";
+      $("username").value = p?.username || "";
+      $("email").value = p?.email || "";
+    }
+
+    function fillSubscription(s, profile){
+      const status = (s?.status || (profile?.is_active ? "active" : "inactive") || "—").toString();
+      const plan = (s?.plan_id ?? profile?.active_plan_id ?? "—");
+
+      $("current_period_start").value = fmtDate(s?.current_period_start);
+      $("current_period_end").value = fmtDate(s?.current_period_end);
+      $("last_payment_at").value = fmtDate(s?.last_payment_at);
+      $("grace_end").value = fmtDate(s?.grace_end);
+
+      const dleft = s?.current_period_end ? daysBetween(new Date(), s.current_period_end) : null;
+
+      // isActive se deriva del status / fechas
+      // Clasificar pill por días
+      let kind = "warn";
+      if(dleft === null) kind = "warn";
+      else if(dleft <= 0) kind = "bad";
+      else if(dleft <= 5) kind = "warn";
+      else kind = "ok";
+
+      setPill($("pillStatus"), "Estado: " + status, (status==="active" ? "ok" : (status==="canceled" || status==="expired" ? "bad" : "warn")));
+      setPill($("pillPlan"), "Plan: " + plan, null);
+      setPill($("pillDays"), "Días restantes: " + (dleft===null ? "—" : dleft), kind);
+    }
+
+    function escapeHtml(s){
+      return String(s || "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
+    }
+
+    async function loadAdminTables(){
+      // Usuarios
+      const { data: users, error: e1 } = await supabase
+        .from("profiles")
+        .select("id,first_name,last_name,company_name,phone,username,role,is_active,status")
+        .order("created_at", { ascending:false })
+        .limit(200);
+
+      if(e1) throw e1;
+
+      const ub = $("adminUsersBody");
+      ub.innerHTML = (users || []).map(u=>{
+        const name = [u.first_name, u.last_name].filter(Boolean).join(" ") || u.username || "—";
+        return `
+          <tr>
+            <td>${escapeHtml(name)}</td>
+            <td>${escapeHtml(u.company_name || "—")}</td>
+            <td>${escapeHtml(u.phone || "—")}</td>
+            <td>${escapeHtml(u.username || "—")}</td>
+            <td>${escapeHtml(u.role || "user")}</td>
+            <td>${u.is_active ? '<span class="pill ok">Sí</span>' : '<span class="pill bad">No</span>'}</td>
+          </tr>
+        `;
+      }).join("") || `<tr><td colspan="6" class="muted">No hay datos</td></tr>`;
+
+      // Suscripciones
+      const { data: subs, error: e2 } = await supabase
+        .from("subscriptions")
+        .select("user_id,plan_id,status,current_period_start,current_period_end,last_payment_at,updated_at")
+        .order("updated_at", { ascending:false })
+        .limit(200);
+
+      if(e2) throw e2;
+
+      const sb = $("adminSubsBody");
+      sb.innerHTML = (subs || []).map(s=>{
+        const dleft = s.current_period_end ? daysBetween(new Date(), s.current_period_end) : null;
+        const stKind = s.status==="active" ? "ok" : (dleft!==null && dleft<=0 ? "bad" : "warn");
+        return `
+          <tr>
+            <td>${escapeHtml(s.user_id)}</td>
+            <td>${escapeHtml(String(s.plan_id ?? "—"))}</td>
+            <td><span class="pill ${stKind}">${escapeHtml(s.status || "—")}</span></td>
+            <td>${escapeHtml(fmtDate(s.current_period_start))}</td>
+            <td>${escapeHtml(fmtDate(s.current_period_end))}</td>
+            <td>${escapeHtml(fmtDate(s.last_payment_at))}</td>
+          </tr>
+        `;
+      }).join("") || `<tr><td colspan="6" class="muted">No hay datos</td></tr>`;
+    }
+
+    async function init(){
+      setMsg($("msgProfile"), "", false);
+      setMsg($("msgSub"), "", false);
+      setMsg($("msgAdmin"), "", false);
+
+      const { data: ses } = await supabase.auth.getSession();
+      const user = ses?.session?.user;
+
+      $("btnLogout").style.display = user ? "" : "none";
+      $("btnLogin").style.display  = user ? "none" : "";
+
+      if(!user){
+        setPill($("whoPill"), "No has iniciado sesión", "bad");
+        $("whoSub").textContent = "Inicia sesión para ver tu perfil.";
+        return;
+      }
+
+      setPill($("whoPill"), "Sesión activa", "ok");
+      $("whoSub").textContent = "UID: " + user.id;
+
+      try{
+        const profile = await loadMyProfile(user.id);
+        if(!profile){
+          setMsg($("msgProfile"), "No encontré tu perfil en la tabla 'profiles'.", true);
+          return;
+        }
+        fillProfile(profile);
+
+        // rol
+        const role = (profile.role || "user").toLowerCase();
+        $("whoSub").textContent = `UID: ${user.id} • Rol: ${role}`;
+
+        // suscripción
+        const sub = await loadMySubscription(user.id);
+        fillSubscription(sub, profile);
+
+        // admin
+        if(role === "admin"){
+          $("adminCard").style.display = "block";
+          await loadAdminTables();
+        }else{
+          $("adminCard").style.display = "none";
+        }
+      }catch(err){
+        setMsg($("msgProfile"), "Error cargando: " + (err?.message || err), true);
+      }
+    }
+
+    window.refresh = init;
+
+    init();
+  </script>
+</body>
+</html>
