@@ -187,10 +187,14 @@
   const SUPABASE_ANON_KEY = "sb_publishable_G7uvRyHNLSew2HKJY_h6ag_M2NZDYx4";
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  let lastPayload = null;
-  let currentSearchSessionId = null; // session en DB (search_sessions)
+  // ✅ Tablas (v1 + v2)
+  const VEH_TABLES = ["datos_vehiculares", "datos_vehiculares_v2"];
+  const CAMBIOS_TABLES = ["cambios", "cambios_v2"];
 
-  // ✅ Perfil (country/city) para “mercado por país”
+  let lastPayload = null;
+  let currentSearchSessionId = null;
+
+  // ✅ Perfil (country/city)
   let profileCountry = null;
   let profileCity = null;
 
@@ -435,12 +439,10 @@
     }
   }
 
-  // ✅ carga country/city desde profiles y lo muestra en UI
   async function loadProfileMarket_(){
     const params = new URLSearchParams(window.location.search);
     const isDemo = params.get("demo") === "1";
 
-    // demo: usa DO por defecto solo para no romper la UI
     if(isDemo){
       profileCountry = "DO";
       profileCity = null;
@@ -456,8 +458,6 @@
       return;
     }
 
-    // Trae country/city del perfil
-    // Si city no existe en tu tabla, no pasa nada: lo atrapamos en try/catch.
     try{
       const { data, error } = await supabase
         .from("profiles")
@@ -510,8 +510,6 @@
         anon_id: anonId,
         source: "web",
         device: detectDevice_(),
-
-        // ✅ mercado
         country: profileCountry,
         city: profileCity
       }])
@@ -542,8 +540,6 @@
         result_status: resultStatus || "unknown",
         results_count: Number.isFinite(resultsCount) ? resultsCount : 0,
         response_time_ms: Number.isFinite(responseTimeMs) ? responseTimeMs : null,
-
-        // ✅ meta con contexto de país (para analítica global)
         meta: {
           ...(meta || {}),
           market_country: profileCountry || null,
@@ -559,32 +555,62 @@
   }
 
   // ======================================================
+  // ✅ Helpers multi-tabla (v1 + v2)
+  // ======================================================
+
+  function dedupeByKey_(arr, keyFn){
+    const out = [];
+    const seen = new Set();
+    for(const item of (arr||[])){
+      const k = keyFn(item);
+      if(seen.has(k)) continue;
+      seen.add(k);
+      out.push(item);
+    }
+    return out;
+  }
 
   async function resolveOriginals_(codeNorm){
-    const { data, error } = await supabase
-      .from("cambios")
-      .select("original_norm")
-      .or(`original_norm.eq.${codeNorm},cambio_norm.eq.${codeNorm}`)
-      .limit(5000);
+    let all = [];
+    for(const t of CAMBIOS_TABLES){
+      const { data, error } = await supabase
+        .from(t)
+        .select("original_norm")
+        .or(`original_norm.eq.${codeNorm},cambio_norm.eq.${codeNorm}`)
+        .limit(5000);
+      if(error) throw error;
+      all = all.concat(data || []);
+    }
 
-    if(error) throw error;
-
-    const originals = unique_((data || []).map(x => x.original_norm).filter(Boolean));
+    const originals = unique_((all || []).map(x => x.original_norm).filter(Boolean));
     if(originals.length === 0) return [codeNorm];
     return originals;
   }
 
   async function fetchCambiosByOriginals_(originalNorms){
-    const { data, error } = await supabase
-      .from("cambios")
-      .select("cambio, owner, posicion")
-      .in("original_norm", originalNorms)
-      .order("posicion", { ascending: true, nullsFirst: false })
-      .order("cambio", { ascending: true });
+    let all = [];
+    for(const t of CAMBIOS_TABLES){
+      const { data, error } = await supabase
+        .from(t)
+        .select("cambio, owner, posicion")
+        .in("original_norm", originalNorms)
+        .limit(5000);
+      if(error) throw error;
+      all = all.concat(data || []);
+    }
 
-    if(error) throw error;
+    // dedupe por (cambio + owner)
+    all = dedupeByKey_(all, r => `${String(r?.cambio||"").toUpperCase()}|${String(r?.owner||"").toUpperCase()}`);
 
-    const rows = (data || []).map(r => ([
+    // orden simple
+    all.sort((a,b)=>{
+      const pa = String(a?.posicion||"");
+      const pb = String(b?.posicion||"");
+      if(pa && pb && pa !== pb) return pa.localeCompare(pb);
+      return String(a?.cambio||"").localeCompare(String(b?.cambio||""));
+    });
+
+    const rows = all.map(r => ([
       r.cambio || "",
       r.owner || ""
     ]));
@@ -593,55 +619,70 @@
   }
 
   async function fetchVehiclesByOriginals_(originalNorms){
-    const { data, error } = await supabase
-      .from("datos_vehiculares")
-      .select("*")
-      .in("original_norm", originalNorms)
-      .limit(5000);
+    // Solo traemos columnas necesarias (y descripcion)
+    const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion";
 
-    if(error) throw error;
+    let all = [];
+    for(const t of VEH_TABLES){
+      const { data, error } = await supabase
+        .from(t)
+        .select(selectCols)
+        .in("original_norm", originalNorms)
+        .limit(5000);
 
-    const rowsData = data || [];
-    if(rowsData.length === 0) return { headers: [], rows: [] };
+      // Si alguna tabla no tiene original_norm indexado o da error, lo veremos en consola.
+      if(error) throw error;
+      all = all.concat(data || []);
+    }
 
-    const exclude = new Set([
-      "id",
-      "original",
-      "original_norm",
-      "comercializacion",
-      "created_at",
-      "createdAt"
-    ]);
+    if(all.length === 0) return { headers: [], rows: [] };
 
-    const preferred = [
-      "vehiculo",
-      "anio_inicio",
-      "anio_final",
-      "modelo",
-      "motor",
-      "serie",
-      "cilindro",
-      "posicion",
-      "version",
-      "notas"
+    // Dedupe razonable para no repetir la misma fila si existe en v1 y v2:
+    // clave = vehiculo|anio_inicio|anio_final|modelo|motor|serie|cilindro|posicion|version
+    all = dedupeByKey_(all, r => [
+      r.vehiculo, r.anio_inicio, r.anio_final, r.modelo, r.motor,
+      r.serie, r.cilindro, r.posicion, r.version
+    ].map(x => String(x ?? "")).join("|").toUpperCase());
+
+    // Orden base: vehiculo, modelo, anio_inicio
+    all.sort((a,b)=>{
+      const va = String(a?.vehiculo||"");
+      const vb = String(b?.vehiculo||"");
+      if(va !== vb) return va.localeCompare(vb);
+      const ma = String(a?.modelo||"");
+      const mb = String(b?.modelo||"");
+      if(ma !== mb) return ma.localeCompare(mb);
+      const ya = Number(a?.anio_inicio || 0);
+      const yb = Number(b?.anio_inicio || 0);
+      return ya - yb;
+    });
+
+    // ✅ Headers EXACTOS (sin notas / sin com_ / sin fs id / etc.)
+    const headersKeys = [
+      "vehiculo","anio_inicio","anio_final","modelo","motor","serie","cilindro","posicion","version","descripcion"
     ];
-
-    const allKeys = Object.keys(rowsData[0] || {}).filter(k => !exclude.has(k));
-    const preferredExisting = preferred.filter(k => allKeys.includes(k));
-    const rest = allKeys.filter(k => !preferredExisting.includes(k));
-    const headersKeys = [...preferredExisting, ...rest];
 
     const headerLabel = (k) => {
       if(k === "anio_inicio") return "Año inicio";
       if(k === "anio_final") return "Año final";
+      if(k === "vehiculo") return "Vehiculo";
+      if(k === "modelo") return "Modelo";
+      if(k === "motor") return "Motor";
+      if(k === "serie") return "Serie";
+      if(k === "cilindro") return "Cilindro";
+      if(k === "posicion") return "Posicion";
+      if(k === "version") return "Version";
+      if(k === "descripcion") return "Descripcion";
       return k.replace(/_/g," ").replace(/^./, c => c.toUpperCase());
     };
 
     const headers = headersKeys.map(headerLabel);
-    const rows = rowsData.map(obj => headersKeys.map(k => (obj[k] ?? "")));
+    const rows = all.map(obj => headersKeys.map(k => (obj?.[k] ?? "")));
 
     return { headers, rows };
   }
+
+  // ======================================================
 
   window.limpiar = function(){
     lastPayload = null;
@@ -674,8 +715,12 @@
     setStatus("Buscando...");
     try{
       const codigoMostrado = candidates[0] || raw;
+
+      // ✅ originals desde cambios + cambios_v2
       const originalNorms = await resolveOriginals_(norm);
 
+      // ✅ vehicles desde datos_vehiculares + datos_vehiculares_v2
+      // ✅ cambios desde cambios + cambios_v2
       const [veh, camb] = await Promise.all([
         fetchVehiclesByOriginals_(originalNorms),
         fetchCambiosByOriginals_(originalNorms),
@@ -724,7 +769,11 @@
           vehicle_year_from: vehSummary?.year_from || null,
           vehicle_year_to: vehSummary?.year_to || null,
           vehicle_engine: vehSummary?.engine || null,
-          vehicle_serie: vehSummary?.serie || null
+          vehicle_serie: vehSummary?.serie || null,
+
+          // ✅ meta para saber que buscamos en v1+v2
+          used_vehicle_tables: VEH_TABLES,
+          used_cambios_tables: CAMBIOS_TABLES
         }
       });
 
@@ -846,6 +895,7 @@
 </script>
 </body>
 </html>
+
 
 
 
