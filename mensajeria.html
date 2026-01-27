@@ -656,7 +656,7 @@ async function loadForum(){
 
   const { data: posts, error } = await sb
     .from("forum_posts")
-    .select("id,title,body,created_at,author_id,is_pinned,is_closed,tags,profiles:author_id(full_name,email)")
+    .select("id,title,body,created_at,author_id,is_pinned,is_closed,tags,profiles:author_id(email)")
     .order("created_at", { ascending:false })
     .limit(80);
 
@@ -723,7 +723,7 @@ async function loadForum(){
 
   for(const p of filtered){
     const avg = AVG_MAP[p.id] || 0;
-    const author = p.profiles?.full_name || p.profiles?.email || "Usuario";
+    const author = p.profiles?.email || "Usuario";
 
     const pins = [];
     if(p.is_pinned) pins.push(`<span class="tag pin">Fijado</span>`);
@@ -759,7 +759,7 @@ async function loadForum(){
 async function openPost(postId){
   const { data: p, error } = await sb
     .from("forum_posts")
-    .select("id,title,body,created_at,author_id,is_pinned,is_closed,tags,profiles:author_id(full_name,email)")
+    .select("id,title,body,created_at,author_id,is_pinned,is_closed,tags,profiles:author_id(email)")
     .eq("id", postId)
     .maybeSingle();
 
@@ -781,7 +781,7 @@ async function openPost(postId){
 
   const { data: replies } = await sb
     .from("forum_replies")
-    .select("id,post_id,body,created_at,author_id,profiles:author_id(full_name,email)")
+    .select("id,post_id,body,created_at,author_id,profiles:author_id(email)")
     .eq("post_id", postId)
     .order("created_at",{ascending:true});
 
