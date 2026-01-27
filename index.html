@@ -666,7 +666,7 @@
         <button class="btn btnGhost" id="btnApp" onclick="goApp()">Ir a la App</button>
 
         <!-- ✅ Demo (solo si NO hay sesion) + contador -->
-        <button class="btn btnPrimary" id="btnDemo" onclick="demo()">Probar demo (10)</button>
+        <button class="btn btnPrimary" id="btnDemo" onclick="demo()">Probar demo (3)</button>
       </div>
     </div>
 
@@ -836,7 +836,7 @@
 
     window.RF_ASSET_VER = "4";
 
-    const DEMO_MAX = 10;
+    const DEMO_MAX = 3;
     const KEY = "rf_demo_attempts_left";
     const PROMO_SHOWN_KEY = "rf_promo_shown"; // 👈 AQUÍ
 
@@ -934,7 +934,7 @@
     window.demo = function(){
       const left = getLeft();
       if(left <= 0){
-        alert("Ya agotaste los 10 intentos de demo.");
+        alert("Ya agotaste los 3 intentos de demo.");
         return;
       }
       setLeft(left - 1);
@@ -1473,6 +1473,7 @@
   </script>
 </body>
 </html>
+
 
 
 
