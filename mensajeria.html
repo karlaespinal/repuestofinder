@@ -390,15 +390,10 @@
         </div>
 
         <div class="hr"></div>
-        <button class="btn2" id="btnGoHome" style="width:100%">Ir al Dashboard</button>
 
-        <div class="hr"></div>
-        <div class="okBox">
-          <b>✅ Recomendación</b>
-          <div class="inlineHint">
-            Si algo no carga, revisa que existan en <code>localStorage</code>:
-            <code>rf_sb_url</code> y <code>rf_sb_anon</code>.
-          </div>
+        <h2 class="h2">Etiquetas (casos)</h2>
+        <div class="item" id="tagStatsBox">
+          <p class="mut">Cargando...</p>
         </div>
       </div>
     </div>
@@ -648,6 +643,33 @@ function initTagFilter(){
   }
 }
 
+function renderTagStats(){
+  const box = document.getElementById("tagStatsBox");
+  if(!box) return;
+
+  const counts = {};
+  for(const p of (CACHED_POSTS||[])){
+    const tags = Array.isArray(p.tags) ? p.tags : [];
+    if(!tags.length) counts["(Sin etiqueta)"] = (counts["(Sin etiqueta)"]||0) + 1;
+    for(const t of tags){
+      counts[t] = (counts[t]||0) + 1;
+    }
+  }
+
+  const entries = Object.entries(counts).sort((a,b)=> b[1]-a[1] || a[0].localeCompare(b[0]));
+  if(!entries.length){
+    box.innerHTML = `<p class="mut">Aún no hay casos.</p>`;
+    return;
+  }
+
+  box.innerHTML = entries.slice(0, 20).map(([tag,n])=> `
+    <div class="row" style="justify-content:space-between">
+      <span style="font-weight:900;font-size:12px">${escapeHtml(tag)}</span>
+      <span class="badge">${n}</span>
+    </div>
+  `).join("");
+}
+
 async function loadForum(){
   if(!sb) return;
   const q = (document.getElementById("qForum").value||"").trim().toLowerCase();
@@ -754,6 +776,9 @@ async function loadForum(){
     el.querySelector("button").addEventListener("click", ()=> openPost(p.id));
     box.appendChild(el);
   }
+
+  renderTagStats();
+  await updateUnreadBadges();
 }
 
 async function openPost(postId){
@@ -951,6 +976,28 @@ async function deleteReply(replyId){
    PRIVADOS
 ========================= */
 let ACTIVE_THREAD=null;
+let THREAD_POLL = null;
+
+function startThreadPolling(){
+  stopThreadPolling();
+  THREAD_POLL = setInterval(async ()=>{
+    if(!sb) return;
+    // solo si estas en privados y hay hilo
+    const secPrivate = document.getElementById("secPrivate");
+    if(!secPrivate || secPrivate.style.display === "none") return;
+    if(!ACTIVE_THREAD) return;
+
+    await openThread(ACTIVE_THREAD);
+    await updateUnreadBadges();
+  }, 2000);
+}
+
+function stopThreadPolling(){
+  if(THREAD_POLL){
+    clearInterval(THREAD_POLL);
+    THREAD_POLL = null;
+  }
+}
 
 async function loadMyThreads(){
   const q = sb.from("pm_threads").select("id,subject,created_at,participant_id").order("created_at",{ascending:false});
@@ -967,6 +1014,8 @@ async function loadMyThreads(){
     opt.textContent = `${th.subject||"Sin asunto"} • ${fmtDate(th.created_at)}`;
     sel.appendChild(opt);
   }
+  
+  await updateUnreadBadges();
 }
 
 async function openThread(threadId){
@@ -1038,6 +1087,58 @@ async function sendPM(){
 }
 
 /* =========================
+   NO LEÍDOS
+========================= */
+async function updateUnreadBadges(){
+  // ===== FORO: cuenta posts nuevos (por fecha) =====
+  const seenMap = getSeenMap(kForumSeen());
+  let unseenForum = 0;
+  for(const p of (CACHED_POSTS||[])){
+    const seenAt = seenMap[p.id];
+    // si nunca lo vio => no leido
+    if(!seenAt) { unseenForum++; continue; }
+    // si lo vio, pero el post es mas nuevo que visto (raro, pero por si)
+    if(new Date(p.created_at) > new Date(seenAt)) unseenForum++;
+  }
+  const f = document.getElementById("forumNoti");
+  if(f){
+    f.textContent = unseenForum;
+    f.style.display = unseenForum ? "" : "none";
+  }
+
+  // ===== PRIVADOS: cuenta hilos con mensajes nuevos =====
+  // Solo contamos si podemos leer mensajes del hilo (RLS debe permitirlo)
+  let unseenPM = 0;
+
+  // obtenemos threads visibles
+  let q = sb.from("pm_threads").select("id").order("created_at",{ascending:false});
+  if(!IS_ADMIN) q = q.eq("participant_id", ME.id);
+  const { data: threads } = await q;
+
+  for(const th of (threads||[])){
+    const { data: lastMsg } = await sb
+      .from("pm_messages")
+      .select("created_at")
+      .eq("thread_id", th.id)
+      .order("created_at",{ascending:false})
+      .limit(1)
+      .maybeSingle();
+
+    const lastAt = lastMsg?.created_at ? new Date(lastMsg.created_at).getTime() : 0;
+    const seenAt = localStorage.getItem(kThreadSeen(th.id));
+    const seenT = seenAt ? new Date(seenAt).getTime() : 0;
+
+    if(lastAt > seenT) unseenPM++;
+  }
+
+  const p = document.getElementById("pmNoti");
+  if(p){
+    p.textContent = unseenPM;
+    p.style.display = unseenPM ? "" : "none";
+  }
+}
+
+/* =========================
    EVENTS
 ========================= */
 document.getElementById("btnBack").addEventListener("click", ()=>{
@@ -1048,7 +1149,6 @@ document.getElementById("btnBack").addEventListener("click", ()=>{
     location.href = DASHBOARD_URL;
   }
 });
-document.getElementById("btnGoHome").addEventListener("click", ()=> location.href = DASHBOARD_URL);
 document.getElementById("btnGoIndex").addEventListener("click", ()=> location.href = DASHBOARD_URL);
 
 document.getElementById("btnLogout").addEventListener("click", async ()=>{
@@ -1056,8 +1156,15 @@ document.getElementById("btnLogout").addEventListener("click", async ()=>{
   location.href = LOGIN_URL;
 });
 
-document.getElementById("tabForum").addEventListener("click", ()=> setTab("forum"));
-document.getElementById("tabPrivate").addEventListener("click", async ()=> { setTab("private"); if(sb) await loadMyThreads(); });
+document.getElementById("tabForum").addEventListener("click", ()=>{
+  setTab("forum");
+  stopThreadPolling();
+});
+document.getElementById("tabPrivate").addEventListener("click", async ()=>{
+  setTab("private");
+  if(sb) await loadMyThreads();
+  startThreadPolling();
+});
 
 document.getElementById("btnNewPost").addEventListener("click", ()=>{
   if(!sb){ toast("Falta Supabase. Revisa el recuadro rojo arriba."); return; }
