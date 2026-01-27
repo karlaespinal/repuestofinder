@@ -44,7 +44,7 @@
       margin:0 auto;
       padding:18px 22px 28px;
     }
-    /* En monitores grandes, lo dejamos respirar sin verse “vacío” */
+    /* En monitores grandes, lo dejamos respirar sin verse "vacío" */
     @media(min-width:1400px){
       .page{ padding-left:34px; padding-right:34px; }
     }
@@ -180,7 +180,7 @@
       background:#fff;
     }
 
-    /* ✅ para que no se vean “gigantes” */
+    /* ✅ para que no se vean "gigantes" */
     .tableWrap.compact{
       max-height: 340px;
     }
@@ -380,7 +380,7 @@
       </div>
 
       <div class="card areaOpp">
-        <h2>Oportunidades (alto “no encontrado”)</h2>
+        <h2>Oportunidades (alto "no encontrado")</h2>
         <div class="sub">Demanda sin cobertura</div>
         <div class="tableWrap compact">
           <table id="tOpp">
@@ -681,224 +681,239 @@
       return `${n.toFixed(2)} ${c}`;
     }
 
-    /* ✅ NUEVO: Top marcas interno (heurístico por texto) */
-    function extractBrandCandidates(query){
-      const s = String(query||"").toLowerCase();
-
-      // Lista base (la puedes ampliar sin romper nada)
-      const known = [
-        "mercedes", "mercedes-benz", "benz", "mb",
-        "bosch", "mahle", "mann", "bilstein", "febi", "ngk",
-        "denso", "delphi", "vale o", "valeo", "brembo",
-        "ate", "trw", "lemforder", "sachs", "luk", "ina",
-        "gates", "continental", "contitech", "hella",
-        "magneti", "monroe", "kyb", "kayaba",
-        "toyota", "honda", "hyundai", "kia", "nissan", "bmw"
-      ];
-
-      // Si el usuario buscó un código puro, aquí NO inventamos marca:
-      // (la marca real debe salir del catálogo; esto evita datos falsos)
-      if(isNumericOrCodeLike(query) && !known.some(k => s.includes(k.replace(/\s+/g,'')) || s.includes(k))){
-        return [];
-      }
-
-      const hits = [];
-      for(const k of known){
-        const kk = k.toLowerCase();
-        if(s.includes(kk)) hits.push(k.toUpperCase());
-      }
-
-      // Normalizaciones pequeñas
-      return hits.map(x=>{
-        if(x === "BENZ" || x === "MB") return "MERCEDES-BENZ";
-        if(x === "MERCEDES") return "MERCEDES-BENZ";
-        if(x === "MERCEDES-BENZ") return "MERCEDES-BENZ";
-        if(x === "VALE O") return "VALEO";
-        if(x === "KAYABA") return "KYB";
-        return x;
-      });
-    }
-
     // ==============================
-// CONFIG (AJUSTA SOLO ESTO)
-// ==============================
-// 1) Tabla que tiene la relación código -> modelo/vehículo
-//    Ejemplos típicos: datos_vehiculares, maestro, catalogo, items
-const TABLE_VEH = "datos_vehiculares";
+    // TOP 20 MODELOS (vehiculo) - usando 4 tablas
+    // cambios, cambios_v2, datos_vehiculares, datos_vehiculares_v2
+    // ==============================
 
-// 2) Columna donde está el código OEM/original (el que el usuario busca)
-//    Ajusta según tu tabla: "codigo", "oem", "original", "codigo_original", etc.
-const COL_CODE = "codigo_original";
+    const TABLE_DV_1 = "datos_vehiculares";
+    const TABLE_DV_2 = "datos_vehiculares_v2";
+    const TABLE_C_1  = "cambios";
+    const TABLE_C_2  = "cambios_v2";
 
-// 3) Columna del modelo (Toyota, Honda, Hyundai, Mitsubishi, etc.)
-//    Ajusta: "vehiculo", "marca", "modelo", "make", "vehicle_model"
-const COL_MODEL = "vehiculo"; // <-- si tu campo se llama "modelo", cámbialo a "modelo"
+    // columnas reales (según tu screenshot)
+    const DV_COL_ORIG_NORM = "original_norm";
+    const DV_COL_ORIG      = "original";
+    const DV_COL_VEH       = "vehiculo";
 
-// 4) (Opcional) Si tu modelo está en otra tabla y necesitas puente por 'cambios'
-const TABLE_CAMBIOS = "cambios";
-const CAMBIOS_COL_ORIGINAL = "original";
-const CAMBIOS_COL_CAMBIO = "cambio";
+    // Para cambios, asumimos estas columnas típicas.
+    // Si alguna no existe, la query igual puede fallar. Pero en tu proyecto anterior ya usabas cambios/original/cambio.
+    const C_COL_ORIG_NORM  = "original_norm";
+    const C_COL_CAMB_NORM  = "cambio_norm";
+    const C_COL_ORIG       = "original";
+    const C_COL_CAMB       = "cambio";
 
-function isCodeLike(s){
-  const x = String(s||"").trim();
-  if(!x) return false;
-  // números largos
-  if(/^\d{4,}$/.test(x)) return true;
-  // patrones tipo A2730904040 / 111242 / A-1234 etc.
-  if(/^[A-Z0-9\-]{5,}$/i.test(x)) return true;
-  return false;
-}
-
-/**
- * Resuelve un listado de códigos a un mapa code -> model (vehiculo)
- * Estrategia:
- *  A) Busca directo en TABLE_VEH (columna COL_CODE)
- *  B) Si no aparece, intenta por TABLE_CAMBIOS para encontrar el "original" y vuelve a TABLE_VEH
- */
-async function resolveModelsForCodes(codes){
-  const clean = Array.from(new Set((codes||[]).map(x=>String(x||"").trim()).filter(Boolean)));
-
-  if(!clean.length) return new Map();
-
-  const out = new Map();
-
-  // ---- A) Directo a datos_vehiculares (o tabla que uses)
-  try{
-    // OJO: Supabase limita el tamaño del IN; si tienes demasiados, se puede trocear.
-    const { data: veh, error: e1 } = await supabase
-      .from(TABLE_VEH)
-      .select(`${COL_CODE}, ${COL_MODEL}`)
-      .in(COL_CODE, clean);
-
-    if(!e1 && Array.isArray(veh)){
-      for(const r of veh){
-        const code = String(r?.[COL_CODE] ?? "").trim();
-        const model = String(r?.[COL_MODEL] ?? "").trim();
-        if(code && model) out.set(code, model);
-      }
+    function isCodeLike(s){
+      const x = String(s||"").trim();
+      if(!x) return false;
+      if(/^\d{3,}$/.test(x)) return true;                 // números
+      if(/^[A-Z0-9\-]{5,}$/i.test(x)) return true;        // A2730904040 / BL1060 / etc
+      return false;
     }
-  }catch(_){}
 
-  // Si ya resolvimos casi todo, retornamos
-  const missing = clean.filter(c => !out.has(c));
-  if(!missing.length) return out;
+    // trocea arrays para .in() (evita límites)
+    function chunk(arr, size=250){
+      const out = [];
+      for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size));
+      return out;
+    }
 
-  // ---- B) Puente por cambios: si el usuario buscó "cambio" o un código que exista ahí
-  try{
-    const { data: cambios, error: e2 } = await supabase
-      .from(TABLE_CAMBIOS)
-      .select(`${CAMBIOS_COL_ORIGINAL}, ${CAMBIOS_COL_CAMBIO}`)
-      .or([
-        `${CAMBIOS_COL_ORIGINAL}.in.(${missing.join(",")})`,
-        `${CAMBIOS_COL_CAMBIO}.in.(${missing.join(",")})`
-      ].join(","));
+    // Normaliza a mayúscula y quita espacios
+    function normKey(s){
+      return String(s||"").trim().toUpperCase();
+    }
 
-    if(!e2 && Array.isArray(cambios) && cambios.length){
-      // construimos un mapa de lookup: buscado -> original
-      const toOriginal = new Map();
-      for(const r of cambios){
-        const orig = String(r?.[CAMBIOS_COL_ORIGINAL] ?? "").trim();
-        const camb = String(r?.[CAMBIOS_COL_CAMBIO] ?? "").trim();
-        if(orig){
-          if(orig) toOriginal.set(orig, orig);
-          if(camb) toOriginal.set(camb, orig);
-        }
-      }
+    /**
+     * Paso A: dado un listado de queries (códigos), intenta mapear a "original_norm"
+     * - Si el query ya existe como original_norm en datos_vehiculares => ok
+     * - Si el query es un cambio => busca en cambios/cambios_v2 y trae su original_norm
+     * Retorna: Map(query -> original_norm)
+     */
+    async function resolveToOriginalNorm(queries){
+      const qList = Array.from(new Set(queries.map(normKey).filter(Boolean)));
+      const out = new Map();
 
-      const originals = Array.from(new Set(missing.map(m => toOriginal.get(m)).filter(Boolean)));
+      // 1) Si el query ya es un original_norm en datos_vehiculares(_v2), lo damos por bueno
+      async function probeDV(table){
+        for(const part of chunk(qList, 250)){
+          const { data, error } = await supabase
+            .from(table)
+            .select(`${DV_COL_ORIG_NORM}, ${DV_COL_ORIG}`)
+            .or(`${DV_COL_ORIG_NORM}.in.(${part.join(",")}),${DV_COL_ORIG}.in.(${part.join(",")})`);
 
-      if(originals.length){
-        const { data: veh2, error: e3 } = await supabase
-          .from(TABLE_VEH)
-          .select(`${COL_CODE}, ${COL_MODEL}`)
-          .in(COL_CODE, originals);
-
-        if(!e3 && Array.isArray(veh2)){
-          const origToModel = new Map();
-          for(const r of veh2){
-            const code = String(r?.[COL_CODE] ?? "").trim();
-            const model = String(r?.[COL_MODEL] ?? "").trim();
-            if(code && model) origToModel.set(code, model);
-          }
-          // Asignamos al buscado el modelo del original
-          for(const m of missing){
-            const o = toOriginal.get(m);
-            const model = o ? origToModel.get(o) : null;
-            if(model) out.set(m, model);
+          if(!error && Array.isArray(data)){
+            for(const r of data){
+              const on = normKey(r?.[DV_COL_ORIG_NORM]);
+              const o  = normKey(r?.[DV_COL_ORIG]);
+              // si el query matchea por original_norm u original, lo resolvemos a original_norm (prioridad)
+              if(on){
+                if(on && qList.includes(on)) out.set(on, on);
+                if(o && qList.includes(o) && !out.has(o)) out.set(o, on);
+              }else if(o && qList.includes(o)){
+                // si no hay original_norm, usamos original como fallback
+                out.set(o, o);
+              }
+            }
           }
         }
       }
+
+      await probeDV(TABLE_DV_2); // prioridad v2 primero
+      await probeDV(TABLE_DV_1);
+
+      const missing = qList.filter(x => !out.has(x));
+      if(!missing.length) return out;
+
+      // 2) Buscar en cambios/cambios_v2: query puede ser cambio_norm o cambio o incluso original*
+      async function probeCambios(table){
+        for(const part of chunk(missing, 200)){
+          // usamos .or para intentar todas las columnas típicas
+          const orExpr = [
+            `${C_COL_CAMB_NORM}.in.(${part.join(",")})`,
+            `${C_COL_CAMB}.in.(${part.join(",")})`,
+            `${C_COL_ORIG_NORM}.in.(${part.join(",")})`,
+            `${C_COL_ORIG}.in.(${part.join(",")})`,
+          ].join(",");
+
+          const { data, error } = await supabase
+            .from(table)
+            .select(`${C_COL_ORIG_NORM}, ${C_COL_ORIG}, ${C_COL_CAMB_NORM}, ${C_COL_CAMB}`)
+            .or(orExpr);
+
+          if(!error && Array.isArray(data)){
+            for(const r of data){
+              const origNorm = normKey(r?.[C_COL_ORIG_NORM]) || normKey(r?.[C_COL_ORIG]);
+              if(!origNorm) continue;
+
+              const cambNorm = normKey(r?.[C_COL_CAMB_NORM]);
+              const camb     = normKey(r?.[C_COL_CAMB]);
+              const orig     = normKey(r?.[C_COL_ORIG]);
+              const oNorm    = normKey(r?.[C_COL_ORIG_NORM]);
+
+              // si el query coincide con cualquiera, lo mapeamos a origNorm
+              if(cambNorm && !out.has(cambNorm)) out.set(cambNorm, origNorm);
+              if(camb && !out.has(camb)) out.set(camb, origNorm);
+              if(oNorm && !out.has(oNorm)) out.set(oNorm, origNorm);
+              if(orig && !out.has(orig)) out.set(orig, origNorm);
+            }
+          }
+        }
+      }
+
+      await probeCambios(TABLE_C_2); // prioridad v2
+      await probeCambios(TABLE_C_1);
+
+      return out;
     }
-  }catch(_){}
 
-  return out;
-}
+    /**
+     * Paso B: dado un listado de original_norm, buscar vehiculo en datos_vehiculares(_v2)
+     * Retorna: Map(original_norm -> vehiculo)
+     */
+    async function resolveVehiculoForOriginalNorm(originalNorms){
+      const list = Array.from(new Set(originalNorms.map(normKey).filter(Boolean)));
+      const out = new Map();
 
-/**
- * TOP 20 MODELOS:
- * 1) Lee search_events del rango
- * 2) Se queda con queries tipo código
- * 3) Resuelve cada código a un modelo
- * 4) Cuenta y pinta Top 20
- */
-async function loadModelTop(){
-  const from = dtFromRange($("range").value);
-  const cat = ($("category").value || "").trim();
+      async function probe(table){
+        for(const part of chunk(list, 250)){
+          const { data, error } = await supabase
+            .from(table)
+            .select(`${DV_COL_ORIG_NORM}, ${DV_COL_VEH}`)
+            .in(DV_COL_ORIG_NORM, part);
 
-  let q = supabase
-    .from("search_events")
-    .select("query_raw, category, searched_at")
-    .gte("searched_at", from);
+          if(!error && Array.isArray(data)){
+            for(const r of data){
+              const on = normKey(r?.[DV_COL_ORIG_NORM]);
+              const veh = String(r?.[DV_COL_VEH] || "").trim();
+              if(on && veh && !out.has(on)) out.set(on, veh);
+            }
+          }
+        }
+      }
 
-  if(cat) q = q.eq("category", cat);
+      await probe(TABLE_DV_2); // prioridad v2
+      await probe(TABLE_DV_1);
 
-  const { data, error } = await q;
-  if(error) throw error;
+      return out;
+    }
 
-  const events = (data||[]);
-  const codes = events
-    .map(r => String(r.query_raw||"").trim())
-    .filter(isCodeLike);
+    async function loadModelTop(){
+      // UI
+      const tbody = document.getElementById("tBrands")?.querySelector("tbody");
+      if(tbody) tbody.innerHTML = `<tr><td class="mut">—</td><td class="mut">—</td></tr>`;
+      const bMsg = document.getElementById("bMsg");
+      if(bMsg){ bMsg.textContent = "Calculando modelos..."; bMsg.style.display="block"; }
 
-  // Resolver modelos
-  setBrandMsg("Resolviendo modelos desde Supabase...", false);
-  const codeToModel = await resolveModelsForCodes(codes);
+      const from = dtFromRange(document.getElementById("range").value);
+      const cat = (document.getElementById("category").value || "").trim();
 
-  // Contar
-  const count = new Map();
-  for(const r of events){
-    const code = String(r.query_raw||"").trim();
-    if(!isCodeLike(code)) continue;
+      let q = supabase
+        .from("search_events")
+        .select("query_raw, category, searched_at")
+        .gte("searched_at", from);
 
-    const model = codeToModel.get(code);
-    if(!model) continue;
+      if(cat) q = q.eq("category", cat);
 
-    count.set(model, (count.get(model)||0) + 1);
-  }
+      const { data, error } = await q;
+      if(error) throw error;
 
-  const rows = Array.from(count.entries())
-    .map(([model,n]) => ({ model, n }))
-    .sort((a,b)=> b.n - a.n)
-    .slice(0,20);
+      const events = (data||[]);
+      const queries = events
+        .map(r => normKey(r.query_raw))
+        .filter(x => isCodeLike(x));
 
-  const tbody = $("tBrands").querySelector("tbody");
+      if(!queries.length){
+        if(tbody) tbody.innerHTML = `<tr><td colspan="2" class="mut">No hay búsquedas tipo código en este rango.</td></tr>`;
+        if(bMsg) bMsg.style.display="none";
+        return;
+      }
 
-  if(!rows.length){
-    tbody.innerHTML = `<tr><td colspan="2" class="mut">No hay modelos detectables aún (revisa config: tabla/columnas).</td></tr>`;
-    setBrandMsg("", false);
-    return;
-  }
+      // 1) query -> original_norm
+      if(bMsg) bMsg.textContent = "Resolviendo códigos (cambios + datos_vehiculares)...";
+      const qToOrigNorm = await resolveToOriginalNorm(queries);
 
-  tbody.innerHTML = rows.map(r=>`
-    <tr>
-      <td><span class="badge">${esc(r.model)}</span></td>
-      <td><b>${r.n}</b></td>
-    </tr>
-  `).join("");
+      // 2) original_norm -> vehiculo
+      const origNorms = Array.from(new Set(Array.from(qToOrigNorm.values())));
+      if(bMsg) bMsg.textContent = "Buscando vehiculo por original_norm...";
+      const origNormToVeh = await resolveVehiculoForOriginalNorm(origNorms);
 
-  setBrandMsg("", false);
-}
+      // 3) Contar vehiculo
+      const count = new Map();
+      for(const ev of events){
+        const qx = normKey(ev.query_raw);
+        if(!isCodeLike(qx)) continue;
 
+        const on = qToOrigNorm.get(qx);
+        if(!on) continue;
+
+        const veh = origNormToVeh.get(on);
+        if(!veh) continue;
+
+        count.set(veh, (count.get(veh)||0) + 1);
+      }
+
+      const rows = Array.from(count.entries())
+        .map(([veh, n]) => ({ veh, n }))
+        .sort((a,b)=> b.n - a.n)
+        .slice(0,20);
+
+      if(!rows.length){
+        if(tbody) tbody.innerHTML = `<tr><td colspan="2" class="mut">No se pudo mapear a vehiculo (revisa si tus búsquedas están entrando como códigos reales).</td></tr>`;
+        if(bMsg) bMsg.style.display="none";
+        return;
+      }
+
+      if(tbody){
+        tbody.innerHTML = rows.map(r=>`
+          <tr>
+            <td><span class="badge">${esc(r.veh)}</span></td>
+            <td><b>${r.n}</b></td>
+          </tr>
+        `).join("");
+      }
+
+      if(bMsg) bMsg.style.display="none";
+    }
 
     async function loadEbay(topRows){
       const userQ = ($("q").value || "").trim();
@@ -958,7 +973,7 @@ async function loadModelTop(){
               <div style="margin-top:6px" class="mut">median: <b>${esc(median)}</b></div>
               <div class="mut">low: ${esc(low)} · high: ${esc(high)}</div>
               <div class="mut" style="margin-top:6px">
-                Nota: en <b>Sandbox</b> eBay suele devolver <b>0</b> resultados aunque esté “OK”.
+                Nota: en <b>Sandbox</b> eBay suele devolver <b>0</b> resultados aunque esté "OK".
               </div>
             </td>
             <td class="mut">—</td>
