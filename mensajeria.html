@@ -33,7 +33,6 @@
                   var(--bg);
       color:var(--txt);
     }
-    a{color:inherit}
     .wrap{max-width:1240px;margin:0 auto;padding:22px 16px 40px}
     .topbar{
       display:flex;align-items:center;justify-content:space-between;gap:12px;
@@ -56,7 +55,7 @@
     }
     .btn2{
       border:1px solid var(--line);cursor:pointer;border-radius:12px;padding:10px 12px;
-      background:rgba(255,255,255,.8);color:var(--txt);font-weight:700;
+      background:rgba(255,255,255,.8);color:var(--txt);font-weight:800;
     }
     .btn2:active{transform:translateY(1px)}
     .grid{display:grid;grid-template-columns: 1.25fr .75fr;gap:14px;margin-top:14px}
@@ -108,9 +107,6 @@
     }
     .tag.pin{border-color:rgba(37,99,235,.25);background:rgba(37,99,235,.10);color:#1d4ed8}
     .tag.closed{border-color:rgba(239,68,68,.22);background:rgba(239,68,68,.10);color:var(--bad)}
-    .tag.bad{border-color:rgba(239,68,68,.22);background:rgba(239,68,68,.10);color:var(--bad)}
-    .tag.good{border-color:rgba(22,163,74,.22);background:rgba(22,163,74,.10);color:var(--ok)}
-    .tag.warn{border-color:rgba(245,158,11,.30);background:rgba(245,158,11,.12);color:#b45309}
     .badge{
       font-size:11px;font-weight:900;border-radius:999px;padding:7px 10px;
       border:1px solid var(--line);background:rgba(255,255,255,.75);color:var(--mut);
@@ -135,7 +131,8 @@
     .miniBtn.bad{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.10);color:var(--bad)}
     .miniBtn.warn{border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.10);color:#b45309}
     .miniBtn.ok{border-color:rgba(22,163,74,.35);background:rgba(22,163,74,.10);color:var(--ok)}
-    .split{display:grid;grid-template-columns:1fr;gap:10px}
+    .twoCols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width: 620px){ .twoCols{grid-template-columns:1fr} }
     .chat{
       height:360px;overflow:auto;border:1px solid var(--line);
       border-radius:18px;background:rgba(255,255,255,.7);padding:10px;
@@ -161,8 +158,37 @@
       border:1px dashed rgba(100,116,139,.35);
       border-radius:16px;padding:10px 12px;background:rgba(255,255,255,.6);
     }
-    .twoCols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media (max-width: 620px){ .twoCols{grid-template-columns:1fr} }
+
+    /* Modal */
+    .modalBack{
+      position:fixed;inset:0;background:rgba(2,6,23,.45);
+      display:none;align-items:center;justify-content:center;
+      padding:18px;z-index:50;
+    }
+    .modal{
+      width:min(720px, 96vw);
+      border:1px solid var(--line);background:var(--card);
+      border-radius:22px;box-shadow:var(--shadow);
+      padding:14px;
+    }
+    .modalHead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .modalHead h3{margin:0;font-size:15px}
+    .modalHead p{margin:3px 0 0 0;color:var(--mut);font-size:12px}
+    .modalBody{margin-top:10px}
+    .modalFoot{display:flex;gap:10px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
+    .inlineHint{font-size:12px;color:var(--mut);margin-top:6px}
+    .dangerBox{
+      border:1px solid rgba(239,68,68,.25);
+      background:rgba(239,68,68,.08);
+      border-radius:16px;
+      padding:10px 12px;
+    }
+    .okBox{
+      border:1px solid rgba(22,163,74,.25);
+      background:rgba(22,163,74,.08);
+      border-radius:16px;
+      padding:10px 12px;
+    }
   </style>
 </head>
 
@@ -174,7 +200,7 @@
         <div class="logo"></div>
         <div>
           <h1>Mensajería</h1>
-          <p class="mut">Foro abierto (con etiquetas, fijados y cerrados) + mensajes a admins</p>
+          <p class="mut">Foro abierto (etiquetas, fijados/cerrados) + mensajes a admins</p>
         </div>
       </div>
 
@@ -202,6 +228,16 @@
 
         <div class="hr"></div>
 
+        <!-- ERROR/STATUS -->
+        <div id="statusBox" class="dangerBox" style="display:none;margin-bottom:12px">
+          <b>⚠️ Configuración incompleta</b>
+          <div class="inlineHint" id="statusMsg">...</div>
+          <div class="modalFoot" style="justify-content:flex-start;margin-top:8px">
+            <button class="miniBtn" id="btnRetry">Reintentar</button>
+            <button class="miniBtn pri" id="btnGoIndex">Ir a Dashboard</button>
+          </div>
+        </div>
+
         <!-- FORO -->
         <section id="secForum">
           <div class="row" style="justify-content:space-between">
@@ -218,7 +254,7 @@
 
           <div class="twoCols">
             <div class="row">
-              <input class="input" id="qForum" placeholder="Buscar por titulo, contenido o autor..." />
+              <input class="input" id="qForum" placeholder="Buscar por título, contenido o autor..." />
               <button class="miniBtn" id="btnRefreshForum">Actualizar</button>
             </div>
             <div class="row">
@@ -256,7 +292,6 @@
               <div id="pdBody" style="white-space:pre-wrap;font-size:14px;line-height:1.35"></div>
 
               <div class="hr"></div>
-
               <div class="row" style="justify-content:space-between">
                 <div class="row">
                   <span class="mut">Tu calificación:</span>
@@ -300,27 +335,27 @@
 
           <div class="hr"></div>
 
-          <div class="split">
-            <div class="row" style="justify-content:space-between">
-              <div class="row" style="flex:1">
-                <select id="threadSelect">
-                  <option value="">— Selecciona un hilo —</option>
-                </select>
-                <button class="miniBtn" id="btnReloadThreads">Actualizar</button>
-              </div>
-              <button class="miniBtn pri" id="btnNewThread">+ Nuevo hilo</button>
+          <div class="row" style="justify-content:space-between">
+            <div class="row" style="flex:1">
+              <select id="threadSelect">
+                <option value="">— Selecciona un hilo —</option>
+              </select>
+              <button class="miniBtn" id="btnReloadThreads">Actualizar</button>
             </div>
+            <button class="miniBtn pri" id="btnNewThread">+ Nuevo hilo</button>
+          </div>
 
-            <div class="chat" id="chatBox"></div>
+          <div class="hr"></div>
 
-            <div class="row">
-              <input class="input" id="pmText" placeholder="Escribe tu mensaje..." />
-              <button class="miniBtn pri" id="btnSendPM">Enviar</button>
-            </div>
+          <div class="chat" id="chatBox"></div>
 
-            <div class="note">
-              <b>Tip:</b> Si es un caso complejo, pega el código de repuesto, país, marca y el contexto. Así el admin te responde más rápido.
-            </div>
+          <div class="row" style="margin-top:10px">
+            <input class="input" id="pmText" placeholder="Escribe tu mensaje..." />
+            <button class="miniBtn pri" id="btnSendPM">Enviar</button>
+          </div>
+
+          <div class="note" style="margin-top:10px">
+            <b>Tip:</b> Si es un caso complejo, pega el código del repuesto, país, marca y contexto.
           </div>
         </section>
       </div>
@@ -346,7 +381,7 @@
         </div>
         <div class="item" id="adminBox" style="display:none">
           <p class="title">🛡️ Moderación (Admin)</p>
-          <p class="mut">Fijar temas, cerrar, eliminar spam y limpiar comentarios.</p>
+          <p class="mut">Fijar temas, cerrar y eliminar spam.</p>
         </div>
 
         <div class="hr"></div>
@@ -358,25 +393,89 @@
 
         <div class="hr"></div>
         <button class="btn2" id="btnGoHome" style="width:100%">Ir al Dashboard</button>
+
+        <div class="hr"></div>
+        <div class="okBox">
+          <b>✅ Recomendación</b>
+          <div class="inlineHint">
+            Si algo no carga, revisa que existan en <code>localStorage</code>:
+            <code>rf_sb_url</code> y <code>rf_sb_anon</code>.
+          </div>
+        </div>
       </div>
     </div>
 
+  </div>
+
+  <!-- MODAL NUEVO POST -->
+  <div class="modalBack" id="mPost">
+    <div class="modal">
+      <div class="modalHead">
+        <div>
+          <h3>Nuevo tema</h3>
+          <p>Publica un tema en el foro con etiquetas.</p>
+        </div>
+        <button class="miniBtn" id="mPostClose">Cerrar</button>
+      </div>
+
+      <div class="modalBody">
+        <input class="input" id="newTitle" placeholder="Título del tema" />
+        <div style="height:10px"></div>
+        <textarea class="ta" id="newBody" placeholder="Escribe el contenido..."></textarea>
+        <div class="inlineHint">Etiquetas (separadas por coma). Ej: Idea,Bug,Soporte</div>
+        <input class="input" id="newTags" placeholder="Idea,Bug,Soporte" />
+      </div>
+
+      <div class="modalFoot">
+        <button class="miniBtn" id="mPostCancel">Cancelar</button>
+        <button class="miniBtn pri" id="mPostSave">Publicar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL NUEVO HILO -->
+  <div class="modalBack" id="mThread">
+    <div class="modal">
+      <div class="modalHead">
+        <div>
+          <h3>Nuevo hilo a Admin</h3>
+          <p>Crea un asunto y luego envías mensajes.</p>
+        </div>
+        <button class="miniBtn" id="mThreadClose">Cerrar</button>
+      </div>
+
+      <div class="modalBody">
+        <input class="input" id="threadSubject" placeholder="Asunto (ej: Error en búsqueda / Necesito soporte)" />
+      </div>
+
+      <div class="modalFoot">
+        <button class="miniBtn" id="mThreadCancel">Cancelar</button>
+        <button class="miniBtn pri" id="mThreadSave">Crear hilo</button>
+      </div>
+    </div>
   </div>
 
   <div class="toast" id="toast"></div>
 
 <script>
 /* =========================
-   CONFIG + HELPERS
+   CONFIG (AJUSTA AQUÍ SI QUIERES FIJO)
 ========================= */
 const DASHBOARD_URL = "index.html";
 const LOGIN_URL = "login.html";
 
-// Etiquetas sugeridas (puedes añadir más)
-const DEFAULT_TAGS = [
-  "Idea", "Bug", "Soporte", "Compras", "Radar", "KPIs", "Inventario", "Ventas", "Importacion", "General"
-];
+/* Si NO quieres usar localStorage, pega aquí tu Supabase:
+const FORCE_SUPABASE_URL = "https://xxxxx.supabase.co";
+const FORCE_SUPABASE_ANON = "eyJ...";
+*/
+const FORCE_SUPABASE_URL = "";
+const FORCE_SUPABASE_ANON = "";
 
+const DEFAULT_TAGS = ["Idea","Bug","Soporte","Compras","Radar","KPIs","Inventario","Ventas","Importacion","General"];
+
+/* =========================
+   HELPERS
+========================= */
 function toast(msg){
   const t = document.getElementById("toast");
   t.textContent = msg;
@@ -384,108 +483,122 @@ function toast(msg){
   clearTimeout(window.__toastT);
   window.__toastT = setTimeout(()=> t.style.display="none", 2600);
 }
-
 function fmtDate(iso){
   try{
     const d = new Date(iso);
-    return d.toLocaleString("es-DO", {year:"numeric",month:"short",day:"2-digit",hour:"2-digit",minute:"2-digit"});
+    return d.toLocaleString("es-DO",{year:"numeric",month:"short",day:"2-digit",hour:"2-digit",minute:"2-digit"});
   }catch(e){ return ""; }
 }
-
 function escapeHtml(str){
   return String(str||"")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
 }
-
-function normalizeTags(tagsArr){
+function normalizeTags(arr){
   const set = new Set();
-  for(const t of (tagsArr||[])){
+  for(const t of (arr||[])){
     const x = String(t||"").trim();
     if(!x) continue;
     set.add(x);
   }
-  return Array.from(set).slice(0, 8);
+  return Array.from(set).slice(0,8);
 }
+function showStatus(msg){
+  const box = document.getElementById("statusBox");
+  document.getElementById("statusMsg").textContent = msg;
+  box.style.display = "";
+}
+function hideStatus(){
+  document.getElementById("statusBox").style.display = "none";
+}
+function openModal(id){ document.getElementById(id).style.display = "flex"; }
+function closeModal(id){ document.getElementById(id).style.display = "none"; }
 
-// localStorage keys (notificaciones “offline”)
+/* Notificaciones locales */
+let ME=null, PROFILE=null, IS_ADMIN=false;
 function kForumSeen(){ return `rf_seen_forum_${ME?.id||"x"}`; }
 function kThreadSeen(threadId){ return `rf_seen_thread_${ME?.id||"x"}_${threadId}`; }
-
-function getSeenMap(key){
-  try{ return JSON.parse(localStorage.getItem(key)||"{}"); }catch(e){ return {}; }
-}
-function setSeenMap(key, map){
-  localStorage.setItem(key, JSON.stringify(map||{}));
-}
-
+function getSeenMap(key){ try{ return JSON.parse(localStorage.getItem(key)||"{}"); }catch(e){ return {}; } }
+function setSeenMap(key, map){ localStorage.setItem(key, JSON.stringify(map||{})); }
 function markForumPostSeen(postId){
   const m = getSeenMap(kForumSeen());
   m[postId] = new Date().toISOString();
   setSeenMap(kForumSeen(), m);
 }
-function markThreadSeen(threadId){
-  localStorage.setItem(kThreadSeen(threadId), new Date().toISOString());
-}
+function markThreadSeen(threadId){ localStorage.setItem(kThreadSeen(threadId), new Date().toISOString()); }
 
 /* =========================
-   SUPABASE CONFIG
+   SUPABASE INIT (ROBUSTO)
 ========================= */
 function getSupabaseConfig(){
-  const url = localStorage.getItem("rf_sb_url") || localStorage.getItem("SUPABASE_URL") || "";
-  const anon = localStorage.getItem("rf_sb_anon") || localStorage.getItem("SUPABASE_ANON_KEY") || "";
+  const url = FORCE_SUPABASE_URL || localStorage.getItem("rf_sb_url") || localStorage.getItem("SUPABASE_URL") || "";
+  const anon = FORCE_SUPABASE_ANON || localStorage.getItem("rf_sb_anon") || localStorage.getItem("SUPABASE_ANON_KEY") || "";
   return { url, anon };
 }
+let sb=null;
 
-const { url: SUPABASE_URL, anon: SUPABASE_ANON_KEY } = getSupabaseConfig();
-if(!SUPABASE_URL || !SUPABASE_ANON_KEY){
-  console.warn("Faltan credenciales Supabase en localStorage: rf_sb_url / rf_sb_anon");
-}
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+function initSupabase(){
+  const { url, anon } = getSupabaseConfig();
 
-let ME = null;
-let PROFILE = null;
-let IS_ADMIN = false;
-
-let ACTIVE_POST = null;
-let ACTIVE_THREAD = null;
-
-let CACHED_POSTS = []; // para ordenar/filtrar rápido
-let AVG_MAP = {};      // postId -> avg rating
-
-/* =========================
-   AUTH GUARD
-========================= */
-async function requireAuth(){
-  const { data } = await sb.auth.getSession();
-  if(!data.session){
-    location.href = LOGIN_URL;
+  if(!url || !anon){
+    sb = null;
+    showStatus("No encuentro tus credenciales de Supabase. Crea en localStorage: rf_sb_url y rf_sb_anon, o pégalas en FORCE_SUPABASE_URL/ANON dentro de este archivo.");
     return false;
   }
-  ME = data.session.user;
-  return true;
+
+  try{
+    sb = supabase.createClient(url, anon);
+    hideStatus();
+    return true;
+  }catch(e){
+    sb = null;
+    showStatus("Error creando Supabase client: " + (e?.message || e));
+    return false;
+  }
+}
+
+/* =========================
+   AUTH
+========================= */
+async function requireAuth(){
+  if(!sb) return false;
+
+  try{
+    const { data, error } = await sb.auth.getSession();
+    if(error) throw error;
+
+    if(!data.session){
+      location.href = LOGIN_URL;
+      return false;
+    }
+    ME = data.session.user;
+    return true;
+  }catch(e){
+    showStatus("No pude validar sesión. Revisa Supabase URL/ANON y que Auth esté activo. Detalle: " + (e?.message||e));
+    return false;
+  }
 }
 
 async function loadProfile(){
-  const { data, error } = await sb
-    .from("profiles")
-    .select("id,email,full_name,role,country,created_at")
-    .eq("id", ME.id)
-    .maybeSingle();
+  // Si tu tabla profiles no existe / RLS bloquea, igual seguimos con email
+  try{
+    const { data, error } = await sb
+      .from("profiles")
+      .select("id,email,full_name,role,country,created_at")
+      .eq("id", ME.id)
+      .maybeSingle();
 
-  if(error) console.warn(error);
-  PROFILE = data || { id: ME.id, email: ME.email, full_name: "Usuario", role: "user" };
+    if(error) throw error;
+
+    PROFILE = data || { id: ME.id, email: ME.email, full_name: "Usuario", role: "user" };
+  }catch(e){
+    PROFILE = { id: ME.id, email: ME.email, full_name: "Usuario", role: "user" };
+  }
 
   IS_ADMIN = String(PROFILE.role||"").toLowerCase() === "admin";
-
-  document.getElementById("who").textContent =
-    (PROFILE.full_name || "Usuario") + " • " + (PROFILE.role || "user");
-
+  document.getElementById("who").textContent = (PROFILE.full_name||"Usuario") + " • " + (PROFILE.role||"user");
   document.getElementById("meInfo").textContent =
-    `Nombre: ${PROFILE.full_name || "—"}\nCorreo: ${ME.email || "—"}\nRol: ${PROFILE.role || "user"}\nPaís: ${PROFILE.country || "—"}`;
+    `Nombre: ${PROFILE.full_name||"—"}\nCorreo: ${ME.email||"—"}\nRol: ${PROFILE.role||"user"}\nPaís: ${PROFILE.country||"—"}`;
 
   if(IS_ADMIN){
     document.getElementById("adminPill").style.display = "";
@@ -494,7 +607,7 @@ async function loadProfile(){
 }
 
 /* =========================
-   UI TABS
+   UI Tabs
 ========================= */
 function setTab(which){
   const tabForum = document.getElementById("tabForum");
@@ -516,12 +629,15 @@ function setTab(which){
 }
 
 /* =========================
-   TAG FILTER INIT
+   FORO
 ========================= */
+let ACTIVE_POST=null;
+let CACHED_POSTS=[];
+let AVG_MAP={};
+
 function initTagFilter(){
   const sel = document.getElementById("tagFilter");
   sel.innerHTML = `<option value="">Todas las etiquetas</option>`;
-  // Mezcla: DEFAULT_TAGS + tags detectados en posts
   const set = new Set(DEFAULT_TAGS);
   for(const p of CACHED_POSTS){
     for(const t of (p.tags||[])) set.add(t);
@@ -534,16 +650,10 @@ function initTagFilter(){
   }
 }
 
-/* =========================
-   FORO: LOAD POSTS + AVG
-   Requiere estas columnas en forum_posts:
-   - tags (text[] o json array)
-   - is_pinned (bool)
-   - is_closed (bool)
-========================= */
 async function loadForum(){
-  const q = (document.getElementById("qForum").value || "").trim().toLowerCase();
-  const tag = (document.getElementById("tagFilter").value || "").trim();
+  if(!sb) return;
+  const q = (document.getElementById("qForum").value||"").trim().toLowerCase();
+  const tag = (document.getElementById("tagFilter").value||"").trim();
   const sortMode = document.getElementById("sortForum").value || "recent";
 
   const { data: posts, error } = await sb
@@ -553,37 +663,33 @@ async function loadForum(){
     .limit(80);
 
   if(error){
-    console.warn(error);
-    toast("No pude cargar el foro. Falta tabla/columnas/RLS.");
+    showStatus("No pude cargar foro. Confirma tablas + columnas (tags,is_pinned,is_closed) + RLS. Detalle: " + error.message);
     return;
   }
 
   CACHED_POSTS = (posts||[]).map(p=>{
-    // Soporta tags como text[] o como string
     let tags = p.tags;
-    if(typeof tags === "string"){
-      tags = tags.split(",").map(x=>x.trim()).filter(Boolean);
-    }
+    if(typeof tags === "string") tags = tags.split(",").map(x=>x.trim()).filter(Boolean);
     if(!Array.isArray(tags)) tags = [];
     return {...p, tags};
   });
 
-  // ratings promedio (y para sorting top)
+  // ratings promedio
   AVG_MAP = {};
-  const { data: rates, error: er2 } = await sb.from("forum_ratings").select("post_id,rating");
-  if(!er2 && rates){
+  const { data: rates } = await sb.from("forum_ratings").select("post_id,rating");
+  if(rates){
     const acc = {};
     for(const r of rates){
-      if(!acc[r.post_id]) acc[r.post_id] = {sum:0, n:0};
+      if(!acc[r.post_id]) acc[r.post_id] = {sum:0,n:0};
       acc[r.post_id].sum += (r.rating||0);
       acc[r.post_id].n += 1;
     }
-    for(const k in acc){
-      AVG_MAP[k] = acc[k].n ? (acc[k].sum/acc[k].n) : 0;
-    }
+    for(const k in acc) AVG_MAP[k] = acc[k].n ? (acc[k].sum/acc[k].n) : 0;
   }
 
-  // filtro local
+  initTagFilter();
+
+  // filtro
   let filtered = CACHED_POSTS.slice();
   if(q){
     filtered = filtered.filter(p =>
@@ -593,33 +699,25 @@ async function loadForum(){
       ((p.profiles?.email||"").toLowerCase().includes(q))
     );
   }
-  if(tag){
-    filtered = filtered.filter(p => (p.tags||[]).includes(tag));
-  }
+  if(tag) filtered = filtered.filter(p => (p.tags||[]).includes(tag));
 
   // orden
   if(sortMode === "pinned"){
     filtered.sort((a,b)=>{
-      const ap = a.is_pinned ? 1:0, bp = b.is_pinned ? 1:0;
-      if(bp !== ap) return bp - ap;
-      return new Date(b.created_at) - new Date(a.created_at);
+      const ap=a.is_pinned?1:0, bp=b.is_pinned?1:0;
+      if(bp!==ap) return bp-ap;
+      return new Date(b.created_at)-new Date(a.created_at);
     });
   }else if(sortMode === "top"){
     filtered.sort((a,b)=>{
-      const av = AVG_MAP[a.id] || 0;
-      const bv = AVG_MAP[b.id] || 0;
-      if(bv !== av) return bv - av;
-      return new Date(b.created_at) - new Date(a.created_at);
+      const av=AVG_MAP[a.id]||0, bv=AVG_MAP[b.id]||0;
+      if(bv!==av) return bv-av;
+      return new Date(b.created_at)-new Date(a.created_at);
     });
   }else{
-    // recent (ya viene por created desc, pero por si acaso)
-    filtered.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
+    filtered.sort((a,b)=> new Date(b.created_at)-new Date(a.created_at));
   }
 
-  // init tags dropdown basado en posts detectados
-  initTagFilter();
-
-  // render
   const box = document.getElementById("forumList");
   box.innerHTML = "";
 
@@ -633,31 +731,21 @@ async function loadForum(){
     const avg = AVG_MAP[p.id] || 0;
     const author = p.profiles?.full_name || p.profiles?.email || "Usuario";
 
-    const el = document.createElement("div");
-    el.className = "item";
-
     const pins = [];
     if(p.is_pinned) pins.push(`<span class="tag pin">Fijado</span>`);
     if(p.is_closed) pins.push(`<span class="tag closed">Cerrado</span>`);
+    const tags = (p.tags||[]).slice(0,6).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join("");
 
-    const tags = (p.tags||[]).slice(0,6).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("");
+    const isNew = await isForumPostNewSinceSeen(p.id);
 
-    // noti local: si el post tiene activity nueva (comentarios) lo marcamos con un dot
-    const isNew = await isForumPostNewSinceSeen(p.id, p.created_at);
-
+    const el = document.createElement("div");
+    el.className = "item";
     el.innerHTML = `
       <div class="itemTop">
         <div style="min-width:0">
-          <p class="title" style="margin:0 0 4px 0">
-            ${isNew ? "🔔 " : ""}${escapeHtml(p.title || "Sin título")}
-          </p>
-          <div class="meta">
-            Por <b>${escapeHtml(author)}</b> • ${fmtDate(p.created_at)}
-          </div>
-          <div class="tagRow">
-            ${pins.join("")}
-            ${tags}
-          </div>
+          <p class="title" style="margin:0 0 4px 0">${isNew ? "🔔 " : ""}${escapeHtml(p.title||"Sin título")}</p>
+          <div class="meta">Por <b>${escapeHtml(author)}</b> • ${fmtDate(p.created_at)}</div>
+          <div class="tagRow">${pins.join("")}${tags}</div>
         </div>
         <div class="row" style="justify-content:flex-end">
           <div class="badge">⭐ ${avg.toFixed(1)}</div>
@@ -679,21 +767,12 @@ async function loadForum(){
   updateForumNoti();
 }
 
-/* =========================
-   FORO NOTIFICACIONES (LOCAL)
-   - post nuevo: si no se ha visto antes
-   - post actualizado: si hay reply posterior al last seen
-========================= */
-async function isForumPostNewSinceSeen(postId, createdAt){
-  // si nunca lo vio => nuevo
+async function isForumPostNewSinceSeen(postId){
   const seen = getSeenMap(kForumSeen());
   if(!seen[postId]) return true;
 
-  // si hay replies nuevas luego del seen
-  const lastSeenIso = seen[postId];
-  if(!lastSeenIso) return false;
+  const seenAt = new Date(seen[postId]).getTime();
 
-  // en vez de traer todo, preguntamos por el último comentario del post
   const { data, error } = await sb
     .from("forum_replies")
     .select("created_at")
@@ -702,31 +781,21 @@ async function isForumPostNewSinceSeen(postId, createdAt){
     .limit(1);
 
   if(error || !data || !data.length) return false;
-
-  const lastReply = new Date(data[0].created_at).getTime();
-  const seenAt = new Date(lastSeenIso).getTime();
-  return lastReply > seenAt;
+  const lastReplyAt = new Date(data[0].created_at).getTime();
+  return lastReplyAt > seenAt;
 }
 
 async function updateForumNoti(){
-  // cuenta “nuevos” en la lista cache (máx 80)
-  let c = 0;
+  let c=0;
   for(const p of CACHED_POSTS){
-    const isNew = await isForumPostNewSinceSeen(p.id, p.created_at);
+    const isNew = await isForumPostNewSinceSeen(p.id);
     if(isNew) c++;
   }
   const b = document.getElementById("forumNoti");
-  if(c > 0){
-    b.textContent = String(c);
-    b.style.display = "";
-  }else{
-    b.style.display = "none";
-  }
+  if(c>0){ b.textContent=String(c); b.style.display=""; }
+  else b.style.display="none";
 }
 
-/* =========================
-   FORO: OPEN POST + REPLIES + RATING + MOD
-========================= */
 async function openPost(postId){
   const { data: p, error } = await sb
     .from("forum_posts")
@@ -734,13 +803,8 @@ async function openPost(postId){
     .eq("id", postId)
     .maybeSingle();
 
-  if(error || !p){
-    console.warn(error);
-    toast("No pude abrir el tema.");
-    return;
-  }
+  if(error || !p){ toast("No pude abrir el tema."); return; }
 
-  // normaliza tags
   let tags = p.tags;
   if(typeof tags === "string") tags = tags.split(",").map(x=>x.trim()).filter(Boolean);
   if(!Array.isArray(tags)) tags = [];
@@ -748,25 +812,19 @@ async function openPost(postId){
 
   ACTIVE_POST = p;
 
-  // avg + my rating
-  const { data: rates } = await sb.from("forum_ratings").select("post_id,user_id,rating").eq("post_id", postId);
-  let avg = 0, n=0, my = null;
-  if(rates && rates.length){
-    for(const r of rates){
-      avg += (r.rating||0); n++;
-      if(r.user_id===ME.id) my = r.rating;
-    }
+  const { data: rates } = await sb.from("forum_ratings").select("user_id,rating").eq("post_id", postId);
+  let avg=0,n=0,my=null;
+  if(rates){
+    for(const r of rates){ avg += (r.rating||0); n++; if(r.user_id===ME.id) my=r.rating; }
     avg = n ? avg/n : 0;
   }
 
-  // replies
   const { data: replies } = await sb
     .from("forum_replies")
     .select("id,post_id,body,created_at,author_id,profiles:author_id(full_name,email)")
     .eq("post_id", postId)
-    .order("created_at", {ascending:true});
+    .order("created_at",{ascending:true});
 
-  // render detail
   const author = p.profiles?.full_name || p.profiles?.email || "Usuario";
   document.getElementById("postDetail").style.display = "";
   document.getElementById("pdTitle").textContent = p.title || "Sin título";
@@ -774,73 +832,56 @@ async function openPost(postId){
   document.getElementById("pdBody").textContent = p.body || "";
   document.getElementById("pdAvg").textContent = `⭐ ${avg.toFixed(1)}`;
 
-  // tags row in detail
   const tg = document.getElementById("pdTags");
   tg.innerHTML = "";
   if(p.is_pinned) tg.innerHTML += `<span class="tag pin">Fijado</span>`;
   if(p.is_closed) tg.innerHTML += `<span class="tag closed">Cerrado</span>`;
-  for(const t of (p.tags||[])){
-    tg.innerHTML += `<span class="tag">${escapeHtml(t)}</span>`;
-  }
+  for(const t of (p.tags||[])) tg.innerHTML += `<span class="tag">${escapeHtml(t)}</span>`;
 
-  // stars
   const starsBox = document.getElementById("pdStars");
-  starsBox.innerHTML = "";
+  starsBox.innerHTML="";
   for(let i=1;i<=5;i++){
-    const s = document.createElement("div");
-    s.className = "star" + ((my && i<=my) ? " on" : "");
-    s.textContent = "★";
-    s.title = `${i}`;
-    s.addEventListener("click", ()=> setRating(postId, i));
+    const s=document.createElement("div");
+    s.className="star"+((my && i<=my)?" on":"");
+    s.textContent="★";
+    s.addEventListener("click", ()=> setRating(postId,i));
     starsBox.appendChild(s);
   }
   document.getElementById("pdYourRate").textContent = my ? `(${my}/5)` : "(sin calificar)";
 
-  // replies list
-  const rl = document.getElementById("repliesList");
-  rl.innerHTML = "";
+  const rl=document.getElementById("repliesList");
+  rl.innerHTML="";
   if(!replies || !replies.length){
     rl.innerHTML = `<div class="item"><p class="mut">Sin comentarios. Sé el primero 👇</p></div>`;
   }else{
     for(const r of replies){
       const ra = r.profiles?.full_name || r.profiles?.email || "Usuario";
+      const canDel = IS_ADMIN || (r.author_id === ME.id);
 
-      const div = document.createElement("div");
-      div.className = "item";
-
-      // botones admin + autor
-      const canMod = IS_ADMIN || (r.author_id === ME.id);
-      const modBtns = canMod
-        ? `<div class="row" style="justify-content:flex-end;margin-top:8px">
-             <button class="miniBtn bad" data-del="${r.id}">Eliminar</button>
-           </div>`
-        : "";
-
+      const div=document.createElement("div");
+      div.className="item";
       div.innerHTML = `
         <div class="meta"><b>${escapeHtml(ra)}</b> • ${fmtDate(r.created_at)}</div>
         <div style="white-space:pre-wrap;line-height:1.35;margin-top:6px">${escapeHtml(r.body||"")}</div>
-        ${modBtns}
+        ${canDel ? `<div class="row" style="justify-content:flex-end;margin-top:8px">
+          <button class="miniBtn bad">Eliminar</button>
+        </div>` : ""}
       `;
-
-      const delBtn = div.querySelector("button[data-del]");
-      if(delBtn){
-        delBtn.addEventListener("click", ()=> deleteReply(r.id));
+      if(canDel){
+        div.querySelector("button").addEventListener("click", ()=> deleteReply(r.id));
       }
-
       rl.appendChild(div);
     }
   }
 
-  // comentar bloqueado si cerrado
   const closed = !!p.is_closed;
   document.getElementById("closedNote").style.display = closed ? "" : "none";
   document.getElementById("replyText").style.display = closed ? "none" : "";
   document.getElementById("btnSendReply").style.display = closed ? "none" : "";
 
-  // botones admin
-  const btnPin = document.getElementById("btnPin");
-  const btnToggleClose = document.getElementById("btnToggleClose");
-  const btnDeletePost = document.getElementById("btnDeletePost");
+  const btnPin=document.getElementById("btnPin");
+  const btnToggleClose=document.getElementById("btnToggleClose");
+  const btnDeletePost=document.getElementById("btnDeletePost");
 
   if(IS_ADMIN){
     btnPin.style.display = "";
@@ -859,158 +900,110 @@ async function openPost(postId){
     btnDeletePost.style.display = "none";
   }
 
-  // marcar como visto (noti local)
   markForumPostSeen(postId);
   await updateForumNoti();
-
   document.getElementById("postDetail").scrollIntoView({behavior:"smooth", block:"start"});
 }
 
 async function setRating(postId, value){
-  const payload = { post_id: postId, user_id: ME.id, rating: value };
-  const { error } = await sb.from("forum_ratings").upsert(payload, { onConflict: "post_id,user_id" });
-  if(error){
-    console.warn(error);
-    toast("No pude guardar tu calificación.");
-    return;
-  }
+  const { error } = await sb.from("forum_ratings").upsert({post_id:postId,user_id:ME.id,rating:value},{onConflict:"post_id,user_id"});
+  if(error){ toast("No pude guardar tu calificación."); return; }
   toast("Calificación guardada ✅");
   await openPost(postId);
+  await loadForum();
 }
 
 async function sendReply(){
-  const txt = (document.getElementById("replyText").value || "").trim();
-  if(!ACTIVE_POST || !ACTIVE_POST.id){
-    toast("Abre un tema primero.");
-    return;
-  }
-  if(ACTIVE_POST.is_closed){
-    toast("Tema cerrado. No se aceptan comentarios.");
-    return;
-  }
-  if(!txt){
-    toast("Escribe un comentario.");
-    return;
-  }
-  const payload = { post_id: ACTIVE_POST.id, author_id: ME.id, body: txt };
+  const txt = (document.getElementById("replyText").value||"").trim();
+  if(!ACTIVE_POST?.id){ toast("Abre un tema primero."); return; }
+  if(ACTIVE_POST.is_closed){ toast("Tema cerrado."); return; }
+  if(!txt){ toast("Escribe un comentario."); return; }
 
-  const { error } = await sb.from("forum_replies").insert(payload);
-  if(error){
-    console.warn(error);
-    toast("No pude publicar el comentario.");
-    return;
-  }
-  document.getElementById("replyText").value = "";
+  const { error } = await sb.from("forum_replies").insert({post_id:ACTIVE_POST.id, author_id:ME.id, body:txt});
+  if(error){ toast("No pude publicar."); return; }
+
+  document.getElementById("replyText").value="";
   toast("Comentario publicado ✅");
   await openPost(ACTIVE_POST.id);
   await loadForum();
 }
 
-/* =========================
-   FORO: NEW POST (con etiquetas)
-========================= */
-async function newPost(){
-  const title = prompt("Título del tema:");
-  if(title === null) return;
-  const t = title.trim();
-  if(!t){ toast("Título vacío."); return; }
+async function createPostFromModal(){
+  const t = (document.getElementById("newTitle").value||"").trim();
+  const b = (document.getElementById("newBody").value||"").trim();
+  const tagsRaw = (document.getElementById("newTags").value||"").trim();
 
-  const body = prompt("Escribe el contenido del tema:");
-  if(body === null) return;
-  const b = body.trim();
-  if(!b){ toast("Contenido vacío."); return; }
+  if(!t){ toast("Pon un título."); return; }
+  if(!b){ toast("Escribe el contenido."); return; }
 
-  const tagsRaw = prompt(
-    "Etiquetas (separadas por coma). Ej: Idea,Bug,Soporte\n\nSugeridas: " + DEFAULT_TAGS.join(", ")
-  );
-  if(tagsRaw === null) return;
+  const tags = normalizeTags((tagsRaw ? tagsRaw.split(",") : []).map(x=>x.trim()).filter(Boolean));
 
-  const tags = normalizeTags(tagsRaw.split(",").map(x=>x.trim()).filter(Boolean));
-
-  const payload = {
-    title: t,
-    body: b,
-    author_id: ME.id,
-    tags: tags,       // requiere columna tags (text[] / json)
-    is_pinned: false, // requiere columna bool
-    is_closed: false  // requiere columna bool
-  };
+  const payload = { title:t, body:b, author_id:ME.id, tags:tags, is_pinned:false, is_closed:false };
 
   const { error } = await sb.from("forum_posts").insert(payload);
   if(error){
-    console.warn(error);
-    toast("No pude crear el tema. Revisa columnas (tags/is_pinned/is_closed) y RLS.");
+    toast("No pude crear tema. Revisa columnas tags/is_pinned/is_closed y RLS.");
     return;
   }
+
+  closeModal("mPost");
+  document.getElementById("newTitle").value="";
+  document.getElementById("newBody").value="";
+  document.getElementById("newTags").value="";
+
   toast("Tema creado ✅");
   await loadForum();
 }
 
-/* =========================
-   MODERACIÓN (ADMIN)
-========================= */
+/* Moderación */
 async function togglePinned(postId, val){
-  const { error } = await sb.from("forum_posts").update({ is_pinned: val }).eq("id", postId);
-  if(error){ console.warn(error); toast("No pude actualizar fijado."); return; }
+  const { error } = await sb.from("forum_posts").update({is_pinned:val}).eq("id",postId);
+  if(error){ toast("No pude actualizar fijado."); return; }
   toast(val ? "Tema fijado ✅" : "Fijado removido ✅");
-  await openPost(postId);
-  await loadForum();
+  await openPost(postId); await loadForum();
 }
-
 async function toggleClosed(postId, val){
-  const { error } = await sb.from("forum_posts").update({ is_closed: val }).eq("id", postId);
-  if(error){ console.warn(error); toast("No pude actualizar estado del tema."); return; }
+  const { error } = await sb.from("forum_posts").update({is_closed:val}).eq("id",postId);
+  if(error){ toast("No pude actualizar estado."); return; }
   toast(val ? "Tema cerrado ✅" : "Tema reabierto ✅");
-  await openPost(postId);
-  await loadForum();
+  await openPost(postId); await loadForum();
 }
-
 async function deletePost(postId){
-  const ok = confirm("¿Seguro que deseas ELIMINAR este tema? (Se borrarán también sus comentarios y ratings)");
-  if(!ok) return;
-
-  const { error } = await sb.from("forum_posts").delete().eq("id", postId);
-  if(error){ console.warn(error); toast("No pude eliminar el tema."); return; }
-
+  if(!confirm("¿Eliminar este tema? (incluye comentarios y ratings)")) return;
+  const { error } = await sb.from("forum_posts").delete().eq("id",postId);
+  if(error){ toast("No pude eliminar."); return; }
   toast("Tema eliminado ✅");
-  document.getElementById("postDetail").style.display = "none";
-  ACTIVE_POST = null;
+  document.getElementById("postDetail").style.display="none";
+  ACTIVE_POST=null;
   await loadForum();
 }
-
 async function deleteReply(replyId){
-  const ok = confirm("¿Eliminar este comentario?");
-  if(!ok) return;
-
-  const { error } = await sb.from("forum_replies").delete().eq("id", replyId);
-  if(error){ console.warn(error); toast("No pude eliminar el comentario."); return; }
-
+  if(!confirm("¿Eliminar este comentario?")) return;
+  const { error } = await sb.from("forum_replies").delete().eq("id",replyId);
+  if(error){ toast("No pude eliminar comentario."); return; }
   toast("Comentario eliminado ✅");
   if(ACTIVE_POST?.id) await openPost(ACTIVE_POST.id);
   await loadForum();
 }
 
 /* =========================
-   PRIVADO: THREADS + MESSAGES + NOTI
+   PRIVADOS
 ========================= */
+let ACTIVE_THREAD=null;
+
 async function loadMyThreads(){
-  // Si eres admin, puedes ver TODOS los threads; si no, solo los tuyos (RLS define eso)
-  const q = sb.from("pm_threads").select("id,subject,created_at,participant_id").order("created_at", {ascending:false});
+  const q = sb.from("pm_threads").select("id,subject,created_at,participant_id").order("created_at",{ascending:false});
   if(!IS_ADMIN) q.eq("participant_id", ME.id);
 
   const { data, error } = await q;
-  if(error){
-    console.warn(error);
-    toast("No pude cargar hilos privados.");
-    return;
-  }
+  if(error){ toast("No pude cargar hilos."); return; }
 
-  const sel = document.getElementById("threadSelect");
+  const sel=document.getElementById("threadSelect");
   sel.innerHTML = `<option value="">— Selecciona un hilo —</option>`;
   for(const th of (data||[])){
-    const opt = document.createElement("option");
+    const opt=document.createElement("option");
     opt.value = th.id;
-    opt.textContent = `${th.subject || "Sin asunto"} • ${fmtDate(th.created_at)}` + (IS_ADMIN ? ` • (${th.participant_id.slice(0,8)}...)` : "");
+    opt.textContent = `${th.subject||"Sin asunto"} • ${fmtDate(th.created_at)}`;
     sel.appendChild(opt);
   }
 
@@ -1019,8 +1012,8 @@ async function loadMyThreads(){
 
 async function openThread(threadId){
   ACTIVE_THREAD = threadId || null;
-  const chat = document.getElementById("chatBox");
-  chat.innerHTML = "";
+  const chat=document.getElementById("chatBox");
+  chat.innerHTML="";
 
   if(!ACTIVE_THREAD){
     chat.innerHTML = `<div class="mut">Selecciona un hilo para ver la conversación.</div>`;
@@ -1031,43 +1024,32 @@ async function openThread(threadId){
     .from("pm_messages")
     .select("id,thread_id,sender_id,body,created_at")
     .eq("thread_id", ACTIVE_THREAD)
-    .order("created_at", {ascending:true});
+    .order("created_at",{ascending:true});
 
-  if(error){
-    console.warn(error);
-    toast("No pude abrir el hilo.");
-    return;
-  }
+  if(error){ toast("No pude abrir el hilo."); return; }
 
   if(!data || !data.length){
     chat.innerHTML = `<div class="mut">Hilo vacío. Envía el primer mensaje 👇</div>`;
-    markThreadSeen(ACTIVE_THREAD);
-    await updatePmNoti();
-    return;
+  }else{
+    for(const m of data){
+      const div=document.createElement("div");
+      div.className = "bubble" + (m.sender_id===ME.id ? " me":"");
+      div.innerHTML = `
+        <div style="white-space:pre-wrap;line-height:1.35">${escapeHtml(m.body||"")}</div>
+        <div class="bmeta">${fmtDate(m.created_at)}</div>
+      `;
+      chat.appendChild(div);
+    }
+    chat.scrollTop = chat.scrollHeight;
   }
 
-  for(const m of data){
-    const div = document.createElement("div");
-    div.className = "bubble" + (m.sender_id === ME.id ? " me" : "");
-    div.innerHTML = `
-      <div style="white-space:pre-wrap;line-height:1.35">${escapeHtml(m.body||"")}</div>
-      <div class="bmeta">${fmtDate(m.created_at)}</div>
-    `;
-    chat.appendChild(div);
-  }
-
-  chat.scrollTop = chat.scrollHeight;
-
-  // noti: visto
   markThreadSeen(ACTIVE_THREAD);
   await updatePmNoti();
 }
 
-async function newThread(){
-  const subject = prompt("Asunto del mensaje a Admin:");
-  if(subject === null) return;
-  const s = subject.trim();
-  if(!s){ toast("Asunto vacío."); return; }
+async function createThreadFromModal(){
+  const s=(document.getElementById("threadSubject").value||"").trim();
+  if(!s){ toast("Pon un asunto."); return; }
 
   const { data, error } = await sb
     .from("pm_threads")
@@ -1075,175 +1057,165 @@ async function newThread(){
     .select("id")
     .maybeSingle();
 
-  if(error){
-    console.warn(error);
-    toast("No pude crear el hilo.");
-    return;
-  }
+  if(error){ toast("No pude crear hilo."); return; }
 
+  closeModal("mThread");
+  document.getElementById("threadSubject").value="";
   toast("Hilo creado ✅");
+
   await loadMyThreads();
   document.getElementById("threadSelect").value = data.id;
   await openThread(data.id);
 }
 
 async function sendPM(){
-  const txt = (document.getElementById("pmText").value || "").trim();
-  if(!ACTIVE_THREAD){
-    toast("Selecciona o crea un hilo primero.");
-    return;
-  }
-  if(!txt){
-    toast("Escribe un mensaje.");
-    return;
-  }
+  const txt=(document.getElementById("pmText").value||"").trim();
+  if(!ACTIVE_THREAD){ toast("Selecciona o crea un hilo."); return; }
+  if(!txt){ toast("Escribe un mensaje."); return; }
 
-  const payload = { thread_id: ACTIVE_THREAD, sender_id: ME.id, body: txt };
-  const { error } = await sb.from("pm_messages").insert(payload);
-  if(error){
-    console.warn(error);
-    toast("No pude enviar el mensaje.");
-    return;
-  }
+  const { error } = await sb.from("pm_messages").insert({thread_id:ACTIVE_THREAD, sender_id:ME.id, body:txt});
+  if(error){ toast("No pude enviar mensaje."); return; }
 
-  document.getElementById("pmText").value = "";
+  document.getElementById("pmText").value="";
   await openThread(ACTIVE_THREAD);
 }
 
 async function updatePmNoti(cachedThreads){
-  // Cuenta hilos con mensajes nuevos desde last seen (local)
-  // Si no se provee cachedThreads, recarga threads para calcular rápido
-  let threads = cachedThreads;
+  let threads=cachedThreads;
   if(!threads){
-    const q = sb.from("pm_threads").select("id,created_at,participant_id").order("created_at", {ascending:false});
+    const q = sb.from("pm_threads").select("id,participant_id,created_at").order("created_at",{ascending:false});
     if(!IS_ADMIN) q.eq("participant_id", ME.id);
     const { data } = await q;
     threads = data || [];
   }
 
-  let count = 0;
-
+  let count=0;
   for(const th of threads){
-    const seenKey = kThreadSeen(th.id);
-    const seenIso = localStorage.getItem(seenKey);
+    const seenIso = localStorage.getItem(kThreadSeen(th.id));
+    const seenAt = seenIso ? new Date(seenIso).getTime() : 0;
 
-    // último mensaje del hilo
-    const { data: lastMsg, error } = await sb
+    const { data: lastMsg } = await sb
       .from("pm_messages")
       .select("created_at")
       .eq("thread_id", th.id)
-      .order("created_at", {ascending:false})
+      .order("created_at",{ascending:false})
       .limit(1);
 
-    if(error || !lastMsg || !lastMsg.length) continue;
-
+    if(!lastMsg || !lastMsg.length) continue;
     const lastAt = new Date(lastMsg[0].created_at).getTime();
-    const seenAt = seenIso ? new Date(seenIso).getTime() : 0;
-
     if(lastAt > seenAt) count++;
   }
 
-  const b = document.getElementById("pmNoti");
-  if(count > 0){
-    b.textContent = String(count);
-    b.style.display = "";
-  }else{
-    b.style.display = "none";
-  }
+  const b=document.getElementById("pmNoti");
+  if(count>0){ b.textContent=String(count); b.style.display=""; }
+  else b.style.display="none";
 }
 
 /* =========================
-   EVENTS
-========================= */
-document.getElementById("tabForum").addEventListener("click", ()=> setTab("forum"));
-document.getElementById("tabPrivate").addEventListener("click", async ()=> { setTab("private"); await loadMyThreads(); });
-
-document.getElementById("btnNewPost").addEventListener("click", newPost);
-document.getElementById("btnRefreshForum").addEventListener("click", loadForum);
-document.getElementById("qForum").addEventListener("keydown", (e)=>{ if(e.key==="Enter") loadForum(); });
-document.getElementById("tagFilter").addEventListener("change", loadForum);
-document.getElementById("sortForum").addEventListener("change", loadForum);
-
-document.getElementById("btnSendReply").addEventListener("click", sendReply);
-
-document.getElementById("btnCloseDetail").addEventListener("click", ()=>{
-  document.getElementById("postDetail").style.display = "none";
-  ACTIVE_POST = null;
-});
-
-document.getElementById("btnNewThread").addEventListener("click", newThread);
-document.getElementById("btnReloadThreads").addEventListener("click", loadMyThreads);
-document.getElementById("threadSelect").addEventListener("change", (e)=> openThread(e.target.value));
-document.getElementById("btnSendPM").addEventListener("click", sendPM);
-document.getElementById("pmText").addEventListener("keydown", (e)=>{ if(e.key==="Enter") sendPM(); });
-
-document.getElementById("btnBack").addEventListener("click", ()=> location.href = DASHBOARD_URL);
-document.getElementById("btnGoHome").addEventListener("click", ()=> location.href = DASHBOARD_URL);
-
-document.getElementById("btnLogout").addEventListener("click", async ()=>{
-  await sb.auth.signOut();
-  location.href = LOGIN_URL;
-});
-
-/* =========================
-   LIVE UPDATES (Realtime)
+   REALTIME
 ========================= */
 function setupRealtime(){
-  // Foro: si entra un reply o post nuevo => refresca noti (sin spamear)
   sb.channel("forum-live")
-    .on("postgres_changes", { event:"INSERT", schema:"public", table:"forum_posts" }, ()=>{
-      // recargar lista suave
-      loadForum();
-    })
-    .on("postgres_changes", { event:"INSERT", schema:"public", table:"forum_replies" }, ()=>{
-      // si estás viendo un post, refresca detalle
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"forum_posts"}, ()=> loadForum())
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"forum_replies"}, ()=>{
       if(ACTIVE_POST?.id) openPost(ACTIVE_POST.id);
-      // refresca noti
       updateForumNoti();
     })
     .subscribe();
 
-  // Privado: si entra msg nuevo, si estás en ese hilo refresca y marca noti
   sb.channel("pm-live")
-    .on("postgres_changes", { event:"INSERT", schema:"public", table:"pm_messages" }, (payload)=>{
-      if(payload?.new?.thread_id){
-        if(payload.new.thread_id === ACTIVE_THREAD){
-          openThread(ACTIVE_THREAD);
-        }else{
-          updatePmNoti();
-        }
-      }
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"pm_messages"}, (payload)=>{
+      const tid = payload?.new?.thread_id;
+      if(!tid) return;
+      if(tid === ACTIVE_THREAD) openThread(ACTIVE_THREAD);
+      else updatePmNoti();
     })
     .subscribe();
 }
 
 /* =========================
+   EVENTS (IMPORTANTE: siempre se registran)
+========================= */
+document.getElementById("btnBack").addEventListener("click", ()=>{
+  // robusto: si history no sirve, cae a index.html
+  try{
+    if(window.history.length > 1) history.back();
+    else location.href = DASHBOARD_URL;
+  }catch(e){
+    location.href = DASHBOARD_URL;
+  }
+});
+document.getElementById("btnGoHome").addEventListener("click", ()=> location.href = DASHBOARD_URL);
+document.getElementById("btnGoIndex").addEventListener("click", ()=> location.href = DASHBOARD_URL);
+
+document.getElementById("btnLogout").addEventListener("click", async ()=>{
+  // aunque supabase falle, redirige igual
+  try{ if(sb) await sb.auth.signOut(); }catch(e){}
+  location.href = LOGIN_URL;
+});
+
+document.getElementById("tabForum").addEventListener("click", ()=> setTab("forum"));
+document.getElementById("tabPrivate").addEventListener("click", async ()=> { setTab("private"); if(sb) await loadMyThreads(); });
+
+document.getElementById("btnNewPost").addEventListener("click", ()=>{
+  if(!sb){ toast("Falta Supabase. Revisa el recuadro rojo arriba."); return; }
+  openModal("mPost");
+});
+document.getElementById("btnRefreshForum").addEventListener("click", ()=> sb && loadForum());
+document.getElementById("qForum").addEventListener("keydown", (e)=>{ if(e.key==="Enter") sb && loadForum(); });
+document.getElementById("tagFilter").addEventListener("change", ()=> sb && loadForum());
+document.getElementById("sortForum").addEventListener("change", ()=> sb && loadForum());
+
+document.getElementById("btnSendReply").addEventListener("click", ()=> sb && sendReply());
+document.getElementById("btnCloseDetail").addEventListener("click", ()=>{
+  document.getElementById("postDetail").style.display="none";
+  ACTIVE_POST=null;
+});
+
+document.getElementById("btnReloadThreads").addEventListener("click", ()=> sb && loadMyThreads());
+document.getElementById("threadSelect").addEventListener("change", (e)=> sb && openThread(e.target.value));
+document.getElementById("btnNewThread").addEventListener("click", ()=>{
+  if(!sb){ toast("Falta Supabase. Revisa el recuadro rojo arriba."); return; }
+  openModal("mThread");
+});
+document.getElementById("btnSendPM").addEventListener("click", ()=> sb && sendPM());
+document.getElementById("pmText").addEventListener("keydown", (e)=>{ if(e.key==="Enter") sb && sendPM(); });
+
+document.getElementById("btnRetry").addEventListener("click", ()=> initAndBoot());
+
+/* Modal events */
+document.getElementById("mPostClose").addEventListener("click", ()=> closeModal("mPost"));
+document.getElementById("mPostCancel").addEventListener("click", ()=> closeModal("mPost"));
+document.getElementById("mPostSave").addEventListener("click", ()=> sb && createPostFromModal());
+
+document.getElementById("mThreadClose").addEventListener("click", ()=> closeModal("mThread"));
+document.getElementById("mThreadCancel").addEventListener("click", ()=> closeModal("mThread"));
+document.getElementById("mThreadSave").addEventListener("click", ()=> sb && createThreadFromModal());
+
+/* =========================
    INIT
 ========================= */
-(async function init(){
-  const ok = await requireAuth();
-  if(!ok) return;
+async function initAndBoot(){
+  const okClient = initSupabase();
+  if(!okClient) return;
+
+  const okSession = await requireAuth();
+  if(!okSession) return;
 
   await loadProfile();
   await loadForum();
   await updatePmNoti();
-
   setupRealtime();
-})();
+}
+
+initAndBoot();
 </script>
 
 <!--
-===========================================================
-IMPORTANTE (para que estas mejoras funcionen):
-Tu Supabase debe tener en forum_posts estas columnas:
-- tags (text[] o json)
-- is_pinned (boolean)
-- is_closed (boolean)
-
-Y RLS para admin debe permitir update/delete de forum_posts y delete de forum_replies.
-Si ya tienes el SQL anterior, dime y te paso el SQL incremental EXACTO para agregar
-estas columnas + policies admin sin romper lo que ya funciona.
-===========================================================
+NECESARIO EN SUPABASE:
+- forum_posts: columnas tags (text[]), is_pinned (bool), is_closed (bool)
+- RLS: admin update/delete en forum_posts, delete en forum_replies
+Si te falla “crear tema”, es por columnas/RLS.
 -->
 
 </body>
