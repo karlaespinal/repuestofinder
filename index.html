@@ -622,6 +622,15 @@
               <span class="pill">Cuenta</span>
             </div>
 
+            <div class="ddItem" role="menuitem" onclick="goMensajeria()">
+              <div>
+                Mensajería
+                <div style="margin-top:2px">
+                  <small>Foro abierto y mensajes a admins</small>
+                </div>
+              </div>
+              <span class="pill">Cuenta</span>
+            </div>
 
             <div class="ddItem disabled" role="menuitem" aria-disabled="true">
               <div>— Proximamente <div style="margin-top:2px"><small>Espacio reservado</small></div></div>
@@ -898,6 +907,12 @@
       closeTools();
       window.location.href = "perfil.html";
     }
+
+    window.goMensajeria = function(){
+      closeTools();
+      window.location.href = "mensajeria.html";
+    }
+
 
     document.addEventListener("click", ()=> closeTools());
     document.addEventListener("keydown", (e)=>{
@@ -1458,6 +1473,7 @@
   </script>
 </body>
 </html>
+
 
 
 
