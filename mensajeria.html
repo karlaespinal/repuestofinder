@@ -977,58 +977,20 @@ async function deleteReply(replyId){
 ========================= */
 let ACTIVE_THREAD=null;
 let THREAD_POLL = null;
-let LAST_PM_COUNT = 0;
-let LAST_PM_LAST_AT = 0;
-
 
 function startThreadPolling(){
   stopThreadPolling();
-
   THREAD_POLL = setInterval(async ()=>{
-    try{
-      if(!sb) return;
+    if(!sb) return;
+    // solo si estas en privados y hay hilo
+    const secPrivate = document.getElementById("secPrivate");
+    if(!secPrivate || secPrivate.style.display === "none") return;
+    if(!ACTIVE_THREAD) return;
 
-      const secPrivate = document.getElementById("secPrivate");
-      if(!secPrivate || secPrivate.style.display === "none") return;
-      if(!ACTIVE_THREAD) return;
-
-      // 1) Pregunta SOLO por el último mensaje (super liviano)
-      const { data: lastMsg, error } = await sb
-        .from("pm_messages")
-        .select("created_at")
-        .eq("thread_id", ACTIVE_THREAD)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if(error) return;
-
-      const lastAt = lastMsg?.created_at ? new Date(lastMsg.created_at).getTime() : 0;
-
-      // 2) Si no cambió, no hacemos nada (silencioso)
-      if(lastAt && lastAt === LAST_PM_LAST_AT) return;
-
-      // 3) Si cambió, refrescamos el chat PERO sin parpadeo
-      LAST_PM_LAST_AT = lastAt;
-
-      await openThread(ACTIVE_THREAD, { silent:true });
-      if(typeof updateUnreadBadges === "function") await updateUnreadBadges();
-
-    }catch(e){
-      // no molestamos al usuario por errores puntuales
-      // console.log("poll error", e);
-    }
+    await openThread(ACTIVE_THREAD);
+    await updateUnreadBadges();
   }, 2000);
 }
-
-function stopThreadPolling(){
-  if(THREAD_POLL){
-    clearInterval(THREAD_POLL);
-    THREAD_POLL = null;
-  }
-}
-
-
 
 function stopThreadPolling(){
   if(THREAD_POLL){
@@ -1056,80 +1018,61 @@ async function loadMyThreads(){
   await updateUnreadBadges();
 }
 
-async function openThread(threadId, opts = {}){
-  if(!sb) return;
-
-  const silent = !!opts.silent;
-
+async function openThread(threadId){
   ACTIVE_THREAD = threadId || null;
+  const chat=document.getElementById("chatBox");
+  chat.innerHTML="";
 
-  const chat = document.getElementById("chatBox");
-  const header = document.getElementById("threadTitle"); // si existe en tu HTML
-  if(!chat) return;
-
-  // 🔥 Evita el “flash”: solo limpiamos si NO es silent
-  if(!silent) chat.innerHTML = "";
-
-  // Traer mensajes del hilo
-  const { data, error } = await sb
-    .from("pm_messages")
-    .select("id,thread_id,author_id,body,created_at")
-    .eq("thread_id", threadId)
-    .order("created_at", { ascending: true });
-
-  if(error){
-    if(!silent) chat.innerHTML = `<div class="mut">No pude cargar mensajes.</div>`;
+  if(!ACTIVE_THREAD){
+    chat.innerHTML = `<div class="mut">Selecciona un hilo para ver la conversación.</div>`;
     return;
   }
 
-  // ✅ Anti-repintado: si es silent y la cantidad es igual, no repintes
-  if(silent){
-    const count = (data || []).length;
-    if(count && count === LAST_PM_COUNT){
-      return; // nada cambió realmente
+  const { data, error } = await sb
+    .from("pm_messages")
+    .select("id,thread_id,sender_id,body,created_at")
+    .eq("thread_id", ACTIVE_THREAD)
+    .order("created_at",{ascending:true});
+
+  if(error){ toast("No pude abrir el hilo."); return; }
+
+  if(!data || !data.length){
+    chat.innerHTML = `<div class="mut">Hilo vacío. Envía el primer mensaje 👇</div>`;
+  }else{
+    for(const m of data){
+      const div=document.createElement("div");
+      div.className = "bubble" + (m.sender_id===ME.id ? " me":"");
+      div.innerHTML = `
+        <div style="white-space:pre-wrap;line-height:1.35">${escapeHtml(m.body||"")}</div>
+        <div class="bmeta">${fmtDate(m.created_at)}</div>
+      `;
+      chat.appendChild(div);
     }
-    LAST_PM_COUNT = count;
-  }
-
-  // Si NO es silent, o si cambió, entonces sí pintamos
-  // (en silent, repintamos completo SOLO cuando cambió algo)
-  chat.innerHTML = "";
-
-  // (Opcional) título del hilo
-  if(header){
-    header.textContent = "Conversación";
-  }
-
-  // Pintar mensajes
-  const meId = ME?.id || null;
-
-  (data || []).forEach(m => {
-    const mine = (meId && m.author_id === meId);
-    const time = fmtDate(m.created_at);
-
-    const wrap = document.createElement("div");
-    wrap.className = "msg " + (mine ? "mine" : "theirs");
-
-    wrap.innerHTML = `
-      <div class="bubble">
-        <div class="body">${escapeHtml(m.body || "")}</div>
-        <div class="meta">${time}</div>
-      </div>
-    `;
-    chat.appendChild(wrap);
-  });
-
-  // Solo si NO es silent, bajamos al final (si es silent, no movemos la vista)
-  if(!silent){
     chat.scrollTop = chat.scrollHeight;
   }
-
-  // Marcar hilo visto (si tienes esta función)
-  if(typeof markThreadSeen === "function"){
-    markThreadSeen(threadId);
-  }
+  markThreadSeen(ACTIVE_THREAD);
 }
 
+async function createThreadFromModal(){
+  const s=(document.getElementById("threadSubject").value||"").trim();
+  if(!s){ toast("Pon un asunto."); return; }
+
+  const { data, error } = await sb
+    .from("pm_threads")
+    .insert({ participant_id: ME.id, subject: s })
+    .select("id")
+    .maybeSingle();
+
+  if(error){ toast("No pude crear hilo."); return; }
+
+  closeModal("mThread");
+  document.getElementById("threadSubject").value="";
+  toast("Hilo creado ✅");
+
+  await loadMyThreads();
+  document.getElementById("threadSelect").value = data.id;
+  await openThread(data.id);
+}
 
 async function sendPM(){
   const txt=(document.getElementById("pmText").value||"").trim();
@@ -1276,5 +1219,4 @@ initAndBoot();
 
 </body>
 </html>
-
 
