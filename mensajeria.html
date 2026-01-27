@@ -34,16 +34,14 @@
       color:var(--txt);
     }
     a{color:inherit}
-    .wrap{max-width:1200px;margin:0 auto;padding:22px 16px 40px}
+    .wrap{max-width:1240px;margin:0 auto;padding:22px 16px 40px}
     .topbar{
       display:flex;align-items:center;justify-content:space-between;gap:12px;
       padding:14px 16px;border:1px solid var(--line);background:var(--card);
       border-radius:var(--r2);box-shadow:var(--shadow);backdrop-filter: blur(10px);
       position:sticky;top:10px;z-index:20;
     }
-    .brand{
-      display:flex;align-items:center;gap:10px;
-    }
+    .brand{display:flex;align-items:center;gap:10px}
     .logo{
       width:40px;height:40px;border-radius:12px;
       background:linear-gradient(135deg,var(--pri),var(--pri2));
@@ -51,39 +49,39 @@
     }
     .brand h1{font-size:16px;margin:0}
     .brand p{margin:0;font-size:12px;color:var(--mut)}
-    .userbox{display:flex;align-items:center;gap:10px}
+    .userbox{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
     .pill{
       padding:8px 12px;border-radius:999px;border:1px solid var(--line);
       background:rgba(255,255,255,.7);font-size:12px;color:var(--mut)
     }
-    .btn{
-      border:0;cursor:pointer;border-radius:12px;padding:10px 12px;
-      background:linear-gradient(135deg,var(--pri),var(--pri2));
-      color:#fff;font-weight:700;box-shadow:0 12px 22px rgba(37,99,235,.22);
-    }
-    .btn:active{transform:translateY(1px)}
     .btn2{
       border:1px solid var(--line);cursor:pointer;border-radius:12px;padding:10px 12px;
       background:rgba(255,255,255,.8);color:var(--txt);font-weight:700;
     }
-    .grid{
-      display:grid;grid-template-columns: 1.2fr .8fr;gap:14px;margin-top:14px;
-    }
+    .btn2:active{transform:translateY(1px)}
+    .grid{display:grid;grid-template-columns: 1.25fr .75fr;gap:14px;margin-top:14px}
     @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
     .card{
       border:1px solid var(--line);background:var(--card);
       border-radius:var(--r2);box-shadow:var(--shadow);backdrop-filter: blur(10px);
       padding:14px;
     }
-    .tabs{display:flex;gap:8px;flex-wrap:wrap}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .tab{
       border:1px solid var(--line);
       background:rgba(255,255,255,.7);
-      padding:10px 12px;border-radius:999px;cursor:pointer;font-weight:800;font-size:12px;color:var(--mut)
+      padding:10px 12px;border-radius:999px;cursor:pointer;font-weight:900;font-size:12px;color:var(--mut);
+      display:flex;align-items:center;gap:8px;
     }
-    .tab.active{
-      background:linear-gradient(135deg,var(--pri),var(--pri2));
-      color:#fff;border-color:transparent;
+    .tab.active{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border-color:transparent}
+    .badgeDot{
+      min-width:18px;height:18px;border-radius:999px;
+      display:inline-flex;align-items:center;justify-content:center;
+      font-size:11px;font-weight:900;
+      background:rgba(239,68,68,.12);
+      border:1px solid rgba(239,68,68,.35);
+      color:var(--bad);
+      padding:0 6px;
     }
     .h2{margin:0 0 6px 0;font-size:15px}
     .mut{color:var(--mut);font-size:12px;margin:0}
@@ -103,9 +101,20 @@
     .itemTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
     .title{font-weight:900;font-size:14px;margin:0}
     .meta{font-size:12px;color:var(--mut);margin-top:4px}
+    .tagRow{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    .tag{
+      font-size:11px;font-weight:900;border-radius:999px;padding:6px 9px;
+      border:1px solid var(--line);background:rgba(255,255,255,.75);color:var(--mut)
+    }
+    .tag.pin{border-color:rgba(37,99,235,.25);background:rgba(37,99,235,.10);color:#1d4ed8}
+    .tag.closed{border-color:rgba(239,68,68,.22);background:rgba(239,68,68,.10);color:var(--bad)}
+    .tag.bad{border-color:rgba(239,68,68,.22);background:rgba(239,68,68,.10);color:var(--bad)}
+    .tag.good{border-color:rgba(22,163,74,.22);background:rgba(22,163,74,.10);color:var(--ok)}
+    .tag.warn{border-color:rgba(245,158,11,.30);background:rgba(245,158,11,.12);color:#b45309}
     .badge{
       font-size:11px;font-weight:900;border-radius:999px;padding:7px 10px;
-      border:1px solid var(--line);background:rgba(255,255,255,.75);color:var(--mut)
+      border:1px solid var(--line);background:rgba(255,255,255,.75);color:var(--mut);
+      white-space:nowrap;
     }
     .stars{display:flex;gap:4px;align-items:center}
     .star{
@@ -117,21 +126,16 @@
       user-select:none;
       font-size:14px;
     }
-    .star.on{
-      border-color:rgba(245,158,11,.55);
-      background:rgba(245,158,11,.15);
-    }
+    .star.on{border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.15)}
     .miniBtn{
       padding:8px 10px;border-radius:12px;border:1px solid var(--line);
-      background:rgba(255,255,255,.82);cursor:pointer;font-weight:800;font-size:12px;
+      background:rgba(255,255,255,.82);cursor:pointer;font-weight:900;font-size:12px;
     }
-    .miniBtn.pri{
-      background:linear-gradient(135deg,var(--pri),var(--pri2));
-      color:#fff;border-color:transparent;
-    }
-    .split{
-      display:grid;grid-template-columns:1fr;gap:10px;
-    }
+    .miniBtn.pri{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border-color:transparent}
+    .miniBtn.bad{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.10);color:var(--bad)}
+    .miniBtn.warn{border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.10);color:#b45309}
+    .miniBtn.ok{border-color:rgba(22,163,74,.35);background:rgba(22,163,74,.10);color:var(--ok)}
+    .split{display:grid;grid-template-columns:1fr;gap:10px}
     .chat{
       height:360px;overflow:auto;border:1px solid var(--line);
       border-radius:18px;background:rgba(255,255,255,.7);padding:10px;
@@ -143,9 +147,7 @@
       margin:8px 0;
     }
     .bubble.me{
-      margin-left:auto;
-      background:rgba(37,99,235,.08);
-      border-color:rgba(37,99,235,.20);
+      margin-left:auto;background:rgba(37,99,235,.08);border-color:rgba(37,99,235,.20);
     }
     .bubble .bmeta{font-size:11px;color:var(--mut);margin-top:6px}
     .toast{
@@ -154,6 +156,13 @@
       padding:10px 12px;border-radius:12px;font-size:12px;display:none;z-index:99;
       max-width:92vw;
     }
+    .note{
+      font-size:12px;color:var(--mut);line-height:1.35;
+      border:1px dashed rgba(100,116,139,.35);
+      border-radius:16px;padding:10px 12px;background:rgba(255,255,255,.6);
+    }
+    .twoCols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width: 620px){ .twoCols{grid-template-columns:1fr} }
   </style>
 </head>
 
@@ -165,7 +174,7 @@
         <div class="logo"></div>
         <div>
           <h1>Mensajería</h1>
-          <p class="mut">Foro abierto + mensajes privados a administradores</p>
+          <p class="mut">Foro abierto (con etiquetas, fijados y cerrados) + mensajes a admins</p>
         </div>
       </div>
 
@@ -180,8 +189,15 @@
       <!-- MAIN -->
       <div class="card">
         <div class="tabs">
-          <button class="tab active" id="tabForum">Foro Abierto</button>
-          <button class="tab" id="tabPrivate">Mensaje a Admin</button>
+          <button class="tab active" id="tabForum">
+            Foro Abierto
+            <span class="badgeDot" id="forumNoti" style="display:none">0</span>
+          </button>
+          <button class="tab" id="tabPrivate">
+            Mensaje a Admin
+            <span class="badgeDot" id="pmNoti" style="display:none">0</span>
+          </button>
+          <span class="pill" id="adminPill" style="display:none">ADMIN</span>
         </div>
 
         <div class="hr"></div>
@@ -191,7 +207,7 @@
           <div class="row" style="justify-content:space-between">
             <div>
               <h2 class="h2">Foro Abierto</h2>
-              <p class="mut">Publica un tema, comenta y califica la utilidad del post (1–5).</p>
+              <p class="mut">Publica, comenta y califica (1–5). Etiquetas para organizar y admin para moderar.</p>
             </div>
             <div class="row">
               <button class="miniBtn pri" id="btnNewPost">+ Nuevo tema</button>
@@ -200,9 +216,21 @@
 
           <div class="hr"></div>
 
-          <div class="row">
-            <input class="input" id="qForum" placeholder="Buscar por titulo, contenido o autor..." />
-            <button class="miniBtn" id="btnRefreshForum">Actualizar</button>
+          <div class="twoCols">
+            <div class="row">
+              <input class="input" id="qForum" placeholder="Buscar por titulo, contenido o autor..." />
+              <button class="miniBtn" id="btnRefreshForum">Actualizar</button>
+            </div>
+            <div class="row">
+              <select id="tagFilter">
+                <option value="">Todas las etiquetas</option>
+              </select>
+              <select id="sortForum">
+                <option value="recent">Más recientes</option>
+                <option value="pinned">Fijados primero</option>
+                <option value="top">Mejor calificados</option>
+              </select>
+            </div>
           </div>
 
           <div class="hr"></div>
@@ -214,25 +242,35 @@
           <div id="postDetail" style="display:none">
             <div class="item">
               <div class="itemTop">
-                <div>
+                <div style="min-width:0">
                   <p class="title" id="pdTitle">...</p>
                   <div class="meta" id="pdMeta">...</div>
+                  <div class="tagRow" id="pdTags"></div>
                 </div>
-                <div class="badge" id="pdAvg">⭐ 0.0</div>
+                <div class="row" style="justify-content:flex-end;align-items:flex-start">
+                  <div class="badge" id="pdAvg">⭐ 0.0</div>
+                </div>
               </div>
 
               <div class="hr"></div>
               <div id="pdBody" style="white-space:pre-wrap;font-size:14px;line-height:1.35"></div>
 
               <div class="hr"></div>
+
               <div class="row" style="justify-content:space-between">
                 <div class="row">
                   <span class="mut">Tu calificación:</span>
                   <div class="stars" id="pdStars"></div>
                   <span class="mut" id="pdYourRate">—</span>
                 </div>
+
                 <div class="row">
                   <button class="miniBtn" id="btnCloseDetail">Cerrar</button>
+
+                  <!-- Admin tools -->
+                  <button class="miniBtn ok" id="btnPin" style="display:none">Fijar</button>
+                  <button class="miniBtn warn" id="btnToggleClose" style="display:none">Cerrar tema</button>
+                  <button class="miniBtn bad" id="btnDeletePost" style="display:none">Eliminar</button>
                 </div>
               </div>
 
@@ -241,6 +279,10 @@
               <div id="repliesList" class="list"></div>
 
               <div class="hr"></div>
+              <div class="note" id="closedNote" style="display:none">
+                Este tema está <b>cerrado</b>. Puedes leerlo, pero no se aceptan más comentarios.
+              </div>
+
               <textarea class="ta" id="replyText" placeholder="Escribe tu comentario..."></textarea>
               <div class="row" style="justify-content:flex-end;margin-top:8px">
                 <button class="miniBtn pri" id="btnSendReply">Publicar comentario</button>
@@ -253,7 +295,7 @@
         <section id="secPrivate" style="display:none">
           <div>
             <h2 class="h2">Mensajes privados a Administradores</h2>
-            <p class="mut">Crea un hilo y conversa directo con el equipo admin (tipo soporte / debate privado).</p>
+            <p class="mut">Crea un hilo y conversa directo con el equipo admin. (Soporte / debate privado)</p>
           </div>
 
           <div class="hr"></div>
@@ -275,6 +317,10 @@
               <input class="input" id="pmText" placeholder="Escribe tu mensaje..." />
               <button class="miniBtn pri" id="btnSendPM">Enviar</button>
             </div>
+
+            <div class="note">
+              <b>Tip:</b> Si es un caso complejo, pega el código de repuesto, país, marca y el contexto. Así el admin te responde más rápido.
+            </div>
           </div>
         </section>
       </div>
@@ -285,17 +331,22 @@
         <p class="mut" style="margin-bottom:10px">
           Mantengamos esto útil: describe el caso, pon contexto y evita datos sensibles.
         </p>
+
         <div class="item">
           <p class="title">✅ Foro Abierto</p>
-          <p class="mut">Ideal para ideas, debates, sugerencias y temas generales.</p>
+          <p class="mut">Ideas, debates, sugerencias y temas generales (con etiquetas).</p>
         </div>
         <div class="item">
           <p class="title">🔒 Mensaje a Admin</p>
-          <p class="mut">Ideal para soporte, casos específicos o conversación privada.</p>
+          <p class="mut">Soporte, casos específicos o conversación privada.</p>
         </div>
         <div class="item">
           <p class="title">⭐ Calificación</p>
-          <p class="mut">Cada usuario califica 1 vez por post (1–5). Se muestra el promedio.</p>
+          <p class="mut">Cada usuario califica 1 vez por post (1–5). Se muestra promedio.</p>
+        </div>
+        <div class="item" id="adminBox" style="display:none">
+          <p class="title">🛡️ Moderación (Admin)</p>
+          <p class="mut">Fijar temas, cerrar, eliminar spam y limpiar comentarios.</p>
         </div>
 
         <div class="hr"></div>
@@ -318,8 +369,13 @@
 /* =========================
    CONFIG + HELPERS
 ========================= */
-const DASHBOARD_URL = "dashboard.html"; // ajusta si tu dashboard usa otro nombre
-const LOGIN_URL = "login.html";         // ajusta si tu login usa otro nombre
+const DASHBOARD_URL = "index.html";
+const LOGIN_URL = "login.html";
+
+// Etiquetas sugeridas (puedes añadir más)
+const DEFAULT_TAGS = [
+  "Idea", "Bug", "Soporte", "Compras", "Radar", "KPIs", "Inventario", "Ventas", "Importacion", "General"
+];
 
 function toast(msg){
   const t = document.getElementById("toast");
@@ -336,7 +392,48 @@ function fmtDate(iso){
   }catch(e){ return ""; }
 }
 
-// Lee credenciales de Supabase desde localStorage (como solemos hacer en tu proyecto)
+function escapeHtml(str){
+  return String(str||"")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function normalizeTags(tagsArr){
+  const set = new Set();
+  for(const t of (tagsArr||[])){
+    const x = String(t||"").trim();
+    if(!x) continue;
+    set.add(x);
+  }
+  return Array.from(set).slice(0, 8);
+}
+
+// localStorage keys (notificaciones “offline”)
+function kForumSeen(){ return `rf_seen_forum_${ME?.id||"x"}`; }
+function kThreadSeen(threadId){ return `rf_seen_thread_${ME?.id||"x"}_${threadId}`; }
+
+function getSeenMap(key){
+  try{ return JSON.parse(localStorage.getItem(key)||"{}"); }catch(e){ return {}; }
+}
+function setSeenMap(key, map){
+  localStorage.setItem(key, JSON.stringify(map||{}));
+}
+
+function markForumPostSeen(postId){
+  const m = getSeenMap(kForumSeen());
+  m[postId] = new Date().toISOString();
+  setSeenMap(kForumSeen(), m);
+}
+function markThreadSeen(threadId){
+  localStorage.setItem(kThreadSeen(threadId), new Date().toISOString());
+}
+
+/* =========================
+   SUPABASE CONFIG
+========================= */
 function getSupabaseConfig(){
   const url = localStorage.getItem("rf_sb_url") || localStorage.getItem("SUPABASE_URL") || "";
   const anon = localStorage.getItem("rf_sb_anon") || localStorage.getItem("SUPABASE_ANON_KEY") || "";
@@ -347,13 +444,17 @@ const { url: SUPABASE_URL, anon: SUPABASE_ANON_KEY } = getSupabaseConfig();
 if(!SUPABASE_URL || !SUPABASE_ANON_KEY){
   console.warn("Faltan credenciales Supabase en localStorage: rf_sb_url / rf_sb_anon");
 }
-
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let ME = null;          // auth user
-let PROFILE = null;     // profiles row
-let ACTIVE_POST = null; // selected forum post
-let ACTIVE_THREAD = null; // selected private thread
+let ME = null;
+let PROFILE = null;
+let IS_ADMIN = false;
+
+let ACTIVE_POST = null;
+let ACTIVE_THREAD = null;
+
+let CACHED_POSTS = []; // para ordenar/filtrar rápido
+let AVG_MAP = {};      // postId -> avg rating
 
 /* =========================
    AUTH GUARD
@@ -369,7 +470,6 @@ async function requireAuth(){
 }
 
 async function loadProfile(){
-  // Se asume tabla profiles con id = auth.uid()
   const { data, error } = await sb
     .from("profiles")
     .select("id,email,full_name,role,country,created_at")
@@ -379,11 +479,18 @@ async function loadProfile(){
   if(error) console.warn(error);
   PROFILE = data || { id: ME.id, email: ME.email, full_name: "Usuario", role: "user" };
 
-  const who = document.getElementById("who");
-  who.textContent = (PROFILE.full_name || "Usuario") + " • " + (PROFILE.role || "user");
+  IS_ADMIN = String(PROFILE.role||"").toLowerCase() === "admin";
+
+  document.getElementById("who").textContent =
+    (PROFILE.full_name || "Usuario") + " • " + (PROFILE.role || "user");
 
   document.getElementById("meInfo").textContent =
     `Nombre: ${PROFILE.full_name || "—"}\nCorreo: ${ME.email || "—"}\nRol: ${PROFILE.role || "user"}\nPaís: ${PROFILE.country || "—"}`;
+
+  if(IS_ADMIN){
+    document.getElementById("adminPill").style.display = "";
+    document.getElementById("adminBox").style.display = "";
+  }
 }
 
 /* =========================
@@ -409,80 +516,153 @@ function setTab(which){
 }
 
 /* =========================
-   FORO: LOAD POSTS
+   TAG FILTER INIT
+========================= */
+function initTagFilter(){
+  const sel = document.getElementById("tagFilter");
+  sel.innerHTML = `<option value="">Todas las etiquetas</option>`;
+  // Mezcla: DEFAULT_TAGS + tags detectados en posts
+  const set = new Set(DEFAULT_TAGS);
+  for(const p of CACHED_POSTS){
+    for(const t of (p.tags||[])) set.add(t);
+  }
+  for(const t of Array.from(set).sort((a,b)=>a.localeCompare(b))){
+    const opt = document.createElement("option");
+    opt.value = t;
+    opt.textContent = t;
+    sel.appendChild(opt);
+  }
+}
+
+/* =========================
+   FORO: LOAD POSTS + AVG
+   Requiere estas columnas en forum_posts:
+   - tags (text[] o json array)
+   - is_pinned (bool)
+   - is_closed (bool)
 ========================= */
 async function loadForum(){
-  const q = (document.getElementById("qForum").value || "").trim();
+  const q = (document.getElementById("qForum").value || "").trim().toLowerCase();
+  const tag = (document.getElementById("tagFilter").value || "").trim();
+  const sortMode = document.getElementById("sortForum").value || "recent";
 
-  // Obtenemos posts + autor + avg rating
-  // avg se calcula con view o query; aquí lo hacemos con RPC simple via select + luego agregación en JS
   const { data: posts, error } = await sb
     .from("forum_posts")
-    .select("id,title,body,created_at,author_id,profiles:author_id(full_name,email)")
+    .select("id,title,body,created_at,author_id,is_pinned,is_closed,tags,profiles:author_id(full_name,email)")
     .order("created_at", { ascending:false })
-    .limit(50);
+    .limit(80);
 
   if(error){
     console.warn(error);
-    toast("No pude cargar el foro (RLS/tabla). Revisa SQL.");
+    toast("No pude cargar el foro. Falta tabla/columnas/RLS.");
     return;
   }
 
-  // Filtrado local
-  let filtered = posts || [];
-  if(q){
-    const qq = q.toLowerCase();
-    filtered = filtered.filter(p =>
-      (p.title||"").toLowerCase().includes(qq) ||
-      (p.body||"").toLowerCase().includes(qq) ||
-      ((p.profiles?.full_name||"").toLowerCase().includes(qq)) ||
-      ((p.profiles?.email||"").toLowerCase().includes(qq))
-    );
-  }
+  CACHED_POSTS = (posts||[]).map(p=>{
+    // Soporta tags como text[] o como string
+    let tags = p.tags;
+    if(typeof tags === "string"){
+      tags = tags.split(",").map(x=>x.trim()).filter(Boolean);
+    }
+    if(!Array.isArray(tags)) tags = [];
+    return {...p, tags};
+  });
 
-  // ratings promedio por post
-  const ids = filtered.map(p=>p.id);
-  let avgMap = {};
-  if(ids.length){
-    const { data: rates, error: er2 } = await sb
-      .from("forum_ratings")
-      .select("post_id,rating");
-    if(!er2 && rates){
-      const acc = {};
-      for(const r of rates){
-        if(!ids.includes(r.post_id)) continue;
-        if(!acc[r.post_id]) acc[r.post_id] = {sum:0, n:0};
-        acc[r.post_id].sum += (r.rating||0);
-        acc[r.post_id].n += 1;
-      }
-      for(const k in acc){
-        avgMap[k] = acc[k].n ? (acc[k].sum/acc[k].n) : 0;
-      }
+  // ratings promedio (y para sorting top)
+  AVG_MAP = {};
+  const { data: rates, error: er2 } = await sb.from("forum_ratings").select("post_id,rating");
+  if(!er2 && rates){
+    const acc = {};
+    for(const r of rates){
+      if(!acc[r.post_id]) acc[r.post_id] = {sum:0, n:0};
+      acc[r.post_id].sum += (r.rating||0);
+      acc[r.post_id].n += 1;
+    }
+    for(const k in acc){
+      AVG_MAP[k] = acc[k].n ? (acc[k].sum/acc[k].n) : 0;
     }
   }
 
+  // filtro local
+  let filtered = CACHED_POSTS.slice();
+  if(q){
+    filtered = filtered.filter(p =>
+      (p.title||"").toLowerCase().includes(q) ||
+      (p.body||"").toLowerCase().includes(q) ||
+      ((p.profiles?.full_name||"").toLowerCase().includes(q)) ||
+      ((p.profiles?.email||"").toLowerCase().includes(q))
+    );
+  }
+  if(tag){
+    filtered = filtered.filter(p => (p.tags||[]).includes(tag));
+  }
+
+  // orden
+  if(sortMode === "pinned"){
+    filtered.sort((a,b)=>{
+      const ap = a.is_pinned ? 1:0, bp = b.is_pinned ? 1:0;
+      if(bp !== ap) return bp - ap;
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+  }else if(sortMode === "top"){
+    filtered.sort((a,b)=>{
+      const av = AVG_MAP[a.id] || 0;
+      const bv = AVG_MAP[b.id] || 0;
+      if(bv !== av) return bv - av;
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+  }else{
+    // recent (ya viene por created desc, pero por si acaso)
+    filtered.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
+  }
+
+  // init tags dropdown basado en posts detectados
+  initTagFilter();
+
+  // render
   const box = document.getElementById("forumList");
   box.innerHTML = "";
 
   if(!filtered.length){
-    box.innerHTML = `<div class="item"><p class="mut">No hay temas aún. Crea el primero 👇</p></div>`;
+    box.innerHTML = `<div class="item"><p class="mut">No hay temas con ese filtro. Crea el primero 👇</p></div>`;
+    updateForumNoti();
     return;
   }
 
   for(const p of filtered){
-    const avg = avgMap[p.id] || 0;
+    const avg = AVG_MAP[p.id] || 0;
     const author = p.profiles?.full_name || p.profiles?.email || "Usuario";
+
     const el = document.createElement("div");
     el.className = "item";
+
+    const pins = [];
+    if(p.is_pinned) pins.push(`<span class="tag pin">Fijado</span>`);
+    if(p.is_closed) pins.push(`<span class="tag closed">Cerrado</span>`);
+
+    const tags = (p.tags||[]).slice(0,6).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("");
+
+    // noti local: si el post tiene activity nueva (comentarios) lo marcamos con un dot
+    const isNew = await isForumPostNewSinceSeen(p.id, p.created_at);
+
     el.innerHTML = `
       <div class="itemTop">
         <div style="min-width:0">
-          <p class="title" style="margin:0 0 4px 0">${escapeHtml(p.title || "Sin título")}</p>
+          <p class="title" style="margin:0 0 4px 0">
+            ${isNew ? "🔔 " : ""}${escapeHtml(p.title || "Sin título")}
+          </p>
           <div class="meta">
             Por <b>${escapeHtml(author)}</b> • ${fmtDate(p.created_at)}
           </div>
+          <div class="tagRow">
+            ${pins.join("")}
+            ${tags}
+          </div>
         </div>
-        <div class="badge">⭐ ${avg.toFixed(1)}</div>
+        <div class="row" style="justify-content:flex-end">
+          <div class="badge">⭐ ${avg.toFixed(1)}</div>
+          <div class="badge">${isNew ? "Nuevo" : "—"}</div>
+        </div>
       </div>
       <div class="hr"></div>
       <div class="mut" style="white-space:pre-wrap;line-height:1.35">
@@ -495,25 +675,62 @@ async function loadForum(){
     el.querySelector("button").addEventListener("click", ()=> openPost(p.id));
     box.appendChild(el);
   }
-}
 
-function escapeHtml(str){
-  return String(str||"")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
+  updateForumNoti();
 }
 
 /* =========================
-   FORO: OPEN POST + REPLIES + RATING
+   FORO NOTIFICACIONES (LOCAL)
+   - post nuevo: si no se ha visto antes
+   - post actualizado: si hay reply posterior al last seen
+========================= */
+async function isForumPostNewSinceSeen(postId, createdAt){
+  // si nunca lo vio => nuevo
+  const seen = getSeenMap(kForumSeen());
+  if(!seen[postId]) return true;
+
+  // si hay replies nuevas luego del seen
+  const lastSeenIso = seen[postId];
+  if(!lastSeenIso) return false;
+
+  // en vez de traer todo, preguntamos por el último comentario del post
+  const { data, error } = await sb
+    .from("forum_replies")
+    .select("created_at")
+    .eq("post_id", postId)
+    .order("created_at", {ascending:false})
+    .limit(1);
+
+  if(error || !data || !data.length) return false;
+
+  const lastReply = new Date(data[0].created_at).getTime();
+  const seenAt = new Date(lastSeenIso).getTime();
+  return lastReply > seenAt;
+}
+
+async function updateForumNoti(){
+  // cuenta “nuevos” en la lista cache (máx 80)
+  let c = 0;
+  for(const p of CACHED_POSTS){
+    const isNew = await isForumPostNewSinceSeen(p.id, p.created_at);
+    if(isNew) c++;
+  }
+  const b = document.getElementById("forumNoti");
+  if(c > 0){
+    b.textContent = String(c);
+    b.style.display = "";
+  }else{
+    b.style.display = "none";
+  }
+}
+
+/* =========================
+   FORO: OPEN POST + REPLIES + RATING + MOD
 ========================= */
 async function openPost(postId){
-  // load post
   const { data: p, error } = await sb
     .from("forum_posts")
-    .select("id,title,body,created_at,author_id,profiles:author_id(full_name,email)")
+    .select("id,title,body,created_at,author_id,is_pinned,is_closed,tags,profiles:author_id(full_name,email)")
     .eq("id", postId)
     .maybeSingle();
 
@@ -523,24 +740,31 @@ async function openPost(postId){
     return;
   }
 
+  // normaliza tags
+  let tags = p.tags;
+  if(typeof tags === "string") tags = tags.split(",").map(x=>x.trim()).filter(Boolean);
+  if(!Array.isArray(tags)) tags = [];
+  p.tags = tags;
+
   ACTIVE_POST = p;
 
   // avg + my rating
   const { data: rates } = await sb.from("forum_ratings").select("post_id,user_id,rating").eq("post_id", postId);
   let avg = 0, n=0, my = null;
   if(rates && rates.length){
-    for(const r of rates){ avg += (r.rating||0); n++; if(r.user_id===ME.id) my = r.rating; }
+    for(const r of rates){
+      avg += (r.rating||0); n++;
+      if(r.user_id===ME.id) my = r.rating;
+    }
     avg = n ? avg/n : 0;
   }
 
   // replies
-  const { data: replies, error: er2 } = await sb
+  const { data: replies } = await sb
     .from("forum_replies")
     .select("id,post_id,body,created_at,author_id,profiles:author_id(full_name,email)")
     .eq("post_id", postId)
     .order("created_at", {ascending:true});
-
-  if(er2) console.warn(er2);
 
   // render detail
   const author = p.profiles?.full_name || p.profiles?.email || "Usuario";
@@ -549,6 +773,15 @@ async function openPost(postId){
   document.getElementById("pdMeta").textContent = `Por ${author} • ${fmtDate(p.created_at)}`;
   document.getElementById("pdBody").textContent = p.body || "";
   document.getElementById("pdAvg").textContent = `⭐ ${avg.toFixed(1)}`;
+
+  // tags row in detail
+  const tg = document.getElementById("pdTags");
+  tg.innerHTML = "";
+  if(p.is_pinned) tg.innerHTML += `<span class="tag pin">Fijado</span>`;
+  if(p.is_closed) tg.innerHTML += `<span class="tag closed">Cerrado</span>`;
+  for(const t of (p.tags||[])){
+    tg.innerHTML += `<span class="tag">${escapeHtml(t)}</span>`;
+  }
 
   // stars
   const starsBox = document.getElementById("pdStars");
@@ -571,41 +804,88 @@ async function openPost(postId){
   }else{
     for(const r of replies){
       const ra = r.profiles?.full_name || r.profiles?.email || "Usuario";
+
       const div = document.createElement("div");
       div.className = "item";
+
+      // botones admin + autor
+      const canMod = IS_ADMIN || (r.author_id === ME.id);
+      const modBtns = canMod
+        ? `<div class="row" style="justify-content:flex-end;margin-top:8px">
+             <button class="miniBtn bad" data-del="${r.id}">Eliminar</button>
+           </div>`
+        : "";
+
       div.innerHTML = `
         <div class="meta"><b>${escapeHtml(ra)}</b> • ${fmtDate(r.created_at)}</div>
         <div style="white-space:pre-wrap;line-height:1.35;margin-top:6px">${escapeHtml(r.body||"")}</div>
+        ${modBtns}
       `;
+
+      const delBtn = div.querySelector("button[data-del]");
+      if(delBtn){
+        delBtn.addEventListener("click", ()=> deleteReply(r.id));
+      }
+
       rl.appendChild(div);
     }
   }
 
-  // scroll to detail
+  // comentar bloqueado si cerrado
+  const closed = !!p.is_closed;
+  document.getElementById("closedNote").style.display = closed ? "" : "none";
+  document.getElementById("replyText").style.display = closed ? "none" : "";
+  document.getElementById("btnSendReply").style.display = closed ? "none" : "";
+
+  // botones admin
+  const btnPin = document.getElementById("btnPin");
+  const btnToggleClose = document.getElementById("btnToggleClose");
+  const btnDeletePost = document.getElementById("btnDeletePost");
+
+  if(IS_ADMIN){
+    btnPin.style.display = "";
+    btnToggleClose.style.display = "";
+    btnDeletePost.style.display = "";
+
+    btnPin.textContent = p.is_pinned ? "Quitar fijado" : "Fijar";
+    btnToggleClose.textContent = p.is_closed ? "Reabrir tema" : "Cerrar tema";
+
+    btnPin.onclick = ()=> togglePinned(p.id, !p.is_pinned);
+    btnToggleClose.onclick = ()=> toggleClosed(p.id, !p.is_closed);
+    btnDeletePost.onclick = ()=> deletePost(p.id);
+  }else{
+    btnPin.style.display = "none";
+    btnToggleClose.style.display = "none";
+    btnDeletePost.style.display = "none";
+  }
+
+  // marcar como visto (noti local)
+  markForumPostSeen(postId);
+  await updateForumNoti();
+
   document.getElementById("postDetail").scrollIntoView({behavior:"smooth", block:"start"});
 }
 
 async function setRating(postId, value){
-  // upsert rating (1 registro por user/post)
   const payload = { post_id: postId, user_id: ME.id, rating: value };
-
-  const { error } = await sb
-    .from("forum_ratings")
-    .upsert(payload, { onConflict: "post_id,user_id" });
-
+  const { error } = await sb.from("forum_ratings").upsert(payload, { onConflict: "post_id,user_id" });
   if(error){
     console.warn(error);
-    toast("No pude guardar tu calificación (RLS?).");
+    toast("No pude guardar tu calificación.");
     return;
   }
   toast("Calificación guardada ✅");
-  await openPost(postId); // refresca avg + estado estrellas
+  await openPost(postId);
 }
 
 async function sendReply(){
   const txt = (document.getElementById("replyText").value || "").trim();
   if(!ACTIVE_POST || !ACTIVE_POST.id){
     toast("Abre un tema primero.");
+    return;
+  }
+  if(ACTIVE_POST.is_closed){
+    toast("Tema cerrado. No se aceptan comentarios.");
     return;
   }
   if(!txt){
@@ -617,16 +897,17 @@ async function sendReply(){
   const { error } = await sb.from("forum_replies").insert(payload);
   if(error){
     console.warn(error);
-    toast("No pude publicar (RLS?).");
+    toast("No pude publicar el comentario.");
     return;
   }
   document.getElementById("replyText").value = "";
   toast("Comentario publicado ✅");
   await openPost(ACTIVE_POST.id);
+  await loadForum();
 }
 
 /* =========================
-   FORO: NEW POST
+   FORO: NEW POST (con etiquetas)
 ========================= */
 async function newPost(){
   const title = prompt("Título del tema:");
@@ -639,11 +920,26 @@ async function newPost(){
   const b = body.trim();
   if(!b){ toast("Contenido vacío."); return; }
 
-  const payload = { title: t, body: b, author_id: ME.id };
+  const tagsRaw = prompt(
+    "Etiquetas (separadas por coma). Ej: Idea,Bug,Soporte\n\nSugeridas: " + DEFAULT_TAGS.join(", ")
+  );
+  if(tagsRaw === null) return;
+
+  const tags = normalizeTags(tagsRaw.split(",").map(x=>x.trim()).filter(Boolean));
+
+  const payload = {
+    title: t,
+    body: b,
+    author_id: ME.id,
+    tags: tags,       // requiere columna tags (text[] / json)
+    is_pinned: false, // requiere columna bool
+    is_closed: false  // requiere columna bool
+  };
+
   const { error } = await sb.from("forum_posts").insert(payload);
   if(error){
     console.warn(error);
-    toast("No pude crear el tema (RLS/tabla).");
+    toast("No pude crear el tema. Revisa columnas (tags/is_pinned/is_closed) y RLS.");
     return;
   }
   toast("Tema creado ✅");
@@ -651,19 +947,61 @@ async function newPost(){
 }
 
 /* =========================
-   PRIVADO: THREADS + MESSAGES
+   MODERACIÓN (ADMIN)
+========================= */
+async function togglePinned(postId, val){
+  const { error } = await sb.from("forum_posts").update({ is_pinned: val }).eq("id", postId);
+  if(error){ console.warn(error); toast("No pude actualizar fijado."); return; }
+  toast(val ? "Tema fijado ✅" : "Fijado removido ✅");
+  await openPost(postId);
+  await loadForum();
+}
+
+async function toggleClosed(postId, val){
+  const { error } = await sb.from("forum_posts").update({ is_closed: val }).eq("id", postId);
+  if(error){ console.warn(error); toast("No pude actualizar estado del tema."); return; }
+  toast(val ? "Tema cerrado ✅" : "Tema reabierto ✅");
+  await openPost(postId);
+  await loadForum();
+}
+
+async function deletePost(postId){
+  const ok = confirm("¿Seguro que deseas ELIMINAR este tema? (Se borrarán también sus comentarios y ratings)");
+  if(!ok) return;
+
+  const { error } = await sb.from("forum_posts").delete().eq("id", postId);
+  if(error){ console.warn(error); toast("No pude eliminar el tema."); return; }
+
+  toast("Tema eliminado ✅");
+  document.getElementById("postDetail").style.display = "none";
+  ACTIVE_POST = null;
+  await loadForum();
+}
+
+async function deleteReply(replyId){
+  const ok = confirm("¿Eliminar este comentario?");
+  if(!ok) return;
+
+  const { error } = await sb.from("forum_replies").delete().eq("id", replyId);
+  if(error){ console.warn(error); toast("No pude eliminar el comentario."); return; }
+
+  toast("Comentario eliminado ✅");
+  if(ACTIVE_POST?.id) await openPost(ACTIVE_POST.id);
+  await loadForum();
+}
+
+/* =========================
+   PRIVADO: THREADS + MESSAGES + NOTI
 ========================= */
 async function loadMyThreads(){
-  // Threads donde participant_id = mi user_id
-  const { data, error } = await sb
-    .from("pm_threads")
-    .select("id,subject,created_at,participant_id")
-    .eq("participant_id", ME.id)
-    .order("created_at", {ascending:false});
+  // Si eres admin, puedes ver TODOS los threads; si no, solo los tuyos (RLS define eso)
+  const q = sb.from("pm_threads").select("id,subject,created_at,participant_id").order("created_at", {ascending:false});
+  if(!IS_ADMIN) q.eq("participant_id", ME.id);
 
+  const { data, error } = await q;
   if(error){
     console.warn(error);
-    toast("No pude cargar tus hilos privados (RLS/tabla).");
+    toast("No pude cargar hilos privados.");
     return;
   }
 
@@ -672,9 +1010,11 @@ async function loadMyThreads(){
   for(const th of (data||[])){
     const opt = document.createElement("option");
     opt.value = th.id;
-    opt.textContent = `${th.subject || "Sin asunto"} • ${fmtDate(th.created_at)}`;
+    opt.textContent = `${th.subject || "Sin asunto"} • ${fmtDate(th.created_at)}` + (IS_ADMIN ? ` • (${th.participant_id.slice(0,8)}...)` : "");
     sel.appendChild(opt);
   }
+
+  await updatePmNoti(data||[]);
 }
 
 async function openThread(threadId){
@@ -695,12 +1035,14 @@ async function openThread(threadId){
 
   if(error){
     console.warn(error);
-    toast("No pude abrir el hilo (RLS?).");
+    toast("No pude abrir el hilo.");
     return;
   }
 
   if(!data || !data.length){
     chat.innerHTML = `<div class="mut">Hilo vacío. Envía el primer mensaje 👇</div>`;
+    markThreadSeen(ACTIVE_THREAD);
+    await updatePmNoti();
     return;
   }
 
@@ -715,6 +1057,10 @@ async function openThread(threadId){
   }
 
   chat.scrollTop = chat.scrollHeight;
+
+  // noti: visto
+  markThreadSeen(ACTIVE_THREAD);
+  await updatePmNoti();
 }
 
 async function newThread(){
@@ -731,7 +1077,7 @@ async function newThread(){
 
   if(error){
     console.warn(error);
-    toast("No pude crear el hilo (RLS/tabla).");
+    toast("No pude crear el hilo.");
     return;
   }
 
@@ -756,12 +1102,54 @@ async function sendPM(){
   const { error } = await sb.from("pm_messages").insert(payload);
   if(error){
     console.warn(error);
-    toast("No pude enviar el mensaje (RLS?).");
+    toast("No pude enviar el mensaje.");
     return;
   }
 
   document.getElementById("pmText").value = "";
   await openThread(ACTIVE_THREAD);
+}
+
+async function updatePmNoti(cachedThreads){
+  // Cuenta hilos con mensajes nuevos desde last seen (local)
+  // Si no se provee cachedThreads, recarga threads para calcular rápido
+  let threads = cachedThreads;
+  if(!threads){
+    const q = sb.from("pm_threads").select("id,created_at,participant_id").order("created_at", {ascending:false});
+    if(!IS_ADMIN) q.eq("participant_id", ME.id);
+    const { data } = await q;
+    threads = data || [];
+  }
+
+  let count = 0;
+
+  for(const th of threads){
+    const seenKey = kThreadSeen(th.id);
+    const seenIso = localStorage.getItem(seenKey);
+
+    // último mensaje del hilo
+    const { data: lastMsg, error } = await sb
+      .from("pm_messages")
+      .select("created_at")
+      .eq("thread_id", th.id)
+      .order("created_at", {ascending:false})
+      .limit(1);
+
+    if(error || !lastMsg || !lastMsg.length) continue;
+
+    const lastAt = new Date(lastMsg[0].created_at).getTime();
+    const seenAt = seenIso ? new Date(seenIso).getTime() : 0;
+
+    if(lastAt > seenAt) count++;
+  }
+
+  const b = document.getElementById("pmNoti");
+  if(count > 0){
+    b.textContent = String(count);
+    b.style.display = "";
+  }else{
+    b.style.display = "none";
+  }
 }
 
 /* =========================
@@ -773,8 +1161,11 @@ document.getElementById("tabPrivate").addEventListener("click", async ()=> { set
 document.getElementById("btnNewPost").addEventListener("click", newPost);
 document.getElementById("btnRefreshForum").addEventListener("click", loadForum);
 document.getElementById("qForum").addEventListener("keydown", (e)=>{ if(e.key==="Enter") loadForum(); });
+document.getElementById("tagFilter").addEventListener("change", loadForum);
+document.getElementById("sortForum").addEventListener("change", loadForum);
 
 document.getElementById("btnSendReply").addEventListener("click", sendReply);
+
 document.getElementById("btnCloseDetail").addEventListener("click", ()=>{
   document.getElementById("postDetail").style.display = "none";
   ACTIVE_POST = null;
@@ -795,6 +1186,38 @@ document.getElementById("btnLogout").addEventListener("click", async ()=>{
 });
 
 /* =========================
+   LIVE UPDATES (Realtime)
+========================= */
+function setupRealtime(){
+  // Foro: si entra un reply o post nuevo => refresca noti (sin spamear)
+  sb.channel("forum-live")
+    .on("postgres_changes", { event:"INSERT", schema:"public", table:"forum_posts" }, ()=>{
+      // recargar lista suave
+      loadForum();
+    })
+    .on("postgres_changes", { event:"INSERT", schema:"public", table:"forum_replies" }, ()=>{
+      // si estás viendo un post, refresca detalle
+      if(ACTIVE_POST?.id) openPost(ACTIVE_POST.id);
+      // refresca noti
+      updateForumNoti();
+    })
+    .subscribe();
+
+  // Privado: si entra msg nuevo, si estás en ese hilo refresca y marca noti
+  sb.channel("pm-live")
+    .on("postgres_changes", { event:"INSERT", schema:"public", table:"pm_messages" }, (payload)=>{
+      if(payload?.new?.thread_id){
+        if(payload.new.thread_id === ACTIVE_THREAD){
+          openThread(ACTIVE_THREAD);
+        }else{
+          updatePmNoti();
+        }
+      }
+    })
+    .subscribe();
+}
+
+/* =========================
    INIT
 ========================= */
 (async function init(){
@@ -803,18 +1226,26 @@ document.getElementById("btnLogout").addEventListener("click", async ()=>{
 
   await loadProfile();
   await loadForum();
+  await updatePmNoti();
 
-  // suscripción en vivo para refrescar mensajes privados (simple)
-  sb.channel("pm-live")
-    .on("postgres_changes", { event:"INSERT", schema:"public", table:"pm_messages" }, (payload)=>{
-      // si estamos viendo el hilo, refresca
-      if(payload?.new?.thread_id && payload.new.thread_id === ACTIVE_THREAD){
-        openThread(ACTIVE_THREAD);
-      }
-    })
-    .subscribe();
-
+  setupRealtime();
 })();
 </script>
+
+<!--
+===========================================================
+IMPORTANTE (para que estas mejoras funcionen):
+Tu Supabase debe tener en forum_posts estas columnas:
+- tags (text[] o json)
+- is_pinned (boolean)
+- is_closed (boolean)
+
+Y RLS para admin debe permitir update/delete de forum_posts y delete de forum_replies.
+Si ya tienes el SQL anterior, dime y te paso el SQL incremental EXACTO para agregar
+estas columnas + policies admin sin romper lo que ya funciona.
+===========================================================
+-->
+
 </body>
 </html>
+
