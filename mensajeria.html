@@ -532,7 +532,7 @@ function markThreadSeen(threadId){ localStorage.setItem(kThreadSeen(threadId), n
 ========================= */
 function getSupabaseConfig(){
   const url = FORCE_SUPABASE_URL || localStorage.getItem("rf_sb_url") || localStorage.getItem("https://pjkbipdjxxxzjiuyfkaq.supabase.co") || "";
-  const anon = FORCE_SUPABASE_ANON || localStorage.getItem("rf_sb_anon") || localStorage.getItem("sb_publishable_G7uvRyHNLSew2HKJY_h6ag_M2NZDYx4") || "";
+  const anon = FORCE_SUPABASE_ANON || localStorage.getItem("rf_sb_anon") || localStorage.getItem("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqa2JpcGRqeHh4emppdXlma2FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2MDI4ODksImV4cCI6MjA4NDE3ODg4OX0.spcVrYvF2_q7dWzQhgzBfaYRgagWyGqafNmdUIIh1Y4") || "";
   return { url, anon };
 }
 let sb=null;
