@@ -158,8 +158,6 @@
       border:1px dashed rgba(100,116,139,.35);
       border-radius:16px;padding:10px 12px;background:rgba(255,255,255,.6);
     }
-
-    /* Modal */
     .modalBack{
       position:fixed;inset:0;background:rgba(2,6,23,.45);
       display:none;align-items:center;justify-content:center;
@@ -399,7 +397,7 @@
           <b>✅ Recomendación</b>
           <div class="inlineHint">
             Si algo no carga, revisa que existan en <code>localStorage</code>:
-            <code>rf_sb_url</code> y <code>rf_sb_</code>.
+            <code>rf_sb_url</code> y <code>rf_sb_anon</code>.
           </div>
         </div>
       </div>
@@ -459,17 +457,17 @@
 
 <script>
 /* =========================
-   CONFIG (AJUSTA AQUÍ SI QUIERES FIJO)
+   CONFIG (AJUSTA AQUÍ)
 ========================= */
 const DASHBOARD_URL = "index.html";
 const LOGIN_URL = "login.html";
 
-/* Si NO quieres usar localStorage, pega aquí tu Supabase:
-const FORCE_SUPABASE_URL = "https://pjkbipdjxxxzjiuyfkaq.supabase.co";
-const FORCE_SUPABASE_ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqa2JpcGRqeHh4emppdXlma2FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2MDI4ODksImV4cCI6MjA4NDE3ODg4OX0.spcVrYvF2_q7dWzQhgzBfaYRgagWyGqafNmdUIIh1Y4";
+/* ✅ PEGA AQUÍ TU SUPABASE (RECOMENDADO)
+   - Project URL: https://xxxxx.supabase.co
+   - anon public key: empieza con eyJ...
 */
-const FORCE_SUPABASE_URL = "https://pjkbipdjxxxzjiuyfkaq.supabase.co";
-const FORCE_SUPABASE_ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqa2JpcGRqeHh4emppdXlma2FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2MDI4ODksImV4cCI6MjA4NDE3ODg4OX0.spcVrYvF2_q7dWzQhgzBfaYRgagWyGqafNmdUIIh1Y4";
+const FORCE_SUPABASE_URL = "https://pjkbipdjxxxzjiuyfkaq.supabase.co";   // <-- pega Project URL
+const FORCE_SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqa2JpcGRqeHh4emppdXlma2FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2MDI4ODksImV4cCI6MjA4NDE3ODg4OX0.spcVrYvF2_q7dWzQhgzBfaYRgagWyGqafNmdUIIh1Y4";  // <-- pega anon public key
 
 const DEFAULT_TAGS = ["Idea","Bug","Soporte","Compras","Radar","KPIs","Inventario","Ventas","Importacion","General"];
 
@@ -531,8 +529,8 @@ function markThreadSeen(threadId){ localStorage.setItem(kThreadSeen(threadId), n
    SUPABASE INIT (ROBUSTO)
 ========================= */
 function getSupabaseConfig(){
-  const url = FORCE_SUPABASE_URL || localStorage.getItem("rf_sb_url") || localStorage.getItem("https://pjkbipdjxxxzjiuyfkaq.supabase.co") || "";
-  const anon = FORCE_SUPABASE_ANON || localStorage.getItem("rf_sb_anon") || localStorage.getItem("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBqa2JpcGRqeHh4emppdXlma2FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2MDI4ODksImV4cCI6MjA4NDE3ODg4OX0.spcVrYvF2_q7dWzQhgzBfaYRgagWyGqafNmdUIIh1Y4") || "";
+  const url = FORCE_SUPABASE_URL || localStorage.getItem("rf_sb_url") || "";
+  const anon = FORCE_SUPABASE_ANON || localStorage.getItem("rf_sb_anon") || "";
   return { url, anon };
 }
 let sb=null;
@@ -542,7 +540,7 @@ function initSupabase(){
 
   if(!url || !anon){
     sb = null;
-    showStatus("No encuentro tus credenciales de Supabase. Crea en localStorage: rf_sb_url y rf_sb_anon, o pégalas en FORCE_SUPABASE_URL/ANON dentro de este archivo.");
+    showStatus("No encuentro tus credenciales de Supabase. Pega Project URL y anon key en FORCE_SUPABASE_URL/ANON (recomendado) o usa localStorage: rf_sb_url y rf_sb_anon.");
     return false;
   }
 
@@ -574,13 +572,12 @@ async function requireAuth(){
     ME = data.session.user;
     return true;
   }catch(e){
-    showStatus("No pude validar sesión. Revisa Supabase URL/ANON y que Auth esté activo. Detalle: " + (e?.message||e));
+    showStatus("No pude validar sesión. Verifica URL/ANON correctas. Detalle: " + (e?.message||e));
     return false;
   }
 }
 
 async function loadProfile(){
-  // Si tu tabla profiles no existe / RLS bloquea, igual seguimos con email
   try{
     const { data, error } = await sb
       .from("profiles")
@@ -674,7 +671,6 @@ async function loadForum(){
     return {...p, tags};
   });
 
-  // ratings promedio
   AVG_MAP = {};
   const { data: rates } = await sb.from("forum_ratings").select("post_id,rating");
   if(rates){
@@ -689,7 +685,6 @@ async function loadForum(){
 
   initTagFilter();
 
-  // filtro
   let filtered = CACHED_POSTS.slice();
   if(q){
     filtered = filtered.filter(p =>
@@ -701,7 +696,6 @@ async function loadForum(){
   }
   if(tag) filtered = filtered.filter(p => (p.tags||[]).includes(tag));
 
-  // orden
   if(sortMode === "pinned"){
     filtered.sort((a,b)=>{
       const ap=a.is_pinned?1:0, bp=b.is_pinned?1:0;
@@ -723,7 +717,6 @@ async function loadForum(){
 
   if(!filtered.length){
     box.innerHTML = `<div class="item"><p class="mut">No hay temas con ese filtro. Crea el primero 👇</p></div>`;
-    updateForumNoti();
     return;
   }
 
@@ -736,20 +729,17 @@ async function loadForum(){
     if(p.is_closed) pins.push(`<span class="tag closed">Cerrado</span>`);
     const tags = (p.tags||[]).slice(0,6).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join("");
 
-    const isNew = await isForumPostNewSinceSeen(p.id);
-
     const el = document.createElement("div");
     el.className = "item";
     el.innerHTML = `
       <div class="itemTop">
         <div style="min-width:0">
-          <p class="title" style="margin:0 0 4px 0">${isNew ? "🔔 " : ""}${escapeHtml(p.title||"Sin título")}</p>
+          <p class="title" style="margin:0 0 4px 0">${escapeHtml(p.title||"Sin título")}</p>
           <div class="meta">Por <b>${escapeHtml(author)}</b> • ${fmtDate(p.created_at)}</div>
           <div class="tagRow">${pins.join("")}${tags}</div>
         </div>
         <div class="row" style="justify-content:flex-end">
           <div class="badge">⭐ ${avg.toFixed(1)}</div>
-          <div class="badge">${isNew ? "Nuevo" : "—"}</div>
         </div>
       </div>
       <div class="hr"></div>
@@ -763,37 +753,6 @@ async function loadForum(){
     el.querySelector("button").addEventListener("click", ()=> openPost(p.id));
     box.appendChild(el);
   }
-
-  updateForumNoti();
-}
-
-async function isForumPostNewSinceSeen(postId){
-  const seen = getSeenMap(kForumSeen());
-  if(!seen[postId]) return true;
-
-  const seenAt = new Date(seen[postId]).getTime();
-
-  const { data, error } = await sb
-    .from("forum_replies")
-    .select("created_at")
-    .eq("post_id", postId)
-    .order("created_at", {ascending:false})
-    .limit(1);
-
-  if(error || !data || !data.length) return false;
-  const lastReplyAt = new Date(data[0].created_at).getTime();
-  return lastReplyAt > seenAt;
-}
-
-async function updateForumNoti(){
-  let c=0;
-  for(const p of CACHED_POSTS){
-    const isNew = await isForumPostNewSinceSeen(p.id);
-    if(isNew) c++;
-  }
-  const b = document.getElementById("forumNoti");
-  if(c>0){ b.textContent=String(c); b.style.display=""; }
-  else b.style.display="none";
 }
 
 async function openPost(postId){
@@ -901,12 +860,14 @@ async function openPost(postId){
   }
 
   markForumPostSeen(postId);
-  await updateForumNoti();
   document.getElementById("postDetail").scrollIntoView({behavior:"smooth", block:"start"});
 }
 
 async function setRating(postId, value){
-  const { error } = await sb.from("forum_ratings").upsert({post_id:postId,user_id:ME.id,rating:value},{onConflict:"post_id,user_id"});
+  const { error } = await sb.from("forum_ratings").upsert(
+    {post_id:postId,user_id:ME.id,rating:value},
+    {onConflict:"post_id,user_id"}
+  );
   if(error){ toast("No pude guardar tu calificación."); return; }
   toast("Calificación guardada ✅");
   await openPost(postId);
@@ -920,7 +881,7 @@ async function sendReply(){
   if(!txt){ toast("Escribe un comentario."); return; }
 
   const { error } = await sb.from("forum_replies").insert({post_id:ACTIVE_POST.id, author_id:ME.id, body:txt});
-  if(error){ toast("No pude publicar."); return; }
+  if(error){ toast("No pude publicar. Revisa RLS."); return; }
 
   document.getElementById("replyText").value="";
   toast("Comentario publicado ✅");
@@ -937,7 +898,6 @@ async function createPostFromModal(){
   if(!b){ toast("Escribe el contenido."); return; }
 
   const tags = normalizeTags((tagsRaw ? tagsRaw.split(",") : []).map(x=>x.trim()).filter(Boolean));
-
   const payload = { title:t, body:b, author_id:ME.id, tags:tags, is_pinned:false, is_closed:false };
 
   const { error } = await sb.from("forum_posts").insert(payload);
@@ -996,7 +956,7 @@ async function loadMyThreads(){
   if(!IS_ADMIN) q.eq("participant_id", ME.id);
 
   const { data, error } = await q;
-  if(error){ toast("No pude cargar hilos."); return; }
+  if(error){ toast("No pude cargar hilos. Revisa tablas pm_threads/pm_messages y RLS."); return; }
 
   const sel=document.getElementById("threadSelect");
   sel.innerHTML = `<option value="">— Selecciona un hilo —</option>`;
@@ -1006,8 +966,6 @@ async function loadMyThreads(){
     opt.textContent = `${th.subject||"Sin asunto"} • ${fmtDate(th.created_at)}`;
     sel.appendChild(opt);
   }
-
-  await updatePmNoti(data||[]);
 }
 
 async function openThread(threadId){
@@ -1042,9 +1000,7 @@ async function openThread(threadId){
     }
     chat.scrollTop = chat.scrollHeight;
   }
-
   markThreadSeen(ACTIVE_THREAD);
-  await updatePmNoti();
 }
 
 async function createThreadFromModal(){
@@ -1080,64 +1036,10 @@ async function sendPM(){
   await openThread(ACTIVE_THREAD);
 }
 
-async function updatePmNoti(cachedThreads){
-  let threads=cachedThreads;
-  if(!threads){
-    const q = sb.from("pm_threads").select("id,participant_id,created_at").order("created_at",{ascending:false});
-    if(!IS_ADMIN) q.eq("participant_id", ME.id);
-    const { data } = await q;
-    threads = data || [];
-  }
-
-  let count=0;
-  for(const th of threads){
-    const seenIso = localStorage.getItem(kThreadSeen(th.id));
-    const seenAt = seenIso ? new Date(seenIso).getTime() : 0;
-
-    const { data: lastMsg } = await sb
-      .from("pm_messages")
-      .select("created_at")
-      .eq("thread_id", th.id)
-      .order("created_at",{ascending:false})
-      .limit(1);
-
-    if(!lastMsg || !lastMsg.length) continue;
-    const lastAt = new Date(lastMsg[0].created_at).getTime();
-    if(lastAt > seenAt) count++;
-  }
-
-  const b=document.getElementById("pmNoti");
-  if(count>0){ b.textContent=String(count); b.style.display=""; }
-  else b.style.display="none";
-}
-
 /* =========================
-   REALTIME
-========================= */
-function setupRealtime(){
-  sb.channel("forum-live")
-    .on("postgres_changes",{event:"INSERT",schema:"public",table:"forum_posts"}, ()=> loadForum())
-    .on("postgres_changes",{event:"INSERT",schema:"public",table:"forum_replies"}, ()=>{
-      if(ACTIVE_POST?.id) openPost(ACTIVE_POST.id);
-      updateForumNoti();
-    })
-    .subscribe();
-
-  sb.channel("pm-live")
-    .on("postgres_changes",{event:"INSERT",schema:"public",table:"pm_messages"}, (payload)=>{
-      const tid = payload?.new?.thread_id;
-      if(!tid) return;
-      if(tid === ACTIVE_THREAD) openThread(ACTIVE_THREAD);
-      else updatePmNoti();
-    })
-    .subscribe();
-}
-
-/* =========================
-   EVENTS (IMPORTANTE: siempre se registran)
+   EVENTS
 ========================= */
 document.getElementById("btnBack").addEventListener("click", ()=>{
-  // robusto: si history no sirve, cae a index.html
   try{
     if(window.history.length > 1) history.back();
     else location.href = DASHBOARD_URL;
@@ -1149,7 +1051,6 @@ document.getElementById("btnGoHome").addEventListener("click", ()=> location.hre
 document.getElementById("btnGoIndex").addEventListener("click", ()=> location.href = DASHBOARD_URL);
 
 document.getElementById("btnLogout").addEventListener("click", async ()=>{
-  // aunque supabase falle, redirige igual
   try{ if(sb) await sb.auth.signOut(); }catch(e){}
   location.href = LOGIN_URL;
 });
@@ -1183,7 +1084,6 @@ document.getElementById("pmText").addEventListener("keydown", (e)=>{ if(e.key===
 
 document.getElementById("btnRetry").addEventListener("click", ()=> initAndBoot());
 
-/* Modal events */
 document.getElementById("mPostClose").addEventListener("click", ()=> closeModal("mPost"));
 document.getElementById("mPostCancel").addEventListener("click", ()=> closeModal("mPost"));
 document.getElementById("mPostSave").addEventListener("click", ()=> sb && createPostFromModal());
@@ -1204,20 +1104,12 @@ async function initAndBoot(){
 
   await loadProfile();
   await loadForum();
-  await updatePmNoti();
-  setupRealtime();
 }
 
 initAndBoot();
 </script>
 
-<!--
-NECESARIO EN SUPABASE:
-- forum_posts: columnas tags (text[]), is_pinned (bool), is_closed (bool)
-- RLS: admin update/delete en forum_posts, delete en forum_replies
-Si te falla “crear tema”, es por columnas/RLS.
--->
-
 </body>
 </html>
+
 
