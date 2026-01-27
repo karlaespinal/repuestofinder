@@ -565,6 +565,58 @@
       .carousel::before,.carousel::after{width:34px}
       .carouselTrack{padding:12px 44px}
     }
+
+    /* ===== Instagram icon button ===== */
+    .iconBtn{
+      width:42px;
+      height:42px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#fff;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      text-decoration:none;
+      box-shadow:0 8px 18px rgba(2,6,23,.06);
+    }
+    .iconBtn:hover{
+      background:rgba(37,99,235,.06);
+    }
+    .iconBtn svg{
+      width:20px;
+      height:20px;
+      display:block;
+    }
+
+    /* ===== Instagram Floating Button ===== */
+    .ig-float{
+      position:fixed;
+      bottom:22px;
+      right:22px;
+      width:54px;
+      height:54px;
+      border-radius:50%;
+      background:linear-gradient(45deg,#f58529,#dd2a7b,#8134af,#515bd4);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+      box-shadow:0 12px 30px rgba(0,0,0,.35);
+      cursor:pointer;
+      transition:transform .2s ease, box-shadow .2s ease;
+    }
+    .ig-float:hover{
+      transform:scale(1.08);
+      box-shadow:0 16px 40px rgba(0,0,0,.45);
+    }
+    .ig-float svg{
+      width:26px;
+      height:26px;
+      fill:#fff;
+    }
+
+
   </style>
 </head>
 
@@ -831,6 +883,19 @@
       </div>
     </div>
   </div>
+
+    <!-- Instagram Floating Button -->
+  <a href="https://www.instagram.com/repuestosfinder/"
+    target="_blank"
+    rel="noopener"
+    class="ig-float"
+    title="Síguenos en Instagram">
+
+    <svg viewBox="0 0 24 24">
+      <path d="M7.5 2h9A5.5 5.5 0 0 1 22 7.5v9A5.5 5.5 0 0 1 16.5 22h-9A5.5 5.5 0 0 1 2 16.5v-9A5.5 5.5 0 0 1 7.5 2Zm0 2A3.5 3.5 0 0 0 4 7.5v9A3.5 3.5 0 0 0 7.5 20h9a3.5 3.5 0 0 0 3.5-3.5v-9A3.5 3.5 0 0 0 16.5 4h-9ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm5.5-.9a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2Z"/>
+    </svg>
+
+  </a>
 
   <script type="module">
     import { supabase } from "./assets/supabaseClient.js";
