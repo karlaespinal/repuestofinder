@@ -977,17 +977,37 @@ async function deleteReply(replyId){
 ========================= */
 let ACTIVE_THREAD=null;
 let THREAD_POLL = null;
+let LAST_PM_COUNT = 0;
+let LAST_PM_LAST_AT = 0;
 
 function startThreadPolling(){
   stopThreadPolling();
   THREAD_POLL = setInterval(async ()=>{
     if(!sb) return;
-    // solo si estas en privados y hay hilo
+
     const secPrivate = document.getElementById("secPrivate");
     if(!secPrivate || secPrivate.style.display === "none") return;
     if(!ACTIVE_THREAD) return;
 
-    await openThread(ACTIVE_THREAD);
+    // 1) Solo consulto el último mensaje (ligero)
+    const { data: lastMsg, error } = await sb
+      .from("pm_messages")
+      .select("created_at")
+      .eq("thread_id", ACTIVE_THREAD)
+      .order("created_at",{ascending:false})
+      .limit(1)
+      .maybeSingle();
+
+    if(error) return;
+
+    const lastAt = lastMsg?.created_at ? new Date(lastMsg.created_at).getTime() : 0;
+
+    // 2) Si no cambió, NO hago nada (silencioso)
+    if(lastAt && lastAt === LAST_PM_LAST_AT) return;
+
+    // 3) Si cambió, entonces sí refresco el chat (1 sola vez)
+    LAST_PM_LAST_AT = lastAt;
+    await openThread(ACTIVE_THREAD, { silent:true }); // ojo: cambiamos openThread abajo
     await updateUnreadBadges();
   }, 2000);
 }
@@ -1018,10 +1038,13 @@ async function loadMyThreads(){
   await updateUnreadBadges();
 }
 
-async function openThread(threadId){
+async function openThread(threadId, opts={}){
   ACTIVE_THREAD = threadId || null;
   const chat=document.getElementById("chatBox");
-  chat.innerHTML="";
+
+  // si es actualización silenciosa, no borres el chat de una vez
+  const silent = !!opts.silent;
+  if(!silent) chat.innerHTML = "";
 
   if(!ACTIVE_THREAD){
     chat.innerHTML = `<div class="mut">Selecciona un hilo para ver la conversación.</div>`;
@@ -1035,6 +1058,15 @@ async function openThread(threadId){
     .order("created_at",{ascending:true});
 
   if(error){ toast("No pude abrir el hilo."); return; }
+
+  // Si es silent y la cantidad de mensajes es la misma, no repintes
+  if(silent){
+    const count = (data||[]).length;
+    if(count && count === LAST_PM_COUNT){
+      return; // nada cambió realmente
+    }
+    LAST_PM_COUNT = count;
+  }
 
   if(!data || !data.length){
     chat.innerHTML = `<div class="mut">Hilo vacío. Envía el primer mensaje 👇</div>`;
@@ -1072,6 +1104,9 @@ async function createThreadFromModal(){
   await loadMyThreads();
   document.getElementById("threadSelect").value = data.id;
   await openThread(data.id);
+  // Resetear contadores para el nuevo hilo
+  LAST_PM_COUNT = 0;
+  LAST_PM_LAST_AT = 0;
 }
 
 async function sendPM(){
@@ -1162,6 +1197,9 @@ document.getElementById("tabForum").addEventListener("click", ()=>{
 });
 document.getElementById("tabPrivate").addEventListener("click", async ()=>{
   setTab("private");
+  // Resetear contadores al cambiar a privados
+  LAST_PM_COUNT = 0;
+  LAST_PM_LAST_AT = 0;
   if(sb) await loadMyThreads();
   startThreadPolling();
 });
@@ -1182,7 +1220,13 @@ document.getElementById("btnCloseDetail").addEventListener("click", ()=>{
 });
 
 document.getElementById("btnReloadThreads").addEventListener("click", ()=> sb && loadMyThreads());
-document.getElementById("threadSelect").addEventListener("change", (e)=> sb && openThread(e.target.value));
+document.getElementById("threadSelect").addEventListener("change", (e)=> {
+  if(!sb) return;
+  // Resetear contadores cuando cambiamos de hilo
+  LAST_PM_COUNT = 0;
+  LAST_PM_LAST_AT = 0;
+  openThread(e.target.value);
+});
 document.getElementById("btnNewThread").addEventListener("click", ()=>{
   if(!sb){ toast("Falta Supabase. Revisa el recuadro rojo arriba."); return; }
   openModal("mThread");
