@@ -963,6 +963,28 @@ function uniqueJoin_(arr, sep=" / "){
 
   // ✅ init
   await initAuth_();
+
+  // ===== PRESENCIA ONLINE (APP) =====
+  const { data: ses } = await supabase.auth.getSession();
+  const user = ses?.session?.user;
+
+  if (user) {
+    const PRESENCE_CHANNEL = "rf-online-users";
+
+    const presenceChannel = supabase.channel(PRESENCE_CHANNEL, {
+      config: { presence: { key: user.id } }
+    });
+
+    await presenceChannel.subscribe(async (status) => {
+      if (status === "SUBSCRIBED") {
+        await presenceChannel.track({
+          at: new Date().toISOString(),
+          page: "app"
+        });
+      }
+    });
+  }
+
   await loadProfileMarket_();
 
   supabase.auth.onAuthStateChange((event, session) => {
@@ -974,6 +996,7 @@ function uniqueJoin_(arr, sep=" / "){
 </script>
 </body>
 </html>
+
 
 
 
