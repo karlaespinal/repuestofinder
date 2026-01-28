@@ -692,6 +692,22 @@
       });
     }
 
+    // ====== MINI PRESENCE BLOQUE PARA OTRAS PÁGINAS ======
+    // Este bloque simplificado puedes copiar en app.html, index.html, dashboard.html, etc.
+    // Solo agregalo después de obtener el user.id en esas páginas:
+    /*
+    const PRESENCE_CHANNEL = "rf-online-users";
+    const presenceChannel = supabase.channel(PRESENCE_CHANNEL, {
+      config: { presence: { key: user.id } }
+    });
+
+    await presenceChannel.subscribe(async (status) => {
+      if (status === "SUBSCRIBED") {
+        await presenceChannel.track({ at: new Date().toISOString() });
+      }
+    });
+    */
+
     // ====== ADMIN TABLES ======
     let adminProfiles = [];           // profiles list
     let profilesById = new Map();     // id -> profile
@@ -989,6 +1005,3 @@
   </script>
 </body>
 </html>
-
-
-
