@@ -515,8 +515,8 @@
     const PAYPAL_CURRENCY = "USD";
 
     // Nombres de tus Edge Functions en Supabase (ajusta si usan otros nombres)
-    const FN_PAYPAL_CREATE = "paypal-create-order-public";
-    const FN_PAYPAL_CAPTURE = "paypal-capture-order-public";
+    const FN_PAYPAL_CREATE = "paypal-create-order-renew";
+    const FN_PAYPAL_CAPTURE = "paypal-capture-order-renew";
 
     function setMsg(el, text, isErr){
       if(!el) return;
@@ -1131,37 +1131,41 @@
           });
 
           if(error) throw error;
-          if(!data?.id) throw new Error("Edge Function no devolvió order id");
-          return data.id; // PayPal order id
-        },
+          const oid = data?.orderID || data?.id;
+          if(!oid) throw new Error("No devolvio orderID: " + JSON.stringify(data));
+          return oid;
+
+      },
 
         onApprove: async (data) => {
-          try{
+          try {
             setMsg($("payMsg"), "Procesando pago…", false);
 
-            // 2) capturar con Edge Function
             const { data: cap, error: e2 } = await supabase.functions.invoke(FN_PAYPAL_CAPTURE, {
-              body: { order_id: data.orderID, plan_id: planId }
+              body: {
+                order_id: data.orderID,   // ✅ ESTE ES EL CAMBIO CLAVE
+                plan_id: Number(planId)   // opcional pero recomendado
+              }
             });
 
-            if(e2) throw e2;
+            if (e2) {
+              const msg = (e2?.context?.response ? await e2.context.response.text() : e2.message);
+              throw new Error(msg || e2.message || "Error capturando pago");
+            }
 
-            // 3) refrescar UI de membresía
-            setMsg($("payMsg"), "✅ ¡Gracias por volver! Tu plan fue actualizado. Actualizando…", false);
-            await init(); // vuelve a cargar perfil + suscripción
-            setTimeout(()=> closePayPlans(), 900);
+            if (!cap?.ok) {
+              throw new Error("Capture no ok: " + JSON.stringify(cap));
+            }
 
-          }catch(err){
+            setMsg($("payMsg"), "✅ ¡Gracias por volver! Tu plan fue actualizado.", false);
+            await init();
+            setTimeout(() => closePayPlans(), 900);
+
+          } catch (err) {
             setMsg($("payMsg"), "❌ No se pudo completar el pago: " + (err?.message || err), true);
           }
-        },
+      }
 
-        onError: (err) => {
-          setMsg($("payMsg"), "❌ Error PayPal: " + (err?.message || err), true);
-        }
-
-      }).render("#" + btnHost.id);
-    };
 
     // ====== INIT ======
     async function init(){
