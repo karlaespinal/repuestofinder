@@ -465,6 +465,11 @@
   <script type="module">
     import { supabase } from "./assets/supabaseClient.js";
 
+        // ===== PRESENCE ONLINE =====
+    const PRESENCE_CHANNEL = "rf-online-users";
+    let presenceChannel = null;
+    // ===========================
+
     const $ = (id)=>document.getElementById(id);
 
     // ====== CONFIG ======
@@ -937,6 +942,18 @@
         $("whoSub").textContent = "Inicia sesión para ver tu perfil.";
         return;
       }
+
+      try {
+        presenceChannel = supabase.channel(PRESENCE_CHANNEL, {
+          config: { presence: { key: user.id } }
+        });
+
+        await presenceChannel.subscribe(async (status) => {
+          if (status === "SUBSCRIBED") {
+            await presenceChannel.track({ at: new Date().toISOString() });
+          }
+        });
+      } catch (e) {}
 
       myUserId = user.id;
 
