@@ -349,6 +349,20 @@
       text-decoration:none;
     }
 
+        .eye{
+      position:absolute;
+      right:14px;
+      top:40px;
+      cursor:pointer;
+      font-size:18px;
+      user-select:none;
+      opacity:.65;
+    }
+    .eye:hover{
+      opacity:1;
+    }
+
+
   </style>
 
   <!-- PayPal JS SDK -->
@@ -613,15 +627,19 @@
           </div>
 
           <div class="row2" style="margin-top:10px;">
-            <div class="field">
+            <div class="field" style="position:relative;">
               <label>Clave</label>
               <input id="pass" type="password" autocomplete="new-password" placeholder="••••••••"/>
+              <span class="eye" onclick="togglePass('pass', this)">👁️</span>
             </div>
-            <div class="field">
+
+            <div class="field" style="position:relative;">
               <label>Validar la clave</label>
               <input id="pass2" type="password" autocomplete="new-password" placeholder="••••••••"/>
+              <span class="eye" onclick="togglePass('pass2', this)">👁️</span>
             </div>
           </div>
+
 
           <div class="termsBox">
             <label class="termsElegant">
@@ -950,7 +968,6 @@
     showMsg("", "");
     const first_name = (el("first_name").value || "").trim();
     const last_name  = (el("last_name").value || "").trim();
-    const company_name = (el("company_name").value || "").trim();
     const phone = (el("phone").value || "").trim();
     const email = (el("email").value || "").trim();
     const username = (el("username").value || "").trim();
@@ -1071,6 +1088,19 @@
       }
     }).render("#paypal-button-container");
   }
+      window.togglePass = function(id, el){
+      const input = document.getElementById(id);
+      if(!input) return;
+
+      if(input.type === "password"){
+        input.type = "text";
+        el.textContent = "🙈";
+      }else{
+        input.type = "password";
+        el.textContent = "👁️";
+      }
+    };
+
 
   // init
   await loadPlans();
