@@ -1842,6 +1842,29 @@
       // header segun sesion
       await refreshHeaderUser();
 
+      // ===== PRESENCIA ONLINE (solo si hay sesion) =====
+      const { data: ses } = await supabase.auth.getSession();
+      const user = ses?.session?.user;
+
+      if (user) {
+        const PRESENCE_CHANNEL = "rf-online-users";
+
+        const presenceChannel = supabase.channel(PRESENCE_CHANNEL, {
+          config: {
+            presence: { key: user.id }
+          }
+        });
+
+      await presenceChannel.subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await presenceChannel.track({
+            at: new Date().toISOString()
+          });
+        }
+      });
+    }
+
+
       // recovery flow
       await handleRecoveryFlow();
 
@@ -1861,6 +1884,7 @@
   </script>
 </body>
 </html>
+
 
 
 
