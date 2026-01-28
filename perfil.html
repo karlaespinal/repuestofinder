@@ -465,11 +465,6 @@
   <script type="module">
     import { supabase } from "./assets/supabaseClient.js";
 
-        // ===== PRESENCE ONLINE =====
-    const PRESENCE_CHANNEL = "rf-online-users";
-    let presenceChannel = null;
-    // ===========================
-
     const $ = (id)=>document.getElementById(id);
 
     // ====== CONFIG ======
@@ -943,18 +938,6 @@
         return;
       }
 
-      try {
-        presenceChannel = supabase.channel(PRESENCE_CHANNEL, {
-          config: { presence: { key: user.id } }
-        });
-
-        await presenceChannel.subscribe(async (status) => {
-          if (status === "SUBSCRIBED") {
-            await presenceChannel.track({ at: new Date().toISOString() });
-          }
-        });
-      } catch (e) {}
-
       myUserId = user.id;
 
       setPill($("whoPill"), "Sesión activa", "ok");
@@ -1006,5 +989,6 @@
   </script>
 </body>
 </html>
+
 
 
