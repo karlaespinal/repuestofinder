@@ -571,6 +571,37 @@
     return out;
   }
 
+  function normCell_(v){
+  return String(v ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, " "); // normaliza espacios internos
+}
+
+function normCodeCell_(v){
+  // para codigos tipo ME229272, AY500MT002, etc.
+  return String(v ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g,"")
+    .replace(/[^A-Z0-9]/g,"");
+}
+
+function uniqueJoin_(arr, sep=" / "){
+  const out = [];
+  const seen = new Set();
+  for(const x of (arr||[])){
+    const v = String(x ?? "").trim();
+    if(!v) continue;
+    const k = v.toUpperCase();
+    if(seen.has(k)) continue;
+    seen.add(k);
+    out.push(v);
+  }
+  return out.join(sep);
+}
+
+
   async function resolveOriginals_(codeNorm){
     let all = [];
     for(const t of CAMBIOS_TABLES){
@@ -589,35 +620,63 @@
   }
 
   async function fetchCambiosByOriginals_(originalNorms){
-    let all = [];
-    for(const t of CAMBIOS_TABLES){
-      const { data, error } = await supabase
-        .from(t)
-        .select("cambio, owner, posicion")
-        .in("original_norm", originalNorms)
-        .limit(5000);
-      if(error) throw error;
-      all = all.concat(data || []);
-    }
-
-    // dedupe por (cambio + owner)
-    all = dedupeByKey_(all, r => `${String(r?.cambio||"").toUpperCase()}|${String(r?.owner||"").toUpperCase()}`);
-
-    // orden simple
-    all.sort((a,b)=>{
-      const pa = String(a?.posicion||"");
-      const pb = String(b?.posicion||"");
-      if(pa && pb && pa !== pb) return pa.localeCompare(pb);
-      return String(a?.cambio||"").localeCompare(String(b?.cambio||""));
-    });
-
-    const rows = all.map(r => ([
-      r.cambio || "",
-      r.owner || ""
-    ]));
-
-    return { headers: ["cambio", "owner"], rows };
+  let all = [];
+  for(const t of CAMBIOS_TABLES){
+    const { data, error } = await supabase
+      .from(t)
+      .select("cambio, owner, posicion")
+      .in("original_norm", originalNorms)
+      .limit(5000);
+    if(error) throw error;
+    all = all.concat(data || []);
   }
+
+  // ✅ DEDUPE FUERTE: 1 fila por "cambio" (sin importar owner)
+  // ✅ Si hay varios owner, los unimos en un solo campo
+  const map = new Map(); // key=cambioNorm -> { cambio, owners:Set, posicion }
+  for(const r of (all || [])){
+    const cambioRaw = (r?.cambio ?? "");
+    const key = normCodeCell_(cambioRaw);
+    if(!key) continue;
+
+    if(!map.has(key)){
+      map.set(key, {
+        cambio: String(cambioRaw || "").trim(),
+        owners: new Set(),
+        posicion: String(r?.posicion || "").trim()
+      });
+    }
+    const obj = map.get(key);
+    const owner = String(r?.owner || "").trim();
+    if(owner) obj.owners.add(owner);
+
+    // si una posicion viene vacia y otra no, guarda la mejor
+    const pos = String(r?.posicion || "").trim();
+    if(!obj.posicion && pos) obj.posicion = pos;
+  }
+
+  let merged = Array.from(map.values()).map(x => ({
+    cambio: x.cambio,
+    owner: uniqueJoin_(Array.from(x.owners), " / "),
+    posicion: x.posicion
+  }));
+
+  // orden simple
+  merged.sort((a,b)=>{
+    const pa = String(a?.posicion||"");
+    const pb = String(b?.posicion||"");
+    if(pa && pb && pa !== pb) return pa.localeCompare(pb);
+    return String(a?.cambio||"").localeCompare(String(b?.cambio||""));
+  });
+
+  const rows = merged.map(r => ([
+    r.cambio || "",
+    r.owner || ""
+  ]));
+
+  return { headers: ["cambio", "owner"], rows };
+}
+
 
   async function fetchVehiclesByOriginals_(originalNorms){
   // Solo traemos columnas necesarias (y descripcion)
@@ -641,10 +700,19 @@
   const canonDesc = (all.find(r => String(r?.descripcion ?? "").trim() !== "")?.descripcion ?? "").toString().trim();
 
   // ✅ 2) Dedupe para no repetir la misma fila si existe en v1 y v2
-  all = dedupeByKey_(all, r => [
-    r.vehiculo, r.anio_inicio, r.anio_final, r.modelo, r.motor,
-    r.serie, r.cilindro, r.posicion, r.version
-  ].map(x => String(x ?? "")).join("|").toUpperCase());
+      all = dedupeByKey_(all, r => [
+      r.vehiculo,
+      r.anio_inicio,
+      r.anio_final,
+      r.modelo,
+      r.motor,
+      r.serie,
+      r.cilindro,
+      r.posicion,
+      r.version,
+      r.descripcion
+    ].map(normCell_).join("|"));
+
 
   // ✅ 3) Orden base: vehiculo, modelo, anio_inicio
   all.sort((a,b)=>{
@@ -906,7 +974,6 @@
 </script>
 </body>
 </html>
-
 
 
 
