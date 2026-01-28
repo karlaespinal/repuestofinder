@@ -38,14 +38,12 @@
       overflow-x:hidden;
     }
 
-    /* ✅ Antes: width:min(1180px,100%) -> encajonaba el radar */
     .page{
       width:100%;
       max-width: 100vw;
       margin:0 auto;
       padding:18px 22px 28px;
     }
-    /* En monitores grandes, lo dejamos respirar sin verse "vacío" */
     @media(min-width:1400px){
       .page{ padding-left:34px; padding-right:34px; }
     }
@@ -133,7 +131,6 @@
     .kpi .v{font-size:18px;font-weight:900;margin-top:6px}
     .kpi .s{font-size:12px;color:var(--mut);margin-top:6px;line-height:1.35}
 
-    /* ✅ NUEVO: Layout tipo BI con sidebar izquierda */
     .gridMain{
       display:grid;
       grid-template-columns: 340px 1fr 1fr;
@@ -180,15 +177,9 @@
       overflow:auto;
       background:#fff;
     }
-
-    /* ✅ para que no se vean "gigantes" */
-    .tableWrap.compact{
-      max-height: 340px;
-    }
+    .tableWrap.compact{ max-height: 340px; }
     @media(min-width:1200px){
-      .tableWrap.tall{
-        max-height: 540px;
-      }
+      .tableWrap.tall{ max-height: 540px; }
     }
 
     table{width:100%;border-collapse:collapse}
@@ -239,17 +230,59 @@
     .msg.err{ background:rgba(239,68,68,.08); border-color:rgba(239,68,68,.18); }
 
     .mut{ color:#64748b; font-weight:800; }
-    .link{ color:var(--pri); font-weight:900; text-decoration:none; }
-    .link:hover{ text-decoration:underline; }
-
     .footer{ margin-top:14px; text-align:center; color:#94a3b8; font-size:12px; font-weight:800; }
 
-    /* ✅ eBay: ocultar columnas pesadas (Top marcas + Muestra) */
     .hideEbayCols th:nth-child(3),
     .hideEbayCols th:nth-child(4),
     .hideEbayCols td:nth-child(3),
     .hideEbayCols td:nth-child(4){
       display:none;
+    }
+
+    /* ✅ NUEVO: botón clickable para modelo */
+    .chipBtn{
+      border:0;
+      background:transparent;
+      padding:0;
+      cursor:pointer;
+      font:inherit;
+    }
+    .chipBtn:active{ transform: translateY(1px); }
+
+    /* ✅ NUEVO: Modal de detalle de códigos por modelo */
+    .modalOverlay{
+      position:fixed; inset:0;
+      background:rgba(2,6,23,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:999;
+      padding:18px;
+    }
+    .modal{
+      width:min(900px, 100%);
+      background:#fff;
+      border-radius:18px;
+      border:1px solid rgba(230,232,240,.95);
+      box-shadow:0 30px 90px rgba(2,6,23,.35);
+      overflow:hidden;
+    }
+    .modalHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:12px 14px;
+      background:rgba(246,247,251,.75);
+      border-bottom:1px solid rgba(230,232,240,.95);
+    }
+    .modalHead b{ font-size:14px; }
+    .modalBody{ padding:12px 14px; }
+    .modalBody .mut{ font-size:12px; }
+    .modalClose{
+      border:0; cursor:pointer; font-weight:900;
+      border-radius:12px; padding:8px 10px;
+      background:#fff; border:1px solid rgba(230,232,240,.95);
     }
   </style>
 </head>
@@ -341,31 +374,27 @@
       <div class="msg" id="msg"></div>
     </div>
 
-    <!-- ✅ NUEVO GRID PRINCIPAL con sidebar izquierda -->
     <div class="gridMain">
-
-      <!-- ✅ Top Marcas a la izquierda -->
       <div class="card areaBrands">
-      <h2>Top Modelos (interno)</h2>
-      <div class="sub">Top 20 modelos/vehículos más consultados (por rango)</div>
-      <div class="msg" id="bMsg" style="display:block">Calculando modelos...</div>
+        <h2>Top Modelos (interno)</h2>
+        <div class="sub">Top 10 modelos/vehículos más consultados (por rango) — click para ver códigos</div>
+        <div class="msg" id="bMsg" style="display:block">Calculando modelos...</div>
 
-      <div class="tableWrap tall">
-        <table id="tBrands">
-          <thead>
-            <tr><th>Modelo</th><th>Consultas</th></tr>
-          </thead>
-          <tbody>
-            <tr><td class="mut">—</td><td class="mut">—</td></tr>
-          </tbody>
-        </table>
+        <div class="tableWrap tall">
+          <table id="tBrands">
+            <thead>
+              <tr><th>Modelo</th><th>Consultas</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="mut">—</td><td class="mut">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mut" style="font-size:12px;margin-top:10px;line-height:1.4">
+          * Este ranking se calcula resolviendo cada búsqueda a su <b>modelo</b> desde tu catálogo en Supabase.
+        </div>
       </div>
-
-      <div class="mut" style="font-size:12px;margin-top:10px;line-height:1.4">
-        * Este ranking se calcula resolviendo cada búsqueda a su <b>modelo</b> desde tu catálogo en Supabase.
-      </div>
-    </div>
-
 
       <div class="card areaTop">
         <h2>Top Búsquedas (interno)</h2>
@@ -420,10 +449,42 @@
           </table>
         </div>
       </div>
-
     </div>
 
     <div class="footer">© <span id="y"></span> RepuestoFinder</div>
+  </div>
+
+  <!-- ✅ MODAL: Detalle de códigos por modelo -->
+  <div id="modelModalOverlay" class="modalOverlay" onclick="closeModelModal(event)">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modelModalTitle" onclick="event.stopPropagation()">
+      <div class="modalHead">
+        <div>
+          <b id="modelModalTitle">Detalle</b>
+          <div class="mut" id="modelModalSub">—</div>
+        </div>
+        <button class="modalClose" onclick="closeModelModal()">Cerrar</button>
+      </div>
+      <div class="modalBody">
+        <div class="tableWrap" style="max-height:420px">
+          <table id="tModelCodes">
+            <thead>
+              <tr>
+                <th>Código buscado</th>
+                <th>Veces</th>
+                <th>Original (resuelto)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="mut">—</td><td class="mut">—</td><td class="mut">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="mut" style="margin-top:10px;line-height:1.35">
+          * “Original (resuelto)” es el <b>original_norm</b> encontrado via <b>cambios / datos_vehiculares</b>.  
+          Si sale “—”, ese código no pudo resolverse en el catálogo.
+        </div>
+      </div>
+    </div>
   </div>
 
   <script type="module">
@@ -683,22 +744,18 @@
     }
 
     // ==============================
-    // TOP 20 MODELOS (vehiculo) - usando 4 tablas
+    // TOP MODELOS (vehiculo) - usando 4 tablas
     // cambios, cambios_v2, datos_vehiculares, datos_vehiculares_v2
     // ==============================
-
     const TABLE_DV_1 = "datos_vehiculares";
     const TABLE_DV_2 = "datos_vehiculares_v2";
     const TABLE_C_1  = "cambios";
     const TABLE_C_2  = "cambios_v2";
 
-    // columnas reales (según tu screenshot)
     const DV_COL_ORIG_NORM = "original_norm";
     const DV_COL_ORIG      = "original";
     const DV_COL_VEH       = "vehiculo";
 
-    // Para cambios, asumimos estas columnas típicas.
-    // Si alguna no existe, la query igual puede fallar. Pero en tu proyecto anterior ya usabas cambios/original/cambio.
     const C_COL_ORIG_NORM  = "original_norm";
     const C_COL_CAMB_NORM  = "cambio_norm";
     const C_COL_ORIG       = "original";
@@ -707,34 +764,25 @@
     function isCodeLike(s){
       const x = String(s||"").trim();
       if(!x) return false;
-      if(/^\d{3,}$/.test(x)) return true;                 // números
-      if(/^[A-Z0-9\-]{5,}$/i.test(x)) return true;        // A2730904040 / BL1060 / etc
+      if(/^\d{3,}$/.test(x)) return true;
+      if(/^[A-Z0-9\-]{5,}$/i.test(x)) return true;
       return false;
     }
 
-    // trocea arrays para .in() (evita límites)
     function chunk(arr, size=250){
       const out = [];
       for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size));
       return out;
     }
 
-    // Normaliza a mayúscula y quita espacios
     function normKey(s){
       return String(s||"").trim().toUpperCase();
     }
 
-    /**
-     * Paso A: dado un listado de queries (códigos), intenta mapear a "original_norm"
-     * - Si el query ya existe como original_norm en datos_vehiculares => ok
-     * - Si el query es un cambio => busca en cambios/cambios_v2 y trae su original_norm
-     * Retorna: Map(query -> original_norm)
-     */
     async function resolveToOriginalNorm(queries){
       const qList = Array.from(new Set(queries.map(normKey).filter(Boolean)));
       const out = new Map();
 
-      // 1) Si el query ya es un original_norm en datos_vehiculares(_v2), lo damos por bueno
       async function probeDV(table){
         for(const part of chunk(qList, 250)){
           const { data, error } = await supabase
@@ -746,12 +794,10 @@
             for(const r of data){
               const on = normKey(r?.[DV_COL_ORIG_NORM]);
               const o  = normKey(r?.[DV_COL_ORIG]);
-              // si el query matchea por original_norm u original, lo resolvemos a original_norm (prioridad)
               if(on){
                 if(on && qList.includes(on)) out.set(on, on);
                 if(o && qList.includes(o) && !out.has(o)) out.set(o, on);
               }else if(o && qList.includes(o)){
-                // si no hay original_norm, usamos original como fallback
                 out.set(o, o);
               }
             }
@@ -759,16 +805,14 @@
         }
       }
 
-      await probeDV(TABLE_DV_2); // prioridad v2 primero
+      await probeDV(TABLE_DV_2);
       await probeDV(TABLE_DV_1);
 
       const missing = qList.filter(x => !out.has(x));
       if(!missing.length) return out;
 
-      // 2) Buscar en cambios/cambios_v2: query puede ser cambio_norm o cambio o incluso original*
       async function probeCambios(table){
         for(const part of chunk(missing, 200)){
-          // usamos .or para intentar todas las columnas típicas
           const orExpr = [
             `${C_COL_CAMB_NORM}.in.(${part.join(",")})`,
             `${C_COL_CAMB}.in.(${part.join(",")})`,
@@ -791,7 +835,6 @@
               const orig     = normKey(r?.[C_COL_ORIG]);
               const oNorm    = normKey(r?.[C_COL_ORIG_NORM]);
 
-              // si el query coincide con cualquiera, lo mapeamos a origNorm
               if(cambNorm && !out.has(cambNorm)) out.set(cambNorm, origNorm);
               if(camb && !out.has(camb)) out.set(camb, origNorm);
               if(oNorm && !out.has(oNorm)) out.set(oNorm, origNorm);
@@ -801,16 +844,12 @@
         }
       }
 
-      await probeCambios(TABLE_C_2); // prioridad v2
+      await probeCambios(TABLE_C_2);
       await probeCambios(TABLE_C_1);
 
       return out;
     }
 
-    /**
-     * Paso B: dado un listado de original_norm, buscar vehiculo en datos_vehiculares(_v2)
-     * Retorna: Map(original_norm -> vehiculo)
-     */
     async function resolveVehiculoForOriginalNorm(originalNorms){
       const list = Array.from(new Set(originalNorms.map(normKey).filter(Boolean)));
       const out = new Map();
@@ -832,18 +871,26 @@
         }
       }
 
-      await probe(TABLE_DV_2); // prioridad v2
+      await probe(TABLE_DV_2);
       await probe(TABLE_DV_1);
 
       return out;
     }
 
+    /**
+     * ✅ TOP 10 modelos + detalle (click)
+     * Guarda un diccionario global:
+     * window.__rfModelDetails = {
+     *   "SUZUKI": { total: 8, codes: { "A123...": { n: 4, original_norm: "..." }, ... } }
+     * }
+     */
     async function loadModelTop(){
-      // UI
       const tbody = document.getElementById("tBrands")?.querySelector("tbody");
       if(tbody) tbody.innerHTML = `<tr><td class="mut">—</td><td class="mut">—</td></tr>`;
       const bMsg = document.getElementById("bMsg");
       if(bMsg){ bMsg.textContent = "Calculando modelos..."; bMsg.style.display="block"; }
+
+      window.__rfModelDetails = {}; // reset
 
       const from = dtFromRange(document.getElementById("range").value);
       const cat = (document.getElementById("category").value || "").trim();
@@ -869,34 +916,41 @@
         return;
       }
 
-      // 1) query -> original_norm
       if(bMsg) bMsg.textContent = "Resolviendo códigos (cambios + datos_vehiculares)...";
       const qToOrigNorm = await resolveToOriginalNorm(queries);
 
-      // 2) original_norm -> vehiculo
       const origNorms = Array.from(new Set(Array.from(qToOrigNorm.values())));
       if(bMsg) bMsg.textContent = "Buscando vehiculo por original_norm...";
       const origNormToVeh = await resolveVehiculoForOriginalNorm(origNorms);
 
-      // 3) Contar vehiculo
-      const count = new Map();
+      const count = new Map();                 // veh -> total
+      const detail = new Map();                // veh -> Map(code -> {n, original_norm})
+
       for(const ev of events){
         const qx = normKey(ev.query_raw);
         if(!isCodeLike(qx)) continue;
 
-        const on = qToOrigNorm.get(qx);
+        const on = qToOrigNorm.get(qx);        // original_norm resuelto (o undefined)
         if(!on) continue;
 
         const veh = origNormToVeh.get(on);
         if(!veh) continue;
 
         count.set(veh, (count.get(veh)||0) + 1);
+
+        if(!detail.has(veh)) detail.set(veh, new Map());
+        const m = detail.get(veh);
+
+        const cur = m.get(qx) || { n: 0, original_norm: on || "" };
+        cur.n += 1;
+        cur.original_norm = on || cur.original_norm;
+        m.set(qx, cur);
       }
 
       const rows = Array.from(count.entries())
         .map(([veh, n]) => ({ veh, n }))
         .sort((a,b)=> b.n - a.n)
-        .slice(0,20);
+        .slice(0,10); // ✅ TOP 10
 
       if(!rows.length){
         if(tbody) tbody.innerHTML = `<tr><td colspan="2" class="mut">No se pudo mapear a vehiculo (revisa si tus búsquedas están entrando como códigos reales).</td></tr>`;
@@ -904,10 +958,27 @@
         return;
       }
 
+      // Guardar detalles en window.__rfModelDetails
+      const outObj = {};
+      for(const r of rows){
+        const m = detail.get(r.veh) || new Map();
+        const codesArr = Array.from(m.entries())
+          .map(([code, info]) => ({ code, n: info.n, original_norm: info.original_norm || "" }))
+          .sort((a,b)=> b.n - a.n);
+
+        outObj[r.veh] = { total: r.n, codes: codesArr };
+      }
+      window.__rfModelDetails = outObj;
+
       if(tbody){
         tbody.innerHTML = rows.map(r=>`
           <tr>
-            <td><span class="badge">${esc(r.veh)}</span></td>
+            <td>
+              <button class="chipBtn" onclick="openModelCodes('${esc(r.veh)}')"
+                title="Ver códigos buscados para ${esc(r.veh)}">
+                <span class="badge">${esc(r.veh)}</span>
+              </button>
+            </td>
             <td><b>${r.n}</b></td>
           </tr>
         `).join("");
@@ -915,6 +986,50 @@
 
       if(bMsg) bMsg.style.display="none";
     }
+
+    // ✅ Modal handlers
+    window.openModelCodes = function(veh){
+      const v = String(veh||"").trim();
+      const data = window.__rfModelDetails?.[v];
+
+      const overlay = document.getElementById("modelModalOverlay");
+      const title = document.getElementById("modelModalTitle");
+      const sub = document.getElementById("modelModalSub");
+      const tbody = document.getElementById("tModelCodes")?.querySelector("tbody");
+
+      if(title) title.textContent = `Códigos buscados: ${v}`;
+      if(sub) sub.textContent = data ? `Total consultas: ${data.total}` : "Sin detalle disponible";
+      if(tbody){
+        if(!data || !Array.isArray(data.codes) || !data.codes.length){
+          tbody.innerHTML = `<tr><td colspan="3" class="mut">No hay códigos para mostrar.</td></tr>`;
+        }else{
+          tbody.innerHTML = data.codes.slice(0,200).map(x=>`
+            <tr>
+              <td><span class="badge">${esc(x.code)}</span></td>
+              <td><b>${x.n}</b></td>
+              <td class="mut">${x.original_norm ? esc(x.original_norm) : "—"}</td>
+            </tr>
+          `).join("");
+        }
+      }
+
+      if(overlay) overlay.style.display = "flex";
+    };
+
+    window.closeModelModal = function(ev){
+      // si se llama por click en overlay, cerrar
+      const overlay = document.getElementById("modelModalOverlay");
+      if(!overlay) return;
+      overlay.style.display = "none";
+    };
+
+    // Cerrar con ESC
+    window.addEventListener("keydown", (e)=>{
+      if(e.key === "Escape"){
+        const overlay = document.getElementById("modelModalOverlay");
+        if(overlay && overlay.style.display === "flex") overlay.style.display = "none";
+      }
+    });
 
     async function loadEbay(topRows){
       const userQ = ($("q").value || "").trim();
@@ -962,7 +1077,6 @@
           ? `<span class="badge bOk">total ${total}</span>`
           : `<span class="badge bWarn">total 0</span>`;
 
-        /* ✅ Compacto: sin top_brands ni sample */
         tbody.innerHTML = `
           <tr>
             <td>
@@ -1073,9 +1187,9 @@
     window.refreshAll = async function(){
       try{
         setMsg("Cargando radar...", false);
-        setBrandMsg("Calculando marcas...", false);
+        setBrandMsg("Calculando modelos...", false);
         await loadKpis();
-        await loadModelTop();          // ✅ nuevo
+        await loadModelTop();          // ✅ ahora top10 + click detalle
         const topRows = await loadTop();
         await loadOpp();
         await loadEbay(topRows);
@@ -1110,5 +1224,6 @@
   </script>
 </body>
 </html>
+
 
 
