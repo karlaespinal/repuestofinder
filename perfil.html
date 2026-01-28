@@ -73,8 +73,11 @@
     .btn:active{ transform: translateY(1px); }
     .btnPrimary{background:var(--pri);color:#fff}
     .btnPrimary:hover{background:var(--pri2)}
+    .btnDanger{background:#ef4444;color:#fff}
+    .btnDanger:hover{filter:brightness(.95)}
     .btnGhost{background:#fff;border:1px solid var(--line);color:#0f172a}
     .btnSmall{ padding:8px 10px; border-radius:10px; font-size:12px; }
+    .btnTiny{ padding:7px 9px; border-radius:10px; font-size:12px; }
 
     .grid{
       display:grid;
@@ -128,6 +131,21 @@
     .pill.warn{ background:rgba(245,158,11,.12); border-color:rgba(245,158,11,.22); color:#a16207; }
     .pill.bad{ background:rgba(239,68,68,.10); border-color:rgba(239,68,68,.18); color:#991b1b; }
 
+    .dot{
+      width:10px;height:10px;border-radius:999px;
+      display:inline-block;
+      background:#cbd5e1;
+      box-shadow:0 0 0 3px rgba(203,213,225,.35);
+    }
+    .dot.on{
+      background: var(--ok);
+      box-shadow:0 0 0 3px rgba(22,163,74,.18);
+    }
+    .dot.off{
+      background: #cbd5e1;
+      box-shadow:0 0 0 3px rgba(203,213,225,.35);
+    }
+
     .msg{
       margin-top:10px;
       font-size:12px;
@@ -169,7 +187,7 @@
       border-radius:14px;
       overflow:hidden;
     }
-    th,td{padding:10px;border-bottom:1px solid rgba(230,232,240,.75);text-align:left}
+    th,td{padding:10px;border-bottom:1px solid rgba(230,232,240,.75);text-align:left;vertical-align:middle}
     th{
       background:rgba(246,247,251,.8);
       font-size:11px;
@@ -187,6 +205,67 @@
       gap:10px;
       flex-wrap:wrap;
       margin-bottom:10px;
+    }
+
+    /* Modal */
+    .modalBack{
+      position:fixed; inset:0;
+      background:rgba(2,6,23,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:999;
+      padding:16px;
+    }
+    .modal{
+      width:min(720px, 100%);
+      background:rgba(255,255,255,.98);
+      border:1px solid rgba(230,232,240,.95);
+      border-radius:22px;
+      box-shadow:0 30px 80px rgba(2,6,23,.25);
+      overflow:hidden;
+    }
+    .modalHead{
+      padding:14px 16px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      border-bottom:1px solid rgba(230,232,240,.9);
+      background:rgba(246,247,251,.65);
+    }
+    .modalHead h3{margin:0;font-size:15px;font-weight:900}
+    .modalBody{ padding:14px 16px; }
+    .modalFoot{
+      padding:14px 16px;
+      border-top:1px solid rgba(230,232,240,.9);
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+      flex-wrap:wrap;
+      background:rgba(246,247,251,.65);
+    }
+    .select{
+      width:100%;
+      padding:11px 12px;
+      border-radius:12px;
+      border:1px solid rgba(230,232,240,.95);
+      background:#fff;
+      font-weight:900;
+      color:#0f172a;
+      outline:none;
+    }
+    .two{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    @media(max-width:720px){ .two{grid-template-columns:1fr} }
+    .hint{
+      font-size:12px;
+      color:#334155;
+      font-weight:800;
+      margin-top:8px;
     }
   </style>
 </head>
@@ -324,16 +403,18 @@
         <table>
           <thead>
             <tr>
-              <th>User ID</th>
+              <th>Nombre</th>
+              <th>En línea</th>
               <th>Plan</th>
               <th>Status</th>
               <th>Inicio</th>
               <th>Fin</th>
               <th>Pago</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="adminSubsBody">
-            <tr><td colspan="6" class="muted">Cargando…</td></tr>
+            <tr><td colspan="8" class="muted">Cargando…</td></tr>
           </tbody>
         </table>
       </div>
@@ -343,10 +424,65 @@
 
   </div>
 
+  <!-- Modal renovar membresía -->
+  <div class="modalBack" id="renewBack">
+    <div class="modal">
+      <div class="modalHead">
+        <div>
+          <h3>Renovar membresía</h3>
+          <div class="muted" id="renewSubtitle">—</div>
+        </div>
+        <button class="btn btnGhost btnTiny" onclick="closeRenew()">✕</button>
+      </div>
+
+      <div class="modalBody">
+        <div class="two">
+          <div class="field">
+            <label>Plan</label>
+            <select class="select" id="renewPlanSelect"></select>
+          </div>
+          <div class="field">
+            <label>Días</label>
+            <input class="inp" id="renewDays" type="number" min="1" value="30">
+          </div>
+        </div>
+
+        <div class="hint">
+          Esto intenta renovar creando/actualizando un registro en <b>subscriptions</b> y ajustando <b>profiles.active_plan_id</b>.
+          Si tu RLS no permite que el admin edite suscripciones de otros, te saldrá error (y ahí lo hacemos por Edge Function).
+        </div>
+
+        <div class="msg" id="renewMsg"></div>
+      </div>
+
+      <div class="modalFoot">
+        <button class="btn btnGhost" onclick="closeRenew()">Cancelar</button>
+        <button class="btn btnPrimary" onclick="confirmRenew()">Confirmar renovación</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import { supabase } from "./assets/supabaseClient.js";
 
+    const PRESENCE_CHANNEL = "rf-online-users";
+    const presenceChannel = supabase.channel(PRESENCE_CHANNEL, {
+      config: { presence: { key: user.id } }
+    });
+
+    await presenceChannel.subscribe(async (status) => {
+      if (status === "SUBSCRIBED") {
+        await presenceChannel.track({ at: new Date().toISOString() });
+      }
+    });
+
+
     const $ = (id)=>document.getElementById(id);
+
+    // ====== CONFIG ======
+    const PRESENCE_CHANNEL = "rf-online-users"; // canal realtime presence
+    const PLANS_TABLE = "plans";                // tabla de planes en supabase
+    // ====================
 
     function setMsg(el, text, isErr){
       if(!el) return;
@@ -378,17 +514,26 @@
       if(kind) el.classList.add(kind);
     }
 
+    function escapeHtml(s){
+      return String(s || "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
+    }
+
+    function fullName(p){
+      const name = [p?.first_name, p?.last_name].filter(Boolean).join(" ").trim();
+      return name || p?.username || p?.email || "—";
+    }
+
+    // ====== NAV ======
     window.goDashboard = ()=> window.location.href = "index.html";
-    window.goLogin = ()=> window.location.href = "login.html"; // si tienes login.html (si no, puedes quitar este botón)
+    window.goLogin = ()=> window.location.href = "login.html";
     window.logout = async ()=>{ await supabase.auth.signOut(); window.location.href = "index.html"; };
 
     window.openEdit = ()=> {
-      // Por ahora solo habilita campos básicos para editar y guardar
       ["first_name","last_name","company_name","phone"].forEach(id=>{
         const el = $(id);
         if(el) el.disabled = false;
       });
-      setMsg($("msgProfile"), "Edita tus datos y luego presiona 'Actualizar' (por ahora guardado se agrega en el siguiente paso).", false);
+      setMsg($("msgProfile"), "Edita tus datos y luego presiona 'Actualizar' (guardado se integra luego).", false);
     };
 
     window.switchAdminTab = (tab)=>{
@@ -398,9 +543,8 @@
       $("paneSubs").style.display  = (tab==="subs")  ? "block" : "none";
     };
 
+    // ====== DATA LOADERS ======
     async function loadMyProfile(userId){
-      // profiles: columnas conocidas (según tu CSV):
-      // id, first_name, last_name, company_name, phone, role, status, created_at, updated_at, username, email, country, active_plan_id, activated_at, is_active
       const { data, error } = await supabase
         .from("profiles")
         .select("id,first_name,last_name,company_name,phone,role,status,username,email,country,active_plan_id,activated_at,is_active,created_at,updated_at")
@@ -412,7 +556,6 @@
     }
 
     async function loadMySubscription(userId){
-      // subscriptions: id,user_id,plan_id,status,current_period_start,current_period_end,grace_end,last_payment_at,paypal_subscription_id,paypal_order_id,reminded_before,reminded_after,updated_at
       const { data, error } = await supabase
         .from("subscriptions")
         .select("id,user_id,plan_id,status,current_period_start,current_period_end,grace_end,last_payment_at,paypal_subscription_id,paypal_order_id,updated_at")
@@ -452,10 +595,6 @@
       const daysToEnd = endISO ? daysBetween(now, endISO) : null;
       const daysToGrace = graceISO ? daysBetween(now, graceISO) : null;
 
-      // Determinar estado real por fechas (aunque el status venga raro)
-      // - active: hoy <= fin
-      // - grace: hoy > fin y hoy <= grace_end
-      // - expired: hoy > grace_end (o fin sin grace)
       let computed = "unknown";
       if(endISO){
         if(new Date(now).getTime() <= new Date(endISO).getTime()){
@@ -469,14 +608,11 @@
         }
       }
 
-      // Si el backend ya trae status, lo usamos solo si es "active/canceled/expired"
-      // pero la fecha manda para "expired/grace".
       let finalStatus = rawStatus || computed;
       if(computed === "expired") finalStatus = "expired";
       if(computed === "grace") finalStatus = "grace";
       if(!finalStatus) finalStatus = "unknown";
 
-      // Pills
       let statusKind = "warn";
       if(finalStatus === "active") statusKind = "ok";
       if(finalStatus === "expired" || finalStatus === "canceled") statusKind = "bad";
@@ -485,7 +621,6 @@
       setPill($("pillStatus"), "Estado: " + finalStatus, statusKind);
       setPill($("pillPlan"), "Plan: " + plan, null);
 
-      // Días restantes (al fin del periodo; si ya pasó, mostrar 0)
       const shownDays = (daysToEnd === null) ? "—" : String(Math.max(0, daysToEnd));
       let daysKind = "warn";
       if(daysToEnd === null) daysKind = "warn";
@@ -495,41 +630,101 @@
 
       setPill($("pillDays"), "Días restantes: " + shownDays, daysKind);
 
-      // Banner crítico si está vencida
       const ban = $("banExpired");
       if(finalStatus === "expired"){
         ban.style.display = "block";
-        ban.innerHTML = `Tu membresía está <b>VENCIDA</b>. Para usar el sistema, renueva tu plan. 
-          <button class="btn btnPrimary btnSmall" style="margin-left:10px" onclick="goRenovar()">Renovar</button>`;
+        ban.classList.add("err");
+        ban.innerHTML = `Tu membresía está <b>VENCIDA</b>. Para usar el sistema, renueva tu plan.`;
       }else if(finalStatus === "grace"){
-        ban.style.display = "block";
         const dg = (daysToGrace===null) ? "—" : String(Math.max(0, daysToGrace));
-        ban.classList.remove("err");
         ban.style.display = "block";
-        ban.innerHTML = `Estás en <b>GRACE</b>. Te quedan <b>${dg}</b> días de gracia para renovar. 
-          <button class="btn btnPrimary btnSmall" style="margin-left:10px" onclick="goRenovar()">Renovar</button>`;
+        ban.classList.remove("err");
+        ban.innerHTML = `Estás en <b>GRACE</b>. Te quedan <b>${dg}</b> días de gracia para renovar.`;
       }else{
         ban.style.display = "none";
       }
     }
 
-    function escapeHtml(s){
-      return String(s || "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
+    // ====== PRESENCE (ONLINE REAL TIME) ======
+    let presenceChannel = null;
+    let onlineSet = new Set();       // user_ids online
+    let isAdmin = false;
+    let myUserId = null;
+
+    function isOnline(userId){
+      return onlineSet.has(userId);
     }
 
+    function rebuildOnlineSetFromPresenceState(state){
+      const s = new Set();
+      // state keys are "presence keys"; we use key=userId
+      Object.keys(state || {}).forEach(k => {
+        // k puede ser userId si la key es el userId
+        s.add(k);
+      });
+      onlineSet = s;
+    }
+
+    async function startPresence(role, userId){
+      // Cualquier usuario que esté en esta página reporta "online" por Realtime presence.
+      // El admin ve quién está online al instante.
+      if(presenceChannel){
+        try{ await supabase.removeChannel(presenceChannel); }catch(_){}
+        presenceChannel = null;
+      }
+
+      presenceChannel = supabase.channel(PRESENCE_CHANNEL, {
+        config: { presence: { key: userId } }
+      });
+
+      presenceChannel.on("presence", { event: "sync" }, () => {
+        const state = presenceChannel.presenceState();
+        rebuildOnlineSetFromPresenceState(state);
+        if(isAdmin){
+          renderAdminSubs(); // re-render para refrescar la columna "En línea"
+        }
+      });
+
+      presenceChannel.on("presence", { event: "join" }, ({ key }) => {
+        if(key) onlineSet.add(key);
+        if(isAdmin) renderAdminSubs();
+      });
+
+      presenceChannel.on("presence", { event: "leave" }, ({ key }) => {
+        if(key) onlineSet.delete(key);
+        if(isAdmin) renderAdminSubs();
+      });
+
+      await presenceChannel.subscribe(async (status) => {
+        if(status === "SUBSCRIBED"){
+          try{
+            await presenceChannel.track({ at: new Date().toISOString() });
+          }catch(_){}
+        }
+      });
+    }
+
+    // ====== ADMIN TABLES ======
+    let adminProfiles = [];           // profiles list
+    let profilesById = new Map();     // id -> profile
+    let adminSubs = [];               // subs list
+
     async function loadAdminTables(){
-      // Usuarios
+      // Cargar profiles
       const { data: users, error: e1 } = await supabase
         .from("profiles")
-        .select("id,first_name,last_name,company_name,phone,username,role,is_active,status")
+        .select("id,first_name,last_name,company_name,phone,username,role,is_active,status,email")
         .order("created_at", { ascending:false })
-        .limit(200);
+        .limit(500);
 
       if(e1) throw e1;
 
+      adminProfiles = users || [];
+      profilesById = new Map(adminProfiles.map(u => [u.id, u]));
+
       const ub = $("adminUsersBody");
-      ub.innerHTML = (users || []).map(u=>{
-        const name = [u.first_name, u.last_name].filter(Boolean).join(" ") || u.username || "—";
+      ub.innerHTML = adminProfiles.map(u=>{
+        const name = fullName(u);
         return `
           <tr>
             <td>${escapeHtml(name)}</td>
@@ -542,32 +737,202 @@
         `;
       }).join("") || `<tr><td colspan="6" class="muted">No hay datos</td></tr>`;
 
-      // Suscripciones
+      // Cargar subscriptions
       const { data: subs, error: e2 } = await supabase
         .from("subscriptions")
-        .select("user_id,plan_id,status,current_period_start,current_period_end,last_payment_at,updated_at")
+        .select("id,user_id,plan_id,status,current_period_start,current_period_end,last_payment_at,updated_at")
         .order("updated_at", { ascending:false })
-        .limit(200);
+        .limit(500);
 
       if(e2) throw e2;
 
+      adminSubs = subs || [];
+      renderAdminSubs();
+    }
+
+    function renderAdminSubs(){
       const sb = $("adminSubsBody");
-      sb.innerHTML = (subs || []).map(s=>{
+      if(!sb) return;
+
+      sb.innerHTML = (adminSubs || []).map(s=>{
+        const p = profilesById.get(s.user_id) || null;
+        const name = p ? fullName(p) : (s.user_id || "—");
         const dleft = s.current_period_end ? daysBetween(new Date(), s.current_period_end) : null;
-        const stKind = s.status==="active" ? "ok" : (dleft!==null && dleft<=0 ? "bad" : "warn");
+        const stKind = (String(s.status || "").toLowerCase()==="active")
+          ? "ok"
+          : (dleft!==null && dleft<=0 ? "bad" : "warn");
+
+        const online = isOnline(s.user_id);
+        const dot = online ? `<span class="dot on"></span>` : `<span class="dot off"></span>`;
+        const onlineText = online ? `<span class="pill ok">${dot} En línea</span>` : `<span class="pill">${dot} Offline</span>`;
+
         return `
           <tr>
-            <td>${escapeHtml(s.user_id)}</td>
+            <td>${escapeHtml(name)}</td>
+            <td>${onlineText}</td>
             <td>${escapeHtml(String(s.plan_id ?? "—"))}</td>
             <td><span class="pill ${stKind}">${escapeHtml(s.status || "—")}</span></td>
             <td>${escapeHtml(fmtDate(s.current_period_start))}</td>
             <td>${escapeHtml(fmtDate(s.current_period_end))}</td>
             <td>${escapeHtml(fmtDate(s.last_payment_at))}</td>
+            <td>
+              <button class="btn btnPrimary btnTiny" onclick="openRenew('${escapeHtml(s.user_id)}')">Renovar</button>
+            </td>
           </tr>
         `;
-      }).join("") || `<tr><td colspan="6" class="muted">No hay datos</td></tr>`;
+      }).join("") || `<tr><td colspan="8" class="muted">No hay datos</td></tr>`;
     }
 
+    // ====== RENOVAR MODAL ======
+    let plansCache = [];
+    let renewUserId = null;
+
+    function planLabel(plan){
+      // Tratamos de adivinar campos comunes: name/title/label
+      const title = plan?.name || plan?.title || plan?.label || plan?.plan_name || ("Plan " + (plan?.id ?? ""));
+      const price = plan?.price_usd ?? plan?.price ?? plan?.amount ?? null;
+      const days = plan?.days ?? plan?.duration_days ?? plan?.period_days ?? null;
+      const extra = [];
+      if(price !== null && price !== undefined && price !== "") extra.push(`$${price}`);
+      if(days) extra.push(`${days} días`);
+      return extra.length ? `${title} • ${extra.join(" • ")}` : String(title);
+    }
+
+    async function loadPlansOnce(){
+      if(plansCache.length) return plansCache;
+
+      // Intento: traer todo; si tu tabla es diferente igual funciona mostrando lo que exista.
+      const { data, error } = await supabase
+        .from(PLANS_TABLE)
+        .select("*")
+        .order("id", { ascending:true });
+
+      if(error){
+        // Si tu tabla no se llama "plans" o RLS bloquea, lo reflejamos.
+        plansCache = [];
+        throw error;
+      }
+
+      plansCache = data || [];
+      return plansCache;
+    }
+
+    window.openRenew = async (userId)=>{
+      renewUserId = userId;
+      setMsg($("renewMsg"), "", false);
+      $("renewSubtitle").textContent = userId ? ("Usuario: " + userId) : "—";
+      $("renewDays").value = 30;
+
+      $("renewBack").style.display = "flex";
+
+      try{
+        const plans = await loadPlansOnce();
+        const sel = $("renewPlanSelect");
+        if(!plans.length){
+          sel.innerHTML = `<option value="">No hay planes en la tabla "${escapeHtml(PLANS_TABLE)}"</option>`;
+          return;
+        }
+
+        sel.innerHTML = plans.map(p=>{
+          const id = p?.id ?? p?.plan_id ?? "";
+          return `<option value="${escapeHtml(String(id))}">${escapeHtml(planLabel(p))}</option>`;
+        }).join("");
+
+        // si algún plan trae days, setearlo
+        const first = plans[0];
+        const d = first?.days ?? first?.duration_days ?? first?.period_days ?? null;
+        if(d) $("renewDays").value = d;
+
+        sel.onchange = ()=>{
+          const pid = sel.value;
+          const picked = plans.find(x => String((x.id ?? x.plan_id)) === String(pid));
+          const dd = picked?.days ?? picked?.duration_days ?? picked?.period_days ?? null;
+          if(dd) $("renewDays").value = dd;
+        };
+      }catch(err){
+        setMsg($("renewMsg"), "Error cargando planes: " + (err?.message || err), true);
+      }
+    };
+
+    window.closeRenew = ()=>{
+      $("renewBack").style.display = "none";
+      renewUserId = null;
+    };
+
+    function addDaysISO(date, days){
+      const d = new Date(date);
+      d.setDate(d.getDate() + Number(days || 0));
+      return d.toISOString();
+    }
+
+    window.confirmRenew = async ()=>{
+      if(!renewUserId){
+        setMsg($("renewMsg"), "No tengo el usuario para renovar.", true);
+        return;
+      }
+
+      const planId = $("renewPlanSelect").value;
+      const days = Number($("renewDays").value || 30);
+
+      if(!planId){
+        setMsg($("renewMsg"), "Selecciona un plan.", true);
+        return;
+      }
+      if(!days || days < 1){
+        setMsg($("renewMsg"), "Los días deben ser mayor a 0.", true);
+        return;
+      }
+
+      try{
+        setMsg($("renewMsg"), "Procesando renovación…", false);
+
+        const now = new Date();
+        const start = now.toISOString();
+        const end = addDaysISO(now, days);
+
+        // 1) Upsert subscription para ese usuario
+        // Nota: Esto requiere RLS que permita a admin editar otros users.
+        const { error: e1 } = await supabase
+          .from("subscriptions")
+          .upsert({
+            user_id: renewUserId,
+            plan_id: planId,
+            status: "active",
+            current_period_start: start,
+            current_period_end: end,
+            last_payment_at: start,
+            updated_at: start
+          }, { onConflict: "user_id" });
+
+        if(e1) throw e1;
+
+        // 2) Update profile (opcional)
+        const { error: e2 } = await supabase
+          .from("profiles")
+          .update({
+            active_plan_id: planId,
+            is_active: true,
+            status: "active",
+            updated_at: start
+          })
+          .eq("id", renewUserId);
+
+        if(e2) throw e2;
+
+        setMsg($("renewMsg"), "✅ Renovación aplicada. Actualizando tablas…", false);
+
+        // refrescar admin subs
+        plansCache = plansCache; // keep
+        await loadAdminTables();
+
+        // cerrar
+        setTimeout(()=> closeRenew(), 650);
+      }catch(err){
+        setMsg($("renewMsg"), "❌ No se pudo renovar: " + (err?.message || err), true);
+      }
+    };
+
+    // ====== INIT ======
     async function init(){
       setMsg($("msgProfile"), "", false);
       setMsg($("msgSub"), "", false);
@@ -585,8 +950,10 @@
         return;
       }
 
+      myUserId = user.id;
+
       setPill($("whoPill"), "Sesión activa", "ok");
-      $("whoSub").textContent = "UID: " + user.id;
+      $("whoSub").textContent = "Cargando perfil…";
 
       try{
         const profile = await loadMyProfile(user.id);
@@ -596,16 +963,28 @@
         }
         fillProfile(profile);
 
-        // rol
         const role = (profile.role || "user").toLowerCase();
-        $("whoSub").textContent = `UID: ${user.id} • Rol: ${role}`;
+        isAdmin = (role === "admin");
+
+        // ✅ (3) UID/Rol solo admin
+        if(isAdmin){
+          $("whoSub").textContent = `UID: ${user.id} • Rol: ${role}`;
+        }else{
+          // Para usuarios normales: no mostrar UID
+          const nice = fullName(profile);
+          const mail = profile.email ? ` • ${profile.email}` : "";
+          $("whoSub").textContent = `${nice}${mail}`;
+        }
 
         // suscripción
         const sub = await loadMySubscription(user.id);
         fillSubscription(sub, profile);
 
-        // admin
-        if(role === "admin"){
+        // ✅ presence (online)
+        await startPresence(role, user.id);
+
+        // admin tables
+        if(isAdmin){
           $("adminCard").style.display = "block";
           await loadAdminTables();
         }else{
@@ -622,3 +1001,4 @@
   </script>
 </body>
 </html>
+
