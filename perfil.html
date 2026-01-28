@@ -1117,8 +1117,7 @@
       box.style.display = "block";
       btnHost.innerHTML = ""; // limpiar si ya había
 
-      // Render PayPal button
-            // Render PayPal button (CORRECTO)
+      // Render PayPal button (CORRECTO)
       const { data: ses } = await supabase.auth.getSession();
       const accessToken = ses?.session?.access_token || "";
 
@@ -1182,37 +1181,7 @@
           setMsg($("payMsg"), "❌ PayPal error: " + (err?.message || err), true);
         }
       }).render("#ppBtn_" + planId);
-
-
-        onApprove: async (data) => {
-          try {
-            setMsg($("payMsg"), "Procesando pago…", false);
-
-            const { data: cap, error: e2 } = await supabase.functions.invoke(FN_PAYPAL_CAPTURE, {
-              body: {
-                order_id: data.orderID,   // ✅ ESTE ES EL CAMBIO CLAVE
-                plan_id: Number(planId)   // opcional pero recomendado
-              }
-            });
-
-            if (e2) {
-              const msg = (e2?.context?.response ? await e2.context.response.text() : e2.message);
-              throw new Error(msg || e2.message || "Error capturando pago");
-            }
-
-            if (!cap?.ok) {
-              throw new Error("Capture no ok: " + JSON.stringify(cap));
-            }
-
-            setMsg($("payMsg"), "✅ ¡Gracias por volver! Tu plan fue actualizado.", false);
-            await init();
-            setTimeout(() => closePayPlans(), 900);
-
-          } catch (err) {
-            setMsg($("payMsg"), "❌ No se pudo completar el pago: " + (err?.message || err), true);
-          }
-      }
-
+    };
 
     // ====== INIT ======
     async function init(){
@@ -1287,3 +1256,4 @@
   </script>
 </body>
 </html>
+[file content end]
