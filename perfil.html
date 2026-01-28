@@ -718,8 +718,8 @@
       const { data: users, error: e1 } = await supabase
         .from("profiles")
         .select("id,first_name,last_name,company_name,phone,username,role,is_active,status,email")
-        .order("created_at", { ascending:false })
-        .limit(500);
+        .limit(1000);
+
 
       if(e1) throw e1;
 
