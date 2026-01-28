@@ -1118,24 +1118,71 @@
       btnHost.innerHTML = ""; // limpiar si ya había
 
       // Render PayPal button
+            // Render PayPal button (CORRECTO)
+      const { data: ses } = await supabase.auth.getSession();
+      const accessToken = ses?.session?.access_token || "";
+
       window.paypal.Buttons({
         style: { layout: "vertical" },
 
         createOrder: async () => {
-          // 1) pedir order_id a tu Edge Function
-          const { data, error } = await supabase.functions.invoke(FN_PAYPAL_CREATE, {
-            body: {
-              plan_id: planId,
-              // opcional: return_url/cancel_url si tu function lo usa
+          try {
+            setMsg($("payMsg"), "Creando orden…", false);
+
+            const { data, error } = await supabase.functions.invoke(FN_PAYPAL_CREATE, {
+              headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+              body: { plan_id: Number(planId) } // 👈 IMPORTANTE
+            });
+
+            if (error) {
+              const msg = (error?.context?.response)
+                ? await error.context.response.text()
+                : (error.message || "Error en createOrder");
+              throw new Error(msg);
             }
-          });
 
-          if(error) throw error;
-          const oid = data?.orderID || data?.id;
-          if(!oid) throw new Error("No devolvio orderID: " + JSON.stringify(data));
-          return oid;
+            const oid = data?.orderID || data?.id;
+            if (!oid) throw new Error("No devolvio orderID. Respuesta: " + JSON.stringify(data));
+            return oid;
 
-      },
+          } catch (err) {
+            setMsg($("payMsg"), "❌ Error creando orden: " + (err?.message || err), true);
+            throw err;
+          }
+        },
+
+        onApprove: async (data) => {
+          try {
+            setMsg($("payMsg"), "Procesando pago…", false);
+
+            const { data: cap, error: e2 } = await supabase.functions.invoke(FN_PAYPAL_CAPTURE, {
+              headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+              body: { order_id: data.orderID, plan_id: Number(planId) }
+            });
+
+            if (e2) {
+              const msg = (e2?.context?.response)
+                ? await e2.context.response.text()
+                : (e2.message || "Error capturando pago");
+              throw new Error(msg);
+            }
+
+            if (!cap?.ok) throw new Error("Capture no ok: " + JSON.stringify(cap));
+
+            setMsg($("payMsg"), "✅ ¡Gracias por volver! Tu plan fue actualizado.", false);
+            await init();
+            setTimeout(() => closePayPlans(), 900);
+
+          } catch (err) {
+            setMsg($("payMsg"), "❌ No se pudo completar el pago: " + (err?.message || err), true);
+          }
+        },
+
+        onError: (err) => {
+          setMsg($("payMsg"), "❌ PayPal error: " + (err?.message || err), true);
+        }
+      }).render("#ppBtn_" + planId);
+
 
         onApprove: async (data) => {
           try {
