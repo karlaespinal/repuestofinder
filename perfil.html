@@ -295,6 +295,12 @@
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btnGhost btnSmall" onclick="refresh()">Actualizar</button>
+
+        <!-- NUEVO: Visible solo para usuarios normales (lo activamos por JS) -->
+        <button class="btn btnPrimary btnSmall" id="btnPayPlans" style="display:none" onclick="openPayPlans()">
+          Renovar / Upgrade
+        </button>
+
         <button class="btn btnGhost btnSmall" onclick="openEdit()">Editar mis datos</button>
       </div>
     </div>
@@ -462,6 +468,37 @@
     </div>
   </div>
 
+  <!-- Modal Planes (Usuarios) -->
+<div class="modalBack" id="payBack">
+  <div class="modal">
+    <div class="modalHead">
+      <div>
+        <h3>Renovar / Upgrade de Plan</h3>
+        <div class="muted" id="paySubtitle">Elige un plan y paga con PayPal.</div>
+      </div>
+      <button class="btn btnGhost btnTiny" onclick="closePayPlans()">✕</button>
+    </div>
+
+    <div class="modalBody">
+      <div class="msg" id="payMsg"></div>
+
+      <div class="hint" style="margin-bottom:10px">
+        💙 Gracias por volver. Elige el plan que mejor te convenga y completa el pago.
+      </div>
+
+      <div id="plansWrap" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
+
+      <div class="hint" id="paypalHint" style="display:none;margin-top:10px">
+        Si no ves el botón de PayPal, revisa tu <b>PAYPAL_CLIENT_ID</b> o bloqueadores del navegador.
+      </div>
+    </div>
+
+    <div class="modalFoot">
+      <button class="btn btnGhost" onclick="closePayPlans()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
   <script type="module">
     import { supabase } from "./assets/supabaseClient.js";
 
@@ -471,6 +508,15 @@
     const PRESENCE_CHANNEL = "rf-online-users"; // canal realtime presence
     const PLANS_TABLE = "plans";                // tabla de planes en supabase
     // ====================
+
+    // ====== PAYPAL CONFIG ======
+    // Pon aquí TU Client ID de PayPal (LIVE)
+    const PAYPAL_CLIENT_ID = "PEGA_AQUI_TU_PAYPAL_CLIENT_ID";
+    const PAYPAL_CURRENCY = "USD";
+
+    // Nombres de tus Edge Functions en Supabase (ajusta si usan otros nombres)
+    const FN_PAYPAL_CREATE = "paypal-create-order";
+    const FN_PAYPAL_CAPTURE = "paypal-capture-order-public";
 
     function setMsg(el, text, isErr){
       if(!el) return;
@@ -950,6 +996,173 @@
       }
     };
 
+    // ====== USER PAY MODAL (PLANS + PAYPAL) ======
+    let paySelectedPlan = null;
+    let paypalSdkLoaded = false;
+
+    function money(v){
+      if(v === null || v === undefined || v === "") return "";
+      const n = Number(v);
+      if(isNaN(n)) return String(v);
+      return n.toFixed(2);
+    }
+
+    function getPlanFields(p){
+      // Normalizamos campos comunes: id, name, price, days, etc.
+      const id = p?.id ?? p?.plan_id ?? null;
+      const name = p?.name || p?.title || p?.label || p?.plan_name || ("Plan " + id);
+      const price = p?.price_usd ?? p?.price ?? p?.amount ?? null;
+      const days = p?.days ?? p?.duration_days ?? p?.period_days ?? null;
+      const desc = p?.description ?? p?.details ?? "";
+      return { id, name, price, days, desc };
+    }
+
+    async function ensurePaypalSdk(){
+      if(paypalSdkLoaded) return true;
+
+      // Si no hay client id, mostramos mensaje y no intentamos cargar
+      if(!PAYPAL_CLIENT_ID || PAYPAL_CLIENT_ID.includes("PEGA_AQUI")){
+        setMsg($("payMsg"), "⚠️ Falta configurar PAYPAL_CLIENT_ID en perfil.html", true);
+        $("paypalHint").style.display = "block";
+        return false;
+      }
+
+      return new Promise((resolve) => {
+        const s = document.createElement("script");
+        s.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(PAYPAL_CLIENT_ID)}&currency=${encodeURIComponent(PAYPAL_CURRENCY)}`;
+        s.onload = () => { paypalSdkLoaded = true; resolve(true); };
+        s.onerror = () => { resolve(false); };
+        document.head.appendChild(s);
+      });
+    }
+
+    window.openPayPlans = async ()=>{
+      setMsg($("payMsg"), "", false);
+      $("payBack").style.display = "flex";
+      $("paypalHint").style.display = "none";
+
+      try{
+        const plans = await loadPlansOnce(); // ya la tienes hecha
+        if(!plans.length){
+          $("plansWrap").innerHTML = `<div class="muted">No hay planes disponibles.</div>`;
+          return;
+        }
+
+        // Render cards
+        $("plansWrap").innerHTML = plans.map((p)=>{
+          const f = getPlanFields(p);
+          const meta = [
+            (f.price !== null && f.price !== undefined) ? `$${money(f.price)} ${PAYPAL_CURRENCY}` : null,
+            f.days ? `${f.days} días` : null
+          ].filter(Boolean).join(" • ");
+
+          return `
+            <div style="border:1px solid rgba(230,232,240,.95);border-radius:16px;padding:12px;background:#fff">
+              <div style="font-weight:900;font-size:14px">${escapeHtml(f.name)}</div>
+              <div class="muted" style="margin-top:4px">${escapeHtml(meta || "—")}</div>
+              ${f.desc ? `<div class="muted" style="margin-top:6px">${escapeHtml(f.desc)}</div>` : ``}
+
+              <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+                <button class="btn btnPrimary btnTiny" onclick="selectPlanForPay('${escapeHtml(String(f.id))}')">
+                  Elegir
+                </button>
+                <span class="pill" id="pillPlan_${escapeHtml(String(f.id))}">No seleccionado</span>
+              </div>
+
+              <div style="margin-top:10px;display:none" id="ppBox_${escapeHtml(String(f.id))}">
+                <div class="muted" style="margin-bottom:8px">Paga con PayPal:</div>
+                <div id="ppBtn_${escapeHtml(String(f.id))}"></div>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+      }catch(err){
+        setMsg($("payMsg"), "Error cargando planes: " + (err?.message || err), true);
+      }
+    };
+
+    window.closePayPlans = ()=>{
+      $("payBack").style.display = "none";
+      paySelectedPlan = null;
+    };
+
+    window.selectPlanForPay = async (planId)=>{
+      setMsg($("payMsg"), "", false);
+
+      // Reset pills + hide all paypal boxes
+      const cards = $("plansWrap").querySelectorAll("[id^='ppBox_']");
+      cards.forEach(x => x.style.display = "none");
+      const pills = $("plansWrap").querySelectorAll("[id^='pillPlan_']");
+      pills.forEach(p => p.textContent = "No seleccionado");
+
+      paySelectedPlan = planId;
+
+      const pill = $("pillPlan_" + planId);
+      if(pill) pill.textContent = "Seleccionado ✅";
+
+      const ok = await ensurePaypalSdk();
+      if(!ok){
+        $("paypalHint").style.display = "block";
+        return;
+      }
+
+      const box = $("ppBox_" + planId);
+      const btnHost = $("ppBtn_" + planId);
+      if(!box || !btnHost){
+        setMsg($("payMsg"), "No pude preparar el botón de PayPal.", true);
+        return;
+      }
+
+      box.style.display = "block";
+      btnHost.innerHTML = ""; // limpiar si ya había
+
+      // Render PayPal button
+      window.paypal.Buttons({
+        style: { layout: "vertical" },
+
+        createOrder: async () => {
+          // 1) pedir order_id a tu Edge Function
+          const { data, error } = await supabase.functions.invoke(FN_PAYPAL_CREATE, {
+            body: {
+              plan_id: planId,
+              // opcional: return_url/cancel_url si tu function lo usa
+            }
+          });
+
+          if(error) throw error;
+          if(!data?.id) throw new Error("Edge Function no devolvió order id");
+          return data.id; // PayPal order id
+        },
+
+        onApprove: async (data) => {
+          try{
+            setMsg($("payMsg"), "Procesando pago…", false);
+
+            // 2) capturar con Edge Function
+            const { data: cap, error: e2 } = await supabase.functions.invoke(FN_PAYPAL_CAPTURE, {
+              body: { order_id: data.orderID, plan_id: planId }
+            });
+
+            if(e2) throw e2;
+
+            // 3) refrescar UI de membresía
+            setMsg($("payMsg"), "✅ ¡Gracias por volver! Tu plan fue actualizado. Actualizando…", false);
+            await init(); // vuelve a cargar perfil + suscripción
+            setTimeout(()=> closePayPlans(), 900);
+
+          }catch(err){
+            setMsg($("payMsg"), "❌ No se pudo completar el pago: " + (err?.message || err), true);
+          }
+        },
+
+        onError: (err) => {
+          setMsg($("payMsg"), "❌ Error PayPal: " + (err?.message || err), true);
+        }
+
+      }).render("#" + btnHost.id);
+    };
+
     // ====== INIT ======
     async function init(){
       setMsg($("msgProfile"), "", false);
@@ -1008,6 +1221,10 @@
         }else{
           $("adminCard").style.display = "none";
         }
+
+        // Botón de renovar/upgrade SOLO para usuarios normales
+        $("btnPayPlans").style.display = isAdmin ? "none" : "";
+
       }catch(err){
         setMsg($("msgProfile"), "Error cargando: " + (err?.message || err), true);
       }
