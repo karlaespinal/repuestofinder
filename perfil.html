@@ -465,18 +465,6 @@
   <script type="module">
     import { supabase } from "./assets/supabaseClient.js";
 
-    const PRESENCE_CHANNEL = "rf-online-users";
-    const presenceChannel = supabase.channel(PRESENCE_CHANNEL, {
-      config: { presence: { key: user.id } }
-    });
-
-    await presenceChannel.subscribe(async (status) => {
-      if (status === "SUBSCRIBED") {
-        await presenceChannel.track({ at: new Date().toISOString() });
-      }
-    });
-
-
     const $ = (id)=>document.getElementById(id);
 
     // ====== CONFIG ======
@@ -1001,4 +989,5 @@
   </script>
 </body>
 </html>
+
 
