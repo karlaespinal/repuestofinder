@@ -385,7 +385,7 @@
         <table>
           <thead>
             <tr>
-              <th>Nombre</th>
+              <th>Nombre / Correo</th>
               <th>Empresa</th>
               <th>Teléfono</th>
               <th>Username</th>
@@ -728,10 +728,16 @@
 
       const ub = $("adminUsersBody");
       ub.innerHTML = adminProfiles.map(u=>{
-        const name = fullName(u);
         return `
           <tr>
-            <td>${escapeHtml(name)}</td>
+            <td>
+              <div style="font-weight:900">
+                ${escapeHtml([u.first_name, u.last_name].filter(Boolean).join(" ") || u.username || "Sin nombre")}
+              </div>
+              <div class="muted" style="margin-top:2px">
+                ${escapeHtml(u.email || "")}
+              </div>
+            </td>
             <td>${escapeHtml(u.company_name || "—")}</td>
             <td>${escapeHtml(u.phone || "—")}</td>
             <td>${escapeHtml(u.username || "—")}</td>
