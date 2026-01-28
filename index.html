@@ -616,161 +616,6 @@
       fill:#fff;
     }
 
-    /* ===== Noticias del dia (Ticker) ===== */
-    .newsWrap{
-      margin-top:14px;
-      border:1px solid rgba(230,232,240,.95);
-      border-radius:18px;
-      background:rgba(255,255,255,.86);
-      box-shadow:0 10px 22px rgba(2,6,23,.06);
-      overflow:hidden;
-    }
-
-    .newsHead{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding:10px 12px;
-      background:rgba(246,247,251,.72);
-      border-bottom:1px solid rgba(230,232,240,.95);
-    }
-
-    .newsHead .left{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      min-width:0;
-    }
-
-    .newsBadge{
-      font-size:11px;
-      font-weight:900;
-      padding:4px 8px;
-      border-radius:999px;
-      border:1px solid rgba(230,232,240,.95);
-      background:rgba(37,99,235,.10);
-      color:var(--pri);
-      white-space:nowrap;
-    }
-
-    .newsTitle{
-      font-weight:900;
-      font-size:12px;
-      color:#0f172a;
-      letter-spacing:.3px;
-      text-transform:uppercase;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
-    .newsMeta{
-      font-size:12px;
-      color:#64748b;
-      font-weight:900;
-      white-space:nowrap;
-    }
-
-    .newsViewport{
-      position:relative;
-      overflow:hidden;
-      width:100%;
-    }
-
-    .newsTrack{
-      display:flex;
-      width:100%;
-      will-change: transform;
-      transform: translate3d(0,0,0);
-      transition: transform 520ms ease;
-    }
-
-    .newsCard{
-      flex:0 0 100%;
-      padding:12px 12px 12px;
-    }
-
-    .newsCardInner{
-      border:1px solid rgba(230,232,240,.95);
-      border-radius:16px;
-      background:#fff;
-      padding:12px;
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-    }
-
-    .newsLine1{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-    }
-
-    .newsTopic{
-      font-size:11px;
-      font-weight:900;
-      color:#94a3b8;
-      text-transform:uppercase;
-      letter-spacing:.35px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
-    .newsLink{
-      font-size:11px;
-      font-weight:900;
-      color:var(--pri);
-      text-decoration:none;
-      white-space:nowrap;
-    }
-    .newsLink:hover{ text-decoration:underline; }
-
-    .newsH{
-      margin:0;
-      font-size:13px;
-      font-weight:900;
-      line-height:1.25;
-      color:#0f172a;
-    }
-
-    .newsP{
-      margin:0;
-      font-size:12px;
-      color:#64748b;
-      font-weight:800;
-      line-height:1.35;
-      display:-webkit-box;
-      -webkit-line-clamp:3;
-      -webkit-box-orient:vertical;
-      overflow:hidden;
-    }
-
-    .newsWhy{
-      margin:0;
-      font-size:12px;
-      font-weight:900;
-      color:#0f172a;
-      background:rgba(37,99,235,.06);
-      border:1px solid rgba(37,99,235,.14);
-      padding:9px 10px;
-      border-radius:12px;
-    }
-
-    .newsWhy b{ color:var(--pri); }
-
-    .newsEmpty{
-      padding:12px;
-      font-size:12px;
-      color:#64748b;
-      font-weight:900;
-    }
-
-    .newsWrap:hover .newsTrack{
-      transition-duration: 900ms; /* se siente mas suave al hover */
-    }
 
   </style>
 </head>
@@ -894,25 +739,6 @@
           </div>
 
           <div class="msg" id="topMsg"></div>
-
-          <!-- ✅ Noticias del dia (solo hoy) -->
-          <div class="newsWrap" id="newsWrap" style="display:none">
-            <div class="newsHead">
-              <div class="left">
-                <span class="newsBadge">HOY</span>
-                <div class="newsTitle">Noticias automotrices del dia</div>
-              </div>
-              <div class="newsMeta" id="newsMeta">—</div>
-            </div>
-
-            <div class="newsViewport" id="newsViewport">
-              <div class="newsTrack" id="newsTrack"></div>
-            </div>
-
-            <div class="newsEmpty" id="newsEmpty" style="display:none">
-              Hoy no hay noticias publicadas todavía.
-            </div>
-          </div>
         </div>
 
         <div class="kpis">
@@ -1648,147 +1474,6 @@
       }, 7000);
     }
 
-    // ===== Noticias del dia (Apps Script JSONP) =====
-    const NEWS_ROTATE_MS = 10000; // 10 segundos
-
-    // 👇 PEGA AQUÍ tu URL /exec del Apps Script (la misma que probaste en el browser)
-    const NEWS_JSONP_URL = https://script.google.com/macros/s/AKfycbzaSozTuv-8dJCPY01Rg7cJsqUVrVkm2CsCj85xiwMV7ljZrImaFWEHunBsByi3IEg/exec?callback=rfNewsCallback";
-
-    function loadJsonp(url){
-      return new Promise((resolve, reject)=>{
-        const cbName = "rfNewsCallback_" + Math.random().toString(16).slice(2);
-        const s = document.createElement("script");
-        const timeout = setTimeout(()=>{
-          cleanup();
-          reject(new Error("Timeout cargando noticias"));
-        }, 9000);
-
-        function cleanup(){
-          clearTimeout(timeout);
-          try{ delete window[cbName]; }catch(_){}
-          if(s && s.parentNode) s.parentNode.removeChild(s);
-        }
-
-        window[cbName] = (data)=>{
-          cleanup();
-          resolve(data);
-        };
-
-        const u = url.replace(/callback=([^&]+)/, "callback=" + cbName);
-        s.src = u + (u.includes("?") ? "&" : "?") + "t=" + Date.now();
-        s.async = true;
-        s.onerror = ()=>{
-          cleanup();
-          reject(new Error("No se pudo cargar el JSONP"));
-        };
-        document.head.appendChild(s);
-      });
-    }
-
-    function clipText(s, max){
-      s = String(s||"").trim();
-      if(!s) return "";
-      if(s.length <= max) return s;
-      return s.slice(0, max-3).trim() + "...";
-    }
-
-    let newsState = { items: [], idx: 0, timer: null, paused: false };
-
-    function renderNewsCards(items){
-      const wrap = $("newsWrap");
-      const track = $("newsTrack");
-      const empty = $("newsEmpty");
-      const meta = $("newsMeta");
-      const viewport = $("newsViewport");
-
-      if(!wrap || !track || !empty || !meta || !viewport) return;
-
-      if(!Array.isArray(items) || items.length === 0){
-        wrap.style.display = "";
-        track.innerHTML = "";
-        empty.style.display = "block";
-        meta.textContent = "0 noticias";
-        return;
-      }
-
-      empty.style.display = "none";
-      wrap.style.display = "";
-      meta.textContent = `${items.length} noticias`;
-
-      // Pinta tarjetas
-      track.innerHTML = items.map((it)=>{
-        const topic = escapeHtml(it.topic || "Automotriz");
-        const title = escapeHtml(clipText(it.title, 120));
-        const summary = escapeHtml(clipText((it.summary || ""), 260));
-        const why = escapeHtml(clipText((it.porQueImporta || ""), 220));
-        const link = escapeHtml(it.link || "#");
-
-        return `
-          <div class="newsCard">
-            <div class="newsCardInner">
-              <div class="newsLine1">
-                <div class="newsTopic">${topic}</div>
-                ${link && link !== "#" ? `<a class="newsLink" href="${link}" target="_blank" rel="noopener">Ver fuente</a>` : `<span></span>`}
-              </div>
-
-              <h3 class="newsH">${title}</h3>
-
-              ${summary ? `<p class="newsP">${summary}</p>` : ``}
-
-              ${why ? `<p class="newsWhy"><b>¿Por qué importa?</b> ${why}</p>` : ``}
-            </div>
-          </div>
-        `;
-      }).join("");
-
-      // Reset slide
-      newsState.idx = 0;
-      track.style.transform = `translate3d(0,0,0)`;
-
-      // Hover pause
-      viewport.onmouseenter = ()=> newsState.paused = true;
-      viewport.onmouseleave = ()=> newsState.paused = false;
-    }
-
-    function startNewsRotation(){
-      const track = $("newsTrack");
-      if(!track) return;
-
-      if(newsState.timer) clearInterval(newsState.timer);
-
-      newsState.timer = setInterval(()=>{
-        if(newsState.paused) return;
-        const total = newsState.items.length;
-        if(total <= 1) return;
-
-        newsState.idx = (newsState.idx + 1) % total;
-        const shift = -newsState.idx * 100;
-        track.style.transform = `translate3d(${shift}%,0,0)`;
-      }, NEWS_ROTATE_MS);
-    }
-
-    async function initNewsTicker(){
-      try{
-        // Si no pegaste la URL aun, no rompas el index
-        if(!NEWS_JSONP_URL || NEWS_JSONP_URL.includes("PEGA_AQUI")) return;
-
-        const data = await loadJsonp(NEWS_JSONP_URL);
-        const items = Array.isArray(data?.items) ? data.items : [];
-
-        // Guardamos y renderizamos
-        newsState.items = items;
-
-        // (Opcional) si quieres SOLO top 12 para que no sea eterno:
-        // newsState.items = items.slice(0, 12);
-
-        renderNewsCards(newsState.items);
-        startNewsRotation();
-      }catch(err){
-        // si falla, no molestamos
-        console.warn("Noticias: ", err?.message || err);
-      }
-    }
-
     async function initCarousels(){
       const autopartsFallback = [
         { slug:"mahle", name:"Mahle", note:"Filtros / motor" },
@@ -1848,15 +1533,32 @@
         await initPromotions();
         sessionStorage.setItem(PROMO_SHOWN_KEY, "1");
       }
-
-      // ✅ noticias del dia (ticker)
-      await initNewsTicker();
     }
 
     init();
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
