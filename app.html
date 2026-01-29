@@ -1006,8 +1006,12 @@ function uniqueJoin_(arr, sep=" / "){
       });
 
       const filtered = { headers: base.headers, rows };
-      lastPayload.tablas.vehicles = filtered;
-      renderTableInto_("vehWrap", filtered);
+      const withOem = appendOemToDescription_(filtered);
+    lastPayload.tablas.vehicles = withOem;
+      // ✅ Agregar OEM al final de la descripcion SOLO en filtro
+    filtered = decorateDescWithOriginal_(filtered);
+
+    renderTableInto_("vehWrap", filtered);
 
       document.getElementById("btnCopyVeh").disabled = !(rows.length>0);
       document.getElementById("counts").textContent =
@@ -1321,9 +1325,51 @@ window.limpiar = function(){
     if (!session && !isDemo) window.location.href = "/?stay=1";
   });
 
+
+  // ======================================================
+  // ✅ Decorar Descripcion con Codigo Original (solo en busqueda por filtros)
+  //   - Si la tabla trae una columna "original" (o similar), la agrega al final de "Descripcion"
+  //   - Luego oculta esa columna para que no salga como columna aparte
+  // ======================================================
+  function decorateDescWithOriginal_(tableObj){
+    if(!tableObj || !Array.isArray(tableObj.headers) || !Array.isArray(tableObj.rows)) return tableObj;
+
+    const hs = tableObj.headers.map(h => String(h||"").trim().toLowerCase());
+    const iDesc = hs.findIndex(h => h === "descripcion" || h === "descripción" || h.includes("descripcion") || h.includes("description"));
+
+    // prioriza "original" exacto
+    let iOri = hs.findIndex(h => h === "original");
+    if(iOri < 0){
+      iOri = hs.findIndex(h => h.includes("codigo original") || h.includes("código original") || h.includes("oem") || h.includes("itemcode") || (h.includes("codigo") && !h.includes("descripcion")));
+    }
+
+    if(iDesc < 0 || iOri < 0) return tableObj;
+
+    const out = { headers: [...tableObj.headers], rows: tableObj.rows.map(r => [...r]) };
+
+    for(let k=0;k<out.rows.length;k++){
+      const r = out.rows[k];
+      const desc = String(r[iDesc] ?? "").trim();
+      const ori  = String(r[iOri]  ?? "").trim();
+      if(!ori) continue;
+
+      const already = desc.toLowerCase().includes(ori.toLowerCase()) || desc.toLowerCase().includes("oem:");
+      if(!already){
+        r[iDesc] = (desc ? desc + "  —  " : "") + "OEM: " + ori;
+      }
+    }
+
+    // Quitar la columna original para que no se vea como columna aparte
+    out.headers.splice(iOri, 1);
+    out.rows = out.rows.map(r => { r.splice(iOri, 1); return r; });
+
+    return out;
+  }
+
 </script>
 </body>
 </html>
+
 
 
 
