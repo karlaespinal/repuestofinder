@@ -1475,10 +1475,10 @@
         const planId = prof?.active_plan_id ?? null;
 
         rfAccess.plan_id = planId;
-        rfAccess.role = role;
+        rfAccess.role = roleLower;
 
         // Admin siempre full (todas las herramientas del catálogo)
-if(role === "admin"){
+if(roleLower === "admin"){
   const all = {};
   (TOOLS_CATALOG || []).forEach(t => { if(t && t.key) all[t.key] = true; });
   all.perfil = true; // por si acaso
@@ -2774,6 +2774,7 @@ if(role === "admin"){
   </script>
 </body>
 </html>
+
 
 
 
