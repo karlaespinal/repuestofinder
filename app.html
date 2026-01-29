@@ -356,9 +356,7 @@
   const OFFERS_MESSAGES_TABLE = "offer_messages"; // mensajes por chat
   const OFFERS_CHAT_PAGE = "/obsolescencia.html"; // fallback: pagina de obsolescencia
 
-  let lastOffers = [];
-    lastOffersError = '';
-  let lastOffersError = '';     // ofertas encontradas para el codigo actual
+  let lastOffers = [];     // ofertas encontradas para el codigo actual
   let modalOffer = null;   // oferta seleccionada en modal
 
   let lastPayload = null;
@@ -1244,7 +1242,6 @@ window.limpiar = function(){
       render(payload);
 
       // ✅ Ofertas activas para este codigo
-      lastOffersError = '';
       lastOffers = await fetchOffersByOriginals_(originalNorms, norm);
       renderOffersIntoProducto_(lastOffers);
 
@@ -1348,8 +1345,7 @@ window.limpiar = function(){
       }
       return data || [];
     }catch(e){
-      lastOffersError = (e?.message || String(e||''));
-      console.warn("No pude leer ofertas:", lastOffersError);
+      console.warn("No pude leer ofertas:", e?.message || e);
       return [];
     }
   }
@@ -1359,16 +1355,6 @@ window.limpiar = function(){
     if(!wrap) return;
 
     if(!offers || offers.length === 0){
-      // Si hubo error (ej: RLS bloqueando), mostramos pista
-      if(lastOffersError){
-        wrap.style.display = "block";
-        wrap.innerHTML = '<div class="offerRow"><div class="offerTitle">Ofertas</div></div>'
-          + '<div style="margin-top:8px;background:#fff3cd;border:1px solid #ffeeba;border-radius:12px;padding:10px">'
-          + '<b>No pude leer ofertas.</b> Posible RLS (policies) o permisos.<br/>'
-          + '<span style="font-size:12px;opacity:.9">Detalle: ' + escapeHtml_(lastOffersError) + '</span>'
-          + '</div>';
-        return;
-      }
       wrap.style.display = "none";
       wrap.innerHTML = "";
       return;
@@ -1684,6 +1670,8 @@ window.limpiar = function(){
 </script>
 </body>
 </html>
+
+
 
 
 
