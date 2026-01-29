@@ -1393,7 +1393,8 @@
       const items = (TOOLS_CATALOG || []).filter(t => t && t.menu);
 
       items.forEach(t=>{
-        const allowed = !!f[t.key];
+        const isAdmin = (String(rfAccess?.role || "").toLowerCase() === "admin");
+        const allowed = isAdmin ? true : !!f[t.key];
         // si no está permitido, no lo mostramos
         if(!allowed) return;
 
@@ -1476,10 +1477,13 @@
         rfAccess.plan_id = planId;
         rfAccess.role = role;
 
-        // Admin siempre full
-        if(role === "admin"){
-          rfAccess.features = { app:true, radar:true, kpis:true, mensajeria:true, perfil:true };
-        }else{
+        // Admin siempre full (todas las herramientas del catálogo)
+if(role === "admin"){
+  const all = {};
+  (TOOLS_CATALOG || []).forEach(t => { if(t && t.key) all[t.key] = true; });
+  all.perfil = true; // por si acaso
+  rfAccess.features = all;
+}else{
           rfAccess.features = await getPlanFeatures(planId);
           // Perfil siempre true
           rfAccess.features.perfil = true;
@@ -2770,6 +2774,7 @@
   </script>
 </body>
 </html>
+
 
 
 
