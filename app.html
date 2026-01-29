@@ -75,6 +75,22 @@
       .card.open .accBody{display:block;}
       .card.open .chev{transform:rotate(180deg);}
     }
+  
+    /* ===== FILTRO VEHICULAR (barra entre buscador OEM y Producto) ===== */
+    .filterBar{
+      display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:10px
+    }
+    .filterItem{min-width:140px;flex:1}
+    .filterItem.small{min-width:110px;max-width:160px;flex:0 0 auto}
+    .filterItem.medium{min-width:160px;max-width:220px;flex:0 0 auto}
+    .filterLabel{font-size:12px;color:#6b7280;margin:0 0 6px 2px;font-weight:800}
+    .filterActions{display:flex;gap:8px;align-items:flex-end;flex:0 0 auto}
+    @media(max-width:900px){
+      .filterItem{min-width:140px;flex:1 1 140px}
+      .filterActions{width:100%}
+      .filterActions button{flex:1}
+    }
+
   </style>
 </head>
 
@@ -116,6 +132,50 @@
       <span id="pillCityWrap" style="display:none"> · ciudad: <span class="pill" id="pillCity">—</span></span>
     </div>
   </div>
+
+
+  <!-- ===== Filtro vehicular (client-side) ===== -->
+  <div class="card" id="cardFiltroVehicular">
+    <div class="muted" style="font-weight:900">Buscador por Vehiculo / Año / Modelo / Motor / Descripcion</div>
+
+    <div class="filterBar">
+      <div class="filterItem medium">
+        <div class="filterLabel">Vehiculo</div>
+        <input id="fVehiculo" placeholder="Ej: Honda, Hyundai, Mercedes..." autocomplete="off"/>
+      </div>
+
+      <div class="filterItem small">
+        <div class="filterLabel">Año</div>
+        <input id="fAnio" placeholder="Ej: 1989" inputmode="numeric" autocomplete="off"/>
+      </div>
+
+      <div class="filterItem medium">
+        <div class="filterLabel">Modelo</div>
+        <input id="fModelo" placeholder="Ej: Civic, H100..." autocomplete="off"/>
+      </div>
+
+      <div class="filterItem medium">
+        <div class="filterLabel">Motor</div>
+        <input id="fMotor" placeholder="Ej: 1.6, D4BB, M276..." autocomplete="off"/>
+      </div>
+
+      <div class="filterItem">
+        <div class="filterLabel">Descripcion</div>
+        <input id="fDescripcion" placeholder="Ej: alternador, filtro, bomba..." autocomplete="off"/>
+      </div>
+
+      <div class="filterActions">
+        <button class="btn" onclick="aplicarFiltroVehicular()">Buscar</button>
+        <button class="btn2" onclick="limpiarFiltroVehicular()">Limpiar</button>
+      </div>
+    </div>
+
+    <div class="muted" style="margin-top:10px">
+      <span class="pill" id="pillFiltroEstado">Sin filtro</span>
+      <span class="muted" id="filtroHint" style="margin-left:8px;display:none"></span>
+    </div>
+  </div>
+
 
   <div class="grid2">
     <div class="card menuCard open" id="cardProducto">
@@ -223,7 +283,18 @@
     if(willOpen) el.classList.add("open");
   };
   window.addEventListener("resize", ()=>{ if(isMobile_()) setMobileDefault_(); else setDesktopDefault_(); });
-  document.addEventListener("DOMContentLoaded", ()=>{ if(isMobile_()) setMobileDefault_(); else setDesktopDefault_(); });
+  document.addEventListener("DOMContentLoaded", ()=>{ if(isMobile_()) setMobileDefault_(); else setDesktopDefault_();
+
+    // Enter en filtros => aplicar
+  ["fVehiculo","fAnio","fModelo","fMotor","fDescripcion"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el){
+      el.addEventListener("keydown", (ev)=>{
+        if(ev.key === "Enter"){ ev.preventDefault(); window.aplicarFiltroVehicular(); }
+      });
+    }
+  });
+  });
 
   window.cerrarSesion = async function(){
     try{ await supabase.auth.signOut(); }catch(e){}
@@ -889,6 +960,12 @@ function uniqueJoin_(arr, sep=" / "){
     document.getElementById("productUrl").href = productUrl;
 
     const vehicles = payload.tablas?.vehicles || null;
+    // ✅ Guardar copia completa para filtros
+    if(payload.tablas){
+      payload.tablas.vehicles_full = vehicles;
+    }
+    // reset estado del filtro al renderizar una nueva busqueda
+    setFiltroPill_("Sin filtro");
     const cambios  = payload.tablas?.cambios  || null;
 
     renderTableInto_("vehWrap", vehicles);
@@ -996,6 +1073,7 @@ function uniqueJoin_(arr, sep=" / "){
 </script>
 </body>
 </html>
+
 
 
 
