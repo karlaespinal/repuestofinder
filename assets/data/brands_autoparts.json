@@ -9,7 +9,7 @@
   { "slug": "fremax",  "name": "Fremax",  "note": "Discos y frenos" },
   { "slug": "hiq",     "name": "HI-Q",    "note": "Pastillas de freno" },
   { "slug": "tp",      "name": "TP",      "note": "Motor / componentes internos" },
-  { "slug": "pmc",     "name": "PMC",     "note": "Filtros, bandas y suspensiones" }
+  { "slug": "pmc",     "name": "PMC",     "note": "Filtros, bandas y suspensiones" },
   { "slug": "tokico",    "name": "Tokico",    "note": "Amortiguadores / suspension" },
   { "slug": "gates",     "name": "Gates",     "note": "Bandas / correas / mangueras" },
   { "slug": "hella",     "name": "Hella",     "note": "Iluminacion / sensores / electrico" },
