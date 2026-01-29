@@ -933,7 +933,7 @@
           <div class="ddMenu" id="toolsMenu" role="menu" aria-label="Herramientas">
             <div class="ddMenuHeader">Accesos rapidos</div>
 
-            <div class="ddItem" role="menuitem" onclick="goKpis()">
+            <div class="ddItem" id="tool_kpis" data-feature="kpis" role="menuitem" onclick="goKpis()">
               <div>
                 KPIs y Analisis
                 <div style="margin-top:2px">
@@ -943,7 +943,7 @@
               <span class="pill">Nuevo</span>
             </div>
 
-          <div class="ddItem" role="menuitem" onclick="goRadar()">
+          <div class="ddItem" id="tool_radar" data-feature="radar" role="menuitem" onclick="goRadar()">
               <div>
                 Radar de Demanda 
                 <div style="margin-top:2px">
@@ -953,7 +953,7 @@
               <span class="pill">Pro</span>
             </div>
 
-            <div class="ddItem" role="menuitem" onclick="goPerfil()">
+            <div class="ddItem" id="tool_perfil" data-feature="perfil" role="menuitem" onclick="goPerfil()">
               <div>
                 Perfil
                 <div style="margin-top:2px">
@@ -963,7 +963,7 @@
               <span class="pill">Cuenta</span>
             </div>
 
-            <div class="ddItem" role="menuitem" onclick="goMensajeria()">
+            <div class="ddItem" id="tool_mensajeria" data-feature="mensajeria" role="menuitem" onclick="goMensajeria()">
               <div>
                 Mensajería
                 <div style="margin-top:2px">
@@ -1380,12 +1380,104 @@
       if(isOpen) closeTools();
       else openTools();
     }
+
+    // ===== Control de acceso por Plan (UI + navegación) =====
+    // (Seguridad real: refuerza también en Supabase RLS / Edge Functions)
+    let rfAccess = {
+      plan_id: null,
+      role: "user",
+      features: {
+        app: true,
+        radar: true,
+        kpis: true,
+        mensajeria: true,
+        perfil: true
+      }
+    };
+
+    function setFeatureUI(feature, allowed){
+      const el = document.querySelector(`[data-feature="${feature}"]`);
+      if(!el) return;
+      el.style.display = allowed ? "flex" : "none";
+    }
+
+    function applyAccessUI(){
+      const f = rfAccess.features || {};
+      setFeatureUI("kpis", !!f.kpis);
+      setFeatureUI("radar", !!f.radar);
+      setFeatureUI("mensajeria", !!f.mensajeria);
+      // Perfil siempre visible
+      setFeatureUI("perfil", true);
+    }
+
+    function deny(feature){
+      closeTools();
+      alert("Tu plan no incluye esta herramienta.\n\nSi quieres acceder, haz upgrade en Perfil → Renovar / Upgrade.");
+      window.location.href = "perfil.html";
+    }
+
+    async function getPlanFeatures(planId){
+      // Intento 1: columna JSON `features` en la tabla plans
+      // Ej: { app:true, radar:true, kpis:false, mensajeria:false }
+      try{
+        const { data, error } = await supabase
+          .from("plans")
+          .select("id,features")
+          .eq("id", planId)
+          .maybeSingle();
+        if(!error && data && data.features){
+          return data.features;
+        }
+      }catch(_){/* ignore */}
+
+      // Fallback: reglas duras (por si aún no existe la columna)
+      // Plan 1 => solo App + Radar
+      if(String(planId) === "1"){
+        return { app:true, radar:true, kpis:false, mensajeria:false, perfil:true };
+      }
+
+      // Default: todo habilitado
+      return { app:true, radar:true, kpis:true, mensajeria:true, perfil:true };
+    }
+
+    async function loadAccessForUser(userId){
+      try{
+        const { data: prof, error } = await supabase
+          .from("profiles")
+          .select("id,role,active_plan_id")
+          .eq("id", userId)
+          .maybeSingle();
+        if(error) throw error;
+
+        const role = (prof?.role || "user").toLowerCase();
+        const planId = prof?.active_plan_id ?? null;
+
+        rfAccess.plan_id = planId;
+        rfAccess.role = role;
+
+        // Admin siempre full
+        if(role === "admin"){
+          rfAccess.features = { app:true, radar:true, kpis:true, mensajeria:true, perfil:true };
+        }else{
+          rfAccess.features = await getPlanFeatures(planId);
+          // Perfil siempre true
+          rfAccess.features.perfil = true;
+        }
+
+        applyAccessUI();
+      }catch(_){
+        // Si falla, no rompemos el dashboard
+        applyAccessUI();
+      }
+    }
     window.goKpis = function(){
+      if(!rfAccess.features?.kpis) return deny("kpis");
       closeTools();
       window.location.href = "kpis.html";
     }
 
     window.goRadar = function(){
+      if(!rfAccess.features?.radar) return deny("radar");
       closeTools();
       window.location.href = "radar.html";
     }
@@ -1396,6 +1488,7 @@
     }
 
     window.goMensajeria = function(){
+      if(!rfAccess.features?.mensajeria) return deny("mensajeria");
       closeTools();
       window.location.href = "mensajeria.html";
     }
@@ -1781,6 +1874,11 @@
 
       const { data: ses } = await supabase.auth.getSession();
       const user = ses?.session?.user;
+
+      // ✅ Aplicar accesos por plan (Plan 1 => solo App + Radar)
+      if(user){
+        await loadAccessForUser(user.id);
+      }
 
       // Salir solo con sesion
       if(btnLogout) btnLogout.style.display = user ? "" : "none";
@@ -2651,6 +2749,8 @@
   </script>
 </body>
 </html>
+
+
 
 
 
