@@ -385,6 +385,7 @@
       <div class="tabs" style="margin-top:12px">
         <button class="tab active" id="tabUsers" onclick="switchAdminTab('users')">Usuarios</button>
         <button class="tab" id="tabSubs" onclick="switchAdminTab('subs')">Suscripciones</button>
+        <button class="tab" id="tabPlans" onclick="switchAdminTab('plans')">Planes & Accesos</button>
       </div>
 
       <div id="paneUsers">
@@ -421,6 +422,30 @@
           </thead>
           <tbody id="adminSubsBody">
             <tr><td colspan="8" class="muted">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Planes y control de accesos por plan (Herramientas) -->
+      <div id="panePlans" style="display:none">
+        <div class="muted" style="margin:6px 0 10px">
+          Define qué se ve/usa en <b>Herramientas</b> según el plan (ej: Plan 1 solo App + Radar).
+          Esto intenta leer/escribir la columna <b>plans.features</b> (JSON). Si no existe, agrega la columna (ver SQL abajo).
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Plan</th>
+              <th>App</th>
+              <th>Radar</th>
+              <th>KPIs</th>
+              <th>Mensajería</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="adminPlansBody">
+            <tr><td colspan="6" class="muted">Cargando…</td></tr>
           </tbody>
         </table>
       </div>
@@ -573,8 +598,10 @@
     window.switchAdminTab = (tab)=>{
       $("tabUsers").classList.toggle("active", tab==="users");
       $("tabSubs").classList.toggle("active", tab==="subs");
+      $("tabPlans").classList.toggle("active", tab==="plans");
       $("paneUsers").style.display = (tab==="users") ? "block" : "none";
       $("paneSubs").style.display  = (tab==="subs")  ? "block" : "none";
+      $("panePlans").style.display = (tab==="plans") ? "block" : "none";
     };
 
     // ====== DATA LOADERS ======
@@ -880,6 +907,86 @@
       plansCache = data || [];
       return plansCache;
     }
+
+    // ====== ADMIN: Planes & Accesos (Herramientas) ======
+    function normBool(v){ return v === true || v === 1 || v === "1" || v === "true"; }
+    function normFeatures(features){
+      // features esperado: {app, radar, kpis, mensajeria}
+      const f = (features && typeof features === "object") ? features : {};
+      return {
+        app: normBool(f.app),
+        radar: normBool(f.radar),
+        kpis: normBool(f.kpis),
+        mensajeria: normBool(f.mensajeria)
+      };
+    }
+
+    function planName(p){
+      return p?.name || p?.title || p?.label || p?.plan_name || ("Plan " + (p?.id ?? ""));
+    }
+
+    async function renderAdminPlans(){
+      const body = $("adminPlansBody");
+      if(!body) return;
+
+      try{
+        const plans = await loadPlansOnce();
+        if(!plans.length){
+          body.innerHTML = `<tr><td colspan="6" class="muted">No hay planes.</td></tr>`;
+          return;
+        }
+
+        body.innerHTML = plans.map(p=>{
+          const pid = String(p?.id ?? p?.plan_id ?? "");
+          const f = normFeatures(p?.features);
+          return `
+            <tr>
+              <td>
+                <div style="font-weight:900">${escapeHtml(planName(p))}</div>
+                <div class="muted" style="margin-top:2px">ID: ${escapeHtml(pid || "—")}</div>
+              </td>
+              <td><input type="checkbox" id="pf_app_${escapeHtml(pid)}" ${f.app?"checked":""}></td>
+              <td><input type="checkbox" id="pf_radar_${escapeHtml(pid)}" ${f.radar?"checked":""}></td>
+              <td><input type="checkbox" id="pf_kpis_${escapeHtml(pid)}" ${f.kpis?"checked":""}></td>
+              <td><input type="checkbox" id="pf_msj_${escapeHtml(pid)}" ${f.mensajeria?"checked":""}></td>
+              <td>
+                <button class="btn btnPrimary btnTiny" onclick="savePlanFeatures('${escapeHtml(pid)}')">Guardar</button>
+              </td>
+            </tr>
+          `;
+        }).join("");
+
+      }catch(err){
+        body.innerHTML = `<tr><td colspan="6" class="muted">Error cargando planes: ${escapeHtml(err?.message || err)}</td></tr>`;
+      }
+    }
+
+    window.savePlanFeatures = async (planId)=>{
+      try{
+        if(!planId) return;
+
+        const app = !!document.getElementById("pf_app_" + planId)?.checked;
+        const radar = !!document.getElementById("pf_radar_" + planId)?.checked;
+        const kpis = !!document.getElementById("pf_kpis_" + planId)?.checked;
+        const mensajeria = !!document.getElementById("pf_msj_" + planId)?.checked;
+
+        setMsg($("msgAdmin"), "Guardando accesos del plan…", false);
+
+        const { error } = await supabase
+          .from(PLANS_TABLE)
+          .update({ features: { app, radar, kpis, mensajeria } })
+          .eq("id", Number(planId));
+
+        if(error) throw error;
+
+        // refrescar cache
+        plansCache = [];
+        await renderAdminPlans();
+        setMsg($("msgAdmin"), "✅ Accesos guardados.", false);
+      }catch(err){
+        setMsg($("msgAdmin"), "❌ No se pudo guardar: " + (err?.message || err), true);
+      }
+    };
 
     window.openRenew = async (userId)=>{
       renewUserId = userId;
@@ -1238,6 +1345,7 @@
         if(isAdmin){
           $("adminCard").style.display = "block";
           await loadAdminTables();
+          await renderAdminPlans();
         }else{
           $("adminCard").style.display = "none";
         }
