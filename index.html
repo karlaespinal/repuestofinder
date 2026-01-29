@@ -866,51 +866,6 @@
       transition-duration: 900ms; /* se siente mas suave al hover */
     }
 
-    /* ✅ chip clickable (igual Radar) */
-    .chipBtn{
-      border:0;
-      background:transparent;
-      padding:0;
-      cursor:pointer;
-      font:inherit;
-    }
-    .chipBtn:active{ transform: translateY(1px); }
-
-    /* ✅ Modal overlay (igual Radar) */
-    .modalOverlay{
-      position:fixed; inset:0;
-      background:rgba(2,6,23,.55);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      z-index:999;
-      padding:18px;
-    }
-    .modalBox{
-      width:min(900px, 100%);
-      background:#fff;
-      border-radius:18px;
-      border:1px solid rgba(230,232,240,.95);
-      box-shadow:0 30px 90px rgba(2,6,23,.35);
-      overflow:hidden;
-    }
-    .modalHead2{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding:12px 14px;
-      background:rgba(246,247,251,.75);
-      border-bottom:1px solid rgba(230,232,240,.95);
-    }
-    .modalHead2 b{ font-size:14px; }
-    .modalBody2{ padding:12px 14px; }
-    .modalClose2{
-      border:0; cursor:pointer; font-weight:900;
-      border-radius:12px; padding:8px 10px;
-      background:#fff; border:1px solid rgba(230,232,240,.95);
-    }
-
 
 
   </style>
@@ -1025,9 +980,9 @@
           <h1>Centro de control para tu Buscador Automotriz</h1>
           <p>
             Bienvenido a <b>RepuestoFinder</b>: una plataforma creada para acelerar la busqueda de repuestos y
-            datos de aplicacion (vehiculo, modelo, motor, años) en el mercado automotriz.
+            datos de aplicacion (vehiculo, modelo, motor, anos) en el mercado automotriz.
             Centralizamos codigos, cambios y tendencias para ayudarte a decidir mas rapido, reducir errores
-            y encontrar oportunidades de venta en LATAM y todo el mundo..
+            y encontrar oportunidades de venta en RD y LATAM.
           </p>
 
           <div class="heroActions">
@@ -1040,11 +995,10 @@
         </div>
 
         <div class="kpis">
-          <!-- ✅ KPI modificado para abrir Top Modelos de hoy -->
-          <div class="kpi clickable" onclick="openTodayModelsModal()">
+          <div class="kpi clickable" id="kpiSearchToday" onclick="openSearchTodayModal()">
             <div class="t">Busquedas (hoy)</div>
             <div class="v" id="kpiSearchTodayValue">—</div>
-            <div class="s" id="kpiSearchTodaySub">Click para ver Top Modelos de hoy</div>
+            <div class="s" id="kpiSearchTodaySub">Click para ver codigos por marca y region.</div>
             <div class="kpiHint">Ver detalle <span>▸</span></div>
           </div>
           <div class="kpi">
@@ -1251,71 +1205,7 @@
     </div>
   </div>
 
-  <!-- ✅ MODAL: Top Modelos (hoy) -->
-  <div id="todayModelsOverlay" class="modalOverlay" onclick="closeTodayModelsModal(event)">
-    <div class="modalBox" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
-      <div class="modalHead2">
-        <div>
-          <b>Busquedas de hoy (Top Modelos)</b>
-          <div class="mut" id="todayModelsSub">—</div>
-        </div>
-        <button class="modalClose2" onclick="closeTodayModelsModal()">Cerrar</button>
-      </div>
-
-      <div class="modalBody2">
-        <div class="tableWrap" style="max-height:420px">
-          <table id="tTodayModels">
-            <thead>
-              <tr><th>Modelo</th><th>Consultas</th></tr>
-            </thead>
-            <tbody>
-              <tr><td class="mut">—</td><td class="mut">—</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="mut" style="margin-top:10px;line-height:1.35">
-          Click en un modelo para ver los codigos buscados.
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ✅ MODAL 2: Detalle de códigos por modelo (igual Radar) -->
-  <div id="modelModalOverlay" class="modalOverlay" onclick="closeModelModal(event)">
-    <div class="modalBox" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
-      <div class="modalHead2">
-        <div>
-          <b id="modelModalTitle">Detalle</b>
-          <div class="mut" id="modelModalSub">—</div>
-        </div>
-        <button class="modalClose2" onclick="closeModelModal()">Cerrar</button>
-      </div>
-
-      <div class="modalBody2">
-        <div class="tableWrap" style="max-height:420px">
-          <table id="tModelCodes">
-            <thead>
-              <tr>
-                <th>Codigo buscado</th>
-                <th>Veces</th>
-                <th>Original (resuelto)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td class="mut">—</td><td class="mut">—</td><td class="mut">—</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="mut" style="margin-top:10px;line-height:1.35">
-          * “Original (resuelto)” = original_norm encontrado via cambios / datos_vehiculares.
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Instagram Floating Button -->
+    <!-- Instagram Floating Button -->
   <a href="https://www.instagram.com/repuestosfinder/"
     target="_blank"
     rel="noopener"
@@ -1339,293 +1229,6 @@
 
     const $ = (id)=>document.getElementById(id);
 
-    // ==============================
-    // TOP MODELOS "HOY" (Index) - estilo Radar
-    // Usa search_events + cambios/datos_vehiculares
-    // ==============================
-
-    // Tablas (ajusta si tus nombres son distintos)
-    const TABLE_DV_1 = "datos_vehiculares";
-    const TABLE_DV_2 = "datos_vehiculares_v2";
-    const TABLE_C_1  = "cambios";
-    const TABLE_C_2  = "cambios_v2";
-
-    // Columnas
-    const DV_COL_ORIG_NORM = "original_norm";
-    const DV_COL_ORIG      = "original";
-    const DV_COL_VEH       = "vehiculo";
-
-    const C_COL_ORIG_NORM  = "original_norm";
-    const C_COL_CAMB_NORM  = "cambio_norm";
-    const C_COL_ORIG       = "original";
-    const C_COL_CAMB       = "cambio";
-
-    function esc(s){
-      return String(s||"").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
-    }
-    function chunk(arr, size=250){
-      const out=[]; for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size));
-      return out;
-    }
-    function normKey(s){ return String(s||"").trim().toUpperCase(); }
-    function isCodeLike(s){
-      const x = String(s||"").trim();
-      if(!x) return false;
-      if(/^\d{3,}$/.test(x)) return true;
-      if(/^[A-Z0-9\-]{5,}$/i.test(x)) return true;
-      return false;
-    }
-    function isoStartEndToday(){
-      const now = new Date();
-      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0,0,0,0);
-      const end   = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1, 0,0,0,0);
-      return { startIso: start.toISOString(), endIso: end.toISOString() };
-    }
-
-    async function resolveToOriginalNorm(queries){
-      const qList = Array.from(new Set(queries.map(normKey).filter(Boolean)));
-      const out = new Map();
-
-      async function probeDV(table){
-        for(const part of chunk(qList, 250)){
-          const { data, error } = await supabase
-            .from(table)
-            .select(`${DV_COL_ORIG_NORM}, ${DV_COL_ORIG}`)
-            .or(`${DV_COL_ORIG_NORM}.in.(${part.join(",")}),${DV_COL_ORIG}.in.(${part.join(",")})`);
-          if(error || !Array.isArray(data)) continue;
-
-          for(const r of data){
-            const on = normKey(r?.[DV_COL_ORIG_NORM]);
-            const o  = normKey(r?.[DV_COL_ORIG]);
-            if(on){
-              if(qList.includes(on)) out.set(on, on);
-              if(o && qList.includes(o) && !out.has(o)) out.set(o, on);
-            }else if(o && qList.includes(o)){
-              out.set(o, o);
-            }
-          }
-        }
-      }
-
-      await probeDV(TABLE_DV_2);
-      await probeDV(TABLE_DV_1);
-
-      const missing = qList.filter(x => !out.has(x));
-      if(!missing.length) return out;
-
-      async function probeCambios(table){
-        for(const part of chunk(missing, 200)){
-          const orExpr = [
-            `${C_COL_CAMB_NORM}.in.(${part.join(",")})`,
-            `${C_COL_CAMB}.in.(${part.join(",")})`,
-            `${C_COL_ORIG_NORM}.in.(${part.join(",")})`,
-            `${C_COL_ORIG}.in.(${part.join(",")})`,
-          ].join(",");
-
-          const { data, error } = await supabase
-            .from(table)
-            .select(`${C_COL_ORIG_NORM}, ${C_COL_ORIG}, ${C_COL_CAMB_NORM}, ${C_COL_CAMB}`)
-            .or(orExpr);
-          if(error || !Array.isArray(data)) continue;
-
-          for(const r of data){
-            const origNorm = normKey(r?.[C_COL_ORIG_NORM]) || normKey(r?.[C_COL_ORIG]);
-            if(!origNorm) continue;
-
-            const cambNorm = normKey(r?.[C_COL_CAMB_NORM]);
-            const camb     = normKey(r?.[C_COL_CAMB]);
-            const orig     = normKey(r?.[C_COL_ORIG]);
-            const oNorm    = normKey(r?.[C_COL_ORIG_NORM]);
-
-            if(cambNorm && !out.has(cambNorm)) out.set(cambNorm, origNorm);
-            if(camb && !out.has(camb)) out.set(camb, origNorm);
-            if(oNorm && !out.has(oNorm)) out.set(oNorm, origNorm);
-            if(orig && !out.has(orig)) out.set(orig, origNorm);
-          }
-        }
-      }
-
-      await probeCambios(TABLE_C_2);
-      await probeCambios(TABLE_C_1);
-      return out;
-    }
-
-    async function resolveVehiculoForOriginalNorm(originalNorms){
-      const list = Array.from(new Set(originalNorms.map(normKey).filter(Boolean)));
-      const out = new Map();
-
-      async function probe(table){
-        for(const part of chunk(list, 250)){
-          const { data, error } = await supabase
-            .from(table)
-            .select(`${DV_COL_ORIG_NORM}, ${DV_COL_VEH}`)
-            .in(DV_COL_ORIG_NORM, part);
-          if(error || !Array.isArray(data)) continue;
-
-          for(const r of data){
-            const on = normKey(r?.[DV_COL_ORIG_NORM]);
-            const veh = String(r?.[DV_COL_VEH] || "").trim();
-            if(on && veh && !out.has(on)) out.set(on, veh);
-          }
-        }
-      }
-
-      await probe(TABLE_DV_2);
-      await probe(TABLE_DV_1);
-      return out;
-    }
-
-    // Guarda detalle global (igual Radar)
-    window.__rfModelDetails = {};
-
-    async function loadTodayTopModels(){
-      const tbody = document.getElementById("tTodayModels")?.querySelector("tbody");
-      if(tbody) tbody.innerHTML = `<tr><td class="mut">Cargando...</td><td class="mut">—</td></tr>`;
-
-      const { startIso, endIso } = isoStartEndToday();
-
-      // Traer eventos de hoy
-      const { data, error } = await supabase
-        .from("search_events")
-        .select("query_raw, searched_at")
-        .gte("searched_at", startIso)
-        .lt("searched_at", endIso);
-
-      if(error) throw error;
-
-      const events = (data||[]);
-      document.getElementById("todayModelsSub").textContent = `Hoy: ${events.length} busquedas`;
-
-      const queries = events.map(r => normKey(r.query_raw)).filter(x => isCodeLike(x));
-      if(!queries.length){
-        if(tbody) tbody.innerHTML = `<tr><td colspan="2" class="mut">Hoy no hay busquedas tipo codigo.</td></tr>`;
-        window.__rfModelDetails = {};
-        return;
-      }
-
-      const qToOrigNorm = await resolveToOriginalNorm(queries);
-      const origNorms = Array.from(new Set(Array.from(qToOrigNorm.values())));
-      const origNormToVeh = await resolveVehiculoForOriginalNorm(origNorms);
-
-      const count = new Map();   // veh -> total
-      const detail = new Map();  // veh -> Map(code -> {n, original_norm})
-
-      for(const ev of events){
-        const qx = normKey(ev.query_raw);
-        if(!isCodeLike(qx)) continue;
-
-        const on = qToOrigNorm.get(qx);
-        if(!on) continue;
-
-        const veh = origNormToVeh.get(on);
-        if(!veh) continue;
-
-        count.set(veh, (count.get(veh)||0) + 1);
-
-        if(!detail.has(veh)) detail.set(veh, new Map());
-        const m = detail.get(veh);
-
-        const cur = m.get(qx) || { n: 0, original_norm: on || "" };
-        cur.n += 1;
-        cur.original_norm = on || cur.original_norm;
-        m.set(qx, cur);
-      }
-
-      const rows = Array.from(count.entries())
-        .map(([veh, n]) => ({ veh, n }))
-        .sort((a,b)=> b.n - a.n)
-        .slice(0, 20);
-
-      // Armar diccionario global para el modal de codigos
-      const outObj = {};
-      for(const r of rows){
-        const m = detail.get(r.veh) || new Map();
-        const codesArr = Array.from(m.entries())
-          .map(([code, info]) => ({ code, n: info.n, original_norm: info.original_norm || "" }))
-          .sort((a,b)=> b.n - a.n);
-
-        outObj[r.veh] = { total: r.n, codes: codesArr };
-      }
-      window.__rfModelDetails = outObj;
-
-      if(tbody){
-        tbody.innerHTML = rows.map(r=>`
-          <tr>
-            <td>
-              <button class="chipBtn" onclick="openModelCodes('${esc(r.veh)}')" title="Ver codigos buscados">
-                <span class="badge">${esc(r.veh)}</span>
-              </button>
-            </td>
-            <td><b>${r.n}</b></td>
-          </tr>
-        `).join("") || `<tr><td colspan="2" class="mut">Sin datos para hoy.</td></tr>`;
-      }
-    }
-
-    // Abrir/cerrar modal principal
-    window.openTodayModelsModal = async function(){
-      const overlay = document.getElementById("todayModelsOverlay");
-      if(overlay) overlay.style.display = "flex";
-      await loadTodayTopModels();
-    };
-    window.closeTodayModelsModal = function(){
-      const overlay = document.getElementById("todayModelsOverlay");
-      if(overlay) overlay.style.display = "none";
-    };
-    window.closeTodayModelsModal = function(ev){
-      const overlay = document.getElementById("todayModelsOverlay");
-      if(!overlay) return;
-      overlay.style.display = "none";
-    };
-
-    // Modal de codigos (igual Radar)
-    window.openModelCodes = function(veh){
-      const v = String(veh||"").trim();
-      const data = window.__rfModelDetails?.[v];
-
-      const overlay = document.getElementById("modelModalOverlay");
-      const title = document.getElementById("modelModalTitle");
-      const sub = document.getElementById("modelModalSub");
-      const tbody = document.getElementById("tModelCodes")?.querySelector("tbody");
-
-      if(title) title.textContent = `Codigos buscados: ${v}`;
-      if(sub) sub.textContent = data ? `Total consultas: ${data.total}` : "Sin detalle disponible";
-
-      if(tbody){
-        if(!data || !Array.isArray(data.codes) || !data.codes.length){
-          tbody.innerHTML = `<tr><td colspan="3" class="mut">No hay codigos para mostrar.</td></tr>`;
-        }else{
-          tbody.innerHTML = data.codes.slice(0,200).map(x=>`
-            <tr>
-              <td><span class="badge">${esc(x.code)}</span></td>
-              <td><b>${x.n}</b></td>
-              <td class="mut">${x.original_norm ? esc(x.original_norm) : "—"}</td>
-            </tr>
-          `).join("");
-        }
-      }
-
-      if(overlay) overlay.style.display = "flex";
-    };
-
-    window.closeModelModal = function(){
-      const overlay = document.getElementById("modelModalOverlay");
-      if(overlay) overlay.style.display = "none";
-    };
-
-    // Cerrar con ESC
-    window.addEventListener("keydown", (e)=>{
-      if(e.key === "Escape"){
-        const a = document.getElementById("modelModalOverlay");
-        const b = document.getElementById("todayModelsOverlay");
-        if(a && a.style.display === "flex") a.style.display = "none";
-        if(b && b.style.display === "flex") b.style.display = "none";
-      }
-    });
-
-    // ========================================
-    // CONTINÚA EL CÓDIGO ORIGINAL DESDE AQUÍ
-    // ========================================
 
     function setMsg(el, text, isErr){
       if(!el) return;
@@ -2606,6 +2209,7 @@
   </script>
 </body>
 </html>
+
 
 
 
