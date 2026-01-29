@@ -192,6 +192,7 @@
         <span class="chip" id="who">—</span>
         <a class="btn btnGhost btnSmall" href="index.html">Dashboard</a>
         <a class="btn btnGhost btnSmall" href="app.html">App</a>
+        <a class="btn btnGhost btnSmall hidden" id="loginBtn" href="index.html?stay=1">Iniciar sesión</a>
         <button class="btn btnGhost btnSmall" onclick="logout()">Salir</button>
       </div>
     </div>
@@ -438,7 +439,14 @@
       const isDemo = params.get("demo") === "1";
 
       if(!me && !isDemo){
-        location.href = "/?stay=1";
+        $("who").textContent = "No autenticado";
+        $("loginBtn").classList.remove("hidden");
+        setMsg($("msg"), "Debes iniciar sesión para cargar y publicar ofertas.", true);
+        // Ocultar acciones que requieren sesión
+        offersCache = [];
+        chatsCache = [];
+        renderOffers();
+        renderChats();
         return;
       }
 
@@ -484,13 +492,13 @@
 
       supabase.auth.onAuthStateChange((event, session)=>{
         const isDemo2 = (new URLSearchParams(location.search)).get("demo")==="1";
-        if(!session && !isDemo2) location.href = "/?stay=1";
+        if(!session && !isDemo2) location.href = "index.html?stay=1";
       });
     }
 
     async function logout(){
       try{ await supabase.auth.signOut(); }catch(_){}
-      location.href = "/?stay=1";
+      location.href = "index.html?stay=1";
     }
 
     function clearForm(){
@@ -821,3 +829,4 @@
   </script>
 </body>
 </html>
+
