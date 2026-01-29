@@ -76,60 +76,48 @@
       .card.open .chev{transform:rotate(180deg);}
     }
   
-    /* ===== FILTRO VEHICULAR (layout corregido) ===== */
+    /* ===== FILTRO VEHICULAR (barra entre buscador OEM y Producto) ===== */
     .filterBar{
-      display: grid;
-      grid-template-columns: 
-        minmax(180px, 1.2fr)  /* Vehiculo */
-        minmax(120px, 0.7fr)  /* Año */
-        minmax(160px, 1fr)    /* Modelo */
-        minmax(160px, 1fr)    /* Motor */
-        minmax(220px, 1.5fr)  /* Descripcion */
+      display:grid;
+      grid-template-columns:
+        minmax(180px, 1.1fr)  /* Vehiculo */
+        minmax(110px, 0.6fr)  /* Año */
+        minmax(160px, 0.9fr)  /* Modelo */
+        minmax(160px, 0.9fr)  /* Motor */
+        minmax(240px, 1.5fr)  /* Descripcion */
         auto;                 /* Botones */
-      gap: 14px;
-      align-items: end;
-      margin-top: 14px;
+      gap:14px;
+      align-items:end;
+      margin-top:14px;
+      width:100%;
     }
 
-    .filterItem{
-      display: flex;
-      flex-direction: column;
+    .filterItem{display:flex;flex-direction:column;min-width:0}
+    .filterLabel{font-size:12px;color:#6b7280;margin:0 0 6px 2px;font-weight:800}
+
+    /* inputs del filtro (más compactos que el input principal) */
+    .filterBar input{
+      width:100%;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid #d7dbe7;
+      font-size:14px;
+      height:40px;
+      box-sizing:border-box;
     }
 
-    .filterLabel{
-      font-size: 12px;
-      color: #6b7280;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
+    .filterActions{display:flex;gap:10px;align-items:end}
+    .filterActions button{height:40px;padding:0 16px;white-space:nowrap}
 
-    .filterItem input{
-      height: 38px;
+    /* Responsive */
+    @media (max-width:1100px){
+      .filterBar{grid-template-columns:repeat(2, minmax(0,1fr));}
+      .filterActions{justify-content:flex-end}
     }
-
-    /* Botones */
-    .filterActions{
-      display: flex;
-      gap: 10px;
-    }
-
-    .filterActions button{
-      height: 38px;
-      padding: 0 16px;
-      white-space: nowrap;
-    }
-
-    /* ===== Responsive ===== */
-    @media (max-width: 1100px){
-      .filterBar{
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 600px){
-      .filterBar{
-        grid-template-columns: 1fr;
-      }
+    @media (max-width:600px){
+      .filterBar{grid-template-columns:1fr;}
+      .filterActions{width:100%}
+      .filterActions button{flex:1}
     }
 
 
@@ -336,7 +324,7 @@
       });
     }
   });
-  });
+});
 
   window.cerrarSesion = async function(){
     try{ await supabase.auth.signOut(); }catch(e){}
@@ -876,7 +864,228 @@ function uniqueJoin_(arr, sep=" / "){
 
   // ======================================================
 
-  window.limpiar = function(){
+  
+  // ======================================================
+  // ✅ Buscador Vehicular (consulta real a Supabase)
+  //  - Vehiculo / Modelo / Motor / Descripcion: ilike "%texto%"
+  //  - Año: match si anio_inicio <= año <= anio_final
+  //  - Busca en ambas tablas de VEH_TABLES y hace dedupe
+  // ======================================================
+
+  function strNorm_(v){ return String(v ?? "").trim().toLowerCase(); }
+
+  function readFiltro_(){
+    const vehiculo = strNorm_(document.getElementById("fVehiculo")?.value);
+    const modelo   = strNorm_(document.getElementById("fModelo")?.value);
+    const motor    = strNorm_(document.getElementById("fMotor")?.value);
+    const desc     = strNorm_(document.getElementById("fDescripcion")?.value);
+
+    const anioRaw  = strNorm_(document.getElementById("fAnio")?.value);
+    const anioNum  = anioRaw ? Number(anioRaw.replace(/[^0-9]/g,"")) : null;
+
+    const anio = (anioNum && Number.isFinite(anioNum)) ? anioNum : null;
+    const hasAny = !!(vehiculo || modelo || motor || desc || anio);
+    return { vehiculo, modelo, motor, desc, anio, hasAny };
+  }
+
+  function setFiltroPill_(txt, hint){
+    const pill = document.getElementById("pillFiltroEstado");
+    const hintEl = document.getElementById("filtroHint");
+    if(pill) pill.textContent = txt || "Sin filtro";
+    if(hintEl){
+      if(hint){
+        hintEl.style.display = "inline";
+        hintEl.textContent = hint;
+      }else{
+        hintEl.style.display = "none";
+        hintEl.textContent = "";
+      }
+    }
+  }
+
+  async function fetchVehiclesByFilters_(f){
+    const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion";
+
+    let all = [];
+    for(const t of VEH_TABLES){
+      let q = supabase.from(t).select(selectCols).limit(5000);
+
+      if(f.vehiculo) q = q.ilike("vehiculo", "%" + f.vehiculo + "%");
+      if(f.modelo)   q = q.ilike("modelo",   "%" + f.modelo   + "%");
+      if(f.motor)    q = q.ilike("motor",    "%" + f.motor    + "%");
+      if(f.desc)     q = q.ilike("descripcion", "%" + f.desc  + "%");
+
+      if(f.anio){
+        // match por rango: inicio <= año <= final
+        q = q.lte("anio_inicio", f.anio).gte("anio_final", f.anio);
+      }
+
+      const { data, error } = await q;
+      if(error) throw error;
+      all = all.concat(data || []);
+    }
+
+    if(all.length === 0) return { headers: [], rows: [] };
+
+    // Dedupe (si existe en v1 y v2)
+    all = dedupeByKey_(all, r => [
+      r.vehiculo, r.anio_inicio, r.anio_final, r.modelo, r.motor,
+      r.serie, r.cilindro, r.posicion, r.version, r.descripcion
+    ].map(normCell_).join("|"));
+
+    // Orden base
+    all.sort((a,b)=>{
+      const va = String(a?.vehiculo||"");
+      const vb = String(b?.vehiculo||"");
+      if(va !== vb) return va.localeCompare(vb);
+      const ma = String(a?.modelo||"");
+      const mb = String(b?.modelo||"");
+      if(ma !== mb) return ma.localeCompare(mb);
+      return (Number(a?.anio_inicio||0) - Number(b?.anio_inicio||0));
+    });
+
+    const headersKeys = ["vehiculo","anio_inicio","anio_final","modelo","motor","serie","cilindro","posicion","version","descripcion"];
+    const headerLabel = (k)=>{
+      if(k === "vehiculo") return "Vehiculo";
+      if(k === "anio_inicio") return "Año inicio";
+      if(k === "anio_final")  return "Año final";
+      if(k === "modelo") return "Modelo";
+      if(k === "motor") return "Motor";
+      if(k === "serie") return "Serie";
+      if(k === "cilindro") return "Cilindro";
+      if(k === "posicion") return "Posicion";
+      if(k === "version") return "Version";
+      if(k === "descripcion") return "Descripcion";
+      return k.replace(/_/g," ").replace(/^./, c => c.toUpperCase());
+    };
+
+    const headers = headersKeys.map(headerLabel);
+    const rows = all.map(obj => headersKeys.map(k => (obj?.[k] ?? "")));
+
+    return { headers, rows };
+  }
+
+  window.aplicarFiltroVehicular = async function(){
+    const filtro = readFiltro_();
+    if(!filtro.hasAny){
+      setFiltroPill_("Sin filtro");
+      alert("Escribe al menos un campo para buscar.");
+      return;
+    }
+
+    // Si ya hay resultado OEM cargado, filtra SOLO eso (más rápido)
+    if(lastPayload && lastPayload.tablas && lastPayload.tablas.vehicles_full){
+      const base = lastPayload.tablas.vehicles_full;
+      // Filtrado client-side usando los mismos headers esperados
+      const idxVeh = base.headers.findIndex(h => String(h).toLowerCase().includes("vehiculo"));
+      const idxY1  = base.headers.findIndex(h => String(h).toLowerCase().includes("año inicio") || String(h).toLowerCase().includes("anio inicio"));
+      const idxY2  = base.headers.findIndex(h => String(h).toLowerCase().includes("año final")  || String(h).toLowerCase().includes("anio final"));
+      const idxMod = base.headers.findIndex(h => String(h).toLowerCase().includes("modelo"));
+      const idxMot = base.headers.findIndex(h => String(h).toLowerCase().includes("motor"));
+      const idxDes = base.headers.findIndex(h => String(h).toLowerCase().includes("descripcion") || String(h).toLowerCase().includes("descripción") || String(h).toLowerCase().includes("description"));
+
+      const rows = (base.rows||[]).filter(r=>{
+        const vVeh = idxVeh>=0 ? strNorm_(r[idxVeh]) : "";
+        const vMod = idxMod>=0 ? strNorm_(r[idxMod]) : "";
+        const vMot = idxMot>=0 ? strNorm_(r[idxMot]) : "";
+        const vDes = idxDes>=0 ? strNorm_(r[idxDes]) : "";
+
+        if(filtro.vehiculo && !vVeh.includes(filtro.vehiculo)) return false;
+        if(filtro.modelo && !vMod.includes(filtro.modelo)) return false;
+        if(filtro.motor && !vMot.includes(filtro.motor)) return false;
+        if(filtro.desc && !vDes.includes(filtro.desc)) return false;
+
+        if(filtro.anio && (idxY1>=0 || idxY2>=0)){
+          const y1 = idxY1>=0 ? Number(String(r[idxY1]??"").replace(/[^0-9]/g,"")) : NaN;
+          const y2 = idxY2>=0 ? Number(String(r[idxY2]??"").replace(/[^0-9]/g,"")) : NaN;
+          if(Number.isFinite(y1) && Number.isFinite(y2)){
+            if(!(filtro.anio >= y1 && filtro.anio <= y2)) return false;
+          }
+        }
+        return true;
+      });
+
+      const filtered = { headers: base.headers, rows };
+      lastPayload.tablas.vehicles = filtered;
+      renderTableInto_("vehWrap", filtered);
+
+      document.getElementById("btnCopyVeh").disabled = !(rows.length>0);
+      document.getElementById("counts").textContent =
+        "Vehicles: " + rows.length + " | Cambios: " + ((lastPayload.tablas?.cambios?.rows||[]).length || 0);
+
+      document.getElementById("btnExport").disabled = rows.length===0 && ((lastPayload.tablas?.cambios?.rows||[]).length||0)===0;
+
+      const used = [];
+      if(filtro.vehiculo) used.push("Vehiculo");
+      if(filtro.anio) used.push("Año");
+      if(filtro.modelo) used.push("Modelo");
+      if(filtro.motor) used.push("Motor");
+      if(filtro.desc) used.push("Descripcion");
+      setFiltroPill_("Filtro activo", "Campos: " + used.join(", "));
+      return;
+    }
+
+    // Si no hay OEM cargado => buscar directo en BD
+    setStatus("Buscando vehiculos...");
+
+    try{
+      const veh = await fetchVehiclesByFilters_(filtro);
+
+      lastPayload = {
+        codigo: "FILTRO_VEHICULAR",
+        productUrl: buildGoogleUrl_("vehiculo " + (filtro.vehiculo||"")),
+        tablas: { vehicles: veh, cambios: { headers: [], rows: [] }, vehicles_full: veh }
+      };
+
+      renderTableInto_("vehWrap", veh);
+      renderTableInto_("oeWrap", { headers: [], rows: [] });
+
+      const vehCount = (veh?.rows||[]).length;
+
+      document.getElementById("pillCode").textContent = "Filtro Vehicular";
+      document.getElementById("counts").textContent = "Vehicles: " + vehCount + " | Cambios: 0";
+      document.getElementById("btnCopyVeh").disabled = vehCount===0;
+      document.getElementById("btnCopyOE").disabled = true;
+      document.getElementById("btnExport").disabled = vehCount===0;
+
+      const used = [];
+      if(filtro.vehiculo) used.push("Vehiculo");
+      if(filtro.anio) used.push("Año");
+      if(filtro.modelo) used.push("Modelo");
+      if(filtro.motor) used.push("Motor");
+      if(filtro.desc) used.push("Descripcion");
+      setFiltroPill_(vehCount? "Filtro activo" : "Sin resultados", "Campos: " + used.join(", "));
+
+      setStatus("Listo ✅");
+    }catch(e){
+      console.error(e);
+      setStatus("Error: " + (e?.message || e));
+      alert("Error buscando en BD: " + (e?.message || e));
+    }
+  };
+
+  window.limpiarFiltroVehicular = function(){
+    ["fVehiculo","fAnio","fModelo","fMotor","fDescripcion"].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.value = "";
+    });
+    setFiltroPill_("Sin filtro");
+
+    if(lastPayload && lastPayload.tablas && lastPayload.tablas.vehicles_full){
+      lastPayload.tablas.vehicles = lastPayload.tablas.vehicles_full;
+      renderTableInto_("vehWrap", lastPayload.tablas.vehicles_full);
+
+      const vehCount = (lastPayload.tablas.vehicles_full?.rows||[]).length;
+      const cambCount = (lastPayload.tablas?.cambios?.rows||[]).length;
+
+      document.getElementById("btnCopyVeh").disabled = vehCount===0;
+      document.getElementById("counts").textContent = "Vehicles: " + vehCount + " | Cambios: " + cambCount;
+      document.getElementById("btnExport").disabled = (vehCount===0 && cambCount===0);
+    }
+  };
+
+
+window.limpiar = function(){
     lastPayload = null;
     document.getElementById("btnExport").disabled = true;
     document.getElementById("btnCopyOE").disabled = true;
@@ -1115,6 +1324,8 @@ function uniqueJoin_(arr, sep=" / "){
 </script>
 </body>
 </html>
+
+
 
 
 
