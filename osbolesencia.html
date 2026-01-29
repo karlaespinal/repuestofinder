@@ -258,8 +258,8 @@
 </div>
 <div style="height:12px"></div>
 <div class="row">
-<button class="btn" onclick="createOffer()">Guardar oferta</button>
-<button class="btn btnGhost" onclick="clearForm()">Limpiar</button>
+<button class="btn" id="btnSave">Guardar oferta</button>
+<button class="btn btnGhost" id="btnClear">Limpiar</button>
 <span class="muted2" id="hint">—</span>
 </div>
 <div style="height:16px"></div>
@@ -267,7 +267,7 @@
 <b>Mis ofertas</b>
 <div class="row">
 <input class="inp" id="q" oninput="renderOffers()" placeholder="Filtrar (OEM / marca / país)" style="min-width:280px"/>
-<button class="btn btnGhost btnSmall" onclick="loadOffers(true)">Actualizar</button>
+<button class="btn btnGhost btnSmall" id="btnRefreshOffers">Actualizar</button>
 </div>
 </div>
 <div style="height:10px"></div>
@@ -295,7 +295,7 @@
 <b>Chats de ofertas</b>
 <div class="row">
 <span class="chip" id="chatMeta">—</span>
-<button class="btn btnGhost btnSmall" onclick="loadChats(true)">Actualizar</button>
+<button class="btn btnGhost btnSmall" id="btnRefreshChats">Actualizar</button>
 </div>
 </div>
 <div class="cardBody">
@@ -392,23 +392,7 @@
     }
 
 
-    
-function fmtErr(e){
-  try{
-    if(!e) return "";
-    // Supabase suele traer: message, details, hint, code
-    const obj = {};
-    ["message","details","hint","code","status"].forEach(k=>{ if(e[k]!=null) obj[k]=e[k]; });
-    // some errors are nested
-    if(e.error) obj.error = e.error;
-    const s = JSON.stringify(obj, null, 2);
-    return s && s !== "{}" ? s : String(e);
-  }catch(_){
-    return String(e);
-  }
-}
-
-function explainSetupError(e){
+    function explainSetupError(e){
       const msg = String(e?.message || e || "");
       const code = String(e?.code || "");
       const missing = (code === "42P01") || /does not exist/i.test(msg) || /relation .* does not exist/i.test(msg);
@@ -535,19 +519,12 @@ function explainSetupError(e){
           expires_at: expiresAt
         };
 
-        const { data, error } = await supabase
-          .from(OFFERS_TABLE)
-          .insert([payload])
-          .select("*")
-          .single();
+        const { error } = await supabase.from(OFFERS_TABLE).insert([payload]);
         if(error) throw error;
 
         $("hint").textContent = "Oferta guardada ✅";
-        // insercion ok: refrescamos la lista
         clearForm();
         await loadOffers(true);
-        // debug opcional
-        console.log("Oferta insertada:", data);
       }catch(e){
         console.error(e);
         setMsg($("msg"), (explainSetupError(e) || (e?.message || e)), true);
@@ -824,7 +801,29 @@ function explainSetupError(e){
 
     // init
     initAuth();
-  </script>
+  
+// ====== BIND UI EVENTS (module-safe) ======
+function bindUI(){
+  const bSave = document.getElementById("btnSave");
+  if(bSave) bSave.addEventListener("click", (ev)=>{ ev.preventDefault(); createOffer(); });
+
+  const bClear = document.getElementById("btnClear");
+  if(bClear) bClear.addEventListener("click", (ev)=>{ ev.preventDefault(); clearForm(); });
+
+  const bRO = document.getElementById("btnRefreshOffers");
+  if(bRO) bRO.addEventListener("click", (ev)=>{ ev.preventDefault(); loadOffers(true); });
+
+  const bRC = document.getElementById("btnRefreshChats");
+  if(bRC) bRC.addEventListener("click", (ev)=>{ ev.preventDefault(); loadChats(true); });
+
+  // Si por alguna razón quedó algún onclick en HTML, exponemos funciones al window.
+  window.createOffer = createOffer;
+  window.clearForm = clearForm;
+  window.loadOffers = loadOffers;
+  window.loadChats = loadChats;
+}
+
+</script>
 </body>
 </html>
 
