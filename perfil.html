@@ -434,16 +434,7 @@
         </div>
 
         <table>
-          <thead>
-            <tr>
-              <th>Plan</th>
-              <th>App</th>
-              <th>Radar</th>
-              <th>KPIs</th>
-              <th>Mensajería</th>
-              <th>Acción</th>
-            </tr>
-          </thead>
+          <thead id="adminPlansHead"></thead>
           <tbody id="adminPlansBody">
             <tr><td colspan="6" class="muted">Cargando…</td></tr>
           </tbody>
@@ -526,6 +517,16 @@
 
   <script type="module">
     import { supabase } from "./assets/supabaseClient.js";
+
+    // ========= CATALOGO UNICO DE HERRAMIENTAS (1 solo lugar) =========
+    // Agrega herramientas aquí y el Admin verá los permisos automáticamente.
+    const TOOLS_CATALOG = [
+      { key: "app",        label: "App", managed: true },
+      { key: "radar",      label: "Radar de Demanda", managed: true },
+      { key: "kpis",       label: "KPIs y Analisis", managed: true },
+      { key: "mensajeria", label: "Mensajería", managed: true },
+    ];
+
 
     const $ = (id)=>document.getElementById(id);
 
@@ -926,65 +927,87 @@
     }
 
     async function renderAdminPlans(){
+      const head = $("adminPlansHead");
       const body = $("adminPlansBody");
       if(!body) return;
 
-      try{
-        const plans = await loadPlansOnce();
-        if(!plans.length){
-          body.innerHTML = `<tr><td colspan="6" class="muted">No hay planes.</td></tr>`;
-          return;
-        }
+      const tools = (TOOLS_CATALOG || []).filter(t => t && t.managed);
 
-        body.innerHTML = plans.map(p=>{
-          const pid = String(p?.id ?? p?.plan_id ?? "");
-          const f = normFeatures(p?.features);
-          return `
-            <tr>
-              <td>
-                <div style="font-weight:900">${escapeHtml(planName(p))}</div>
-                <div class="muted" style="margin-top:2px">ID: ${escapeHtml(pid || "—")}</div>
-              </td>
-              <td><input type="checkbox" id="pf_app_${escapeHtml(pid)}" ${f.app?"checked":""}></td>
-              <td><input type="checkbox" id="pf_radar_${escapeHtml(pid)}" ${f.radar?"checked":""}></td>
-              <td><input type="checkbox" id="pf_kpis_${escapeHtml(pid)}" ${f.kpis?"checked":""}></td>
-              <td><input type="checkbox" id="pf_msj_${escapeHtml(pid)}" ${f.mensajeria?"checked":""}></td>
-              <td>
-                <button class="btn btnPrimary btnTiny" onclick="savePlanFeatures('${escapeHtml(pid)}')">Guardar</button>
-              </td>
-            </tr>
-          `;
-        }).join("");
-
-      }catch(err){
-        body.innerHTML = `<tr><td colspan="6" class="muted">Error cargando planes: ${escapeHtml(err?.message || err)}</td></tr>`;
+      // Header dinámico
+      if(head){
+        head.innerHTML = `
+          <tr>
+            <th>Plan</th>
+            ${tools.map(t=>`<th>${escapeHtml(t.label || t.key)}</th>`).join("")}
+            <th>Acción</th>
+          </tr>
+        `;
       }
+
+      (async ()=>{
+        try{
+          const plans = await loadPlansOnce();
+          if(!plans.length){
+            const cols = 2 + tools.length;
+            body.innerHTML = `<tr><td colspan="${cols}" class="muted">No hay planes.</td></tr>`;
+            return;
+          }
+
+          body.innerHTML = plans.map(p=>{
+            const pid = String(p?.id ?? p?.plan_id ?? "");
+            const f = normFeatures(p?.features);
+
+            const checks = tools.map(t=>{
+              const key = t.key;
+              const id = `pf_${key}_${pid}`;
+              const checked = f[key] ? "checked" : "";
+              return `<td><input type="checkbox" id="${escapeHtml(id)}" ${checked}></td>`;
+            }).join("");
+
+            return `
+              <tr>
+                <td>
+                  <div style="font-weight:900">${escapeHtml(planName(p))}</div>
+                  <div class="muted" style="margin-top:2px">ID: ${escapeHtml(pid || "—")}</div>
+                </td>
+                ${checks}
+                <td>
+                  <button class="btn btnPrimary btnTiny" onclick="savePlanFeatures('${escapeHtml(pid)}')">Guardar</button>
+                </td>
+              </tr>
+            `;
+          }).join("");
+
+        }catch(err){
+          const cols = 2 + tools.length;
+          body.innerHTML = `<tr><td colspan="${cols}" class="muted">Error cargando planes: ${escapeHtml(err?.message || err)}</td></tr>`;
+        }
+      })();
     }
 
-    window.savePlanFeatures = async (planId)=>{
+window.savePlanFeatures = async (planId)=>{
       try{
         if(!planId) return;
 
-        const app = !!document.getElementById("pf_app_" + planId)?.checked;
-        const radar = !!document.getElementById("pf_radar_" + planId)?.checked;
-        const kpis = !!document.getElementById("pf_kpis_" + planId)?.checked;
-        const mensajeria = !!document.getElementById("pf_msj_" + planId)?.checked;
+        const tools = (TOOLS_CATALOG || []).filter(t => t && t.managed);
+        const features = {};
 
-        setMsg($("msgAdmin"), "Guardando accesos del plan…", false);
+        tools.forEach(t=>{
+          const key = t.key;
+          const el = document.getElementById(`pf_${key}_` + planId);
+          features[key] = !!(el && el.checked);
+        });
 
         const { error } = await supabase
           .from(PLANS_TABLE)
-          .update({ features: { app, radar, kpis, mensajeria } })
-          .eq("id", Number(planId));
+          .update({ features })
+          .eq("id", planId);
 
         if(error) throw error;
 
-        // refrescar cache
-        plansCache = [];
-        await renderAdminPlans();
-        setMsg($("msgAdmin"), "✅ Accesos guardados.", false);
+        showAdminMsg("✅ Guardado. Permisos actualizados para el plan " + planId);
       }catch(err){
-        setMsg($("msgAdmin"), "❌ No se pudo guardar: " + (err?.message || err), true);
+        showAdminMsg("❌ No se pudo guardar: " + (err?.message || err), true);
       }
     };
 
@@ -1364,3 +1387,4 @@
   </script>
 </body>
 </html>
+
