@@ -911,29 +911,6 @@
       background:#fff; border:1px solid rgba(230,232,240,.95);
     }
 
-    .newsControls{
-      display:flex;
-      justify-content:flex-end;
-      gap:8px;
-      padding:8px 12px;
-    }
-
-    .newsBtn{
-      border:1px solid rgba(230,232,240,.95);
-      background:#fff;
-      border-radius:10px;
-      padding:6px 10px;
-      font-size:14px;
-      font-weight:900;
-      cursor:pointer;
-      box-shadow:0 6px 14px rgba(2,6,23,.08);
-    }
-
-    .newsBtn:hover{
-      background:rgba(37,99,235,.08);
-    }
-
-
 
 
   </style>
@@ -1096,11 +1073,6 @@
 
       <div class="newsViewport" id="newsViewport">
         <div class="newsTrack" id="newsTrack"></div>
-      </div>
-
-      <div class="newsControls">
-        <button class="newsBtn" onclick="prevNews()">◀</button>
-        <button class="newsBtn" onclick="nextNews()">▶</button>
       </div>
 
       <div class="newsEmpty" id="newsEmpty" style="display:none">
@@ -2199,27 +2171,6 @@
 
     let newsState = { items: [], idx: 0, timer: null, paused: false };
 
-    window.nextNews = function(){
-      if(!newsState.items.length) return;
-
-      newsState.idx = (newsState.idx + 1) % newsState.items.length;
-      const shift = -newsState.idx * 100;
-      document.getElementById("newsTrack").style.transform =
-        `translate3d(${shift}%,0,0)`;
-    };
-
-    window.prevNews = function(){
-      if(!newsState.items.length) return;
-
-      newsState.idx =
-        (newsState.idx - 1 + newsState.items.length) % newsState.items.length;
-
-      const shift = -newsState.idx * 100;
-      document.getElementById("newsTrack").style.transform =
-        `translate3d(${shift}%,0,0)`;
-    };
-
-
     function renderNewsCards(items){
       const wrap = $("newsWrap");
       const track = $("newsTrack");
@@ -2380,7 +2331,7 @@
     }
 
         // ===== Noticias del dia (Apps Script JSONP) =====
-      const NEWS_ROTATE_MS = 25000; // 25 segundos
+      const NEWS_ROTATE_MS = 10000; // 10 segundos
 
       // 👇 PEGA AQUÍ tu URL /exec del Apps Script (la misma que probaste en el browser)
       const NEWS_JSONP_URL = "https://script.google.com/macros/s/AKfycbzaSozTuv-8dJCPY01Rg7cJsqUVrVkm2CsCj85xiwMV7ljZrImaFWEHunBsByi3IEg/exec?callback=rfNewsCallback";
@@ -2655,5 +2606,6 @@
   </script>
 </body>
 </html>
+
 
 
