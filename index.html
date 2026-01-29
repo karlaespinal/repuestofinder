@@ -1471,14 +1471,14 @@
           .maybeSingle();
         if(error) throw error;
 
-        const role = (prof?.role || "user").toLowerCase();
+        const role = String(prof?.role || "user").trim().toLowerCase();
         const planId = prof?.active_plan_id ?? null;
 
         rfAccess.plan_id = planId;
-        rfAccess.role = roleLower;
+        rfAccess.role = role;
 
         // Admin siempre full (todas las herramientas del catálogo)
-if(roleLower === "admin"){
+if(role.includes("admin")){
   const all = {};
   (TOOLS_CATALOG || []).forEach(t => { if(t && t.key) all[t.key] = true; });
   all.perfil = true; // por si acaso
@@ -2774,6 +2774,8 @@ if(roleLower === "admin"){
   </script>
 </body>
 </html>
+
+
 
 
 
