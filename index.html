@@ -227,6 +227,100 @@
     .kpi .v{font-size:18px;font-weight:900;margin-top:6px}
     .kpi .s{font-size:12px;color:var(--mut);margin-top:6px;line-height:1.35}
 
+    /* ===== KPI clickeable ===== */
+    .kpi.clickable{ cursor:pointer; }
+    .kpi.clickable:hover{
+      box-shadow:0 14px 28px rgba(2,6,23,.10);
+      border-color:rgba(37,99,235,.22);
+    }
+    .kpiHint{
+      margin-top:8px;
+      font-size:11px;
+      font-weight:900;
+      color:var(--pri);
+    }
+    .kpiHint span{ opacity:.7; }
+
+    /* ===== Modal Busquedas (Hoy) ===== */
+    .statsGrid{
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap:12px;
+    }
+    @media(max-width:860px){
+      .statsGrid{ grid-template-columns:1fr; }
+    }
+    .statsPanel{
+      border:1px solid rgba(230,232,240,.95);
+      border-radius:16px;
+      background:#fff;
+      overflow:hidden;
+    }
+    .statsPanelHead{
+      padding:10px 12px;
+      font-weight:900;
+      font-size:12px;
+      color:#0f172a;
+      background:rgba(246,247,251,.72);
+      border-bottom:1px solid rgba(230,232,240,.95);
+    }
+    .statsPanelBody{ padding:10px 12px; }
+
+    .list{
+      max-height:340px;
+      overflow:auto;
+      padding-right:6px;
+    }
+    .itemRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 10px;
+      border:1px solid rgba(230,232,240,.90);
+      border-radius:14px;
+      background:#fff;
+      cursor:pointer;
+      margin-bottom:8px;
+    }
+    .itemRow:hover{ background:rgba(37,99,235,.05); }
+    .itemRow.active{
+      background:rgba(37,99,235,.08);
+      border-color:rgba(37,99,235,.20);
+    }
+    .itemRow b{ font-size:12px; }
+    .badgeCount{
+      font-size:11px;
+      font-weight:900;
+      padding:4px 8px;
+      border-radius:999px;
+      background:rgba(37,99,235,.10);
+      border:1px solid rgba(37,99,235,.16);
+      color:var(--pri);
+      white-space:nowrap;
+    }
+    .codesBox{
+      border:1px solid rgba(230,232,240,.95);
+      border-radius:14px;
+      padding:10px 12px;
+      background:rgba(246,247,251,.50);
+      max-height:340px;
+      overflow:auto;
+      line-height:1.6;
+      font-weight:900;
+      color:#0f172a;
+      font-size:12px;
+    }
+    .codesBox .muted2{
+      color:#64748b;
+      font-weight:800;
+    }
+    hr.soft{
+      border:0;
+      border-top:1px solid rgba(230,232,240,.95);
+      margin:10px 0;
+    }
+
     .section{
       margin-top:14px;
       border:1px solid var(--line);
@@ -885,8 +979,10 @@
         <div>
           <h1>Centro de control para tu Buscador Automotriz</h1>
           <p>
-            Aqui vamos a integrar ranking de marcas por pedidos, marcas mas presentes en RD por data DGII,
-            y mas funciones dentro de la App.
+            Bienvenido a <b>RepuestoFinder</b>: una plataforma creada para acelerar la busqueda de repuestos y
+            datos de aplicacion (vehiculo, modelo, motor, anos) en el mercado automotriz.
+            Centralizamos codigos, cambios y tendencias para ayudarte a decidir mas rapido, reducir errores
+            y encontrar oportunidades de venta en RD y LATAM.
           </p>
 
           <div class="heroActions">
@@ -899,10 +995,11 @@
         </div>
 
         <div class="kpis">
-          <div class="kpi">
+          <div class="kpi clickable" id="kpiSearchToday" onclick="openSearchTodayModal()">
             <div class="t">Busquedas (hoy)</div>
-            <div class="v">—</div>
-            <div class="s">Placeholder (se conectara a logs).</div>
+            <div class="v" id="kpiSearchTodayValue">—</div>
+            <div class="s" id="kpiSearchTodaySub">Click para ver codigos por marca y region.</div>
+            <div class="kpiHint">Ver detalle <span>▸</span></div>
           </div>
           <div class="kpi">
             <div class="t">Top autopartes</div>
@@ -1057,6 +1154,53 @@
         <div class="muted" id="promoEmpty" style="display:none;text-align:center;padding:10px 0;">
           No hay promociones.
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Busquedas (Hoy) -->
+  <div class="modalBack" id="searchTodayBack" onclick="backdropClose(event,'searchTodayBack')">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Busquedas de hoy">
+      <div class="modalHead">
+        <b>Busquedas de hoy (detalle)</b>
+        <button class="btn btnGhost btnSmall" onclick="closeSearchTodayModal()">Cerrar</button>
+      </div>
+
+      <div class="modalBody">
+        <div class="tabs">
+          <button class="tab active" id="tabSTMarca" onclick="switchSearchTodayTab('marca')">Por marca</button>
+          <button class="tab" id="tabSTRegion" onclick="switchSearchTodayTab('region')">Por region</button>
+        </div>
+
+        <div class="field" style="margin-top:0">
+          <label>Filtrar (marca/region o codigo)</label>
+          <input class="inp" id="stFilter" placeholder="Ej: Toyota, Santo Domingo, A123456..." oninput="renderSearchTodayUI()">
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <div class="muted" id="stMeta">—</div>
+          <button class="btn btnGhost btnSmall" onclick="loadSearchTodayStats(true)">Actualizar</button>
+        </div>
+
+        <div class="statsGrid" style="margin-top:12px">
+          <div class="statsPanel">
+            <div class="statsPanelHead" id="stLeftTitle">Top marcas</div>
+            <div class="statsPanelBody">
+              <div class="list" id="stLeftList"></div>
+            </div>
+          </div>
+
+          <div class="statsPanel">
+            <div class="statsPanelHead" id="stRightTitle">Codigos (sin duplicados)</div>
+            <div class="statsPanelBody">
+              <div class="codesBox" id="stCodesBox">
+                <div class="muted2">Selecciona una marca o region para ver los codigos.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="msg" id="stMsg"></div>
       </div>
     </div>
   </div>
@@ -1390,6 +1534,7 @@
       if(ev.target && ev.target.id === backId){
         if(backId === "authBack") closeAuth();
         if(backId === "promoBack") closePromo();
+        if(backId === "searchTodayBack") closeSearchTodayModal();
       }
     }
 
@@ -1832,6 +1977,183 @@
       return s.slice(0, max-3).trim() + "...";
     }
 
+    /*******************************
+     * BUSQUEDAS (HOY) - MODAL
+     * Requiere una tabla de logs en Supabase.
+     * AJUSTA ESTE NOMBRE si tu tabla se llama diferente.
+     *******************************/
+    const SEARCH_LOGS_TABLE = "search_logs"; 
+    // Columnas esperadas en esa tabla:
+    // created_at (timestamp), codigo (text), marca (text), region (text)
+
+    let stState = {
+      loaded: false,
+      tab: "marca", // "marca" | "region"
+      rows: [],
+      byMarca: [],  // [{key,count,codes:Set}]
+      byRegion: [],
+      selectedKey: ""
+    };
+
+    function isoStartEndToday(){
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0,0,0,0);
+      const end   = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1, 0,0,0,0);
+      return { startIso: start.toISOString(), endIso: end.toISOString() };
+    }
+
+    function normKey(v){
+      return String(v || "").trim();
+    }
+    function normCode(v){
+      return String(v || "").trim().toUpperCase();
+    }
+
+    function aggBy(rows, field){
+      const map = new Map(); // key -> {key,count,codes:Set}
+      rows.forEach(r=>{
+        const key = normKey(r[field] || "Sin dato");
+        const code = normCode(r.codigo || "");
+        if(!map.has(key)) map.set(key, { key, count:0, codes:new Set() });
+        const it = map.get(key);
+        it.count++;
+        if(code) it.codes.add(code);
+      });
+      return Array.from(map.values()).sort((a,b)=> b.count - a.count);
+    }
+
+    async function loadSearchTodayStats(force){
+      try{
+        if(stState.loaded && !force) return;
+
+        setMsg($("stMsg"), "", false);
+
+        const { startIso, endIso } = isoStartEndToday();
+
+        // Traemos logs del dia (limit por seguridad)
+        const { data, error } = await supabase
+          .from(SEARCH_LOGS_TABLE)
+          .select("created_at,codigo,marca,region")
+          .gte("created_at", startIso)
+          .lt("created_at", endIso)
+          .order("created_at", { ascending:false })
+          .limit(5000);
+
+        if(error){
+          // No rompas el dashboard si aun no existe la tabla/politicas
+          stState.rows = [];
+          stState.byMarca = [];
+          stState.byRegion = [];
+          stState.loaded = true;
+
+          $("kpiSearchTodayValue").textContent = "—";
+          $("kpiSearchTodaySub").textContent = "Aun no hay logs o falta configurar la tabla.";
+          setMsg($("stMsg"), "No se pudo leer logs. Verifica la tabla/policies: " + error.message, true);
+          renderSearchTodayUI();
+          return;
+        }
+
+        const rows = Array.isArray(data) ? data : [];
+        stState.rows = rows;
+        stState.byMarca = aggBy(rows, "marca");
+        stState.byRegion = aggBy(rows, "region");
+        stState.loaded = true;
+
+        // KPI: total busquedas hoy
+        $("kpiSearchTodayValue").textContent = rows.length ? String(rows.length) : "0";
+        $("kpiSearchTodaySub").textContent = rows.length
+          ? "Click para ver detalle por marca y region."
+          : "Hoy no hay busquedas registradas.";
+
+        renderSearchTodayUI();
+      }catch(err){
+        setMsg($("stMsg"), String(err?.message || err), true);
+      }
+    }
+
+    window.openSearchTodayModal = async function(){
+      openModal("searchTodayBack");
+      // Carga stats al abrir
+      await loadSearchTodayStats(false);
+    };
+
+    window.closeSearchTodayModal = function(){
+      closeModal("searchTodayBack");
+    };
+
+    window.switchSearchTodayTab = function(tab){
+      stState.tab = tab === "region" ? "region" : "marca";
+      $("tabSTMarca").classList.toggle("active", stState.tab === "marca");
+      $("tabSTRegion").classList.toggle("active", stState.tab === "region");
+
+      stState.selectedKey = "";
+      $("stCodesBox").innerHTML = `<div class="muted2">Selecciona una marca o region para ver los codigos.</div>`;
+      renderSearchTodayUI();
+    };
+
+    window.renderSearchTodayUI = function(){
+      const filter = String($("stFilter")?.value || "").trim().toLowerCase();
+
+      const listEl = $("stLeftList");
+      const leftTitle = $("stLeftTitle");
+      const meta = $("stMeta");
+
+      const base = (stState.tab === "marca") ? stState.byMarca : stState.byRegion;
+      leftTitle.textContent = (stState.tab === "marca") ? "Top marcas" : "Top regiones";
+
+      // meta
+      const total = stState.rows.length || 0;
+      const uniqCodes = new Set(stState.rows.map(r=>normCode(r.codigo)).filter(Boolean)).size;
+      meta.textContent = `Hoy: ${total} busquedas • ${uniqCodes} codigos unicos`;
+
+      // filtra lista
+      const filtered = base.filter(it=>{
+        if(!filter) return true;
+        if(it.key.toLowerCase().includes(filter)) return true;
+        // tambien permite filtrar por codigo
+        for(const c of it.codes){
+          if(String(c).toLowerCase().includes(filter)) return true;
+        }
+        return false;
+      });
+
+      if(!filtered.length){
+        listEl.innerHTML = `<div class="muted2">No hay resultados con ese filtro.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = filtered.slice(0, 50).map(it=>{
+        const active = (stState.selectedKey === it.key) ? "active" : "";
+        return `
+          <div class="itemRow ${active}" data-key="${escapeHtml(it.key)}">
+            <b>${escapeHtml(it.key)}</b>
+            <span class="badgeCount">${it.count}</span>
+          </div>
+        `;
+      }).join("");
+
+      listEl.querySelectorAll(".itemRow").forEach(row=>{
+        row.onclick = ()=>{
+          const key = row.getAttribute("data-key") || "";
+          stState.selectedKey = key;
+
+          // repinta active
+          listEl.querySelectorAll(".itemRow").forEach(n=> n.classList.remove("active"));
+          row.classList.add("active");
+
+          const src = filtered.find(x=>x.key === key) || base.find(x=>x.key === key);
+          const codes = src ? Array.from(src.codes) : [];
+          codes.sort();
+
+          const title = (stState.tab === "marca") ? "Marca" : "Region";
+          $("stRightTitle").textContent = `Codigos (sin duplicados) • ${title}: ${key}`;
+
+          $("stCodesBox").innerHTML = codes.length
+            ? codes.map(c=>`<div>${escapeHtml(c)}</div>`).join("")
+            : `<div class="muted2">No hay codigos disponibles para esta seleccion.</div>`;
+        };
+      });
+    };
 
     async function init(){
       $("y").textContent = new Date().getFullYear();
@@ -1878,12 +2200,16 @@
       }
       // ✅ noticias del dia (ticker)
       await initNewsTicker();
+
+      // ✅ KPI Busquedas (hoy)
+      await loadSearchTodayStats(false);
     }
 
     init();
   </script>
 </body>
 </html>
+
 
 
 
