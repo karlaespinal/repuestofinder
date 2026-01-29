@@ -121,6 +121,21 @@
     }
 
 
+  
+    .offerBox{ border:1px solid rgba(0,0,0,.08); border-radius:14px; padding:10px; background:rgba(255,255,255,.65); }
+    .offerHead{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .offerList{ margin-top:8px; display:flex; flex-direction:column; gap:8px; }
+    .offerRow{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border:1px solid rgba(0,0,0,.06); border-radius:12px; background:white; }
+    .offerRow .left{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+    .offerRow .right{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+    .tag{ font-size:12px; padding:2px 8px; border-radius:999px; border:1px solid rgba(0,0,0,.1); background:rgba(0,0,0,.03); }
+    .chatBox{ height:320px; overflow:auto; border:1px solid rgba(0,0,0,.08); border-radius:14px; padding:10px; background:white; }
+    .chatMsg{ padding:8px 10px; border-radius:12px; margin:6px 0; max-width:85%; }
+    .chatMe{ background:rgba(60,130,246,.12); margin-left:auto; }
+    .chatOther{ background:rgba(0,0,0,.05); margin-right:auto; }
+    .chatMeta{ font-size:11px; opacity:.7; margin-top:3px; }
+    .chatComposer{ display:flex; gap:8px; margin-top:10px; }
+
   </style>
 </head>
 
@@ -222,6 +237,7 @@
       <div class="accBody">
         <div class="muted">URL: <a id="productUrl" href="#" target="_blank">-</a></div>
         <div style="margin-top:8px" class="muted" id="counts">Vehicles: 0 | Cambios: 0</div>
+        <div class="offerBox" id="offerBox" style="margin-top:10px; display:none;"></div>
         <div style="margin-top:8px" class="muted" id="notes"></div>
       </div>
     </div>
@@ -568,7 +584,7 @@
         .maybeSingle();
 
       if(error){
-        console.warn("No pude leer profiles.country:", error.message);
+        console.warn("No pude leer profiles.country:", (explainSetupError_(error) || error.message));
         profileCountry = null;
         profileCity = null;
       }else{
@@ -777,6 +793,247 @@ function uniqueJoin_(arr, sep=" / "){
 
   return { headers: ["cambio", "owner"], rows };
 }
+
+  // ======================================================
+  // ✅ OFERTAS (Obsolescencia) para este codigo
+  //   Tabla esperada: offers
+  //   Campos minimos: id, original_norm, brand, price, currency, country, seller_id, expires_at
+  // ======================================================
+  const OFFERS_TABLE = "offers";
+  const OFFER_CHATS_TABLE = "offer_chats";
+  const OFFER_MSGS_TABLE  = "offer_messages";
+
+  async function fetchOffersByOriginals_(originalNorms){
+    if(!Array.isArray(originalNorms) || originalNorms.length===0) return [];
+    const nowIso = new Date().toISOString();
+    const { data, error } = await supabase
+      .from(OFFERS_TABLE)
+      .select("id,original_norm,brand,price,currency,country,seller_id,expires_at,created_at")
+      .in("original_norm", originalNorms)
+      .gt("expires_at", nowIso)
+      .order("price", { ascending:true })
+      .limit(50);
+    if(error) throw error;
+    return data || [];
+  }
+
+  function money_(price, cur){
+    const p = Number(price);
+    const c = String(cur||"USD").toUpperCase();
+    if(!Number.isFinite(p)) return "—";
+    return p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " " + c;
+  }
+
+
+  function explainSetupError_(e){
+    const msg = String(e?.message || e || "");
+    const code = String(e?.code || "");
+    const missing = (code === "42P01") || /does not exist/i.test(msg) || /relation .* does not exist/i.test(msg);
+    if(missing){
+      return "Falta crear las tablas en Supabase: offers, offer_chats, offer_messages.\n\nCrea la BD (SQL) y recarga.";
+    }
+    const denied = (code === "42501") || /permission denied/i.test(msg) || /row-level security/i.test(msg);
+    if(denied){
+      return "Permisos/RLS: no tienes permiso para ver/crear chats u ofertas. Revisa politicas RLS (buyer/seller).";
+    }
+    return null;
+  }
+
+  function renderOffers_(offers){
+    const box = document.getElementById("offerBox");
+    if(!box) return;
+    const list = Array.isArray(offers) ? offers : [];
+    if(list.length===0){
+      box.style.display = "none";
+      box.innerHTML = "";
+      return;
+    }
+
+    box.style.display = "block";
+    box.innerHTML = `
+      <div class="offerHead">
+        <div><b>Ofertas disponibles</b> <span class="tag">${list.length}</span></div>
+        <a class="btn btnGhost btnSmall" href="osbolesencia.html" target="_blank" rel="noopener">Ver modulo</a>
+      </div>
+      <div class="offerList">
+        ${list.map(o=>{
+          const brand = escapeHtml(String(o.brand||""));
+          const country = escapeHtml(String(o.country||""));
+          const price = escapeHtml(money_(o.price, o.currency));
+          return `
+            <div class="offerRow">
+              <div class="left">
+                <div><b>${brand || "Marca"}</b> • <span class="muted2">${country || "—"}</span></div>
+                <div class="muted2">${price}</div>
+              </div>
+              <div class="right">
+                <button class="btn btnSmall" onclick="openOfferChat_('${o.id}')">Contactar</button>
+              </div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
+  }
+
+  // ===== Chat (buyer <-> seller). Admin en modo lectura =====
+  let offerChatState = { offerId:null, chatId:null, offer:null, poll:null, isAdmin:false, userId:null };
+
+  async function getUser_(){
+    const { data } = await supabase.auth.getSession();
+    return data?.session?.user || null;
+  }
+
+  async function loadMyRole_(){
+    try{
+      const u = await getUser_();
+      if(!u) return { user:null, role:null };
+      // intenta perfiles si existe
+      const { data } = await supabase.from("profiles").select("role").eq("id", u.id).maybeSingle();
+      return { user:u, role: data?.role || null };
+    }catch(_){
+      const u = await getUser_();
+      return { user:u, role:null };
+    }
+  }
+
+  window.openOfferChat_ = async function(offerId){
+    try{
+      const u = await getUser_();
+      if(!u){ alert("Debes iniciar sesion."); return; }
+
+      const roleInfo = await loadMyRole_();
+      offerChatState.isAdmin = String(roleInfo.role||"").toLowerCase() === "admin";
+      offerChatState.userId = u.id;
+
+      // traer oferta
+      const { data: offer, error: oErr } = await supabase
+        .from(OFFERS_TABLE)
+        .select("id,original_norm,brand,price,currency,country,seller_id,expires_at")
+        .eq("id", offerId)
+        .maybeSingle();
+      if(oErr) throw oErr;
+      if(!offer){ alert("Oferta no encontrada."); return; }
+
+      offerChatState.offerId = offer.id;
+      offerChatState.offer = offer;
+
+      // buscar chat existente (buyer = user)
+      let chatId = null;
+      const { data: ch, error: chErr } = await supabase
+        .from(OFFER_CHATS_TABLE)
+        .select("id")
+        .eq("offer_id", offer.id)
+        .eq("buyer_id", u.id)
+        .maybeSingle();
+      if(chErr && chErr.code !== "PGRST116"){} // ignore no rows
+      if(ch?.id) chatId = ch.id;
+
+      // si no existe, crear (si no es admin)
+      if(!chatId){
+        if(offerChatState.isAdmin){
+          alert("Modo admin: abre el chat desde el modulo de Obsolescencia.");
+          return;
+        }
+        const payload = { offer_id: offer.id, buyer_id: u.id, seller_id: offer.seller_id };
+        const { data: created, error: cErr } = await supabase.from(OFFER_CHATS_TABLE).insert([payload]).select("id").single();
+        if(cErr) throw cErr;
+        chatId = created.id;
+      }
+
+      offerChatState.chatId = chatId;
+
+      // pintar modal
+      document.getElementById("offerChatTitle").textContent = "Chat de oferta";
+      document.getElementById("offerChatSub").textContent = `${offer.brand || "Marca"} • ${money_(offer.price, offer.currency)} • ${offer.country || ""}`.trim();
+      document.getElementById("offerChatBack").style.display = "flex";
+
+      // admin read-only
+      document.getElementById("offerChatComposer").style.display = offerChatState.isAdmin ? "none" : "flex";
+      document.getElementById("offerChatAdminHint").style.display = offerChatState.isAdmin ? "block" : "none";
+
+      await loadOfferMsgs_();
+      startOfferPoll_();
+    }catch(e){
+      console.error(e);
+      alert("No pude abrir el chat: " + (explainSetupError_(e) || (e?.message || e)));
+    }
+  }
+
+  function offerBackdropClose_(ev){
+    if(ev.target && ev.target.id === "offerChatBack") closeOfferChat_();
+  }
+
+  window.closeOfferChat_ = function(){
+    stopOfferPoll_();
+    const back = document.getElementById("offerChatBack");
+    if(back) back.style.display = "none";
+    const msgs = document.getElementById("offerChatMsgs");
+    if(msgs) msgs.innerHTML = "";
+    offerChatState.offerId = null;
+    offerChatState.chatId = null;
+    offerChatState.offer = null;
+  }
+
+  function startOfferPoll_(){
+    stopOfferPoll_();
+    offerChatState.poll = setInterval(loadOfferMsgs_, 2500);
+  }
+  function stopOfferPoll_(){
+    if(offerChatState.poll){
+      clearInterval(offerChatState.poll);
+      offerChatState.poll = null;
+    }
+  }
+
+  async function loadOfferMsgs_(){
+    if(!offerChatState.chatId) return;
+    const { data, error } = await supabase
+      .from(OFFER_MSGS_TABLE)
+      .select("id,chat_id,sender_id,body,created_at")
+      .eq("chat_id", offerChatState.chatId)
+      .order("created_at", { ascending:true })
+      .limit(200);
+    if(error) return;
+
+    const box = document.getElementById("offerChatMsgs");
+    if(!box) return;
+
+    const my = offerChatState.userId;
+    box.innerHTML = (data||[]).map(m=>{
+      const me = m.sender_id === my;
+      const cls = me ? "chatMsg chatMe" : "chatMsg chatOther";
+      const when = new Date(m.created_at).toLocaleString();
+      return `
+        <div class="${cls}">
+          <div>${escapeHtml(String(m.body||""))}</div>
+          <div class="chatMeta">${escapeHtml(when)}</div>
+        </div>
+      `;
+    }).join("") || '<div class="muted2">No hay mensajes aun.</div>';
+
+    box.scrollTop = box.scrollHeight;
+  }
+
+  window.sendOfferMsg_ = async function(){
+    try{
+      if(offerChatState.isAdmin) return;
+      const input = document.getElementById("offerChatInput");
+      const txt = String(input?.value||"").trim();
+      if(!txt) return;
+      input.value = "";
+      const u = await getUser_();
+      if(!u) throw new Error("Sin sesion");
+      const payload = { chat_id: offerChatState.chatId, sender_id: u.id, body: txt };
+      const { error } = await supabase.from(OFFER_MSGS_TABLE).insert([payload]);
+      if(error) throw error;
+      await loadOfferMsgs_();
+    }catch(e){
+      console.error(e);
+      alert("No pude enviar: " + (e?.message || e));
+    }
+  }
+
 
 
   async function fetchVehiclesByOriginals_(originalNorms){
@@ -1136,7 +1393,7 @@ window.limpiar = function(){
         codigo_norm: norm,
         original_norms: originalNorms,
         productUrl: buildGoogleUrl_(codigoMostrado),
-        tablas: { vehicles: veh, cambios: camb }
+        tablas: { vehicles: veh, cambios: camb, offers }
       };
 
       render(payload);
@@ -1225,6 +1482,7 @@ window.limpiar = function(){
 
     renderTableInto_("vehWrap", vehicles);
     renderTableInto_("oeWrap", cambios);
+    renderOffers_(payload.tablas?.offers || []);
 
     const hasVeh = vehicles && Array.isArray(vehicles.rows) && vehicles.rows.length > 0;
     const hasCamb = cambios && Array.isArray(cambios.rows) && cambios.rows.length > 0;
@@ -1367,8 +1625,33 @@ window.limpiar = function(){
   }
 
 </script>
+
+  <!-- Modal Ofertas / Chat -->
+  <div class="modalBack" id="offerChatBack" onclick="offerBackdropClose_(event)">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Chat de oferta">
+      <div class="modalHead">
+        <div>
+          <b id="offerChatTitle">Chat</b>
+          <div class="muted2" id="offerChatSub"></div>
+        </div>
+        <button class="btn btnGhost btnSmall" onclick="closeOfferChat_()">Cerrar</button>
+      </div>
+      <div class="modalBody">
+        <div class="chatBox" id="offerChatMsgs"></div>
+        <div class="chatComposer" id="offerChatComposer">
+          <input class="inp" id="offerChatInput" placeholder="Escribe un mensaje..." />
+          <button class="btn" onclick="sendOfferMsg_()">Enviar</button>
+        </div>
+        <div class="muted2" id="offerChatAdminHint" style="display:none;margin-top:8px;">
+          Modo administrador: solo lectura.
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
+
 
 
 
