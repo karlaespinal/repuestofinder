@@ -121,6 +121,32 @@
     }
 
 
+  
+    /* ===== OFERTAS (Obsolescencia) dentro de APP ===== */
+    .offerBox{margin-top:12px;border:1px solid #eef0f6;border-radius:12px;padding:12px;background:#fafbff}
+    .offerRow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+    .offerTitle{font-weight:900}
+    .offerMeta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .offerTag{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;border:1px solid #e6e8f0;background:#fff;font-weight:900;font-size:12px}
+    .offerBtn{padding:8px 10px;border-radius:10px;border:1px solid #e6e8f0;background:#fff;font-weight:900;cursor:pointer}
+    .offerBtn:hover{background:#f6f7fb}
+    .offerBtnPrimary{background:#2563eb;color:#fff;border:0}
+    .offerBtnPrimary:hover{filter:brightness(.95)}
+    .offerEmpty{color:#6b7280;font-size:13px}
+
+    /* Modal */
+    .rfModalBack{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999}
+    .rfModal{width:min(720px,100%);background:#fff;border-radius:16px;border:1px solid #e6e8f0;box-shadow:0 12px 40px rgba(0,0,0,.25);overflow:hidden}
+    .rfModalHead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:1px solid #eef0f6;background:#fafbff}
+    .rfModalHead h3{margin:0;font-size:16px}
+    .rfModalClose{border:0;background:transparent;font-size:22px;line-height:1;cursor:pointer;font-weight:900;color:#111}
+    .rfModalBody{padding:16px}
+    .rfModalGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media(max-width:700px){.rfModalGrid{grid-template-columns:1fr}}
+    .rfModalActions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px}
+    textarea.rfMsg{width:100%;min-height:96px;resize:vertical;padding:10px 12px;border-radius:12px;border:1px solid #d7dbe7;font-size:14px;box-sizing:border-box}
+    .rfSmall{font-size:12px;color:#6b7280}
+
   </style>
 </head>
 
@@ -222,6 +248,7 @@
       <div class="accBody">
         <div class="muted">URL: <a id="productUrl" href="#" target="_blank">-</a></div>
         <div style="margin-top:8px" class="muted" id="counts">Vehicles: 0 | Cambios: 0</div>
+        <div id="offersWrap" class="offerBox" style="display:none"></div>
         <div style="margin-top:8px" class="muted" id="notes"></div>
       </div>
     </div>
@@ -271,6 +298,46 @@
     </div>
   </div>
 
+
+  <!-- ===== Modal Oferta (ver + chat) ===== -->
+  <div class="rfModalBack" id="offerModalBack" aria-hidden="true">
+    <div class="rfModal" role="dialog" aria-modal="true" aria-labelledby="offerModalTitle">
+      <div class="rfModalHead">
+        <div>
+          <h3 id="offerModalTitle">Oferta</h3>
+          <div class="rfSmall" id="offerModalSub">—</div>
+        </div>
+        <button class="rfModalClose" id="btnCloseOfferModal" title="Cerrar">×</button>
+      </div>
+      <div class="rfModalBody">
+        <div class="rfModalGrid">
+          <div class="offerTag">OEM: <span id="mOfferOEM">—</span></div>
+          <div class="offerTag">Marca: <span id="mOfferBrand">—</span></div>
+          <div class="offerTag">Precio: <span id="mOfferPrice">—</span></div>
+          <div class="offerTag">Moneda: <span id="mOfferCurrency">—</span></div>
+          <div class="offerTag">Pais: <span id="mOfferCountry">—</span></div>
+          <div class="offerTag">Expira: <span id="mOfferExpires">—</span></div>
+        </div>
+
+        <div style="margin-top:12px">
+          <div class="muted" style="font-weight:900">Mensaje al vendedor</div>
+          <textarea class="rfMsg" id="mOfferMsg" placeholder="Escribe tu mensaje..."></textarea>
+          <div class="rfSmall" style="margin-top:6px">
+            Nota: la descripcion interna no se muestra al cliente, solo al vendedor.
+          </div>
+        </div>
+
+        <div class="rfModalActions">
+          <button class="btn2" id="btnOpenOfferChat">Abrir chat de ofertas</button>
+          <button class="btn offerBtnPrimary" id="btnSendOfferMsg">Enviar mensaje</button>
+        </div>
+
+        <div class="rfSmall" style="margin-top:10px" id="offerModalStatus"></div>
+      </div>
+    </div>
+  </div>
+
+
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
@@ -281,6 +348,16 @@
   // ✅ Tablas (v1 + v2)
   const VEH_TABLES = ["datos_vehiculares", "datos_vehiculares_v2"];
   const CAMBIOS_TABLES = ["cambios", "cambios_v2"];
+
+  // ✅ Ofertas (Obsolescencia) en la App
+  // Ajusta estos nombres si en tu BD difieren:
+  const OFFERS_TABLE = "offers";            // tabla donde guardas las ofertas
+  const OFFERS_MESSAGES_TABLE = "offer_messages"; // (opcional) mensajes del chat por oferta
+  // Si ya tienes una pagina dedicada al chat de ofertas (Obsolescencia), pon aqui su ruta:
+  const OFFERS_CHAT_PAGE = "/obsolescencia.html";
+
+  let lastOffers = [];     // ofertas encontradas para el codigo actual
+  let modalOffer = null;   // oferta seleccionada en modal
 
   let lastPayload = null;
   let currentSearchSessionId = null;
@@ -314,6 +391,30 @@
   };
   window.addEventListener("resize", ()=>{ if(isMobile_()) setMobileDefault_(); else setDesktopDefault_(); });
   document.addEventListener("DOMContentLoaded", ()=>{ if(isMobile_()) setMobileDefault_(); else setDesktopDefault_();
+
+    // ===== Modal oferta handlers =====
+    const back = document.getElementById("offerModalBack");
+    const btnClose = document.getElementById("btnCloseOfferModal");
+    const btnOpenChat = document.getElementById("btnOpenOfferChat");
+    const btnSend = document.getElementById("btnSendOfferMsg");
+
+    if(btnClose) btnClose.addEventListener("click", closeOfferModal_);
+    if(back) back.addEventListener("click", (ev)=>{ if(ev.target === back) closeOfferModal_(); });
+    document.addEventListener("keydown", (ev)=>{ if(ev.key === "Escape") closeOfferModal_(); });
+
+    if(btnOpenChat) btnOpenChat.addEventListener("click", ()=>{
+      const msg = String(document.getElementById("mOfferMsg")?.value || "").trim();
+      const q = new URLSearchParams();
+      if(modalOffer?.id) q.set("offer", modalOffer.id);
+      if(modalOffer?.original_norm) q.set("code", modalOffer.original_norm);
+      if(msg) q.set("msg", msg);
+      window.open(OFFERS_CHAT_PAGE + "?" + q.toString(), "_blank");
+    });
+
+    if(btnSend) btnSend.addEventListener("click", async ()=>{
+      const msg = document.getElementById("mOfferMsg")?.value || "";
+      await sendOfferMessage_(msg);
+    });
 
     // Enter en filtros => aplicar
   ["fVehiculo","fAnio","fModelo","fMotor","fDescripcion"].forEach(id=>{
@@ -1095,6 +1196,9 @@ window.limpiar = function(){
     document.getElementById("productUrl").textContent = "-";
     document.getElementById("productUrl").href = "#";
     document.getElementById("counts").textContent = "Vehicles: 0 | Cambios: 0";
+    const ow = document.getElementById("offersWrap");
+    if(ow){ ow.style.display="none"; ow.innerHTML=""; }
+    lastOffers = [];
     document.getElementById("notes").textContent = "";
 
     document.getElementById("oeWrap").innerHTML = "No hay filas detectadas.";
@@ -1136,6 +1240,10 @@ window.limpiar = function(){
       };
 
       render(payload);
+
+      // ✅ Ofertas activas para este codigo
+      lastOffers = await fetchOffersByOriginals_(originalNorms, norm);
+      renderOffersIntoProducto_(lastOffers);
 
       const vehCount = (veh && Array.isArray(veh.rows)) ? veh.rows.length : 0;
       const cambCount = (camb && Array.isArray(camb.rows)) ? camb.rows.length : 0;
@@ -1200,6 +1308,192 @@ window.limpiar = function(){
     }
   };
 
+
+  // ======================================================
+  // ✅ Ofertas: buscar y renderizar debajo de Vehicles/Cambios
+  // ======================================================
+
+  function fmtMoney_(n){
+    const v = Number(n);
+    return Number.isFinite(v) ? v.toFixed(2) : String(n ?? "—");
+  }
+
+  async function fetchOffersByOriginals_(originalNorms, codeNorm){
+    // Intentamos por original_norm IN (...) y, por si acaso, tambien por original_norm==codeNorm
+    const norms = unique_([...(originalNorms||[]), codeNorm].filter(Boolean));
+
+    // Campos minimos + extras (si existen en tu tabla, supabase los trae; si no, no rompe)
+    const selectCols = "id, original, original_norm, brand, description, price, currency, country, expires_at, owner_id";
+
+    try{
+      const { data, error } = await supabase
+        .from(OFFERS_TABLE)
+        .select(selectCols)
+        .in("original_norm", norms)
+        .order("created_at", { ascending: false })
+        .limit(25);
+
+      if(error){
+        // fallback: algunos proyectos no tienen created_at o usan otra columna
+        const { data: d2, error: e2 } = await supabase
+          .from(OFFERS_TABLE)
+          .select(selectCols)
+          .in("original_norm", norms)
+          .limit(25);
+        if(e2) throw e2;
+        return d2 || [];
+      }
+      return data || [];
+    }catch(e){
+      console.warn("No pude leer ofertas:", e?.message || e);
+      return [];
+    }
+  }
+
+  function renderOffersIntoProducto_(offers){
+    const wrap = document.getElementById("offersWrap");
+    if(!wrap) return;
+
+    if(!offers || offers.length === 0){
+      wrap.style.display = "none";
+      wrap.innerHTML = "";
+      return;
+    }
+
+    wrap.style.display = "block";
+
+    let html = '';
+    html += '<div class="offerRow">';
+    html += '  <div class="offerTitle">Ofertas activas (' + offers.length + ')</div>';
+    html += '  <div class="offerMeta"><span class="offerTag">Solo ves: Marca + Precio + Pais</span></div>';
+    html += '</div>';
+
+    html += '<div style="margin-top:10px;display:flex;flex-direction:column;gap:10px">';
+    for(const o of offers){
+      const id = o?.id || "";
+      const brand = escapeHtml_(o?.brand || "—");
+      const price = escapeHtml_(fmtMoney_(o?.price));
+      const currency = escapeHtml_(o?.currency || "—");
+      const country = escapeHtml_(o?.country || "—");
+      const exp = o?.expires_at ? escapeHtml_(String(o.expires_at).replace("T"," ").slice(0,19)) : "—";
+
+      html += '<div style="background:#fff;border:1px solid #eef0f6;border-radius:12px;padding:10px">';
+      html += '  <div class="offerRow">';
+      html += '    <div class="offerMeta">';
+      html += '      <span class="offerTag">Marca: ' + brand + '</span>';
+      html += '      <span class="offerTag">Precio: ' + price + ' ' + currency + '</span>';
+      html += '      <span class="offerTag">Pais: ' + country + '</span>';
+      html += '      <span class="offerTag">Expira: ' + exp + '</span>';
+      html += '    </div>';
+      html += '    <div style="display:flex;gap:8px;flex-wrap:wrap">';
+      html += '      <button class="offerBtn offerBtnPrimary" data-offer-id="' + escapeHtml_(id) + '" onclick="openOfferModalById(\'' + escapeHtml_(id) + '\')">Ver / Chat</button>';
+      html += '    </div>';
+      html += '  </div>';
+      html += '</div>';
+    }
+    html += '</div>';
+
+    wrap.innerHTML = html;
+  }
+
+  function openOfferModal_(offer){
+    modalOffer = offer || null;
+    const back = document.getElementById("offerModalBack");
+    const status = document.getElementById("offerModalStatus");
+    const msg = document.getElementById("mOfferMsg");
+
+    if(status) status.textContent = "";
+    if(msg) msg.value = "";
+
+    const oem = offer?.original || offer?.original_norm || "-";
+    const brand = offer?.brand || "—";
+    const price = fmtMoney_(offer?.price);
+    const currency = offer?.currency || "—";
+    const country = offer?.country || "—";
+    const exp = offer?.expires_at ? String(offer.expires_at).replace("T"," ").slice(0,19) : "—";
+
+    document.getElementById("offerModalTitle").textContent = "Oferta disponible";
+    document.getElementById("offerModalSub").textContent = "Consulta al vendedor por esta oferta.";
+    document.getElementById("mOfferOEM").textContent = oem;
+    document.getElementById("mOfferBrand").textContent = brand;
+    document.getElementById("mOfferPrice").textContent = price;
+    document.getElementById("mOfferCurrency").textContent = currency;
+    document.getElementById("mOfferCountry").textContent = country;
+    document.getElementById("mOfferExpires").textContent = exp;
+
+    if(back){
+      back.style.display = "flex";
+      back.setAttribute("aria-hidden","false");
+    }
+  }
+
+  function closeOfferModal_(){
+    const back = document.getElementById("offerModalBack");
+    if(back){
+      back.style.display = "none";
+      back.setAttribute("aria-hidden","true");
+    }
+    modalOffer = null;
+  }
+
+  // Exponer para onclick en HTML (script type=module)
+  window.openOfferModalById = function(offerId){
+    const o = (lastOffers || []).find(x => String(x?.id||"") === String(offerId||""));
+    if(!o){ alert("No pude abrir la oferta. (id no encontrado)"); return; }
+    openOfferModal_(o);
+  };
+
+  async function sendOfferMessage_(text){
+    const status = document.getElementById("offerModalStatus");
+    const msg = String(text || "").trim();
+    if(!msg){ alert("Escribe un mensaje."); return; }
+
+    // Si estas en demo, no permitimos enviar
+    const params = new URLSearchParams(window.location.search);
+    const isDemo = params.get("demo") === "1";
+    if(isDemo){
+      alert("En modo DEMO no se pueden enviar mensajes.");
+      return;
+    }
+
+    // Usuario autenticado?
+    const { data } = await supabase.auth.getSession();
+    const user = data?.session?.user;
+    if(!user){
+      alert("Debes iniciar sesion para enviar mensajes.");
+      return;
+    }
+
+    // Intento 1: insertar directo en offer_messages (si existe)
+    try{
+      if(status) status.textContent = "Enviando mensaje...";
+      const payload = {
+        offer_id: modalOffer?.id || null,
+        sender_id: user.id,
+        body: msg
+      };
+
+      const { error } = await supabase.from(OFFERS_MESSAGES_TABLE).insert([payload]);
+      if(error) throw error;
+
+      if(status) status.textContent = "Mensaje enviado ✅";
+      alert("Mensaje enviado ✅");
+      return;
+    }catch(e){
+      console.warn("No pude insertar en offer_messages (quizas no existe):", e?.message || e);
+      if(status) status.textContent = "No pude enviar en esta pagina. Abriendo chat de ofertas...";
+      // Fallback: abrir pagina Obsolescencia con query param
+      try{
+        const q = new URLSearchParams();
+        if(modalOffer?.id) q.set("offer", modalOffer.id);
+        if(modalOffer?.original_norm) q.set("code", modalOffer.original_norm);
+        q.set("msg", msg);
+        window.open(OFFERS_CHAT_PAGE + "?" + q.toString(), "_blank");
+      }catch(_){}
+      alert("Abrimos el chat de ofertas en otra pestaña para que completes el envio.");
+    }
+  }
+
   function render(payload){
     lastPayload = payload;
 
@@ -1231,6 +1525,11 @@ window.limpiar = function(){
     document.getElementById("counts").textContent =
       "Vehicles: " + (hasVeh ? vehicles.rows.length : 0) +
       " | Cambios: " + (hasCamb ? cambios.rows.length : 0);
+
+    // reset ofertas (se pintan despues en buscar())
+    const ow = document.getElementById("offersWrap");
+    if(ow){ ow.style.display="none"; ow.innerHTML=""; }
+    lastOffers = [];
 
     document.getElementById("notes").textContent = "";
     document.getElementById("btnExport").disabled = !(hasVeh || hasCamb);
@@ -1324,9 +1623,6 @@ window.limpiar = function(){
 </script>
 </body>
 </html>
-
-
-
 
 
 
