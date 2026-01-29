@@ -888,6 +888,20 @@
       background:rgba(37,99,235,.08);
     }
 
+    /* pill estilo Radar para modelos/codigos */
+    .pillTag{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(230,232,240,.95);
+      background:rgba(37,99,235,.08);
+      color:var(--pri);
+      font-weight:900;
+      font-size:12px;
+    }
+
 
 
 
@@ -1018,7 +1032,7 @@
         </div>
 
         <div class="kpis">
-          <div class="kpi clickable" id="kpiSearchToday" onclick="openSearchTodayModal()">
+          <div class="kpi clickable" id="kpiSearchToday" onclick="openTodayModelsModal()">
             <div class="t">Busquedas (hoy)</div>
             <div class="v" id="kpiSearchTodayValue">—</div>
             <div class="s" id="kpiSearchTodaySub">Click para ver codigos por marca y region.</div>
@@ -1246,6 +1260,63 @@
     </svg>
 
   </a>
+
+    <!-- ✅ MODAL Radar-style: Top Modelos (hoy) -->
+  <div class="modalBack" id="todayModelsBack" onclick="backdropClose(event,'todayModelsBack')">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Top Modelos hoy">
+      <div class="modalHead">
+        <div>
+          <b>Top Modelos (interno) - Hoy</b>
+          <div class="muted" id="todayModelsSub" style="margin-top:4px">—</div>
+        </div>
+        <button class="btn btnGhost btnSmall" onclick="closeTodayModelsModal()">Cerrar</button>
+      </div>
+
+      <div class="modalBody">
+        <div class="statsGrid" style="grid-template-columns:1fr; margin-top:0">
+          <div class="statsPanel">
+            <div class="statsPanelHead">Modelo</div>
+            <div class="statsPanelBody">
+              <div class="list" id="todayModelsList"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="muted" style="margin-top:10px">
+          Click en un modelo para ver los codigos buscados.
+        </div>
+
+        <div class="msg" id="todayModelsMsg"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ MODAL 2: Códigos por modelo -->
+  <div class="modalBack" id="modelCodesBack" onclick="backdropClose(event,'modelCodesBack')">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Codigos por modelo">
+      <div class="modalHead">
+        <div>
+          <b id="modelCodesTitle">Codigos</b>
+          <div class="muted" id="modelCodesSub" style="margin-top:4px">—</div>
+        </div>
+        <button class="btn btnGhost btnSmall" onclick="closeModelCodesModal()">Cerrar</button>
+      </div>
+
+      <div class="modalBody">
+        <div class="statsGrid" style="grid-template-columns:1fr; margin-top:0">
+          <div class="statsPanel">
+            <div class="statsPanelHead">Codigos buscados</div>
+            <div class="statsPanelBody">
+              <div class="list" id="modelCodesList"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="msg" id="modelCodesMsg"></div>
+      </div>
+    </div>
+  </div>
+
 
   <script type="module">
     import { supabase } from "./assets/supabaseClient.js";
@@ -2205,6 +2276,327 @@
       });
     };
 
+        /*******************************
+     * TOP MODELOS (HOY) - Radar style
+     * Fuente:
+     *  - search_events: query_raw, searched_at
+     *  - cambios/cambios_v2: para resolver cambio -> original_norm
+     *  - datos_vehiculares/datos_vehiculares_v2: para obtener vehiculo/modelo desde original_norm
+     *******************************/
+    const RF_SEARCH_EVENTS_TABLE = "search_events";
+    const RF_SE_FIELD = "searched_at";
+    const RF_Q_FIELD  = "query_raw";
+
+    // Ajusta si tus tablas se llaman diferente
+    const RF_DV_2 = "datos_vehiculares_v2";
+    const RF_DV_1 = "datos_vehiculares";
+    const RF_C_2  = "cambios_v2";
+    const RF_C_1  = "cambios";
+
+    // Columnas esperadas
+    const RF_DV_ORIG_NORM = "original_norm";
+    const RF_DV_ORIG      = "original";
+    const RF_DV_VEH       = "vehiculo";
+
+    const RF_C_ORIG_NORM  = "original_norm";
+    const RF_C_ORIG       = "original";
+    const RF_C_CAMB_NORM  = "cambio_norm";
+    const RF_C_CAMB       = "cambio";
+
+    // Estado en memoria
+    let rfTopModels = {
+      loaded: false,
+      totalEvents: 0,
+      models: [],         // [{ model, count }]
+      modelDetails: {}    // model -> { total, codes: [{code,count,original_norm}] }
+    };
+
+    function rfNorm(s){ return String(s||"").trim().toUpperCase(); }
+    function rfIsCodeLike(s){
+      const x = String(s||"").trim();
+      if(!x) return false;
+      if(/^\d{3,}$/.test(x)) return true;
+      if(/^[A-Z0-9\-]{5,}$/i.test(x)) return true;
+      return false;
+    }
+    function rfChunk(arr, size=200){
+      const out=[]; for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size));
+      return out;
+    }
+
+    /** Resuelve query(code/cambio/original) -> original_norm */
+    async function rfResolveToOriginalNorm(queries){
+      const list = Array.from(new Set(queries.map(rfNorm).filter(Boolean)));
+      const out = new Map();
+
+      // 1) intentar en DV primero (si el usuario busco el original directamente)
+      async function probeDV(table){
+        for(const part of rfChunk(list, 200)){
+          const { data, error } = await supabase
+            .from(table)
+            .select(`${RF_DV_ORIG_NORM},${RF_DV_ORIG}`)
+            .or(`${RF_DV_ORIG_NORM}.in.(${part.join(",")}),${RF_DV_ORIG}.in.(${part.join(",")})`)
+            .limit(5000);
+          if(error || !Array.isArray(data)) continue;
+
+          for(const r of data){
+            const on = rfNorm(r?.[RF_DV_ORIG_NORM]);
+            const o  = rfNorm(r?.[RF_DV_ORIG]);
+            if(on){
+              if(list.includes(on)) out.set(on, on);
+              if(o && list.includes(o) && !out.has(o)) out.set(o, on);
+            }else if(o && list.includes(o)){
+              out.set(o, o);
+            }
+          }
+        }
+      }
+
+      await probeDV(RF_DV_2);
+      await probeDV(RF_DV_1);
+
+      // 2) lo que falte, buscar en cambios
+      const missing = list.filter(x => !out.has(x));
+      if(!missing.length) return out;
+
+      async function probeCambios(table){
+        for(const part of rfChunk(missing, 200)){
+          const orExpr = [
+            `${RF_C_CAMB_NORM}.in.(${part.join(",")})`,
+            `${RF_C_CAMB}.in.(${part.join(",")})`,
+            `${RF_C_ORIG_NORM}.in.(${part.join(",")})`,
+            `${RF_C_ORIG}.in.(${part.join(",")})`
+          ].join(",");
+
+          const { data, error } = await supabase
+            .from(table)
+            .select(`${RF_C_ORIG_NORM},${RF_C_ORIG},${RF_C_CAMB_NORM},${RF_C_CAMB}`)
+            .or(orExpr)
+            .limit(5000);
+
+          if(error || !Array.isArray(data)) continue;
+
+          for(const r of data){
+            const origNorm = rfNorm(r?.[RF_C_ORIG_NORM]) || rfNorm(r?.[RF_C_ORIG]);
+            if(!origNorm) continue;
+
+            const cambNorm = rfNorm(r?.[RF_C_CAMB_NORM]);
+            const camb     = rfNorm(r?.[RF_C_CAMB]);
+            const orig     = rfNorm(r?.[RF_C_ORIG]);
+            const oNorm    = rfNorm(r?.[RF_C_ORIG_NORM]);
+
+            if(cambNorm && !out.has(cambNorm)) out.set(cambNorm, origNorm);
+            if(camb && !out.has(camb)) out.set(camb, origNorm);
+            if(oNorm && !out.has(oNorm)) out.set(oNorm, origNorm);
+            if(orig && !out.has(orig)) out.set(orig, origNorm);
+          }
+        }
+      }
+
+      await probeCambios(RF_C_2);
+      await probeCambios(RF_C_1);
+
+      return out;
+    }
+
+    /** Resuelve original_norm -> vehiculo (modelo) */
+    async function rfResolveModelByOriginalNorm(originalNorms){
+      const list = Array.from(new Set(originalNorms.map(rfNorm).filter(Boolean)));
+      const out = new Map();
+
+      async function probe(table){
+        for(const part of rfChunk(list, 200)){
+          const { data, error } = await supabase
+            .from(table)
+            .select(`${RF_DV_ORIG_NORM},${RF_DV_VEH}`)
+            .in(RF_DV_ORIG_NORM, part)
+            .limit(5000);
+
+          if(error || !Array.isArray(data)) continue;
+
+          for(const r of data){
+            const on = rfNorm(r?.[RF_DV_ORIG_NORM]);
+            const veh = String(r?.[RF_DV_VEH] || "").trim();
+            if(on && veh && !out.has(on)) out.set(on, veh.toUpperCase());
+          }
+        }
+      }
+
+      await probe(RF_DV_2);
+      await probe(RF_DV_1);
+
+      return out;
+    }
+
+    async function rfLoadTopModelsToday(force){
+      try{
+        if(rfTopModels.loaded && !force) return;
+
+        setMsg($("todayModelsMsg"), "", false);
+        $("todayModelsList").innerHTML = `<div class="muted2">Cargando...</div>`;
+
+        const { startIso, endIso } = isoStartEndToday();
+
+        // 1) traer eventos de hoy
+        const { data, error } = await supabase
+          .from(RF_SEARCH_EVENTS_TABLE)
+          .select(`${RF_Q_FIELD},${RF_SE_FIELD}`)
+          .gte(RF_SE_FIELD, startIso)
+          .lt(RF_SE_FIELD, endIso)
+          .limit(5000);
+
+        if(error) throw error;
+
+        const events = Array.isArray(data) ? data : [];
+        rfTopModels.totalEvents = events.length;
+
+        // 2) filtrar solo queries tipo codigo
+        const queries = events
+          .map(r => rfNorm(r?.[RF_Q_FIELD]))
+          .filter(q => rfIsCodeLike(q));
+
+        if(!queries.length){
+          rfTopModels.loaded = true;
+          rfTopModels.models = [];
+          rfTopModels.modelDetails = {};
+          $("todayModelsSub").textContent = `Hoy: ${events.length} busquedas • 0 codigos`;
+          $("todayModelsList").innerHTML = `<div class="muted2">Hoy no hay busquedas tipo codigo.</div>`;
+          $("kpiSearchTodayValue").textContent = String(events.length || 0);
+          $("kpiSearchTodaySub").textContent = "Click para ver Top Modelos (hoy).";
+          return;
+        }
+
+        // 3) resolver query -> original_norm
+        const qToOn = await rfResolveToOriginalNorm(queries);
+        const originalNorms = Array.from(new Set(Array.from(qToOn.values())));
+
+        // 4) resolver original_norm -> vehiculo/modelo
+        const onToModel = await rfResolveModelByOriginalNorm(originalNorms);
+
+        // 5) agrupar por modelo y preparar detalle por modelo
+        const countByModel = new Map();
+        const detailByModel = new Map(); // model -> Map(code -> {n, original_norm})
+
+        for(const ev of events){
+          const q = rfNorm(ev?.[RF_Q_FIELD]);
+          if(!rfIsCodeLike(q)) continue;
+
+          const on = qToOn.get(q);
+          if(!on) continue;
+
+          const model = onToModel.get(on);
+          if(!model) continue;
+
+          countByModel.set(model, (countByModel.get(model) || 0) + 1);
+
+          if(!detailByModel.has(model)) detailByModel.set(model, new Map());
+          const mm = detailByModel.get(model);
+
+          const cur = mm.get(q) || { n: 0, original_norm: on };
+          cur.n += 1;
+          cur.original_norm = on || cur.original_norm;
+          mm.set(q, cur);
+        }
+
+        const models = Array.from(countByModel.entries())
+          .map(([model, count]) => ({ model, count }))
+          .sort((a,b)=> b.count - a.count)
+          .slice(0, 30);
+
+        const modelDetails = {};
+        for(const m of models){
+          const mm = detailByModel.get(m.model) || new Map();
+          const codes = Array.from(mm.entries())
+            .map(([code, info]) => ({ code, count: info.n, original_norm: info.original_norm || "" }))
+            .sort((a,b)=> b.count - a.count);
+
+          modelDetails[m.model] = { total: m.count, codes };
+        }
+
+        rfTopModels.loaded = true;
+        rfTopModels.models = models;
+        rfTopModels.modelDetails = modelDetails;
+
+        // KPI: aqui puedes poner total eventos del dia
+        $("kpiSearchTodayValue").textContent = String(events.length || 0);
+        $("kpiSearchTodaySub").textContent = "Click para ver Top Modelos (hoy).";
+
+        // pintar lista
+        $("todayModelsSub").textContent = `Hoy: ${events.length} busquedas • ${queries.length} codigos consultados`;
+        renderTodayModelsList();
+      }catch(err){
+        rfTopModels.loaded = true;
+        rfTopModels.models = [];
+        rfTopModels.modelDetails = {};
+        setMsg($("todayModelsMsg"), "Error cargando Top Modelos: " + (err?.message || err), true);
+        $("todayModelsList").innerHTML = `<div class="muted2">No se pudo cargar.</div>`;
+      }
+    }
+
+    function renderTodayModelsList(){
+      const list = $("todayModelsList");
+      const items = rfTopModels.models || [];
+      if(!items.length){
+        list.innerHTML = `<div class="muted2">No hay modelos para mostrar.</div>`;
+        return;
+      }
+
+      list.innerHTML = items.map(it=>`
+        <div class="itemRow" onclick="openModelCodesModal('${escapeHtml(it.model)}')">
+          <div class="pillTag">${escapeHtml(it.model)}</div>
+          <span class="badgeCount">${it.count}</span>
+        </div>
+      `).join("");
+    }
+
+    // abrir/cerrar modal principal
+    window.openTodayModelsModal = async function(){
+      openModal("todayModelsBack");
+      await rfLoadTopModelsToday(false);
+    };
+    window.closeTodayModelsModal = function(){
+      closeModal("todayModelsBack");
+    };
+
+    // abrir/cerrar modal codes
+    window.openModelCodesModal = function(model){
+      try{
+        setMsg($("modelCodesMsg"), "", false);
+        const m = String(model||"").trim().toUpperCase();
+
+        const data = rfTopModels.modelDetails?.[m];
+        $("modelCodesTitle").textContent = `Codigos buscados: ${m}`;
+        $("modelCodesSub").textContent = data ? `Total consultas: ${data.total}` : "Sin detalle disponible";
+
+        const list = $("modelCodesList");
+        if(!data || !Array.isArray(data.codes) || !data.codes.length){
+          list.innerHTML = `<div class="muted2">No hay codigos para este modelo.</div>`;
+        }else{
+          list.innerHTML = data.codes.slice(0, 200).map(x=>`
+            <div class="itemRow">
+              <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+                <div class="pillTag">${escapeHtml(x.code)}</div>
+                <div class="muted" style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                  Original: ${escapeHtml(x.original_norm || "—")}
+                </div>
+              </div>
+              <span class="badgeCount">${x.count}</span>
+            </div>
+          `).join("");
+        }
+
+        openModal("modelCodesBack");
+      }catch(err){
+        setMsg($("modelCodesMsg"), String(err?.message || err), true);
+      }
+    };
+
+    window.closeModelCodesModal = function(){
+      closeModal("modelCodesBack");
+    };
+
+
+
     async function init(){
       $("y").textContent = new Date().getFullYear();
 
@@ -2251,14 +2643,15 @@
       // ✅ noticias del dia (ticker)
       await initNewsTicker();
 
-      // ✅ KPI Busquedas (hoy)
-      await loadSearchTodayStats(false);
+      // ✅ KPI Busquedas (hoy) Radar-style (Top Modelos)
+      await rfLoadTopModelsToday(false);
     }
 
     init();
   </script>
 </body>
 </html>
+
 
 
 
