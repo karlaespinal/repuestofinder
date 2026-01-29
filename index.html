@@ -1292,10 +1292,12 @@
     // ========= CATALOGO UNICO DE HERRAMIENTAS (1 solo lugar) =========
     // Si agregas una herramienta nueva aquí, también se reflejará en el panel Admin (Perfil) automáticamente.
     const TOOLS_CATALOG = [
-      { key: "app",        label: "App",            url: "app.html",        desc: "Búsqueda y cross-references",                 pill: "",      menu: false, managed: true },
+{ key: "app",        label: "App",            url: "app.html",        desc: "Búsqueda y cross-references",                 pill: "",      menu: false, managed: true },
       { key: "radar",      label: "Radar de Demanda", url: "radar.html",    desc: "Modelos, años, motores y oportunidades",     pill: "Pro",   menu: true,  section: "top", managed: true },
       { key: "kpis",       label: "KPIs y Analisis",  url: "kpis.html",     desc: "Panel de métricas y reportes",              pill: "Nuevo", menu: true,  section: "top", managed: true },
       { key: "mensajeria", label: "Mensajería",     url: "mensajeria.html", desc: "Foro abierto y mensajes a admins",           pill: "Cuenta",menu: true,  section: "afterPerfil", managed: true },
+      { key: "obsolescencia", label: "Obsolescencia", url: "osbolesencia.html", desc: "Ofertas temporales y chat (solo lectura para admin)", pill: "Nuevo", menu: true, section: "afterPerfil", managed: true },
+
     ];
 
 
@@ -2768,6 +2770,7 @@
   </script>
 </body>
 </html>
+
 
 
 
