@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RepuestoFinder • Obsolescencia (Ofertas)</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <script src="/assets/supabaseClient.js"></script>
+  <style>
+    :root{
+      --bg:#f5f7fb;
+      --card:#ffffff;
+      --ink:#0f172a;
+      --muted:#64748b;
+      --b:#e5e7eb;
+      --pri:#3b82f6;
+      --pri2:#1d4ed8;
+      --ok:#16a34a;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --shadow:0 10px 30px rgba(2,6,23,.08);
+      --r:18px;
+      --r2:14px;
+      --pad:14px;
+      font-synthesis-weight:none;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--ink);
+      background: radial-gradient(1100px 700px at 10% -10%, rgba(59,130,246,.20), transparent 55%),
+                  radial-gradient(900px 600px at 90% 0%, rgba(16,185,129,.14), transparent 50%),
+                  var(--bg);
+    }
+    .topbar{
+      position:sticky; top:0; z-index:50;
+      background:rgba(245,247,251,.86);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid rgba(229,231,235,.8);
+    }
+    .topbarInner{
+      max-width:1200px; margin:0 auto;
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 16px;
+      gap:10px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+    .brand .logo{
+      width:34px; height:34px; border-radius:12px;
+      background:linear-gradient(135deg, rgba(59,130,246,1), rgba(29,78,216,1));
+      box-shadow:0 10px 25px rgba(59,130,246,.25);
+      display:grid; place-items:center; color:white;
+      font-weight:900;
+    }
+    .chip{
+      font-size:12px;
+      padding:4px 10px;
+      border:1px solid rgba(0,0,0,.08);
+      background:rgba(255,255,255,.65);
+      border-radius:999px;
+      color:var(--muted);
+    }
+    .actions{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    .btn{
+      border:0;
+      border-radius:12px;
+      padding:10px 12px;
+      font-weight:700;
+      cursor:pointer;
+      background:var(--pri);
+      color:white;
+      box-shadow:0 12px 26px rgba(59,130,246,.22);
+      transition:transform .06s ease, filter .2s ease;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .btn:hover{ filter:brightness(.98); }
+    .btn:active{ transform:translateY(1px); }
+    .btnGhost{
+      background:rgba(255,255,255,.75);
+      border:1px solid rgba(0,0,0,.08);
+      box-shadow:none;
+      color:var(--ink);
+    }
+    .btnBad{
+      background:var(--bad);
+      box-shadow:0 12px 26px rgba(239,68,68,.18);
+    }
+    .btnSmall{ padding:8px 10px; border-radius:10px; font-size:13px; }
+
+    .wrap{ max-width:1200px; margin:0 auto; padding:18px 16px 50px; }
+    .grid{ display:grid; grid-template-columns: 1.05fr .95fr; gap:14px; }
+    @media (max-width: 980px){ .grid{ grid-template-columns:1fr; } }
+
+    .card{
+      background:rgba(255,255,255,.85);
+      border:1px solid rgba(229,231,235,.9);
+      border-radius:var(--r);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .cardHead{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:14px 14px;
+      border-bottom:1px solid rgba(229,231,235,.8);
+      background:linear-gradient(180deg, rgba(255,255,255,.85), rgba(255,255,255,.68));
+    }
+    .cardHead b{ font-size:16px; }
+    .cardBody{ padding:14px; }
+    .muted{ color:var(--muted); }
+    .muted2{ color:var(--muted); font-size:13px; }
+    .msg{ display:none; margin-top:10px; padding:10px 12px; border-radius:12px; border:1px solid rgba(0,0,0,.08); background:rgba(255,255,255,.7); }
+    .msg.err{ border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.08); }
+
+    .formGrid{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    @media (max-width: 620px){ .formGrid{ grid-template-columns:1fr; } }
+    .field label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+    .inp, .sel, textarea{
+      width:100%;
+      border-radius:12px;
+      border:1px solid rgba(0,0,0,.10);
+      padding:10px 12px;
+      background:white;
+      outline:none;
+      font-size:14px;
+    }
+    textarea{ min-height:84px; resize:vertical; }
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(0,0,0,.08);
+      background:rgba(255,255,255,.65);
+      font-size:13px;
+    }
+    .pill.ok{ border-color:rgba(22,163,74,.35); background:rgba(22,163,74,.08); color:#14532d; }
+    .pill.warn{ border-color:rgba(245,158,11,.35); background:rgba(245,158,11,.10); color:#78350f; }
+
+    table{ width:100%; border-collapse:separate; border-spacing:0; }
+    th, td{ text-align:left; padding:10px 10px; border-bottom:1px solid rgba(229,231,235,.85); vertical-align:top; }
+    th{ font-size:12px; color:var(--muted); font-weight:800; }
+    td{ font-size:14px; }
+    .tdSmall{ font-size:13px; color:var(--muted); }
+    .nowrap{ white-space:nowrap; }
+    .tActions{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end; }
+
+    .chatBox{ height:380px; overflow:auto; border:1px solid rgba(0,0,0,.08); border-radius:14px; padding:10px; background:white; }
+    .chatMsg{ padding:8px 10px; border-radius:12px; margin:6px 0; max-width:85%; }
+    .chatMe{ background:rgba(59,130,246,.12); margin-left:auto; }
+    .chatOther{ background:rgba(0,0,0,.05); margin-right:auto; }
+    .chatMeta{ font-size:11px; opacity:.7; margin-top:3px; }
+    .chatComposer{ display:flex; gap:8px; margin-top:10px; }
+    .hidden{ display:none !important; }
+
+    .modalBack{
+      display:none;
+      position:fixed; inset:0;
+      background:rgba(2,6,23,.55);
+      backdrop-filter: blur(6px);
+      align-items:center; justify-content:center;
+      padding:16px;
+      z-index:200;
+    }
+    .modal{
+      width:min(720px, 100%);
+      background:white;
+      border-radius:18px;
+      box-shadow:0 25px 60px rgba(2,6,23,.25);
+      border:1px solid rgba(255,255,255,.2);
+      overflow:hidden;
+    }
+    .modalHead{ padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px; border-bottom:1px solid rgba(229,231,235,.85); }
+    .modalBody{ padding:14px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbarInner">
+      <div class="brand">
+        <div class="logo">RF</div>
+        <div>
+          <div>Obsolescencia</div>
+          <div class="muted2">Ofertas temporales por código + chat</div>
+        </div>
+      </div>
+      <div class="actions">
+        <span class="chip" id="who">—</span>
+        <a class="btn btnGhost btnSmall" href="index.html">Dashboard</a>
+        <a class="btn btnGhost btnSmall" href="app.html">App</a>
+        <button class="btn btnGhost btnSmall" onclick="logout()">Salir</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="grid">
+      <div class="card">
+        <div class="cardHead">
+          <b>Crear / administrar ofertas</b>
+          <div class="row">
+            <span class="pill" id="pillRole">Rol: —</span>
+            <span class="pill warn" id="pillAuto">Auto-borrado: requiere tarea</span>
+          </div>
+        </div>
+        <div class="cardBody">
+          <div class="muted2">
+            El cliente en la App solo ve <b>Marca</b>, <b>Precio</b> y <b>País</b>. La comunicación es por chat.
+          </div>
+
+          <div class="msg" id="msg"></div>
+
+          <div style="height:12px"></div>
+
+          <div class="formGrid">
+            <div class="field">
+              <label>Número original (OEM)</label>
+              <input class="inp" id="fOriginal" placeholder="Ej: A2762001000" />
+            </div>
+
+            <div class="field">
+              <label>Marca</label>
+              <input class="inp" id="fBrand" placeholder="Ej: Mercedes-Benz / Mahle / Bosch" />
+            </div>
+
+            <div class="field">
+              <label>Precio</label>
+              <input class="inp" id="fPrice" placeholder="Ej: 125.50" />
+            </div>
+
+            <div class="field">
+              <label>Moneda</label>
+              <select class="sel" id="fCurrency">
+                <option value="USD">USD</option>
+                <option value="DOP">DOP</option>
+                <option value="EUR">EUR</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>País de origen (donde se oferta)</label>
+              <input class="inp" id="fCountry" placeholder="Ej: República Dominicana" />
+            </div>
+
+            <div class="field">
+              <label>Duración</label>
+              <select class="sel" id="fDuration">
+                <option value="1h">1 hora</option>
+                <option value="6h">6 horas</option>
+                <option value="12h">12 horas</option>
+                <option value="24h" selected>24 horas</option>
+                <option value="3d">3 días</option>
+                <option value="7d">7 días</option>
+                <option value="30d">30 días</option>
+              </select>
+            </div>
+
+            <div class="field" style="grid-column:1/-1">
+              <label>Descripción (interna, no se muestra al cliente)</label>
+              <textarea id="fDesc" placeholder="Detalles: condición, ubicación, disponibilidad, notas..."></textarea>
+            </div>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="row">
+            <button class="btn" onclick="createOffer()">Guardar oferta</button>
+            <button class="btn btnGhost" onclick="clearForm()">Limpiar</button>
+            <span class="muted2" id="hint">—</span>
+          </div>
+
+          <div style="height:16px"></div>
+
+          <div class="row" style="justify-content:space-between">
+            <b>Mis ofertas</b>
+            <div class="row">
+              <input class="inp" id="q" placeholder="Filtrar (OEM / marca / país)" style="min-width:280px" oninput="renderOffers()" />
+              <button class="btn btnGhost btnSmall" onclick="loadOffers(true)">Actualizar</button>
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+
+          <div style="overflow:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th class="nowrap">OEM</th>
+                  <th>Marca</th>
+                  <th>Precio</th>
+                  <th>País</th>
+                  <th class="nowrap">Expira</th>
+                  <th style="text-align:right" class="nowrap">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="offersTbody">
+                <tr><td colspan="6" class="tdSmall">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardHead">
+          <b>Chats de ofertas</b>
+          <div class="row">
+            <span class="chip" id="chatMeta">—</span>
+            <button class="btn btnGhost btnSmall" onclick="loadChats(true)">Actualizar</button>
+          </div>
+        </div>
+        <div class="cardBody">
+          <div class="muted2">
+            <b>Admin:</b> puede ver todos los chats, pero <b>no puede intervenir</b> (solo lectura).
+          </div>
+          <div class="msg" id="msgChat"></div>
+
+          <div style="height:12px"></div>
+
+          <div class="row" style="align-items:stretch">
+            <div style="flex:1; min-width:260px; max-width:360px;">
+              <div class="field">
+                <label>Buscar chat</label>
+                <input class="inp" id="chatFilter" placeholder="OEM / marca / país" oninput="renderChats()" />
+              </div>
+              <div id="chatList"></div>
+            </div>
+
+            <div style="flex:2; min-width:280px;">
+              <div class="pill" id="chatTitle">Selecciona un chat</div>
+              <div style="height:10px"></div>
+
+              <div class="chatBox" id="chatMsgs"></div>
+
+              <div class="chatComposer" id="chatComposer">
+                <input class="inp" id="chatInput" placeholder="Escribe un mensaje..." />
+                <button class="btn" onclick="sendMsg()">Enviar</button>
+              </div>
+
+              <div class="muted2 hidden" id="adminReadOnly" style="margin-top:8px;">
+                Modo administrador: solo lectura.
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal confirm delete -->
+  <div class="modalBack" id="delBack" onclick="if(event.target.id==='delBack') closeDel()">
+    <div class="modal">
+      <div class="modalHead">
+        <b>Eliminar oferta</b>
+        <button class="btn btnGhost btnSmall" onclick="closeDel()">Cerrar</button>
+      </div>
+      <div class="modalBody">
+        <div class="muted2" id="delTxt">—</div>
+        <div style="height:12px"></div>
+        <div class="row" style="justify-content:flex-end">
+          <button class="btn btnGhost" onclick="closeDel()">Cancelar</button>
+          <button class="btn btnBad" onclick="confirmDel()">Eliminar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const OFFERS_TABLE = "offers";
+    const CHATS_TABLE  = "offer_chats";
+    const MSGS_TABLE   = "offer_messages";
+
+    const $ = (id)=>document.getElementById(id);
+
+    let me = null;
+    let myRole = null; // "admin" | null
+    let offersCache = [];
+    let chatsCache = [];
+    let selectedChat = null; // {id, offer_id,...}
+    let chatPoll = null;
+
+    function escapeHtml(s){
+      return String(s??"").replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
+    }
+
+    function setMsg(el, txt, err){
+      if(!el) return;
+      el.textContent = txt || "";
+      el.classList.toggle("err", !!err);
+      el.style.display = txt ? "block" : "none";
+    }
+
+    function normCode(s){
+      return String(s||"").trim().toUpperCase().replace(/\s+/g,"").replace(/[^A-Z0-9]/g,"");
+    }
+
+    function parseDuration(v){
+      const s = String(v||"").trim().toLowerCase();
+      const n = Number(s.replace(/[^0-9]/g,"")) || 0;
+      if(s.endsWith("h")) return n * 60 * 60 * 1000;
+      if(s.endsWith("d")) return n * 24 * 60 * 60 * 1000;
+      return 24 * 60 * 60 * 1000;
+    }
+
+    function money(price, cur){
+      const p = Number(price);
+      const c = String(cur||"USD").toUpperCase();
+      if(!Number.isFinite(p)) return "—";
+      return p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " " + c;
+    }
+
+
+    function explainSetupError(e){
+      const msg = String(e?.message || e || "");
+      const code = String(e?.code || "");
+      const missing = (code === "42P01") || /does not exist/i.test(msg) || /relation .* does not exist/i.test(msg);
+      if(missing){
+        return "Parece que la BD aun no tiene las tablas de Ofertas/Chats (offers, offer_chats, offer_messages).\n\nSolucion: crea las tablas y politicas RLS en Supabase (te pase el SQL). Luego recarga esta pagina.";
+      }
+      const denied = (code === "42501") || /permission denied/i.test(msg) || /new row violates row-level security/i.test(msg);
+      if(denied){
+        return "Permisos/RLS: tu usuario no tiene permiso para esta accion. Revisa las politicas RLS (seller_id = auth.uid()) o si eres admin (profiles.role='admin').";
+      }
+      return null;
+    }
+
+    async function initAuth(){
+      const { data: ses } = await supabase.auth.getSession();
+      me = ses?.session?.user || null;
+
+      const params = new URLSearchParams(location.search);
+      const isDemo = params.get("demo") === "1";
+
+      if(!me && !isDemo){
+        location.href = "/?stay=1";
+        return;
+      }
+
+      if(me){
+        $("who").textContent = (me.email || me.id || "Usuario");
+      }else{
+        $("who").textContent = "Demo";
+      }
+
+      // rol (si existe profiles)
+      try{
+        if(me){
+          const { data } = await supabase.from("profiles").select("role").eq("id", me.id).maybeSingle();
+          myRole = (data?.role || null);
+        }
+      }catch(_){}
+
+      const isAdmin = String(myRole||"").toLowerCase() === "admin";
+      $("pillRole").textContent = "Rol: " + (isAdmin ? "Admin" : "Vendedor");
+      $("pillRole").classList.toggle("ok", !isAdmin);
+
+      // admin read-only en chat
+      $("chatComposer").classList.toggle("hidden", isAdmin);
+      $("adminReadOnly").classList.toggle("hidden", !isAdmin);
+
+      // presencia (opcional)
+      try{
+        if(me){
+          const presenceChannel = supabase.channel("rf-online-users", { config:{ presence:{ key: me.id } } });
+          await presenceChannel.subscribe(async (status)=>{
+            if(status === "SUBSCRIBED"){
+              await presenceChannel.track({ at:new Date().toISOString(), page:"obsolescencia" });
+            }
+          });
+        }
+      }catch(_){}
+
+      // aviso auto-borrado (esto se hace del lado BD con cron)
+      $("pillAuto").title = "Para borrar de verdad se recomienda un job en Supabase. Aquí solo ocultamos expiradas y permitimos borrar manual.";
+
+      await loadOffers(true);
+      await loadChats(true);
+
+      supabase.auth.onAuthStateChange((event, session)=>{
+        const isDemo2 = (new URLSearchParams(location.search)).get("demo")==="1";
+        if(!session && !isDemo2) location.href = "/?stay=1";
+      });
+    }
+
+    async function logout(){
+      try{ await supabase.auth.signOut(); }catch(_){}
+      location.href = "/?stay=1";
+    }
+
+    function clearForm(){
+      ["fOriginal","fBrand","fPrice","fCountry","fDesc"].forEach(id=>{ const el=$(id); if(el) el.value=""; });
+      $("fCurrency").value = "USD";
+      $("fDuration").value = "24h";
+      $("hint").textContent = "—";
+      setMsg($("msg"), "", false);
+    }
+
+    async function createOffer(){
+      try{
+        setMsg($("msg"), "", false);
+
+        if(!me){ throw new Error("Debes iniciar sesión."); }
+
+        const original = String($("fOriginal").value||"").trim();
+        const brand = String($("fBrand").value||"").trim();
+        const desc = String($("fDesc").value||"").trim();
+        const country = String($("fCountry").value||"").trim();
+        const currency = String($("fCurrency").value||"USD").trim().toUpperCase();
+
+        const priceRaw = String($("fPrice").value||"").trim().replace(/,/g,".");
+        const price = Number(priceRaw);
+
+        if(!original) throw new Error("Falta el número original.");
+        if(!brand) throw new Error("Falta la marca.");
+        if(!Number.isFinite(price) || price <= 0) throw new Error("Precio inválido.");
+        if(!country) throw new Error("Falta el país.");
+
+        const durMs = parseDuration($("fDuration").value);
+        const expiresAt = new Date(Date.now() + durMs).toISOString();
+
+        const payload = {
+          original: original,
+          original_norm: normCode(original),
+          brand,
+          description: desc || null,
+          price,
+          currency,
+          country,
+          seller_id: me.id,
+          expires_at: expiresAt
+        };
+
+        const { error } = await supabase.from(OFFERS_TABLE).insert([payload]);
+        if(error) throw error;
+
+        $("hint").textContent = "Oferta guardada ✅";
+        clearForm();
+        await loadOffers(true);
+      }catch(e){
+        console.error(e);
+        setMsg($("msg"), (explainSetupError(e) || (e?.message || e)), true);
+      }
+    }
+
+    async function loadOffers(force){
+      try{
+        if(!me){
+          offersCache = [];
+          renderOffers();
+          return;
+        }
+
+        const isAdmin = String(myRole||"").toLowerCase()==="admin";
+        const nowIso = new Date().toISOString();
+
+        let q = supabase.from(OFFERS_TABLE)
+          .select("id,original,original_norm,brand,price,currency,country,expires_at,created_at,seller_id")
+          .gt("expires_at", nowIso)
+          .order("created_at", { ascending:false })
+          .limit(500);
+
+        if(!isAdmin){
+          q = q.eq("seller_id", me.id);
+        }
+
+        const { data, error } = await q;
+        if(error) throw error;
+
+        offersCache = data || [];
+        renderOffers();
+      }catch(e){
+        console.error(e);
+        setMsg($("msg"), "No pude cargar ofertas: " + (explainSetupError(e) || (e?.message || e)), true);
+      }
+    }
+
+    function renderOffers(){
+      const q = String($("q").value||"").trim().toLowerCase();
+      let rows = offersCache.slice();
+
+      if(q){
+        rows = rows.filter(o=>{
+          return String(o.original||"").toLowerCase().includes(q) ||
+                 String(o.brand||"").toLowerCase().includes(q) ||
+                 String(o.country||"").toLowerCase().includes(q);
+        });
+      }
+
+      if(rows.length===0){
+        $("offersTbody").innerHTML = '<tr><td colspan="6" class="tdSmall">No hay ofertas.</td></tr>';
+        return;
+      }
+
+      $("offersTbody").innerHTML = rows.map(o=>{
+        const exp = new Date(o.expires_at);
+        const expTxt = exp.toLocaleString();
+        const now = Date.now();
+        const leftMs = exp.getTime() - now;
+        const warn = leftMs < 6*60*60*1000; // <6h
+        const pill = warn ? '<span class="pill warn">Pronto</span>' : '<span class="pill ok">Activa</span>';
+
+        return `
+          <tr>
+            <td class="nowrap"><b>${escapeHtml(o.original||"")}</b><div class="tdSmall">${pill}</div></td>
+            <td>${escapeHtml(o.brand||"")}</td>
+            <td class="nowrap">${escapeHtml(money(o.price,o.currency))}</td>
+            <td>${escapeHtml(o.country||"")}</td>
+            <td class="nowrap">${escapeHtml(expTxt)}</td>
+            <td style="text-align:right" class="nowrap">
+              <div class="tActions">
+                <button class="btn btnGhost btnSmall" onclick="openChatsByOffer('${o.id}')">Ver chats</button>
+                <button class="btn btnBad btnSmall" onclick="askDel('${o.id}')">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // ===== Delete offer =====
+    let delId = null;
+    function askDel(id){
+      delId = id;
+      const o = offersCache.find(x=>x.id===id);
+      $("delTxt").textContent = o ? (`Eliminar oferta ${o.original} (${o.brand})?`) : "Eliminar oferta?";
+      $("delBack").style.display = "flex";
+    }
+    function closeDel(){
+      delId = null;
+      $("delBack").style.display = "none";
+    }
+    async function confirmDel(){
+      try{
+        if(!delId) return;
+        const { error } = await supabase.from(OFFERS_TABLE).delete().eq("id", delId);
+        if(error) throw error;
+        closeDel();
+        await loadOffers(true);
+        await loadChats(true);
+      }catch(e){
+        console.error(e);
+        setMsg($("msg"), "No pude eliminar: " + (e?.message || e), true);
+      }
+    }
+
+    // ===== Chats =====
+    async function loadChats(force){
+      try{
+        if(!me){
+          chatsCache = [];
+          renderChats();
+          return;
+        }
+
+        const isAdmin = String(myRole||"").toLowerCase()==="admin";
+
+        // 1) traer chats
+        let q = supabase.from(CHATS_TABLE).select("id,offer_id,buyer_id,seller_id,created_at").order("created_at", { ascending:false }).limit(500);
+        if(!isAdmin){
+          q = q.eq("seller_id", me.id);
+        }
+        const { data: chats, error: chErr } = await q;
+        if(chErr) throw chErr;
+
+        const list = chats || [];
+        $("chatMeta").textContent = list.length ? (list.length + " chat(s)") : "0 chats";
+
+        // 2) traer ofertas de esos chats para pintar titulo (brand/price/country/original)
+        const offerIds = Array.from(new Set(list.map(x=>x.offer_id).filter(Boolean)));
+        let offersById = {};
+        if(offerIds.length){
+          const { data: ofs, error: oErr } = await supabase.from(OFFERS_TABLE)
+            .select("id,original,brand,price,currency,country")
+            .in("id", offerIds)
+            .limit(500);
+          if(oErr) throw oErr;
+          (ofs||[]).forEach(o=> offersById[o.id]=o);
+        }
+
+        chatsCache = list.map(c=>({ ...c, offer: offersById[c.offer_id] || null }));
+        renderChats();
+      }catch(e){
+        console.error(e);
+        setMsg($("msgChat"), "No pude cargar chats: " + (explainSetupError(e) || (e?.message || e)), true);
+      }
+    }
+
+    function renderChats(){
+      const q = String($("chatFilter").value||"").trim().toLowerCase();
+      let list = chatsCache.slice();
+
+      if(q){
+        list = list.filter(c=>{
+          const o = c.offer || {};
+          return String(o.original||"").toLowerCase().includes(q) ||
+                 String(o.brand||"").toLowerCase().includes(q) ||
+                 String(o.country||"").toLowerCase().includes(q);
+        });
+      }
+
+      if(list.length===0){
+        $("chatList").innerHTML = '<div class="muted2">No hay chats.</div>';
+        return;
+      }
+
+      $("chatList").innerHTML = list.map(c=>{
+        const o = c.offer || {};
+        const title = `${o.original || "—"} • ${o.brand || "—"}`;
+        const sub = `${money(o.price,o.currency)} • ${o.country || ""}`.trim();
+        const active = (selectedChat && selectedChat.id===c.id) ? "style='border-color:rgba(59,130,246,.45)'" : "";
+        return `
+          <div class="card" style="box-shadow:none; background:white; border-radius:14px; margin-bottom:8px; border:1px solid rgba(0,0,0,.08); cursor:pointer;" ${active}
+               onclick="selectChat('${c.id}')">
+            <div style="padding:10px 12px">
+              <div style="font-weight:800; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(title)}</div>
+              <div class="muted2" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(sub)}</div>
+              <div class="tdSmall">Chat: ${escapeHtml(new Date(c.created_at).toLocaleString())}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    window.openChatsByOffer = function(offerId){
+      const chat = chatsCache.find(c=>c.offer_id===offerId);
+      if(chat) selectChat(chat.id);
+    }
+
+    async function selectChat(chatId){
+      const chat = chatsCache.find(c=>c.id===chatId);
+      if(!chat) return;
+      selectedChat = chat;
+
+      const o = chat.offer || {};
+      $("chatTitle").textContent = `Chat • ${o.original || "—"} • ${o.brand || "—"} • ${money(o.price,o.currency)} • ${o.country || ""}`.trim();
+
+      await loadMsgs(true);
+      startPoll();
+      renderChats();
+    }
+
+    function startPoll(){
+      stopPoll();
+      chatPoll = setInterval(()=>loadMsgs(false), 2500);
+    }
+    function stopPoll(){
+      if(chatPoll){ clearInterval(chatPoll); chatPoll=null; }
+    }
+
+    async function loadMsgs(scrollBottom){
+      try{
+        if(!selectedChat) return;
+        const { data, error } = await supabase.from(MSGS_TABLE)
+          .select("id,chat_id,sender_id,body,created_at")
+          .eq("chat_id", selectedChat.id)
+          .order("created_at", { ascending:true })
+          .limit(300);
+
+        if(error) throw error;
+
+        const isAdmin = String(myRole||"").toLowerCase()==="admin";
+        const myId = me?.id;
+
+        $("chatMsgs").innerHTML = (data||[]).map(m=>{
+          const mine = (m.sender_id === myId);
+          const cls = mine ? "chatMsg chatMe" : "chatMsg chatOther";
+          const when = new Date(m.created_at).toLocaleString();
+          return `
+            <div class="${cls}">
+              <div>${escapeHtml(m.body||"")}</div>
+              <div class="chatMeta">${escapeHtml(when)}</div>
+            </div>
+          `;
+        }).join("") || '<div class="muted2">No hay mensajes aun.</div>';
+
+        if(scrollBottom){
+          const box = $("chatMsgs");
+          box.scrollTop = box.scrollHeight;
+        }
+
+        // admin read-only
+        $("chatComposer").classList.toggle("hidden", isAdmin);
+        $("adminReadOnly").classList.toggle("hidden", !isAdmin);
+
+      }catch(e){
+        console.error(e);
+        setMsg($("msgChat"), "No pude cargar mensajes: " + (e?.message || e), true);
+      }
+    }
+
+    async function sendMsg(){
+      try{
+        const isAdmin = String(myRole||"").toLowerCase()==="admin";
+        if(isAdmin) return;
+
+        if(!selectedChat) throw new Error("Selecciona un chat.");
+        const txt = String($("chatInput").value||"").trim();
+        if(!txt) return;
+
+        $("chatInput").value = "";
+        const payload = { chat_id: selectedChat.id, sender_id: me.id, body: txt };
+
+        const { error } = await supabase.from(MSGS_TABLE).insert([payload]);
+        if(error) throw error;
+
+        await loadMsgs(true);
+      }catch(e){
+        console.error(e);
+        setMsg($("msgChat"), (explainSetupError(e) || (e?.message || e)), true);
+      }
+    }
+
+    // init
+    initAuth();
+  </script>
+</body>
+</html>
