@@ -1325,7 +1325,7 @@ window.limpiar = function(){
     const norms = unique_([...(originalNorms||[]), codeNorm].filter(Boolean));
 
     // Campos minimos + extras (si existen en tu tabla, supabase los trae; si no, no rompe)
-    const selectCols = "id, original, original_norm, brand, description, price, currency, country, expires_at, seller_id, owner_id";
+    const selectCols = "id, original, original_norm, brand, description, price, currency, country, expires_at";
 
     try{
       const { data, error } = await supabase
@@ -1479,17 +1479,12 @@ window.limpiar = function(){
     }
 
     const offerId = modalOffer?.id || null;
-    const sellerId = modalOffer?.seller_id || modalOffer?.owner_id || null;
 
-    // Si no hay offerId o sellerId, hacemos fallback a la pagina de Obsolescencia
-    if(!offerId || !sellerId){
-      if(status) status.textContent = "Abriendo chat de ofertas...";
-      const q = new URLSearchParams();
-      if(offerId) q.set("offer", offerId);
-      if(modalOffer?.original_norm) q.set("code", modalOffer.original_norm);
-      q.set("msg", msg);
-      window.open(OFFERS_CHAT_PAGE + "?" + q.toString(), "_blank");
-      alert("Abrimos el chat de ofertas en otra pestaña.");
+    // Nota: en tu BD el vendedor no vive en 'offers' (seller_id se guarda en offer_chats).
+    // Si aun no existe chat para esa oferta, abrimos Obsolescencia para iniciar el chat con el vendedor.
+    if(!offerId){
+      if(status) status.textContent = "No se encontro la oferta.";
+      alert("No se encontro la oferta.");
       return;
     }
 
@@ -1497,30 +1492,33 @@ window.limpiar = function(){
       if(status) status.textContent = "Creando chat...";
       // 1) Buscar chat existente (offer_id + buyer_id)
       let chatId = null;
+      let sellerId = null;
       {
         const { data: rows, error } = await supabase
           .from(OFFERS_CHATS_TABLE)
-          .select("id")
+          .select("id, seller_id")
           .eq("offer_id", offerId)
           .eq("buyer_id", user.id)
           .limit(1);
 
         if(error) throw error;
-        chatId = rows && rows[0] ? rows[0].id : null;
+        if(rows && rows[0]){
+          chatId = rows[0].id;
+          sellerId = rows[0].seller_id || null;
+        }
       }
 
-      // 2) Si no existe, crearlo
-      if(!chatId){
-        const { data: ins, error: e2 } = await supabase
-          .from(OFFERS_CHATS_TABLE)
-          .insert([{ offer_id: offerId, buyer_id: user.id, seller_id: sellerId }])
-          .select("id")
-          .single();
-        if(e2) throw e2;
-        chatId = ins?.id || null;
+      // 2) Si no existe chat aun, no podemos crear uno sin seller_id -> fallback a Obsolescencia
+      if(!chatId || !sellerId){
+        if(status) status.textContent = "Abriendo chat en Obsolescencia...";
+        const q = new URLSearchParams();
+        q.set("offer", offerId);
+        if(modalOffer?.original_norm) q.set("code", modalOffer.original_norm);
+        q.set("msg", msg);
+        window.open(OFFERS_CHAT_PAGE + "?" + q.toString(), "_blank");
+        alert("Para iniciar el chat con el vendedor, abrimos Obsolescencia en otra pestaña.");
+        return;
       }
-
-      if(!chatId) throw new Error("No se pudo crear/obtener el chat.");
 
       // 3) Insertar mensaje
       if(status) status.textContent = "Enviando mensaje...";
@@ -1683,6 +1681,8 @@ window.limpiar = function(){
 </script>
 </body>
 </html>
+
+
 
 
 
