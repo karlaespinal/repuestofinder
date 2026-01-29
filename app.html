@@ -76,20 +76,62 @@
       .card.open .chev{transform:rotate(180deg);}
     }
   
-    /* ===== FILTRO VEHICULAR (barra entre buscador OEM y Producto) ===== */
+    /* ===== FILTRO VEHICULAR (layout corregido) ===== */
     .filterBar{
-      display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:10px
+      display: grid;
+      grid-template-columns: 
+        minmax(180px, 1.2fr)  /* Vehiculo */
+        minmax(120px, 0.7fr)  /* Año */
+        minmax(160px, 1fr)    /* Modelo */
+        minmax(160px, 1fr)    /* Motor */
+        minmax(220px, 1.5fr)  /* Descripcion */
+        auto;                 /* Botones */
+      gap: 14px;
+      align-items: end;
+      margin-top: 14px;
     }
-    .filterItem{min-width:140px;flex:1}
-    .filterItem.small{min-width:110px;max-width:160px;flex:0 0 auto}
-    .filterItem.medium{min-width:160px;max-width:220px;flex:0 0 auto}
-    .filterLabel{font-size:12px;color:#6b7280;margin:0 0 6px 2px;font-weight:800}
-    .filterActions{display:flex;gap:8px;align-items:flex-end;flex:0 0 auto}
-    @media(max-width:900px){
-      .filterItem{min-width:140px;flex:1 1 140px}
-      .filterActions{width:100%}
-      .filterActions button{flex:1}
+
+    .filterItem{
+      display: flex;
+      flex-direction: column;
     }
+
+    .filterLabel{
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .filterItem input{
+      height: 38px;
+    }
+
+    /* Botones */
+    .filterActions{
+      display: flex;
+      gap: 10px;
+    }
+
+    .filterActions button{
+      height: 38px;
+      padding: 0 16px;
+      white-space: nowrap;
+    }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 1100px){
+      .filterBar{
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 600px){
+      .filterBar{
+        grid-template-columns: 1fr;
+      }
+    }
+
 
   </style>
 </head>
@@ -1073,6 +1115,7 @@ function uniqueJoin_(arr, sep=" / "){
 </script>
 </body>
 </html>
+
 
 
 
