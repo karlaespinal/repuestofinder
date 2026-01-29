@@ -933,27 +933,9 @@
           <div class="ddMenu" id="toolsMenu" role="menu" aria-label="Herramientas">
             <div class="ddMenuHeader">Accesos rapidos</div>
 
-            <div class="ddItem" id="tool_kpis" data-feature="kpis" role="menuitem" onclick="goKpis()">
-              <div>
-                KPIs y Analisis
-                <div style="margin-top:2px">
-                  <small>Panel de métricas y reportes</small>
-                </div>
-              </div>
-              <span class="pill">Nuevo</span>
-            </div>
+            <div id="toolsTop"></div>
 
-          <div class="ddItem" id="tool_radar" data-feature="radar" role="menuitem" onclick="goRadar()">
-              <div>
-                Radar de Demanda 
-                <div style="margin-top:2px">
-                  <small>Modelos, años, motores y oportunidades</small>
-                </div>
-              </div>
-              <span class="pill">Pro</span>
-            </div>
-
-            <div class="ddItem" id="tool_perfil" data-feature="perfil" role="menuitem" onclick="goPerfil()">
+<div class="ddItem" id="tool_perfil" data-feature="perfil" role="menuitem" onclick="goPerfil()">
               <div>
                 Perfil
                 <div style="margin-top:2px">
@@ -963,17 +945,9 @@
               <span class="pill">Cuenta</span>
             </div>
 
-            <div class="ddItem" id="tool_mensajeria" data-feature="mensajeria" role="menuitem" onclick="goMensajeria()">
-              <div>
-                Mensajería
-                <div style="margin-top:2px">
-                  <small>Foro abierto y mensajes a admins</small>
-                </div>
-              </div>
-              <span class="pill">Cuenta</span>
-            </div>
+                        <div id="toolsAfterPerfil"></div>
 
-            <div class="ddItem disabled" role="menuitem" aria-disabled="true">
+<div class="ddItem disabled" role="menuitem" aria-disabled="true">
               <div>— Proximamente <div style="margin-top:2px"><small>Espacio reservado</small></div></div>
               <small>—</small>
             </div>
@@ -1321,6 +1295,16 @@
   <script type="module">
     import { supabase } from "./assets/supabaseClient.js";
 
+    // ========= CATALOGO UNICO DE HERRAMIENTAS (1 solo lugar) =========
+    // Si agregas una herramienta nueva aquí, también se reflejará en el panel Admin (Perfil) automáticamente.
+    const TOOLS_CATALOG = [
+      { key: "app",        label: "App",            url: "app.html",        desc: "Búsqueda y cross-references",                 pill: "",      menu: false, managed: true },
+      { key: "radar",      label: "Radar de Demanda", url: "radar.html",    desc: "Modelos, años, motores y oportunidades",     pill: "Pro",   menu: true,  section: "top", managed: true },
+      { key: "kpis",       label: "KPIs y Analisis",  url: "kpis.html",     desc: "Panel de métricas y reportes",              pill: "Nuevo", menu: true,  section: "top", managed: true },
+      { key: "mensajeria", label: "Mensajería",     url: "mensajeria.html", desc: "Foro abierto y mensajes a admins",           pill: "Cuenta",menu: true,  section: "afterPerfil", managed: true },
+    ];
+
+
     window.RF_ASSET_VER = "4";
 
     const DEMO_MAX = 3;
@@ -1401,13 +1385,54 @@
       el.style.display = allowed ? "flex" : "none";
     }
 
+    function renderToolsMenu(features){
+      const top = document.getElementById("toolsTop");
+      const after = document.getElementById("toolsAfterPerfil");
+      if(top) top.innerHTML = "";
+      if(after) after.innerHTML = "";
+
+      const f = features || {};
+
+      // Solo herramientas marcadas como menu:true
+      const items = (TOOLS_CATALOG || []).filter(t => t && t.menu);
+
+      items.forEach(t=>{
+        const allowed = !!f[t.key];
+        // si no está permitido, no lo mostramos
+        if(!allowed) return;
+
+        const wrap = (t.section === "afterPerfil") ? after : top;
+        if(!wrap) return;
+
+        const div = document.createElement("div");
+        div.className = "ddItem";
+        div.setAttribute("role","menuitem");
+        div.onclick = ()=>{
+          closeTools();
+          window.location.href = t.url;
+        };
+
+        const pill = t.pill ? `<span class="pill">${t.pill}</span>` : "";
+        div.innerHTML = `
+          <div>
+            ${t.label}
+            <div style="margin-top:2px">
+              <small>${t.desc || ""}</small>
+            </div>
+          </div>
+          ${pill}
+        `;
+        wrap.appendChild(div);
+      });
+    }
+
+
     function applyAccessUI(){
       const f = rfAccess.features || {};
-      setFeatureUI("kpis", !!f.kpis);
-      setFeatureUI("radar", !!f.radar);
-      setFeatureUI("mensajeria", !!f.mensajeria);
-      // Perfil siempre visible
+      // Perfil siempre visible (no depende del plan)
       setFeatureUI("perfil", true);
+      // Menú dinámico según plan
+      renderToolsMenu(f);
     }
 
     function deny(feature){
@@ -2749,6 +2774,8 @@
   </script>
 </body>
 </html>
+
+
 
 
 
