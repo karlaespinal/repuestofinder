@@ -1,12 +1,13 @@
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>RepuestoFinder • Obsolescencia (Ofertas)</title>
-  <link rel="icon" type="image/png" href="favicon.png">
-  <script src="/assets/supabaseClient.js"></script>
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>RepuestoFinder • Obsolescencia (Ofertas)</title>
+<link href="favicon.png" rel="icon" type="image/png"/>
+
+<style>
     :root{
       --bg:#f5f7fb;
       --card:#ffffff;
@@ -179,200 +180,174 @@
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <div class="topbarInner">
-      <div class="brand">
-        <div class="logo">RF</div>
-        <div>
-          <div>Obsolescencia</div>
-          <div class="muted2">Ofertas temporales por código + chat</div>
-        </div>
-      </div>
-      <div class="actions">
-        <span class="chip" id="who">—</span>
-        <a class="btn btnGhost btnSmall" href="index.html">Dashboard</a>
-        <a class="btn btnGhost btnSmall" href="app.html">App</a>
-        <a class="btn btnGhost btnSmall hidden" id="loginBtn" href="index.html?stay=1">Iniciar sesión</a>
-        <button class="btn btnGhost btnSmall" onclick="logout()">Salir</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="wrap">
-    <div class="grid">
-      <div class="card">
-        <div class="cardHead">
-          <b>Crear / administrar ofertas</b>
-          <div class="row">
-            <span class="pill" id="pillRole">Rol: —</span>
-            <span class="pill warn" id="pillAuto">Auto-borrado: requiere tarea</span>
-          </div>
-        </div>
-        <div class="cardBody">
-          <div class="muted2">
+<div class="topbar">
+<div class="topbarInner">
+<div class="brand">
+<div class="logo">RF</div>
+<div>
+<div>Obsolescencia</div>
+<div class="muted2">Ofertas temporales por código + chat</div>
+</div>
+</div>
+<div class="actions">
+<span class="chip" id="who">—</span>
+<a class="btn btnGhost btnSmall" href="index.html">Dashboard</a>
+<a class="btn btnGhost btnSmall" href="app.html">App</a>
+<a class="btn btnGhost btnSmall hidden" href="index.html?stay=1" id="loginBtn">Iniciar sesión</a>
+<button class="btn btnGhost btnSmall" onclick="logout()">Salir</button>
+</div>
+</div>
+</div>
+<div class="wrap">
+<div class="grid">
+<div class="card">
+<div class="cardHead">
+<b>Crear / administrar ofertas</b>
+<div class="row">
+<span class="pill" id="pillRole">Rol: —</span>
+<span class="pill warn" id="pillAuto">Auto-borrado: requiere tarea</span>
+</div>
+</div>
+<div class="cardBody">
+<div class="muted2">
             El cliente en la App solo ve <b>Marca</b>, <b>Precio</b> y <b>País</b>. La comunicación es por chat.
           </div>
-
-          <div class="msg" id="msg"></div>
-
-          <div style="height:12px"></div>
-
-          <div class="formGrid">
-            <div class="field">
-              <label>Número original (OEM)</label>
-              <input class="inp" id="fOriginal" placeholder="Ej: A2762001000" />
-            </div>
-
-            <div class="field">
-              <label>Marca</label>
-              <input class="inp" id="fBrand" placeholder="Ej: Mercedes-Benz / Mahle / Bosch" />
-            </div>
-
-            <div class="field">
-              <label>Precio</label>
-              <input class="inp" id="fPrice" placeholder="Ej: 125.50" />
-            </div>
-
-            <div class="field">
-              <label>Moneda</label>
-              <select class="sel" id="fCurrency">
-                <option value="USD">USD</option>
-                <option value="DOP">DOP</option>
-                <option value="EUR">EUR</option>
-              </select>
-            </div>
-
-            <div class="field">
-              <label>País de origen (donde se oferta)</label>
-              <input class="inp" id="fCountry" placeholder="Ej: República Dominicana" />
-            </div>
-
-            <div class="field">
-              <label>Duración</label>
-              <select class="sel" id="fDuration">
-                <option value="1h">1 hora</option>
-                <option value="6h">6 horas</option>
-                <option value="12h">12 horas</option>
-                <option value="24h" selected>24 horas</option>
-                <option value="3d">3 días</option>
-                <option value="7d">7 días</option>
-                <option value="30d">30 días</option>
-              </select>
-            </div>
-
-            <div class="field" style="grid-column:1/-1">
-              <label>Descripción (interna, no se muestra al cliente)</label>
-              <textarea id="fDesc" placeholder="Detalles: condición, ubicación, disponibilidad, notas..."></textarea>
-            </div>
+<div class="msg" id="msg"></div>
+<div style="height:12px"></div>
+<div class="formGrid">
+<div class="field">
+<label>Número original (OEM)</label>
+<input class="inp" id="fOriginal" placeholder="Ej: A2762001000"/>
+</div>
+<div class="field">
+<label>Marca</label>
+<input class="inp" id="fBrand" placeholder="Ej: Mercedes-Benz / Mahle / Bosch"/>
+</div>
+<div class="field">
+<label>Precio</label>
+<input class="inp" id="fPrice" placeholder="Ej: 125.50"/>
+</div>
+<div class="field">
+<label>Moneda</label>
+<select class="sel" id="fCurrency">
+<option value="USD">USD</option>
+<option value="DOP">DOP</option>
+<option value="EUR">EUR</option>
+</select>
+</div>
+<div class="field">
+<label>País de origen (donde se oferta)</label>
+<input class="inp" id="fCountry" placeholder="Ej: República Dominicana"/>
+</div>
+<div class="field">
+<label>Duración</label>
+<select class="sel" id="fDuration">
+<option value="1h">1 hora</option>
+<option value="6h">6 horas</option>
+<option value="12h">12 horas</option>
+<option selected="" value="24h">24 horas</option>
+<option value="3d">3 días</option>
+<option value="7d">7 días</option>
+<option value="30d">30 días</option>
+</select>
+</div>
+<div class="field" style="grid-column:1/-1">
+<label>Descripción (interna, no se muestra al cliente)</label>
+<textarea id="fDesc" placeholder="Detalles: condición, ubicación, disponibilidad, notas..."></textarea>
+</div>
+</div>
+<div style="height:12px"></div>
+<div class="row">
+<button class="btn" onclick="createOffer()">Guardar oferta</button>
+<button class="btn btnGhost" onclick="clearForm()">Limpiar</button>
+<span class="muted2" id="hint">—</span>
+</div>
+<div style="height:16px"></div>
+<div class="row" style="justify-content:space-between">
+<b>Mis ofertas</b>
+<div class="row">
+<input class="inp" id="q" oninput="renderOffers()" placeholder="Filtrar (OEM / marca / país)" style="min-width:280px"/>
+<button class="btn btnGhost btnSmall" onclick="loadOffers(true)">Actualizar</button>
+</div>
+</div>
+<div style="height:10px"></div>
+<div style="overflow:auto;">
+<table>
+<thead>
+<tr>
+<th class="nowrap">OEM</th>
+<th>Marca</th>
+<th>Precio</th>
+<th>País</th>
+<th class="nowrap">Expira</th>
+<th class="nowrap" style="text-align:right">Acciones</th>
+</tr>
+</thead>
+<tbody id="offersTbody">
+<tr><td class="tdSmall" colspan="6">Cargando...</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="card">
+<div class="cardHead">
+<b>Chats de ofertas</b>
+<div class="row">
+<span class="chip" id="chatMeta">—</span>
+<button class="btn btnGhost btnSmall" onclick="loadChats(true)">Actualizar</button>
+</div>
+</div>
+<div class="cardBody">
+<div class="muted2">
+<b>Admin:</b> puede ver todos los chats, pero <b>no puede intervenir</b> (solo lectura).
           </div>
-
-          <div style="height:12px"></div>
-
-          <div class="row">
-            <button class="btn" onclick="createOffer()">Guardar oferta</button>
-            <button class="btn btnGhost" onclick="clearForm()">Limpiar</button>
-            <span class="muted2" id="hint">—</span>
-          </div>
-
-          <div style="height:16px"></div>
-
-          <div class="row" style="justify-content:space-between">
-            <b>Mis ofertas</b>
-            <div class="row">
-              <input class="inp" id="q" placeholder="Filtrar (OEM / marca / país)" style="min-width:280px" oninput="renderOffers()" />
-              <button class="btn btnGhost btnSmall" onclick="loadOffers(true)">Actualizar</button>
-            </div>
-          </div>
-
-          <div style="height:10px"></div>
-
-          <div style="overflow:auto;">
-            <table>
-              <thead>
-                <tr>
-                  <th class="nowrap">OEM</th>
-                  <th>Marca</th>
-                  <th>Precio</th>
-                  <th>País</th>
-                  <th class="nowrap">Expira</th>
-                  <th style="text-align:right" class="nowrap">Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="offersTbody">
-                <tr><td colspan="6" class="tdSmall">Cargando...</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="cardHead">
-          <b>Chats de ofertas</b>
-          <div class="row">
-            <span class="chip" id="chatMeta">—</span>
-            <button class="btn btnGhost btnSmall" onclick="loadChats(true)">Actualizar</button>
-          </div>
-        </div>
-        <div class="cardBody">
-          <div class="muted2">
-            <b>Admin:</b> puede ver todos los chats, pero <b>no puede intervenir</b> (solo lectura).
-          </div>
-          <div class="msg" id="msgChat"></div>
-
-          <div style="height:12px"></div>
-
-          <div class="row" style="align-items:stretch">
-            <div style="flex:1; min-width:260px; max-width:360px;">
-              <div class="field">
-                <label>Buscar chat</label>
-                <input class="inp" id="chatFilter" placeholder="OEM / marca / país" oninput="renderChats()" />
-              </div>
-              <div id="chatList"></div>
-            </div>
-
-            <div style="flex:2; min-width:280px;">
-              <div class="pill" id="chatTitle">Selecciona un chat</div>
-              <div style="height:10px"></div>
-
-              <div class="chatBox" id="chatMsgs"></div>
-
-              <div class="chatComposer" id="chatComposer">
-                <input class="inp" id="chatInput" placeholder="Escribe un mensaje..." />
-                <button class="btn" onclick="sendMsg()">Enviar</button>
-              </div>
-
-              <div class="muted2 hidden" id="adminReadOnly" style="margin-top:8px;">
+<div class="msg" id="msgChat"></div>
+<div style="height:12px"></div>
+<div class="row" style="align-items:stretch">
+<div style="flex:1; min-width:260px; max-width:360px;">
+<div class="field">
+<label>Buscar chat</label>
+<input class="inp" id="chatFilter" oninput="renderChats()" placeholder="OEM / marca / país"/>
+</div>
+<div id="chatList"></div>
+</div>
+<div style="flex:2; min-width:280px;">
+<div class="pill" id="chatTitle">Selecciona un chat</div>
+<div style="height:10px"></div>
+<div class="chatBox" id="chatMsgs"></div>
+<div class="chatComposer" id="chatComposer">
+<input class="inp" id="chatInput" placeholder="Escribe un mensaje..."/>
+<button class="btn" onclick="sendMsg()">Enviar</button>
+</div>
+<div class="muted2 hidden" id="adminReadOnly" style="margin-top:8px;">
                 Modo administrador: solo lectura.
               </div>
-            </div>
-          </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Modal confirm delete -->
+<div class="modalBack" id="delBack" onclick="if(event.target.id==='delBack') closeDel()">
+<div class="modal">
+<div class="modalHead">
+<b>Eliminar oferta</b>
+<button class="btn btnGhost btnSmall" onclick="closeDel()">Cerrar</button>
+</div>
+<div class="modalBody">
+<div class="muted2" id="delTxt">—</div>
+<div style="height:12px"></div>
+<div class="row" style="justify-content:flex-end">
+<button class="btn btnGhost" onclick="closeDel()">Cancelar</button>
+<button class="btn btnBad" onclick="confirmDel()">Eliminar</button>
+</div>
+</div>
+</div>
+</div>
+<script type="module">import { supabase } from "./assets/supabaseClient.js";
 
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal confirm delete -->
-  <div class="modalBack" id="delBack" onclick="if(event.target.id==='delBack') closeDel()">
-    <div class="modal">
-      <div class="modalHead">
-        <b>Eliminar oferta</b>
-        <button class="btn btnGhost btnSmall" onclick="closeDel()">Cerrar</button>
-      </div>
-      <div class="modalBody">
-        <div class="muted2" id="delTxt">—</div>
-        <div style="height:12px"></div>
-        <div class="row" style="justify-content:flex-end">
-          <button class="btn btnGhost" onclick="closeDel()">Cancelar</button>
-          <button class="btn btnBad" onclick="confirmDel()">Eliminar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
     const OFFERS_TABLE = "offers";
     const CHATS_TABLE  = "offer_chats";
     const MSGS_TABLE   = "offer_messages";
@@ -829,4 +804,5 @@
   </script>
 </body>
 </html>
+
 
