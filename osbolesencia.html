@@ -816,16 +816,30 @@ function bindUI(){
   const bRC = document.getElementById("btnRefreshChats");
   if(bRC) bRC.addEventListener("click", (ev)=>{ ev.preventDefault(); loadChats(true); });
 
-  // Si por alguna razón quedó algún onclick en HTML, exponemos funciones al window.
-  window.createOffer = createOffer;
-  window.clearForm = clearForm;
-  window.loadOffers = loadOffers;
-  window.loadChats = loadChats;
+  // Si hay handlers inline (onclick / oninput) en el HTML, en un <script type="module">
+  // las funciones NO quedan globales por defecto. Por eso las exponemos explícitamente:
+  window.createOffer   = createOffer;
+  window.clearForm     = clearForm;
+  window.loadOffers    = loadOffers;
+  window.loadChats     = loadChats;
+  window.renderOffers  = renderOffers;
+  window.renderChats   = renderChats;
+
+  window.logout        = logout;
+  window.sendMsg       = sendMsg;
+
+  window.askDel        = askDel;
+  window.closeDel      = closeDel;
+  window.confirmDel    = confirmDel;
+
+  window.selectChat    = selectChat;
+  // openChatsByOffer ya se define arriba como window.openChatsByOffer
 }
+
+// activar eventos de UI
+bindUI();
 
 </script>
 </body>
 </html>
-
-
 
