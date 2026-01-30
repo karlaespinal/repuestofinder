@@ -1676,8 +1676,45 @@ window.limpiar = function(){
   });
 
 </script>
+
+<script>
+// === NOTIFICAR INTERES AL ENVIAR MENSAJE ===
+async function notifyInterestFromChat(offerId){
+  try{
+    if(!window.supabase) return;
+    const { data: ses } = await supabase.auth.getSession();
+    const token = ses?.session?.access_token;
+    if(!token) return;
+
+    await fetch(`${YOUR_SUPABASE_FUNCTIONS_URL}/notify-offer-interest`,{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "Authorization":`Bearer ${token}`
+      },
+      body: JSON.stringify({ offer_id: offerId })
+    });
+  }catch(e){
+    console.warn("notifyInterest failed", e);
+  }
+}
+
+// Hook automatico: cuando se envia mensaje, dispara notificacion
+document.addEventListener("click", function(e){
+  const btn = e.target.closest("button");
+  if(!btn) return;
+  if(btn.textContent && btn.textContent.toLowerCase().includes("enviar")){
+    if(window.currentOfferId){
+      notifyInterestFromChat(window.currentOfferId);
+    }
+  }
+});
+</script>
+
 </body>
 </html>
+
+
 
 
 
