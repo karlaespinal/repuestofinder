@@ -175,7 +175,7 @@
     width:100%;
     border-collapse:separate;
     border-spacing:0;
-    min-width:980px;
+    min-width:760px;
   }
   .sheet th, .sheet td{
     border-bottom:1px solid rgba(229,231,235,.85);
@@ -297,12 +297,43 @@
 
         <div style="height:12px"></div>
 
-        <!-- Tabs -->
-        <div class="row" style="justify-content:space-between">
-          <div class="tabs">
-            <button class="tabBtn active" id="tabBulk" onclick="showTab('bulk')">Carga rápida (Excel)</button>
-            <button class="tabBtn" id="tabOne" onclick="showTab('one')">Formulario 1×1</button>
+        <!-- Tabs + Config global -->
+        <div class="row" style="justify-content:space-between; align-items:flex-start">
+          <div>
+            <div class="tabs">
+              <button class="tabBtn active" id="tabBulk" onclick="showTab('bulk')">Carga rápida (Excel)</button>
+              <button class="tabBtn" id="tabOne" onclick="showTab('one')">Formulario 1×1</button>
+            </div>
+
+            <!-- Config global (aplica a todas las filas) -->
+            <div class="row" style="margin-top:10px; align-items:flex-end">
+              <div class="field" style="min-width:140px">
+                <label>Moneda (global)</label>
+                <select class="sel" id="gCurrency"></select>
+              </div>
+              <div class="field" style="min-width:220px; flex:1">
+                <label>País (global)</label>
+                <select class="sel" id="gCountry"></select>
+              </div>
+              <div class="field" style="min-width:170px">
+                <label>Duración (global)</label>
+                <select class="sel" id="gDuration">
+                  <option value="24h">24 horas</option>
+                  <option value="1d">1 día</option>
+                  <option value="7d">1 semana</option>
+                  <option value="15d">15 días</option>
+                  <option value="30d">30 días</option>
+                  <option value="2m">2 meses</option>
+                  <option value="3m">3 meses</option>
+                  <option value="6m">6 meses</option>
+                </select>
+              </div>
+              <div class="pill ok" style="margin-bottom:2px">
+                ✅ Se aplica a todas las filas (Excel y 1×1)
+              </div>
+            </div>
           </div>
+
           <div class="row">
             <button class="btn btnGhost btnSmall" onclick="addBulkRows(5)">+5 filas</button>
             <button class="btn btnGhost btnSmall" onclick="clearBulkSheet()">Limpiar hoja</button>
@@ -314,12 +345,12 @@
         <!-- BULK (Excel-like) -->
         <div id="bulkPane">
           <div class="pill" style="margin-bottom:10px">
-            ✅ Pega directo desde Excel/Sheets (CTRL+V). Respeta el orden de columnas.
+            ✅ Pega directo desde Excel/Sheets (CTRL+V). Orden: OEM, Marca, Precio, Descripción. (Moneda/País/Duración se toman de la configuración global).
           </div>
 
           <div class="row" style="justify-content:space-between; margin-bottom:10px">
             <div class="muted2">
-              Columnas: <b>OEM</b> • Marca • Precio • Moneda • País • Duración • Descripción
+              Columnas: <b>OEM</b> • Marca • Precio • Descripción
             </div>
             <div class="row">
               <button class="btn btnGhost btnSmall" onclick="downloadTemplate()">Exportar plantilla</button>
@@ -331,16 +362,13 @@
           <input type="file" id="bulkFile" class="hidden" accept=".csv,.txt" />
 
           <div class="sheetWrap" id="sheetWrap">
-            <table class="sheet" id="bulkTable" aria-label="Hoja de carga masiva">
+            <table class="sheet" id="bulkTable" aria-label="Hoja de carga masiva (OEM, Marca, Precio, Descripción)">
               <thead>
                 <tr>
                   <th class="rowNum">#</th>
                   <th>OEM</th>
                   <th>Marca</th>
                   <th class="nowrap">Precio</th>
-                  <th>Moneda</th>
-                  <th>País</th>
-                  <th>Duración</th>
                   <th>Descripción (interna)</th>
                 </tr>
               </thead>
@@ -367,30 +395,7 @@
               <label>Precio</label>
               <input class="inp" id="fPrice" placeholder="Ej: 125.50"/>
             </div>
-            <div class="field">
-              <label>Moneda</label>
-              <select class="sel" id="fCurrency">
-                <option value="USD">USD</option>
-                <option value="DOP">DOP</option>
-                <option value="EUR">EUR</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>País de origen (donde se oferta)</label>
-              <input class="inp" id="fCountry" placeholder="Ej: República Dominicana"/>
-            </div>
-            <div class="field">
-              <label>Duración</label>
-              <select class="sel" id="fDuration">
-                <option value="1h">1 hora</option>
-                <option value="6h">6 horas</option>
-                <option value="12h">12 horas</option>
-                <option selected value="24h">24 horas</option>
-                <option value="3d">3 días</option>
-                <option value="7d">7 días</option>
-                <option value="30d">30 días</option>
-              </select>
-            </div>
+            
             <div class="field" style="grid-column:1/-1">
               <label>Descripción (interna, no se muestra al cliente)</label>
               <textarea id="fDesc" placeholder="Detalles: condición, ubicación, disponibilidad, notas..."></textarea>
@@ -509,6 +514,84 @@
   const MSGS_TABLE   = "offer_messages";
 
   const $ = (id)=>document.getElementById(id);
+
+  // ===== Config global (Moneda / País / Duración) =====
+  const CURRENCIES = [
+    { code:"USD", name:"USD (Dólar)" },
+    { code:"DOP", name:"DOP (Peso RD)" },
+    { code:"EUR", name:"EUR (Euro)" },
+    { code:"MXN", name:"MXN (Peso MX)" },
+    { code:"COP", name:"COP (Peso CO)" },
+    { code:"CLP", name:"CLP (Peso CL)" },
+    { code:"PEN", name:"PEN (Sol)" },
+    { code:"ARS", name:"ARS (Peso AR)" },
+    { code:"BRL", name:"BRL (Real)" },
+    { code:"GTQ", name:"GTQ (Quetzal)" },
+    { code:"CRC", name:"CRC (Colón CR)" },
+    { code:"PAB", name:"PAB (Balboa)" }
+  ];
+
+  // Lista extensa (puedes ampliar/editar cuando quieras)
+  const COUNTRIES = [
+    "Afganistán","Albania","Alemania","Andorra","Angola","Antigua y Barbuda","Arabia Saudita","Argelia","Argentina","Armenia","Australia","Austria","Azerbaiyán",
+    "Bahamas","Bangladés","Barbados","Baréin","Bélgica","Belice","Benín","Bielorrusia","Birmania","Bolivia","Bosnia y Herzegovina","Botsuana","Brasil","Brunéi","Bulgaria","Burkina Faso","Burundi",
+    "Cabo Verde","Camboya","Camerún","Canadá","Catar","Chad","Chile","China","Chipre","Colombia","Comoras","Congo","Corea del Norte","Corea del Sur","Costa Rica","Costa de Marfil","Croacia","Cuba",
+    "Dinamarca","Dominica","Ecuador","Egipto","El Salvador","Emiratos Árabes Unidos","Eritrea","Eslovaquia","Eslovenia","España","Estados Unidos","Estonia","Esuatini","Etiopía",
+    "Filipinas","Finlandia","Fiyi","Francia",
+    "Gabón","Gambia","Georgia","Ghana","Granada","Grecia","Guatemala","Guinea","Guinea-Bisáu","Guinea Ecuatorial","Guyana",
+    "Haití","Honduras","Hungría",
+    "India","Indonesia","Irak","Irán","Irlanda","Islandia","Islas Marshall","Islas Salomón","Israel","Italia",
+    "Jamaica","Japón","Jordania",
+    "Kazajistán","Kenia","Kirguistán","Kiribati","Kuwait",
+    "Laos","Lesoto","Letonia","Líbano","Liberia","Libia","Liechtenstein","Lituania","Luxemburgo",
+    "Macedonia del Norte","Madagascar","Malasia","Malaui","Maldivas","Malí","Malta","Marruecos","Mauricio","Mauritania","México","Micronesia","Moldavia","Mónaco","Mongolia","Montenegro","Mozambique",
+    "Namibia","Nauru","Nepal","Nicaragua","Níger","Nigeria","Noruega","Nueva Zelanda",
+    "Omán",
+    "Países Bajos","Pakistán","Palaos","Panamá","Papúa Nueva Guinea","Paraguay","Perú","Polonia","Portugal",
+    "Reino Unido","República Centroafricana","República Checa","República Dominicana","República del Congo","República Democrática del Congo","Ruanda","Rumania","Rusia",
+    "Samoa","San Cristóbal y Nieves","San Marino","San Vicente y las Granadinas","Santa Lucía","Santo Tomé y Príncipe","Senegal","Serbia","Seychelles","Sierra Leona","Singapur","Siria","Somalia","Sri Lanka","Sudáfrica","Sudán","Sudán del Sur","Suecia","Suiza",
+    "Tailandia","Tanzania","Tayikistán","Timor Oriental","Togo","Tonga","Trinidad y Tobago","Túnez","Turkmenistán","Turquía","Tuvalu",
+    "Ucrania","Uganda","Uruguay","Uzbekistán",
+    "Vanuatu","Vaticano","Venezuela","Vietnam",
+    "Yemen","Yibuti",
+    "Zambia","Zimbabue"
+  ];
+
+  function populateGlobalSelects(){
+    const curSel = $("gCurrency");
+    const countrySel = $("gCountry");
+
+    if(curSel && curSel.options.length===0){
+      CURRENCIES.forEach(c=>{
+        const o = document.createElement("option");
+        o.value = c.code;
+        o.textContent = c.name;
+        curSel.appendChild(o);
+      });
+      curSel.value = "USD";
+    }
+
+    if(countrySel && countrySel.options.length===0){
+      // placeholder
+      const p = document.createElement("option");
+      p.value = "";
+      p.textContent = "Selecciona un país…";
+      p.disabled = true;
+      p.selected = true;
+      countrySel.appendChild(p);
+
+      COUNTRIES.forEach(name=>{
+        const o = document.createElement("option");
+        o.value = name;
+        o.textContent = name;
+        countrySel.appendChild(o);
+      });
+
+      // default RD si existe
+      const rd = Array.from(countrySel.options).find(o=>o.value==="República Dominicana");
+      if(rd){ countrySel.value = "República Dominicana"; }
+    }
+  }
 
   let me = null;
   let myRole = null; // "admin" | null
@@ -642,9 +725,7 @@
   }
 
   function clearForm(){
-    ["fOriginal","fBrand","fPrice","fCountry","fDesc"].forEach(id=>{ const el=$(id); if(el) el.value=""; });
-    $("fCurrency").value = "USD";
-    $("fDuration").value = "24h";
+    ["fOriginal","fBrand","fPrice","fDesc"].forEach(id=>{ const el=$(id); if(el) el.value=""; });
     $("hint").textContent = "—";
     setMsg($("msg"), "", false);
   }
@@ -657,10 +738,9 @@
       const original = String($("fOriginal").value||"").trim();
       const brand = String($("fBrand").value||"").trim();
       const desc = String($("fDesc").value||"").trim();
-      const country = String($("fCountry").value||"").trim();
-      const currency = String($("fCurrency").value||"USD").trim().toUpperCase();
-
-      const priceRaw = String($("fPrice").value||"").trim().replace(/,/g,".");
+      const country = String($("gCountry").value||"").trim();
+      const currency = String($("gCurrency").value||"USD").trim().toUpperCase();
+const priceRaw = String($("fPrice").value||"").trim().replace(/,/g,".");
       const price = Number(priceRaw);
 
       if(!original) throw new Error("Falta el número original.");
@@ -668,7 +748,7 @@
       if(!Number.isFinite(price) || price <= 0) throw new Error("Precio inválido.");
       if(!country) throw new Error("Falta el país.");
 
-      const durMs = parseDuration($("fDuration").value);
+      const durMs = parseDuration($("gDuration").value);
       const expiresAt = new Date(Date.now() + durMs).toISOString();
 
       const payload = {
@@ -958,16 +1038,13 @@
 
   // ===== BULK SHEET (Excel-like) =====
   const BULK_COLS = [
-    { key:"original",  label:"OEM",      placeholder:"A2762001000" },
-    { key:"brand",     label:"Marca",    placeholder:"Mahle" },
-    { key:"price",     label:"Precio",   placeholder:"125.50" },
-    { key:"currency",  label:"Moneda",   placeholder:"USD" },
-    { key:"country",   label:"País",     placeholder:"República Dominicana" },
-    { key:"duration",  label:"Duración", placeholder:"24h" },
-    { key:"desc",      label:"Desc",     placeholder:"Notas internas" },
+    { key:"original",  label:"OEM",        placeholder:"A2762001000" },
+    { key:"brand",     label:"Marca",      placeholder:"Mahle" },
+    { key:"price",     label:"Precio",     placeholder:"125.50" },
+    { key:"desc",      label:"Desc",       placeholder:"Notas internas" },
   ];
 
-  function buildBulkSheet(rows){
+function buildBulkSheet(rows){
     const tb = $("bulkBody");
     tb.innerHTML = "";
     for(let i=0;i<rows;i++){
@@ -990,13 +1067,10 @@
         div.dataset.key = c.key;
 
         // tamaños
-        if(c.key==="original") td.style.minWidth="170px";
-        if(c.key==="brand") td.style.minWidth="160px";
-        if(c.key==="price") td.style.minWidth="110px";
-        if(c.key==="currency") td.style.minWidth="90px";
-        if(c.key==="country") td.style.minWidth="170px";
-        if(c.key==="duration") td.style.minWidth="95px";
-        if(c.key==="desc") td.style.minWidth="360px";
+        if(c.key==="original") td.style.minWidth="190px";
+        if(c.key==="brand") td.style.minWidth="170px";
+        if(c.key==="price") td.style.minWidth="120px";
+        if(c.key==="desc") td.style.minWidth="520px";
 
         div.setAttribute("spellcheck","false");
         div.title = c.placeholder;
@@ -1079,8 +1153,8 @@
 
   // ===== Import / Export template =====
   window.downloadTemplate = function(){
-    const header = ["OEM","Marca","Precio","Moneda","País","Duración","Descripción"];
-    const sample = ["A2762001000","Mahle","125.50","USD","República Dominicana","24h","Notas internas"];
+    const header = ["OEM","Marca","Precio","Descripción"];
+    const sample = ["A2762001000","Mahle","125.50","Notas internas"];
     const csv = [header.join(","), sample.map(x=>String(x).replace(/"/g,'""')).map(x=>`"${x}"`).join(",")].join("\n");
     const blob = new Blob([csv], { type:"text/csv;charset=utf-8" });
     const a = document.createElement("a");
@@ -1194,16 +1268,16 @@
         const r = rows[i];
         const original = r.original;
         const brand = r.brand;
-        const country = r.country;
-        const currency = (r.currency || "USD").toUpperCase();
-        const duration = (r.duration || "24h");
-        const desc = r.desc;
+        const country = String($("gCountry").value||"").trim();
+        const currency = String($("gCurrency").value||"USD").trim().toUpperCase();
+        const duration = String($("gDuration").value||"24h").trim();
+const desc = r.desc;
 
         const price = Number(String(r.price||"").replace(/,/g,"."));
-        const any = [original, brand, r.price, currency, country, duration, desc].some(x=>String(x||"").trim().length>0);
+        const any = [original, brand, r.price, desc].some(x=>String(x||"").trim().length>0);
         if(!any) continue; // fila vacía
 
-        if(!original || !brand || !country || !Number.isFinite(price) || price<=0){
+        if(!original || !brand || !Number.isFinite(price) || price<=0){
           badIdx.push(i+1);
           continue;
         }
@@ -1276,11 +1350,13 @@
   }
 
   bindUI();
+  populateGlobalSelects();
   initAuth();
 </script>
 
 </body>
 </html>
+
 
 
 
