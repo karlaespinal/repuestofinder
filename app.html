@@ -1686,7 +1686,7 @@ async function notifyInterestFromChat(offerId){
     const token = ses?.session?.access_token;
     if(!token) return;
 
-    await fetch(`${YOUR_SUPABASE_FUNCTIONS_URL}/notify-offer-interest`,{
+    await fetch(`${https://pjkbipdjxxxzjiuyfkaq.supabase.co/functions/v1/notify-offer-interest}/notify-offer-interest`,{
       method:"POST",
       headers:{
         "Content-Type":"application/json",
@@ -1713,6 +1713,7 @@ document.addEventListener("click", function(e){
 
 </body>
 </html>
+
 
 
 
