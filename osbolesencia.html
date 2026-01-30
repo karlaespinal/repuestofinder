@@ -98,9 +98,9 @@
   .btnSmall{ padding:8px 10px; border-radius:10px; font-size:13px; font-weight:800; }
 
   /* MÁS ancho general + chat más a la derecha */
-  .wrap{ max-width:1500px; margin:0 auto; padding:18px 16px 50px; }
-  .grid{ display:grid; grid-template-columns: 1.75fr .75fr; gap:14px; align-items:start; }
-  @media (max-width: 1100px){ .grid{ grid-template-columns:1fr; } }
+  .wrap{ max-width:100%; margin:0; padding:18px 16px 50px; }
+  .grid{ display:flex; width:100%; gap:0; align-items:stretch; }
+  @media (max-width: 1100px){ .grid{ flex-direction:column; } }
 
   .card{
     background:rgba(255,255,255,.85);
@@ -279,8 +279,8 @@
 <div class="wrap">
   <div class="grid">
 
-    <!-- IZQUIERDA (más ancha): administración de ofertas -->
-    <div class="card">
+    <!-- IZQUIERDA (full width): administración de ofertas -->
+    <div class="card" style="flex:1; margin-right:14px;">
       <div class="cardHead">
         <b>Crear / administrar ofertas</b>
         <div class="row">
@@ -439,8 +439,8 @@
       </div>
     </div>
 
-    <!-- DERECHA (más pegado a la derecha): chats -->
-    <div class="card">
+    <!-- DERECHA (pegado a la derecha): chats -->
+    <div class="card" style="width:380px; min-width:380px;">
       <div class="cardHead">
         <b>Chats de ofertas</b>
         <div class="row">
@@ -1282,6 +1282,7 @@
 
 </body>
 </html>
+
 
 
 
