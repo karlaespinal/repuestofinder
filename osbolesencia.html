@@ -275,6 +275,43 @@
   .kv b{ font-size:12px; color:var(--muted); min-width:120px; }
   .kv span{ font-size:13px; color:var(--ink); word-break:break-word; }
 
+
+  /* Modal Articulos + Chats */
+  .modalWide{ width:min(980px, 100%); }
+  .modalGrid2{
+    display:grid;
+    grid-template-columns: 1.1fr 1.2fr;
+    gap:12px;
+  }
+  @media (max-width: 820px){
+    .modalGrid2{ grid-template-columns: 1fr; }
+  }
+  .listCard{
+    border:1px solid rgba(0,0,0,.08);
+    background:white;
+    border-radius:14px;
+    padding:10px 12px;
+    cursor:pointer;
+    margin-bottom:8px;
+    transition:transform .06s ease, border-color .2s ease, box-shadow .2s ease;
+  }
+  .listCard:hover{ border-color:rgba(59,130,246,.35); box-shadow:0 10px 20px rgba(2,6,23,.06); }
+  .listCard:active{ transform:translateY(1px); }
+  .listCard.active{ border-color:rgba(59,130,246,.55); box-shadow:0 10px 22px rgba(59,130,246,.12); }
+  .badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:2px 8px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:900;
+    border:1px solid rgba(0,0,0,.08);
+    background:rgba(255,255,255,.65);
+    color:var(--muted);
+  }
+  .dividerLine{ height:1px; background:rgba(229,231,235,.9); margin:10px 0; }
+
 </style>
 </head>
 
@@ -487,6 +524,11 @@
               <label>Buscar chat</label>
               <input class="inp" id="chatFilter" oninput="renderChats()" placeholder="OEM / marca / país"/>
             </div>
+
+            <div class="row" style="justify-content:space-between; margin:8px 0 10px">
+              <button class="btn btnGhost btnSmall" onclick="openArticleModal()">📦 Seleccionar artículo</button>
+              <span class="pill" id="selectedOfferPill" title="Filtra los chats por articulo" style="max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Todos</span>
+            </div>
             <div id="chatList"></div>
           </div>
 
@@ -553,6 +595,43 @@
       </div>
     </div>
   </div>
+
+<!-- Modal: Artículos + Chats -->
+<div class="modalBack" id="artBack" onclick="if(event.target.id==='artBack') closeArticleModal()">
+  <div class="modal modalWide">
+    <div class="modalHead">
+      <b>📦 Artículos con chats</b>
+      <div class="row">
+        <button class="btn btnGhost btnSmall" onclick="clearOfferFilter()">Ver todos</button>
+        <button class="btn btnGhost btnSmall" onclick="closeArticleModal()">Cerrar</button>
+      </div>
+    </div>
+    <div class="modalBody">
+      <div class="row" style="justify-content:space-between; align-items:flex-end; margin-bottom:10px">
+        <div class="field" style="flex:1; min-width:220px">
+          <label>Buscar artículo</label>
+          <input class="inp" id="artQ" oninput="renderArticleModal()" placeholder="OEM / marca / país"/>
+        </div>
+        <span class="muted2" id="artMeta">—</span>
+      </div>
+
+      <div class="modalGrid2">
+        <div>
+          <div class="muted2" style="font-weight:900; margin-bottom:8px">Artículos</div>
+          <div id="artList" style="max-height:420px; overflow:auto;"></div>
+        </div>
+
+        <div>
+          <div class="muted2" style="font-weight:900; margin-bottom:8px">Chats del artículo</div>
+          <div class="pill" id="artSelectedTitle" style="margin-bottom:10px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Selecciona un artículo</div>
+          <div id="artChats" style="max-height:420px; overflow:auto;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 </div>
 
 <script type="module">
@@ -648,6 +727,180 @@
   let chatsCache = [];
   let selectedChat = null; // {id, offer_id,...}
   let chatPoll = null;
+
+  // ===== Filtro por artículo (offer) + Modal selector =====
+  let offerFilterId = null;        // si tiene valor, filtra la lista de chats
+  let modalOfferId  = null;        // offer seleccionado dentro del modal
+
+  function offerTitle_(o){
+    if(!o) return "—";
+    const t = `${o.original || "—"} • ${o.brand || "—"}`;
+    return t.trim();
+  }
+
+  function setSelectedOfferPill_(){
+    const pill = document.getElementById("selectedOfferPill");
+    if(!pill) return;
+    if(!offerFilterId){
+      pill.textContent = "Todos";
+      pill.classList.remove("ok");
+      return;
+    }
+    const ch = chatsCache.find(x=>x.offer_id===offerFilterId);
+    const o = ch?.offer || null;
+    pill.textContent = o ? (o.original || "Artículo") : "Filtrado";
+    pill.classList.add("ok");
+  }
+
+  window.openArticleModal = function(){
+    const back = document.getElementById("artBack");
+    if(!back) return;
+    // preseleccionar el offer actual si existe
+    modalOfferId = offerFilterId || null;
+    back.style.display = "flex";
+    // limpiar busqueda solo si esta vacia
+    const q = document.getElementById("artQ");
+    if(q && !q.value) q.value = "";
+    renderArticleModal();
+    if(modalOfferId) selectOfferInModal(modalOfferId);
+  }
+
+  window.closeArticleModal = function(){
+    const back = document.getElementById("artBack");
+    if(back) back.style.display = "none";
+  }
+
+  window.clearOfferFilter = function(){
+    offerFilterId = null;
+    setSelectedOfferPill_();
+    renderChats();
+    closeArticleModal();
+  }
+
+  function getOfferGroups_(){
+    // agrupar chats por offer_id
+    const map = new Map();
+    for(const c of chatsCache){
+      if(!c.offer_id) continue;
+      const k = c.offer_id;
+      if(!map.has(k)){
+        map.set(k, { offer_id:k, offer:c.offer || null, chats:[] });
+      }
+      map.get(k).chats.push(c);
+    }
+    // convertir a array y ordenar por cantidad desc y fecha desc
+    const arr = Array.from(map.values());
+    arr.sort((a,b)=>{
+      const dc = (b.chats.length - a.chats.length);
+      if(dc) return dc;
+      const ta = new Date(a.chats[0]?.created_at || 0).getTime();
+      const tb = new Date(b.chats[0]?.created_at || 0).getTime();
+      return tb - ta;
+    });
+    return arr;
+  }
+
+  window.renderArticleModal = function(){
+    const q = String(document.getElementById("artQ")?.value || "").trim().toLowerCase();
+    const groups = getOfferGroups_();
+
+    let filtered = groups;
+    if(q){
+      filtered = groups.filter(g=>{
+        const o = g.offer || {};
+        return String(o.original||"").toLowerCase().includes(q) ||
+               String(o.brand||"").toLowerCase().includes(q) ||
+               String(o.country||"").toLowerCase().includes(q);
+      });
+    }
+
+    const meta = document.getElementById("artMeta");
+    if(meta) meta.textContent = `${filtered.length} artículo(s)`;
+
+    const list = document.getElementById("artList");
+    if(!list) return;
+
+    if(!filtered.length){
+      list.innerHTML = '<div class="muted2">No hay artículos con chats.</div>';
+      const box = document.getElementById("artChats");
+      if(box) box.innerHTML = '<div class="muted2">—</div>';
+      return;
+    }
+
+    list.innerHTML = filtered.map(g=>{
+      const o = g.offer || {};
+      const title = offerTitle_(o);
+      const sub = `${money(o.price,o.currency)} • ${o.country || ""}`.trim();
+      const active = (modalOfferId === g.offer_id) ? "active" : "";
+      return `
+        <div class="listCard ${active}" onclick="selectOfferInModal('${g.offer_id}')">
+          <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start">
+            <div style="min-width:0">
+              <div style="font-weight:900; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(title)}</div>
+              <div class="muted2" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(sub)}</div>
+            </div>
+            <span class="badge" title="Cantidad de chats">${g.chats.length}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  window.selectOfferInModal = function(offerId){
+    modalOfferId = offerId;
+
+    // actualizar UI izquierda (active)
+    renderArticleModal();
+
+    const groups = getOfferGroups_();
+    const g = groups.find(x=>x.offer_id===offerId);
+    const chats = g?.chats || [];
+    const o = g?.offer || null;
+
+    const title = document.getElementById("artSelectedTitle");
+    if(title){
+      title.textContent = o ? `${o.original || "—"} • ${o.brand || "—"} • ${money(o.price,o.currency)} • ${o.country || ""}`.trim()
+                            : "Chats del artículo";
+    }
+
+    const box = document.getElementById("artChats");
+    if(!box) return;
+
+    if(!chats.length){
+      box.innerHTML = '<div class="muted2">Este artículo no tiene chats.</div>';
+      return;
+    }
+
+    box.innerHTML = chats.map(c=>{
+      const when = new Date(c.created_at).toLocaleString();
+      const buyer = c.buyer_id || "—";
+      const active = (selectedChat && selectedChat.id===c.id) ? "active" : "";
+      return `
+        <div class="listCard ${active}" onclick="pickChatFromModal('${c.id}')">
+          <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start">
+            <div style="min-width:0">
+              <div style="font-weight:900; font-size:13px;">Cliente: ${escapeHtml(buyer)}</div>
+              <div class="muted2">Chat: ${escapeHtml(when)}</div>
+            </div>
+            <span class="badge">Abrir</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  window.pickChatFromModal = function(chatId){
+    // aplicar filtro por offer y abrir el chat
+    const ch = chatsCache.find(x=>x.id===chatId);
+    if(ch){
+      offerFilterId = ch.offer_id || null;
+      setSelectedOfferPill_();
+      renderChats();
+      selectChat(chatId);
+    }
+    closeArticleModal();
+  }
+
 
   // ===== helpers =====
   function escapeHtml(s){
@@ -1008,6 +1261,8 @@ const priceRaw = String($("fPrice").value||"").trim().replace(/,/g,".");
     const qq = String($("chatFilter").value||"").trim().toLowerCase();
     let list = chatsCache.slice();
 
+    if(offerFilterId){ list = list.filter(c=>c.offer_id===offerFilterId); }
+
     if(qq){
       list = list.filter(c=>{
         const o = c.offer || {};
@@ -1041,6 +1296,11 @@ const priceRaw = String($("fPrice").value||"").trim().replace(/,/g,".");
   }
 
   window.openChatsByOffer = function(offerId){
+    // ahora filtra por articulo y abre el primer chat encontrado
+    offerFilterId = offerId || null;
+    setSelectedOfferPill_();
+    renderChats();
+
     const chat = chatsCache.find(c=>c.offer_id===offerId);
     if(chat) selectChat(chat.id);
   }
@@ -1450,6 +1710,7 @@ const desc = r.desc;
 
 </body>
 </html>
+
 
 
 
