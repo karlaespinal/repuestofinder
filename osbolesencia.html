@@ -252,6 +252,29 @@
   }
   .modalHead{ padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px; border-bottom:1px solid rgba(229,231,235,.85); }
   .modalBody{ padding:14px; }
+
+  /* Chat: bloques colapsables (cliente / articulo) */
+  .acc{
+    border:1px solid rgba(0,0,0,.08);
+    border-radius:14px;
+    background:white;
+    overflow:hidden;
+    margin-bottom:10px;
+  }
+  .accHead{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:10px 12px;
+    cursor:pointer;
+    user-select:none;
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.90));
+    border-bottom:1px solid rgba(229,231,235,.85);
+  }
+  .accHead b{ font-size:13px; }
+  .accBody{ padding:10px 12px; }
+  .kv{ display:flex; gap:8px; align-items:baseline; margin:4px 0; }
+  .kv b{ font-size:12px; color:var(--muted); min-width:120px; }
+  .kv span{ font-size:13px; color:var(--ink); word-break:break-word; }
+
 </style>
 </head>
 
@@ -468,6 +491,32 @@
           </div>
 
           <div style="flex:2.2; min-width:260px;">
+
+            <!-- Bloques para ver/ocultar info (cliente / articulo) -->
+            <div class="acc" id="accClient">
+              <div class="accHead" onclick="toggleChatBlock('client')">
+                <b>👤 Información del cliente</b>
+                <span class="muted2" id="clientToggleTxt">Mostrar</span>
+              </div>
+              <div class="accBody hidden" id="clientBody">
+                <div class="kv"><b>Buyer ID</b><span id="ciBuyer">—</span></div>
+                <div class="kv"><b>Chat creado</b><span id="ciDate">—</span></div>
+              </div>
+            </div>
+
+            <div class="acc" id="accArticle">
+              <div class="accHead" onclick="toggleChatBlock('article')">
+                <b>📦 Información del artículo</b>
+                <span class="muted2" id="articleToggleTxt">Mostrar</span>
+              </div>
+              <div class="accBody hidden" id="articleBody">
+                <div class="kv"><b>OEM</b><span id="aiOEM">—</span></div>
+                <div class="kv"><b>Marca</b><span id="aiBrand">—</span></div>
+                <div class="kv"><b>Precio</b><span id="aiPrice">—</span></div>
+                <div class="kv"><b>País</b><span id="aiCountry">—</span></div>
+              </div>
+            </div>
+
             <div class="pill" id="chatTitle">Selecciona un chat</div>
             <div style="height:10px"></div>
             <div class="chatBox" id="chatMsgs"></div>
@@ -638,6 +687,49 @@
       return "Permisos/RLS: tu usuario no tiene permiso para esta accion. Revisa las politicas RLS (seller_id = auth.uid()) o si eres admin (profiles.role='admin').";
     }
     return null;
+  }
+
+  // ===== Chat: ver/ocultar info (cliente / articulo) =====
+  window.toggleChatBlock = function(kind){
+    const isClient = kind === "client";
+    const body = document.getElementById(isClient ? "clientBody" : "articleBody");
+    const txt  = document.getElementById(isClient ? "clientToggleTxt" : "articleToggleTxt");
+    if(!body || !txt) return;
+
+    const open = !body.classList.contains("hidden");
+    body.classList.toggle("hidden", open);
+    txt.textContent = open ? "Mostrar" : "Ocultar";
+  }
+
+  function updateChatSideInfo_(){
+    // Si aun no hay chat seleccionado
+    if(!selectedChat){
+      const ids = ["ciBuyer","ciDate","aiOEM","aiBrand","aiPrice","aiCountry"];
+      ids.forEach(id=>{
+        const el = document.getElementById(id);
+        if(el) el.textContent = "—";
+      });
+      return;
+    }
+
+    const o = selectedChat.offer || {};
+
+    // Cliente
+    const buyer = document.getElementById("ciBuyer");
+    const date  = document.getElementById("ciDate");
+    if(buyer) buyer.textContent = selectedChat.buyer_id || "—";
+    if(date)  date.textContent  = selectedChat.created_at ? new Date(selectedChat.created_at).toLocaleString() : "—";
+
+    // Articulo
+    const oem = document.getElementById("aiOEM");
+    const br  = document.getElementById("aiBrand");
+    const pr  = document.getElementById("aiPrice");
+    const co  = document.getElementById("aiCountry");
+
+    if(oem) oem.textContent = o.original || "—";
+    if(br)  br.textContent  = o.brand || "—";
+    if(pr)  pr.textContent  = (o.price!=null && o.price!=="" ? money(o.price, o.currency) : "—");
+    if(co)  co.textContent  = o.country || "—";
   }
 
   // ===== Tabs UI =====
@@ -960,6 +1052,8 @@ const priceRaw = String($("fPrice").value||"").trim().replace(/,/g,".");
 
     const o = chat.offer || {};
     $("chatTitle").textContent = `Chat • ${o.original || "—"} • ${o.brand || "—"} • ${money(o.price,o.currency)} • ${o.country || ""}`.trim();
+    updateChatSideInfo_();
+
 
     await loadMsgs(true);
     startPoll();
@@ -1356,6 +1450,7 @@ const desc = r.desc;
 
 </body>
 </html>
+
 
 
 
