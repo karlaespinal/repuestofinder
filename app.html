@@ -159,6 +159,7 @@
 
     <div class="nav">
       <a class="navlink" href="/?stay=1">Volver al sitio</a>
+      <a class="navlink" href="#" id="loginLink" style="display:none">Iniciar sesion</a>
       <a class="navlink" href="#" onclick="cerrarSesion();return false;" id="logoutLink" style="display:none">Cerrar sesion</a>
     </div>
   </div>
@@ -330,6 +331,7 @@
         <div class="rfModalActions">
           <button class="btn2" id="btnOpenOfferChat">Abrir chat de ofertas</button>
           <button class="btn offerBtnPrimary" id="btnSendOfferMsg">Enviar mensaje</button>
+          <button class="btn" id="btnLoginToSend" style="display:none">Iniciar sesion para enviar</button>
         </div>
 
         <div class="rfSmall" style="margin-top:10px" id="offerModalStatus"></div>
@@ -403,7 +405,20 @@
     if(back) back.addEventListener("click", (ev)=>{ if(ev.target === back) closeOfferModal_(); });
     document.addEventListener("keydown", (ev)=>{ if(ev.key === "Escape") closeOfferModal_(); });
 
-    if(btnOpenChat) btnOpenChat.addEventListener("click", ()=>{
+    if(btnOpenChat) btnOpenChat.addEventListener("click", async ()=>{
+      const params = new URLSearchParams(window.location.search);
+      const isDemo = params.get("demo") === "1";
+      if(isDemo){ alert("En modo DEMO no se puede abrir el chat."); return; }
+
+      const { data } = await supabase.auth.getSession();
+      const user = data?.session?.user;
+      if(!user){
+        alert("Debes iniciar sesion para abrir el chat.");
+        const next = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = "/?stay=1&next=" + next;
+        return;
+      }
+
       const msg = String(document.getElementById("mOfferMsg")?.value || "").trim();
       const q = new URLSearchParams();
       if(modalOffer?.id) q.set("offer", modalOffer.id);
@@ -426,6 +441,9 @@
       });
     }
   });
+
+  // Estado inicial de botones de mensajeria (si alguien abre modal)
+  updateOfferModalAuthUI_();
 });
 
   window.cerrarSesion = async function(){
@@ -435,18 +453,29 @@
 
   async function initAuth_(){
     const logoutLink = document.getElementById("logoutLink");
+    const loginLink  = document.getElementById("loginLink");
+
     const params = new URLSearchParams(window.location.search);
     const isDemo = params.get("demo") === "1";
     const { data } = await supabase.auth.getSession();
 
-    if(!data || !data.session){
-      if(isDemo){
-        if(logoutLink) logoutLink.style.display = "none";
-        return;
+    const hasSession = !!(data && data.session);
+
+    // ✅ Si NO hay sesion: la App se puede usar, pero Mensajeria de Ofertas queda bloqueada
+    if(!hasSession){
+      if(logoutLink) logoutLink.style.display = "none";
+
+      if(loginLink){
+        loginLink.style.display = "inline-flex";
+        // Redirige a la pagina principal (login) y vuelve a esta pagina con ?next=
+        const next = encodeURIComponent(window.location.pathname + window.location.search);
+        loginLink.href = "/?stay=1&next=" + next;
       }
-      window.location.href = "/?stay=1";
       return;
     }
+
+    // ✅ Si hay sesion: mostrar cerrar sesion y ocultar login
+    if(loginLink) loginLink.style.display = "none";
     if(logoutLink) logoutLink.style.display = "inline-flex";
   }
 
@@ -1438,6 +1467,9 @@ window.limpiar = function(){
       back.style.display = "flex";
       back.setAttribute("aria-hidden","false");
     }
+
+    // ✅ Bloquear/permitir mensajeria segun sesion
+    updateOfferModalAuthUI_();
   }
 
   function closeOfferModal_(){
@@ -1481,6 +1513,52 @@ window.limpiar = function(){
     }
   }
 
+
+  async function getSessionUser_(){
+    try{
+      const { data } = await supabase.auth.getSession();
+      return data?.session?.user || null;
+    }catch(e){
+      return null;
+    }
+  }
+
+  async function updateOfferModalAuthUI_(){
+    const params = new URLSearchParams(window.location.search);
+    const isDemo = params.get("demo") === "1";
+
+    const btnSend  = document.getElementById("btnSendOfferMsg");
+    const btnOpen  = document.getElementById("btnOpenOfferChat");
+    const btnLogin = document.getElementById("btnLoginToSend");
+    const st       = document.getElementById("offerModalStatus");
+
+    if(isDemo){
+      if(btnSend) btnSend.disabled = true;
+      if(btnOpen) btnOpen.disabled = true;
+      if(btnLogin) btnLogin.style.display = "none";
+      if(st && !st.textContent) st.textContent = "Modo DEMO: no se pueden enviar mensajes.";
+      return;
+    }
+
+    const user = await getSessionUser_();
+    const isLogged = !!user;
+
+    if(btnSend) btnSend.disabled = !isLogged;
+    if(btnOpen) btnOpen.disabled = !isLogged;
+
+    if(btnLogin){
+      btnLogin.style.display = isLogged ? "none" : "inline-flex";
+      const next = encodeURIComponent(window.location.pathname + window.location.search);
+      btnLogin.onclick = () => { window.location.href = "/?stay=1&next=" + next; };
+    }
+
+    if(!isLogged){
+      if(st && !st.textContent){
+        st.textContent = "Para enviar mensajes debes iniciar sesion.";
+      }
+    }
+  }
+
   async function sendOfferMessage_(text){
     const status = document.getElementById("offerModalStatus");
     const msg = String(text || "").trim();
@@ -1499,6 +1577,8 @@ window.limpiar = function(){
     const user = data?.session?.user;
     if(!user){
       alert("Debes iniciar sesion para enviar mensajes.");
+      const next = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.href = "/?stay=1&next=" + next;
       return;
     }
 
@@ -1696,15 +1776,18 @@ window.limpiar = function(){
 
   await loadProfileMarket_();
 
-  supabase.auth.onAuthStateChange((event, session) => {
-    const params = new URLSearchParams(window.location.search);
-    const isDemo = params.get("demo") === "1";
-    if (!session && !isDemo) window.location.href = "/?stay=1";
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    // ✅ No cerramos la App: solo ajustamos UI y bloqueamos mensajeria si no hay sesion
+    await initAuth_();
+    await updateOfferModalAuthUI_();
+    await loadProfileMarket_();
   });
 
 </script>
 </body>
 </html>
+
+
 
 
 
