@@ -1422,6 +1422,7 @@
 
     // Nombre de la compania (profiles.company_name) para saludo por voz
     let rfCompanyName = "";
+    let rfCountry = "";
 
     // Config de voz (guardada en localStorage)
     const RF_VOICE_SETTINGS_KEY = "rf_voice_settings_v1";
@@ -1519,7 +1520,7 @@
       try{
         const { data: prof, error } = await supabase
           .from("profiles")
-          .select("id,role,active_plan_id,company_name")
+          .select("id,role,active_plan_id,company_name,country")
           .eq("id", userId)
           .maybeSingle();
         if(error) throw error;
@@ -1528,6 +1529,8 @@
         const planId = prof?.active_plan_id ?? null;
 
         rfCompanyName = String(prof?.company_name || "").trim();
+
+        rfCountry = String(prof?.country || "").trim();
 
         rfAccess.plan_id = planId;
         rfAccess.role = role;
@@ -3159,7 +3162,57 @@ function rfGetVoiceSettings(){
       return "Buenas noches";
     }
 
-    function rfTodayKey(){
+    
+    // Frases de automotivacion (rotan cada dia)
+    const RF_MOTIVATION_PHRASES = [
+      "Hoy es un buen dia para avanzar, aunque sea un paso pequeno.",
+      "Enfocate en lo que si controlas: tu actitud, tu esfuerzo y tu disciplina.",
+      "Cada cotizacion es una oportunidad; cada respuesta rapida, una venta mas cerca.",
+      "La constancia vence al talento cuando el talento no es constante.",
+      "Hazlo simple: identifica el problema, busca el codigo, resuelve y sigue.",
+      "El progreso no se grita: se demuestra con resultados.",
+      "Si hoy sale dificil, maniana sera tu experiencia trabajando a tu favor.",
+      "Orden en el inventario, orden en la mente, orden en las ventas.",
+      "No esperes motivacion: crea habitos que te muevan incluso sin ganas.",
+      "La velocidad con calidad es tu ventaja: responde rapido y responde bien.",
+      "Recuerda: cada cliente atendido a tiempo confia mas en tu empresa.",
+      "Hoy se gana con enfoque: menos distracciones, mas ejecucion.",
+      "Los retos de hoy son el entrenamiento del nivel de manana.",
+      "Una buena decision se toma con datos; una gran empresa se construye con disciplina.",
+      "Trabaja con orgullo: tu servicio puede marcar la diferencia.",
+      "Cuando dudas, vuelve a lo basico: codigo, cambio, aplicacion, precio y disponibilidad.",
+      "Tu mejor competencia eres tu version de ayer.",
+      "Pequenas mejoras diarias crean un sistema imparable.",
+      "El exito se parece a un inventario sano: rotacion, control y orden.",
+      "Si un repuesto no se mueve, no es perdida: es una oportunidad de estrategia.",
+      "La energia del equipo se contagia: lidera con ejemplo y buena vibra.",
+      "No se trata de suerte: se trata de procesos repetibles y medibles.",
+      "Hoy es perfecto para cerrar ventas y limpiar pendientes.",
+      "Tu empresa crece cuando tu equipo crece: aporta valor en cada interaccion.",
+      "Respira, prioriza y ejecuta: paso a paso, todo sale."
+    ];
+
+    function rfHash32(str){
+      let h = 2166136261;
+      for(let i=0;i<str.length;i++){
+        h ^= str.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return (h >>> 0);
+    }
+
+    function rfPickMotivation(company, country){
+      const key = `${rfTodayKey()}|${String(company||"").trim()}|${String(country||"").trim()}`;
+      const idx = rfHash32(key) % RF_MOTIVATION_PHRASES.length;
+      return RF_MOTIVATION_PHRASES[idx];
+    }
+
+    function rfCountryLabel(){
+      const c = String(rfCountry || "").trim();
+      return c || "tu pais";
+    }
+
+function rfTodayKey(){
       const d = new Date();
       const yyyy = d.getFullYear();
       const mm = String(d.getMonth()+1).padStart(2,"0");
@@ -3293,7 +3346,8 @@ function rfGetVoiceSettings(){
       }catch(e){}
 
       const who = company || email || "tu cuenta";
-      const msg = `${rfTimeGreeting()}, bienvenidos a Repuestos Finder. Acceso confirmado para ${who}.`;
+      const motivation = rfPickMotivation(who, rfCountryLabel());
+      const msg = `${rfTimeGreeting()}, ${who}. ${motivation} Te sugiero que revises las ofertas que hay disponibles en ${rfCountryLabel()}.`;
       rfMarkGreet(company || email || "rf");
       await rfSpeak(msg);
     }
@@ -3310,7 +3364,8 @@ function rfGetVoiceSettings(){
           email = ses?.session?.user?.email || "";
         }catch(e){}
         const who = company || email || "tu cuenta";
-        const msg = `${rfTimeGreeting()}, bienvenidos a Repuestos Finder. Acceso confirmado para ${who}.`;
+        const motivation = rfPickMotivation(who, rfCountryLabel());
+      const msg = `${rfTimeGreeting()}, ${who}. ${motivation} Te sugiero que revises las ofertas que hay disponibles en ${rfCountryLabel()}.`;
         await rfSpeak(msg);
       }else{
         await rfMaybeGreet();
@@ -3366,6 +3421,7 @@ function rfGetVoiceSettings(){
 
 </body>
 </html>
+
 
 
 
