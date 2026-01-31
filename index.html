@@ -113,6 +113,8 @@
       font-weight:900;
       color:var(--pri);
     }
+    
+    .activeMic{ outline:2px solid rgba(37,99,235,.55); box-shadow:0 0 0 4px rgba(37,99,235,.15); }
     .btnSmall{ padding:8px 10px; border-radius:10px; font-size:12px; }
 
     /* ===== Dropdown Herramientas ===== */
@@ -1019,7 +1021,10 @@
         <!-- 🔊 Voz bienvenida (solo si HAY sesion) -->
         <button class="btn btnGhost btnSmall" id="btnVoice" style="display:none" onclick="rfSpeakWelcome(true)" title="Probar saludo de voz">🔊 Voz</button>
 
-        <!-- ✅ Registrarme (solo si NO hay sesion) -->
+        
+        <!-- 🎙️ Comandos de voz (mic) -->
+        <button class="btn btnGhost btnSmall" id="btnMic" style="display:none" onclick="rfToggleVoiceCommands()" title="Activar comandos de voz (micrófono)">🎙️ Voz</button>
+<!-- ✅ Registrarme (solo si NO hay sesion) -->
         <button class="btn btnGhost" id="btnSignup" onclick="goSignup()">Registrarme</button>
 
         <!-- ✅ Ir a la App (siempre visible) -->
@@ -1954,6 +1959,7 @@ if(role.includes("admin")){
       const btnDemo   = $("btnDemo");
       const btnSignup = $("btnSignup");
       const btnVoice = $("btnVoice");
+      const btnMic   = $("btnMic");
       const toolsWrap = $("toolsWrap");
 
       const { data: ses } = await supabase.auth.getSession();
@@ -1968,6 +1974,7 @@ if(role.includes("admin")){
 
             // 🔊 Voz solo con sesion
       if(btnVoice) btnVoice.style.display = user ? "" : "none";
+      if(btnMic)   btnMic.style.display   = user ? "" : "none";
 
       // Salir solo con sesion
       if(btnLogout) btnLogout.style.display = user ? "" : "none";
@@ -3383,6 +3390,157 @@ function rfTodayKey(){
     });
 
 
+    /* ====================== COMANDOS DE VOZ (MIC) ======================
+       Requiere HTTPS + permiso de micrófono.
+       Nota: por políticas del navegador, el micrófono solo se activa tras un gesto del usuario (click).
+    */
+    let rfRec = null;
+    let rfRecOn = false;
+
+    function rfSpeechRecSupported(){
+      return ("SpeechRecognition" in window) || ("webkitSpeechRecognition" in window);
+    }
+    function rfNormTxt(s){
+      return String(s||"")
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g,"") // quitar acentos
+        .replace(/[^\w\s]/g," ")
+        .replace(/\s+/g," ")
+        .trim();
+    }
+
+    function rfInitVoiceCommands(){
+      if(rfRec) return rfRec;
+      if(!rfSpeechRecSupported()) return null;
+
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const rec = new SR();
+      rec.lang = "es-ES";
+      rec.interimResults = false;
+      rec.maxAlternatives = 1;
+      rec.continuous = true;
+
+      rec.onstart = () => {
+        rfRecOn = true;
+        rfToast("🎙️ Comandos de voz ACTIVADOS");
+        const btn = $("btnMic");
+        if(btn) btn.classList.add("activeMic");
+      };
+      rec.onend = () => {
+        // Algunos navegadores paran solos; si el usuario lo dejó ON, reintentar.
+        const btn = $("btnMic");
+        if(btn) btn.classList.remove("activeMic");
+        if(rfRecOn){
+          try{ rec.start(); }catch(e){}
+        }
+      };
+      rec.onerror = (e) => {
+        console.warn("SpeechRecognition error:", e);
+        rfToast("No pude activar el microfono. Verifica permisos.");
+        rfRecOn = false;
+        const btn = $("btnMic");
+        if(btn) btn.classList.remove("activeMic");
+      };
+      rec.onresult = async (evt) => {
+        try{
+          const t = evt?.results?.[evt.results.length-1]?.[0]?.transcript || "";
+          const norm = rfNormTxt(t);
+          if(!norm) return;
+          console.log("🎙️ heard:", norm);
+          await rfHandleVoiceCommand(norm);
+        }catch(err){
+          console.warn(err);
+        }
+      };
+
+      rfRec = rec;
+      return rec;
+    }
+
+    async function rfToggleVoiceCommands(){
+      const settings = rfGetVoiceSettings();
+      if(!settings.enabled){
+        rfToast("Activa primero la voz (Ctrl+Shift+V) para usar comandos.");
+        return;
+      }
+      const rec = rfInitVoiceCommands();
+      if(!rec){
+        rfToast("Tu navegador no soporta comandos de voz.");
+        return;
+      }
+      if(!rfRecOn){
+        rfRecOn = true;
+        try{ rec.start(); }catch(e){ console.warn(e); rfRecOn=false; }
+      }else{
+        rfRecOn = false;
+        try{ rec.stop(); }catch(e){}
+        rfToast("🎙️ Comandos de voz DESACTIVADOS");
+        const btn = $("btnMic");
+        if(btn) btn.classList.remove("activeMic");
+      }
+    }
+
+    async function rfHandleVoiceCommand(cmd){
+      // Palabras clave
+      const has = (...words)=>words.some(w=>cmd.includes(w));
+      const say = (m)=>rfSpeak(m).catch(()=>{});
+
+      // detener / cancelar
+      if(has("detener", "parar", "silencio") && has("voz", "microfono", "comandos")){
+        rfRecOn = false;
+        try{ rfRec && rfRec.stop(); }catch(e){}
+        await say("De acuerdo. Comandos de voz desactivados.");
+        return;
+      }
+
+      // abrir ofertas (dashboard modal)
+      if(has("ofertas","oferta") && (has("abrir","abre","ver","muestrame") || has("revisar"))){
+        await say("Con gusto. Abriendo ofertas disponibles.");
+        try{ openOffersModal(); }catch(e){}
+        return;
+      }
+
+      // ir a la app
+      if(has("app") && has("abrir","abre","ir","vamos","entrar")){
+        await say("Con gusto. Abriendo la app.");
+        setTimeout(()=>{ try{ goApp(); }catch(e){ window.location.href="app.html"; } }, 250);
+        return;
+      }
+
+      // radar
+      if(has("radar") && has("abrir","abre","ir","vamos","entrar")){
+        await say("Perfecto. Abriendo radar.");
+        setTimeout(()=>{ window.location.href="radar.html"; }, 250);
+        return;
+      }
+
+      // perfil
+      if(has("perfil") && has("abrir","abre","ir","vamos","entrar")){
+        await say("Claro. Abriendo tu perfil.");
+        setTimeout(()=>{ window.location.href="perfil.html"; }, 250);
+        return;
+      }
+
+      // kpis / analisis
+      if((has("kpi","kpis","analisis","analítica","dashboard") || has("estadisticas")) && has("abrir","abre","ir","vamos","entrar")){
+        await say("Listo. Abriendo KPI y analisis.");
+        setTimeout(()=>{ window.location.href="kpis.html"; }, 250);
+        return;
+      }
+
+      // herramientas (si el menu existe)
+      if(has("herramientas") && has("abrir","abre","mostrar")){
+        await say("Abriendo herramientas.");
+        const btn = $("toolsBtn");
+        if(btn) btn.click();
+        return;
+      }
+
+      // fallback simple
+      await say("Te escucho. Puedes decir: abre la app, abre radar, abre perfil, o abre ofertas.");
+    }
+
+
     init();
   </script>
 
@@ -3419,8 +3577,125 @@ function rfTodayKey(){
     </div>
   </div>
 
+
+<!-- ================== RF VOICE COMMANDS (OPEN APP / MENUS) ================== -->
+<script>
+(function rfVoiceCommands(){
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) return;
+
+  let rec = null;
+  let listening = false;
+
+  function rfSpeak(text){
+    try{
+      if(!("speechSynthesis" in window)) return;
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "es-ES";
+      u.rate = 1;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  function normalize(txt){
+    return String(txt||"").toLowerCase().trim().replace(/[.,!?:;]+/g,"");
+  }
+
+  const ROUTES = {
+    app: "app.html",
+    perfil: "perfil.html",
+    radar: "radar.html",
+    kpis: "kpis.html",
+    mensajes: "mensajeria.html"
+  };
+
+  function handleCommand(raw){
+    const t = normalize(raw);
+
+    if (t.includes("abre la app") || t === "app") {
+      rfSpeak("Con gusto, abriendo la aplicación.");
+      window.location.href = ROUTES.app;
+      return;
+    }
+
+    if (t.includes("abre ofertas") || t.includes("ofertas")) {
+      rfSpeak("Abriendo las ofertas disponibles.");
+      if (window.openOffersModal) window.openOffersModal();
+      return;
+    }
+
+    if (t.includes("abre perfil")) {
+      rfSpeak("Abriendo el perfil.");
+      window.location.href = ROUTES.perfil;
+      return;
+    }
+
+    if (t.includes("abre radar")) {
+      rfSpeak("Abriendo el radar.");
+      window.location.href = ROUTES.radar;
+      return;
+    }
+
+    if (t.includes("abre kpi") || t.includes("abre kpis")) {
+      rfSpeak("Abriendo indicadores.");
+      window.location.href = ROUTES.kpis;
+      return;
+    }
+
+    if (t.includes("abre mensajes") || t.includes("mensajes")) {
+      rfSpeak("Abriendo mensajería.");
+      window.location.href = ROUTES.mensajes;
+      return;
+    }
+
+    rfSpeak("No entendí el comando. Puedes decir abre la app, abre ofertas o abre perfil.");
+  }
+
+  function start(){
+    if (listening) return;
+    listening = true;
+    rec = new SpeechRecognition();
+    rec.lang = "es-ES";
+    rec.continuous = true;
+    rec.interimResults = false;
+
+    rec.onresult = (e) => {
+      const last = e.results[e.results.length - 1];
+      if (last && last[0]) handleCommand(last[0].transcript);
+    };
+
+    rec.onend = () => { if (listening) rec.start(); };
+    rec.start();
+    rfSpeak("Modo voz activado.");
+  }
+
+  function stop(){
+    listening = false;
+    try{ rec.stop(); }catch(e){}
+    rfSpeak("Modo voz desactivado.");
+  }
+
+  function mountBtn(){
+    const btn = document.createElement("button");
+    btn.textContent = "🎤 Voz";
+    btn.style.cssText = "position:fixed;right:18px;bottom:90px;z-index:99999;padding:10px 12px;border-radius:12px;border:1px solid #ddd;background:#fff;font-weight:700;cursor:pointer";
+    btn.onclick = () => {
+      if (!listening) start();
+      else stop();
+      btn.textContent = listening ? "⏹ Detener" : "🎤 Voz";
+    };
+    document.body.appendChild(btn);
+  }
+
+  window.addEventListener("load", () => setTimeout(mountBtn, 1000));
+})();
+</script>
+
 </body>
 </html>
+
+
 
 
 
