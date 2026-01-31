@@ -1016,6 +1016,9 @@
         <!-- ✅ Salir (solo si HAY sesion) -->
         <button class="btn btnGhost" id="btnLogout" style="display:none" onclick="logout()">Salir</button>
 
+        <!-- 🔊 Voz bienvenida (solo si HAY sesion) -->
+        <button class="btn btnGhost btnSmall" id="btnVoice" style="display:none" onclick="rfSpeakWelcome(true)" title="Probar saludo de voz">🔊 Voz</button>
+
         <!-- ✅ Registrarme (solo si NO hay sesion) -->
         <button class="btn btnGhost" id="btnSignup" onclick="goSignup()">Registrarme</button>
 
@@ -1417,6 +1420,14 @@
       }
     };
 
+    // Nombre de la compania (profiles.company_name) para saludo por voz
+    let rfCompanyName = "";
+
+    // Config de voz (guardada en localStorage)
+    const RF_VOICE_SETTINGS_KEY = "rf_voice_settings_v1";
+    const RF_VOICE_GREET_KEY = "rf_voice_greet_last_v1";
+    
+
     function setFeatureUI(feature, allowed){
       const el = document.querySelector(`[data-feature="${feature}"]`);
       if(!el) return;
@@ -1508,13 +1519,15 @@
       try{
         const { data: prof, error } = await supabase
           .from("profiles")
-          .select("id,role,active_plan_id")
+          .select("id,role,active_plan_id,company_name")
           .eq("id", userId)
           .maybeSingle();
         if(error) throw error;
 
         const role = String(prof?.role || "user").trim().toLowerCase();
         const planId = prof?.active_plan_id ?? null;
+
+        rfCompanyName = String(prof?.company_name || "").trim();
 
         rfAccess.plan_id = planId;
         rfAccess.role = role;
@@ -1937,6 +1950,7 @@ if(role.includes("admin")){
       const btnLogin  = $("btnLogin");
       const btnDemo   = $("btnDemo");
       const btnSignup = $("btnSignup");
+      const btnVoice = $("btnVoice");
       const toolsWrap = $("toolsWrap");
 
       const { data: ses } = await supabase.auth.getSession();
@@ -1945,7 +1959,12 @@ if(role.includes("admin")){
       // ✅ Aplicar accesos por plan (Plan 1 => solo App + Radar)
       if(user){
         await loadAccessForUser(user.id);
+        // 🔊 Saludo por voz (1 vez al dia, usando company_name)
+        setTimeout(()=>{ rfMaybeGreet(); }, 700);
       }
+
+            // 🔊 Voz solo con sesion
+      if(btnVoice) btnVoice.style.display = user ? "" : "none";
 
       // Salir solo con sesion
       if(btnLogout) btnLogout.style.display = user ? "" : "none";
@@ -3065,6 +3084,250 @@ async function init(){
       await rfInitOffersDashboard();
     }
 
+
+    /* =========================
+       🔊 SALUDO POR VOZ (Dashboard)
+       - Usa Web Speech API (speechSynthesis)
+       - Preferencia: voz "Google" en español (es-ES) si existe
+       - Saluda con profiles.company_name
+       - Se ejecuta 1 vez al día por dispositivo (localStorage)
+    ========================= */
+
+    
+    function rfToast(msg){
+      try{
+        let el = document.getElementById("rfVoiceToast");
+        if(!el){
+          el = document.createElement("div");
+          el.id = "rfVoiceToast";
+          el.style.position = "fixed";
+          el.style.left = "50%";
+          el.style.bottom = "22px";
+          el.style.transform = "translateX(-50%)";
+          el.style.background = "rgba(15,23,42,.92)";
+          el.style.color = "#fff";
+          el.style.padding = "10px 12px";
+          el.style.borderRadius = "12px";
+          el.style.fontSize = "13px";
+          el.style.zIndex = "99999";
+          el.style.boxShadow = "0 10px 30px rgba(0,0,0,.25)";
+          el.style.opacity = "0";
+          el.style.transition = "opacity .18s ease";
+          document.body.appendChild(el);
+        }
+        el.textContent = msg;
+        el.style.opacity = "1";
+        clearTimeout(el._t);
+        el._t = setTimeout(()=>{ el.style.opacity="0"; }, 1600);
+      }catch(e){}
+    }
+function rfGetVoiceSettings(){
+      try{
+        const raw = localStorage.getItem(RF_VOICE_SETTINGS_KEY);
+        const v = raw ? JSON.parse(raw) : null;
+        const out = {
+          enabled: true,
+          rate: 1.00,
+          pitch: 0.80,
+          volume: 1.00,
+          preferGoogleES: true
+        };
+        if(v && typeof v === "object"){
+          if(typeof v.enabled === "boolean") out.enabled = v.enabled;
+          if(Number.isFinite(+v.rate)) out.rate = Math.min(1.4, Math.max(0.6, +v.rate));
+          if(Number.isFinite(+v.pitch)) out.pitch = Math.min(2.0, Math.max(0.0, +v.pitch));
+          if(Number.isFinite(+v.volume)) out.volume = Math.min(1.0, Math.max(0.0, +v.volume));
+          if(typeof v.preferGoogleES === "boolean") out.preferGoogleES = v.preferGoogleES;
+        }
+        return out;
+      }catch(e){
+        return { enabled:true, rate:1.00, pitch:0.80, volume:1.00, preferGoogleES:true };
+      }
+    }
+
+    function rfSaveVoiceSettings(patch){
+      const cur = rfGetVoiceSettings();
+      const next = { ...cur, ...(patch||{}) };
+      localStorage.setItem(RF_VOICE_SETTINGS_KEY, JSON.stringify(next));
+      return next;
+    }
+
+    function rfTimeGreeting(){
+      const h = new Date().getHours();
+      if(h >= 5 && h < 12) return "Buenos dias";
+      if(h >= 12 && h < 19) return "Buenas tardes";
+      return "Buenas noches";
+    }
+
+    function rfTodayKey(){
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth()+1).padStart(2,"0");
+      const dd = String(d.getDate()).padStart(2,"0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function rfShouldGreet(company){
+      try{
+        const raw = localStorage.getItem(RF_VOICE_GREET_KEY);
+        const obj = raw ? JSON.parse(raw) : null;
+        const today = rfTodayKey();
+        if(!obj || obj.date !== today) return true;
+        // si cambio la compania, tambien saludamos (opcional)
+        if(company && obj.company && obj.company !== company) return true;
+        return false;
+      }catch(e){
+        return true;
+      }
+    }
+
+    function rfMarkGreet(company){
+      try{
+        localStorage.setItem(RF_VOICE_GREET_KEY, JSON.stringify({
+          date: rfTodayKey(),
+          company: String(company||"").trim()
+        }));
+      }catch(e){}
+    }
+
+    function rfPickVoice(voices, preferGoogleES=true){
+      if(!voices || !voices.length) return null;
+      const isEs = v => String(v.lang||"").toLowerCase().startsWith("es");
+      const isEsES = v => String(v.lang||"").toLowerCase() === "es-es";
+      const isGoogle = v => /google/i.test(String(v.name||"")) || /google/i.test(String(v.voiceURI||""));
+      // 1) Google es-ES
+      if(preferGoogleES){
+        const v1 = voices.find(v => isEsES(v) && isGoogle(v));
+        if(v1) return v1;
+      }
+      // 2) Cualquier es-ES
+      const v2 = voices.find(v => isEsES(v));
+      if(v2) return v2;
+      // 3) Google es-*
+      if(preferGoogleES){
+        const v3 = voices.find(v => isEs(v) && isGoogle(v));
+        if(v3) return v3;
+      }
+      // 4) Cualquier es-*
+      const v4 = voices.find(v => isEs(v));
+      if(v4) return v4;
+      // 5) fallback primera
+      return voices[0] || null;
+    }
+
+    function rfWaitVoices(timeoutMs=1800){
+      return new Promise((resolve) => {
+        if(!("speechSynthesis" in window)) return resolve([]);
+        let done = false;
+        const finish = () => {
+          if(done) return;
+          done = true;
+          try{ window.speechSynthesis.onvoiceschanged = null; }catch(e){}
+          resolve(window.speechSynthesis.getVoices() || []);
+        };
+        // intento inmediato
+        const v0 = window.speechSynthesis.getVoices();
+        if(v0 && v0.length) return resolve(v0);
+        // evento
+        try{
+          window.speechSynthesis.onvoiceschanged = () => finish();
+        }catch(e){}
+        // timeout
+        setTimeout(()=>finish(), timeoutMs);
+      });
+    }
+
+    async function rfSpeak(text){
+      if(!text) return;
+      if(!("speechSynthesis" in window)) return;
+
+      const settings = rfGetVoiceSettings();
+      if(!settings.enabled) return;
+
+      const voices = await rfWaitVoices(2000);
+      const voice = rfPickVoice(voices, settings.preferGoogleES);
+
+      // cancelar cola previa
+      try{ window.speechSynthesis.cancel(); }catch(e){}
+
+      const u = new SpeechSynthesisUtterance(text);
+      if(voice) u.voice = voice;
+      u.lang = (voice && voice.lang) ? voice.lang : "es-ES";
+      u.rate = settings.rate;
+      u.pitch = settings.pitch;
+      u.volume = settings.volume;
+
+      // Algunos navegadores requieren interaccion del usuario; si no suena,
+      // reintentamos en el primer click.
+      let started = false;
+      u.onstart = () => { started = true; };
+      try{
+        window.speechSynthesis.speak(u);
+      }catch(e){}
+
+      // fallback: desbloqueo por primer click
+      if(!started){
+        const once = () => {
+          document.removeEventListener("click", once, true);
+          try{ window.speechSynthesis.cancel(); }catch(e){}
+          try{ window.speechSynthesis.speak(u); }catch(e){}
+        };
+        document.addEventListener("click", once, true);
+      }
+    }
+
+    // saludo automatico (1 vez al dia)
+    async function rfMaybeGreet(){
+      // si aun no tenemos company name, intentamos usar email como fallback
+      const settings = rfGetVoiceSettings();
+      if(!settings.enabled) return;
+
+      const company = String(rfCompanyName || "").trim();
+      if(!rfShouldGreet(company || "rf")) return;
+
+      // obtener email como fallback si no hay company
+      let email = "";
+      try{
+        const { data: ses } = await supabase.auth.getSession();
+        email = ses?.session?.user?.email || "";
+      }catch(e){}
+
+      const who = company || email || "tu cuenta";
+      const msg = `${rfTimeGreeting()}, bienvenidos a Repuestos Finder. Acceso confirmado para ${who}.`;
+      rfMarkGreet(company || email || "rf");
+      await rfSpeak(msg);
+    }
+
+    // boton de prueba manual
+    async function rfSpeakWelcome(force=false){
+      const settings = rfGetVoiceSettings();
+      if(!settings.enabled) return;
+      if(force){
+        const company = String(rfCompanyName || "").trim();
+        let email = "";
+        try{
+          const { data: ses } = await supabase.auth.getSession();
+          email = ses?.session?.user?.email || "";
+        }catch(e){}
+        const who = company || email || "tu cuenta";
+        const msg = `${rfTimeGreeting()}, bienvenidos a Repuestos Finder. Acceso confirmado para ${who}.`;
+        await rfSpeak(msg);
+      }else{
+        await rfMaybeGreet();
+      }
+    }
+
+    // (opcional) Atajos rapidos:
+    // - Ctrl+Shift+V: activar/desactivar voz
+    document.addEventListener("keydown", (e)=>{
+      if(e.ctrlKey && e.shiftKey && (e.key||"").toLowerCase()==="v"){
+        const cur = rfGetVoiceSettings();
+        rfSaveVoiceSettings({ enabled: !cur.enabled });
+        rfToast(`Voz: ${!cur.enabled ? "activada" : "desactivada"}`);
+      }
+    });
+
+
     init();
   </script>
 
@@ -3103,6 +3366,8 @@ async function init(){
 
 </body>
 </html>
+
+
 
 
 
