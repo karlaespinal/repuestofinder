@@ -1965,6 +1965,11 @@ if(role.includes("admin")){
       const { data: ses } = await supabase.auth.getSession();
       const user = ses?.session?.user;
 
+      // 🎧 Bienvenida para visitantes (no logueados) - solo 1 vez por dispositivo
+      if(!user){
+        try{ await rfPlayGuestIntro(false); }catch(e){}
+      }
+
       // ✅ Aplicar accesos por plan (Plan 1 => solo App + Radar)
       if(user){
         await loadAccessForUser(user.id);
@@ -1973,8 +1978,9 @@ if(role.includes("admin")){
       }
 
             // 🔊 Voz solo con sesion
-      if(btnVoice) btnVoice.style.display = user ? "" : "none";
-      if(btnMic)   btnMic.style.display   = user ? "" : "none";
+      // 🔊/🎙️ Accesibilidad: visibles tambien para invitados
+      if(btnVoice) btnVoice.style.display = "";
+      if(btnMic)   btnMic.style.display   = "";
 
       // Salir solo con sesion
       if(btnLogout) btnLogout.style.display = user ? "" : "none";
@@ -3571,7 +3577,89 @@ function rfTodayKey(){
 
 
     init();
-  </script>
+  
+    /* ================== RF INVITADO: INTRO POR VOZ (1 sola vez) ================== */
+    async function rfSpeakRaw_(text){
+      if(!text) return true;
+      if(!("speechSynthesis" in window)) return false;
+
+      const pickVoice = ()=>{
+        try{
+          const voices = speechSynthesis.getVoices() || [];
+          // Prioriza Google es-ES si existe
+          const googleEs = voices.find(v => (v.name||"").toLowerCase().includes("google") && (v.lang||"").toLowerCase().startsWith("es"));
+          if(googleEs) return googleEs;
+          const es = voices.find(v => (v.lang||"").toLowerCase().startsWith("es"));
+          return es || null;
+        }catch(_){ return null; }
+      };
+
+      // Espera un poquito a que carguen voces
+      let tries = 0;
+      while(tries < 12){
+        const v = speechSynthesis.getVoices();
+        if(v && v.length) break;
+        await new Promise(r=>setTimeout(r, 200));
+        tries++;
+      }
+
+      return new Promise((resolve, reject)=>{
+        try{
+          const u = new SpeechSynthesisUtterance(text);
+          u.lang = "es-ES";
+          u.rate = 1;
+          u.pitch = 0.9;
+          u.volume = 1;
+
+          const voice = pickVoice();
+          if(voice){
+            u.voice = voice;
+            u.lang = voice.lang || u.lang;
+          }
+
+          u.onend = ()=>resolve(true);
+          u.onerror = (e)=>reject(e);
+
+          speechSynthesis.cancel();
+          speechSynthesis.speak(u);
+          // No resolvemos aqui para capturar error/onend, pero ponemos fallback
+          setTimeout(()=>resolve(true), 7000);
+        }catch(e){
+          reject(e);
+        }
+      });
+    }
+
+    async function rfPlayGuestIntro(force=false){
+      try{
+        const KEY = "rf_guest_intro_done_v1";
+        if(!force && localStorage.getItem(KEY)==="1") return;
+
+        const msg =
+          "Bienvenido a RepuestoFinder. Esta plataforma te ayuda a encontrar repuestos, cambios y aplicaciones en tiempo real, a nivel mundial, reduciendo errores humanos. " +
+          "Si eres empresa, puedes trabajar con tus equipos y aprovechar ofertas disponibles por país. " +
+          "Tip rapido: tenemos planes Basico por 19 punto 99, Pro por 39 punto 99 y Empresa por 59 punto 99. " +
+          "Cuando quieras, inicia sesion para acceder al buscador y a la App.";
+
+        // Intento automático: si el navegador bloquea el audio, abrimos el modal con botón.
+        try{
+          await rfSpeakRaw_(msg);
+          localStorage.setItem(KEY, "1");
+        }catch(e){
+          // Mostrar modal para que el usuario haga click y ahí sí se reproduzca
+          if(typeof window.rfShowGuestIntroModal === "function"){
+            window.rfShowGuestIntroModal();
+          }
+        }
+      }catch(e){}
+    }
+
+    // Exponer a window para que el HTML (onclick/modales) pueda llamar funciones dentro del módulo
+    window.rfToggleVoiceCommands = rfToggleVoiceCommands;
+    window.openOffersModal = openOffersModal;
+    window.rfPlayGuestIntro = rfPlayGuestIntro;
+
+</script>
 
   <!-- Modal: Ofertas disponibles (Dashboard) -->
   <div class="modalBack" id="offersBack" onclick="if(event.target.id==='offersBack') closeOffersModal()">
@@ -3607,122 +3695,231 @@ function rfTodayKey(){
   </div>
 
 
-<!-- ================== RF VOICE COMMANDS (OPEN APP / MENUS) ================== -->
+
+
+<!-- ================== RF ACCESSIBILIDAD: MODAL CONTROL POR VOZ ================== -->
+<div class="rfModalOverlay" id="rfVoiceModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="rfVoiceTitle">
+  <div class="rfModalCard">
+    <div class="rfModalHdr">
+      <div class="rfModalIcon">🎙️</div>
+      <div>
+        <div class="rfModalTitle" id="rfVoiceTitle">Control por voz</div>
+        <div class="rfModalSub">Activa el micrófono para navegar por el dashboard con comandos de voz (ideal para accesibilidad).</div>
+      </div>
+    </div>
+
+    <div class="rfModalBody">
+      <div class="rfModalList">
+        <div class="rfModalItem"><b>Ejemplos:</b> “abre la app”, “abre ofertas”, “abre perfil”, “abre radar”, “abre kpis”.</div>
+        <div class="rfModalItem"><b>Nota:</b> el navegador pedirá permiso de micrófono (recomendado usar Chrome/Edge).</div>
+      </div>
+
+      <div class="rfModalActions">
+        <button class="rfBtnPrimary" id="rfVoiceEnableBtn">🎙️ Activar ahora</button>
+        <button class="rfBtnGhost" id="rfVoiceLaterBtn">Ahora no</button>
+      </div>
+
+      <label class="rfModalCheck">
+        <input type="checkbox" id="rfVoiceDontAsk" />
+        No volver a mostrar este mensaje
+      </label>
+    </div>
+  </div>
+</div>
+
+<!-- ================== RF BIENVENIDA (NO LOGUEADO) + BOTON SI EL AUDIO SE BLOQUEA ================== -->
+<div class="rfModalOverlay" id="rfGuestIntroModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="rfGuestTitle">
+  <div class="rfModalCard">
+    <div class="rfModalHdr">
+      <div class="rfModalIcon">🔊</div>
+      <div>
+        <div class="rfModalTitle" id="rfGuestTitle">Bienvenido a RepuestoFinder</div>
+        <div class="rfModalSub">Tu navegador puede requerir un clic para reproducir el audio de bienvenida.</div>
+      </div>
+    </div>
+    <div class="rfModalBody">
+      <div class="rfModalActions">
+        <button class="rfBtnPrimary" id="rfGuestPlayBtn">▶️ Escuchar bienvenida</button>
+        <button class="rfBtnGhost" id="rfGuestCloseBtn">Cerrar</button>
+      </div>
+      <label class="rfModalCheck">
+        <input type="checkbox" id="rfGuestDontAsk" />
+        No volver a reproducir esta bienvenida
+      </label>
+    </div>
+  </div>
+</div>
+
+<style>
+  .rfModalOverlay{
+    position:fixed; inset:0; z-index:99999;
+    background:rgba(15,23,42,.55);
+    display:flex; align-items:center; justify-content:center;
+    padding:18px;
+    backdrop-filter: blur(6px);
+  }
+  .rfModalCard{
+    width:min(620px, 96vw);
+    background:rgba(255,255,255,.96);
+    border:1px solid rgba(226,232,240,.9);
+    border-radius:18px;
+    box-shadow:0 24px 70px rgba(0,0,0,.25);
+    overflow:hidden;
+  }
+  .rfModalHdr{
+    display:flex; gap:14px; align-items:flex-start;
+    padding:18px 18px 10px 18px;
+  }
+  .rfModalIcon{
+    width:44px; height:44px; border-radius:14px;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(37,99,235,.10);
+    font-size:20px;
+    flex:0 0 auto;
+  }
+  .rfModalTitle{ font-weight:950; font-size:18px; color:#0f172a; }
+  .rfModalSub{ color:#64748b; font-weight:650; margin-top:2px; font-size:13px; line-height:1.35; }
+  .rfModalBody{ padding:10px 18px 18px 18px; }
+  .rfModalList{ display:flex; flex-direction:column; gap:8px; margin:10px 0 16px 0; }
+  .rfModalItem{
+    background:rgba(248,250,252,.9);
+    border:1px solid rgba(226,232,240,.9);
+    border-radius:12px;
+    padding:10px 12px;
+    color:#0f172a;
+    font-weight:650;
+    font-size:13px;
+  }
+  .rfModalActions{ display:flex; gap:10px; flex-wrap:wrap; }
+  .rfBtnPrimary{
+    border:none;
+    background:#2563eb;
+    color:#fff;
+    font-weight:900;
+    padding:10px 14px;
+    border-radius:12px;
+    cursor:pointer;
+  }
+  .rfBtnGhost{
+    border:1px solid rgba(226,232,240,1);
+    background:#fff;
+    color:#0f172a;
+    font-weight:850;
+    padding:10px 14px;
+    border-radius:12px;
+    cursor:pointer;
+  }
+  .rfBtnPrimary:active, .rfBtnGhost:active{ transform: translateY(1px); }
+  .rfModalCheck{
+    display:flex; gap:10px; align-items:center;
+    margin-top:12px;
+    color:#475569;
+    font-weight:750;
+    font-size:13px;
+    user-select:none;
+  }
+</style>
+
 <script>
-(function rfVoiceCommands(){
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) return;
+/* ================== RF MODALES: VOZ + BIENVENIDA INVITADO ================== */
+(function(){
+  const LS_VOICE_MODAL = "rf_voice_modal_dismissed_v1";
+  const LS_GUEST_INTRO = "rf_guest_intro_done_v1";
 
-  let rec = null;
-  let listening = false;
+  const $ = (id)=>document.getElementById(id);
 
-  function rfSpeak(text){
+  function show(el){ if(el) el.style.display="flex"; }
+  function hide(el){ if(el) el.style.display="none"; }
+
+  function canVoiceCommands(){
+    return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  }
+
+  // Mostrar modal de control por voz (si soporta y no fue descartado)
+  function maybeShowVoiceModal(){
     try{
-      if(!("speechSynthesis" in window)) return;
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = "es-ES";
-      u.rate = 1;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
+      if(!canVoiceCommands()) return;
+      if(localStorage.getItem(LS_VOICE_MODAL)==="1") return;
+
+      // Si no es secure context, igual mostramos pero advierte (el prompt puede fallar)
+      show($("rfVoiceModal"));
     }catch(e){}
   }
 
-  function normalize(txt){
-    return String(txt||"").toLowerCase().trim().replace(/[.,!?:;]+/g,"");
-  }
+  // Click handlers
+  window.addEventListener("load", ()=>{
+    // Modal control por voz
+    maybeShowVoiceModal();
 
-  const ROUTES = {
-    app: "app.html",
-    perfil: "perfil.html",
-    radar: "radar.html",
-    kpis: "kpis.html",
-    mensajes: "mensajeria.html"
+    const enableBtn = $("rfVoiceEnableBtn");
+    const laterBtn  = $("rfVoiceLaterBtn");
+    const dontAsk   = $("rfVoiceDontAsk");
+    const modal     = $("rfVoiceModal");
+
+    if(enableBtn){
+      enableBtn.addEventListener("click", async ()=>{
+        try{
+          // Guardar preferencia si lo pide
+          if(dontAsk && dontAsk.checked) localStorage.setItem(LS_VOICE_MODAL, "1");
+          hide(modal);
+
+          // Llamar a la función global del módulo
+          if(typeof window.rfToggleVoiceCommands === "function"){
+            await window.rfToggleVoiceCommands();
+          }
+        }catch(e){}
+      });
+    }
+    if(laterBtn){
+      laterBtn.addEventListener("click", ()=>{
+        try{
+          if(dontAsk && dontAsk.checked) localStorage.setItem(LS_VOICE_MODAL, "1");
+          hide(modal);
+        }catch(e){}
+      });
+    }
+
+    // Modal bienvenida invitado (se muestra solo si el audio se bloquea y necesitamos clic)
+    const guestModal = $("rfGuestIntroModal");
+    const guestPlay  = $("rfGuestPlayBtn");
+    const guestClose = $("rfGuestCloseBtn");
+    const guestDont  = $("rfGuestDontAsk");
+
+    if(guestPlay){
+      guestPlay.addEventListener("click", async ()=>{
+        try{
+          if(typeof window.rfPlayGuestIntro === "function"){
+            await window.rfPlayGuestIntro(true); // force
+          }
+          if(guestDont && guestDont.checked) localStorage.setItem(LS_GUEST_INTRO, "1");
+          hide(guestModal);
+        }catch(e){}
+      });
+    }
+    if(guestClose){
+      guestClose.addEventListener("click", ()=>{
+        try{
+          if(guestDont && guestDont.checked) localStorage.setItem(LS_GUEST_INTRO, "1");
+          hide(guestModal);
+        }catch(e){}
+      });
+    }
+  });
+
+  // Exponer helper para que el módulo lo pueda abrir cuando detecte bloqueo de audio
+  window.rfShowGuestIntroModal = function(){
+    try{
+      if(localStorage.getItem(LS_GUEST_INTRO)==="1") return;
+      show($("rfGuestIntroModal"));
+    }catch(e){}
   };
-
-  function handleCommand(raw){
-    const t = normalize(raw);
-
-    if (t.includes("abre la app") || t === "app") {
-      rfSpeak("Con gusto, abriendo la aplicación.");
-      window.location.href = ROUTES.app;
-      return;
-    }
-
-    if (t.includes("abre ofertas") || t.includes("ofertas")) {
-      rfSpeak("Abriendo las ofertas disponibles.");
-      if (window.openOffersModal) window.openOffersModal();
-      return;
-    }
-
-    if (t.includes("abre perfil")) {
-      rfSpeak("Abriendo el perfil.");
-      window.location.href = ROUTES.perfil;
-      return;
-    }
-
-    if (t.includes("abre radar")) {
-      rfSpeak("Abriendo el radar.");
-      window.location.href = ROUTES.radar;
-      return;
-    }
-
-    if (t.includes("abre kpi") || t.includes("abre kpis")) {
-      rfSpeak("Abriendo indicadores.");
-      window.location.href = ROUTES.kpis;
-      return;
-    }
-
-    if (t.includes("abre mensajes") || t.includes("mensajes")) {
-      rfSpeak("Abriendo mensajería.");
-      window.location.href = ROUTES.mensajes;
-      return;
-    }
-
-    rfSpeak("No entendí el comando. Puedes decir abre la app, abre ofertas o abre perfil.");
-  }
-
-  function start(){
-    if (listening) return;
-    listening = true;
-    rec = new SpeechRecognition();
-    rec.lang = "es-ES";
-    rec.continuous = true;
-    rec.interimResults = false;
-
-    rec.onresult = (e) => {
-      const last = e.results[e.results.length - 1];
-      if (last && last[0]) handleCommand(last[0].transcript);
-    };
-
-    rec.onend = () => { if (listening) rec.start(); };
-    rec.start();
-    rfSpeak("Modo voz activado.");
-  }
-
-  function stop(){
-    listening = false;
-    try{ rec.stop(); }catch(e){}
-    rfSpeak("Modo voz desactivado.");
-  }
-
-  function mountBtn(){
-    const btn = document.createElement("button");
-    btn.textContent = "🎤 Voz";
-    btn.style.cssText = "position:fixed;right:18px;bottom:90px;z-index:99999;padding:10px 12px;border-radius:12px;border:1px solid #ddd;background:#fff;font-weight:700;cursor:pointer";
-    btn.onclick = () => {
-      if (!listening) start();
-      else stop();
-      btn.textContent = listening ? "⏹ Detener" : "🎤 Voz";
-    };
-    document.body.appendChild(btn);
-  }
-
-  window.addEventListener("load", () => setTimeout(mountBtn, 1000));
 })();
 </script>
 
 </body>
 </html>
+
+
 
 
 
