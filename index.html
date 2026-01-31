@@ -1023,7 +1023,7 @@
 
         
         <!-- 🎙️ Comandos de voz (mic) -->
-        <button class="btn btnGhost btnSmall" id="btnMic" style="display:none" onclick="rfToggleVoiceCommands()" title="Activar comandos de voz (micrófono)">🎙️ Voz</button>
+        <button class="btn btnGhost btnSmall" id="btnMic" style="display:none" onclick="rfToggleVoiceCommands()" title="Activar comandos de voz (micrófono)">🎙️ Micrófono</button>
 <!-- ✅ Registrarme (solo si NO hay sesion) -->
         <button class="btn btnGhost" id="btnSignup" onclick="goSignup()">Registrarme</button>
 
@@ -3257,29 +3257,44 @@ function rfTodayKey(){
     }
 
     function rfPickVoice(voices, preferGoogleES=true){
-      if(!voices || !voices.length) return null;
-      const isEs = v => String(v.lang||"").toLowerCase().startsWith("es");
-      const isEsES = v => String(v.lang||"").toLowerCase() === "es-es";
-      const isGoogle = v => /google/i.test(String(v.name||"")) || /google/i.test(String(v.voiceURI||""));
-      // 1) Google es-ES
-      if(preferGoogleES){
-        const v1 = voices.find(v => isEsES(v) && isGoogle(v));
-        if(v1) return v1;
-      }
-      // 2) Cualquier es-ES
-      const v2 = voices.find(v => isEsES(v));
-      if(v2) return v2;
-      // 3) Google es-*
-      if(preferGoogleES){
-        const v3 = voices.find(v => isEs(v) && isGoogle(v));
-        if(v3) return v3;
-      }
-      // 4) Cualquier es-*
-      const v4 = voices.find(v => isEs(v));
-      if(v4) return v4;
-      // 5) fallback primera
-      return voices[0] || null;
-    }
+  if(!voices || !voices.length) return null;
+
+  const lang = v => String(v.lang||"").toLowerCase();
+  const name = v => String(v.name||"") + " " + String(v.voiceURI||"");
+  const isEs = v => lang(v).startsWith("es");
+  const isEsES = v => lang(v) === "es-es";
+  const isGoogle = v => /google/i.test(name(v));
+  const isGoogleSpanishLabel = v => isGoogle(v) && /(español|espanol|spanish)/i.test(name(v));
+
+  // 0) Prioridad maxima: "Google español" (suele ser la voz que muestras en tu panel)
+  if(preferGoogleES){
+    const v0 = voices.find(v => isEsES(v) && isGoogleSpanishLabel(v));
+    if(v0) return v0;
+  }
+
+  // 1) Google es-ES
+  if(preferGoogleES){
+    const v1 = voices.find(v => isEsES(v) && isGoogle(v));
+    if(v1) return v1;
+  }
+
+  // 2) Cualquier es-ES
+  const v2 = voices.find(v => isEsES(v));
+  if(v2) return v2;
+
+  // 3) Google es-*
+  if(preferGoogleES){
+    const v3 = voices.find(v => isEs(v) && isGoogle(v));
+    if(v3) return v3;
+  }
+
+  // 4) Cualquier es-*
+  const v4 = voices.find(v => isEs(v));
+  if(v4) return v4;
+
+  // 5) fallback primera
+  return voices[0] || null;
+}
 
     function rfWaitVoices(timeoutMs=1800){
       return new Promise((resolve) => {
@@ -3303,44 +3318,79 @@ function rfTodayKey(){
       });
     }
 
-    async function rfSpeak(text){
-      if(!text) return;
-      if(!("speechSynthesis" in window)) return;
+    async function rfSpeak(text, opts={}){
+  if(!text) return;
+  if(!("speechSynthesis" in window)) return;
 
-      const settings = rfGetVoiceSettings();
-      if(!settings.enabled) return;
+  const settings = rfGetVoiceSettings();
+  if(!settings.enabled) return;
 
-      const voices = await rfWaitVoices(2000);
-      const voice = rfPickVoice(voices, settings.preferGoogleES);
+  // Si el microfono esta escuchando, pausamos para evitar interrupciones.
+  const allowDuringMic = !!opts.allowDuringMic;
+  const shouldPauseMic = (typeof rfRecOn !== "undefined" && rfRecOn && !allowDuringMic);
 
-      // cancelar cola previa
-      try{ window.speechSynthesis.cancel(); }catch(e){}
-
-      const u = new SpeechSynthesisUtterance(text);
-      if(voice) u.voice = voice;
-      u.lang = (voice && voice.lang) ? voice.lang : "es-ES";
-      u.rate = settings.rate;
-      u.pitch = settings.pitch;
-      u.volume = settings.volume;
-
-      // Algunos navegadores requieren interaccion del usuario; si no suena,
-      // reintentamos en el primer click.
-      let started = false;
-      u.onstart = () => { started = true; };
-      try{
-        window.speechSynthesis.speak(u);
-      }catch(e){}
-
-      // fallback: desbloqueo por primer click
-      if(!started){
-        const once = () => {
-          document.removeEventListener("click", once, true);
-          try{ window.speechSynthesis.cancel(); }catch(e){}
-          try{ window.speechSynthesis.speak(u); }catch(e){}
-        };
-        document.addEventListener("click", once, true);
+  let rec = null;
+  let resumeMic = false;
+  try{
+    if(shouldPauseMic){
+      rec = rfInitVoiceCommands();
+      if(rec){
+        resumeMic = true;
+        try{ rec.stop(); }catch(e){}
+        rfRecOn = false;
       }
+      try{ window.speechSynthesis.cancel(); }catch(e){}
     }
+  }catch(e){}
+
+  const voices = await rfWaitVoices(2000);
+  const voice = rfPickVoice(voices, settings.preferGoogleES);
+
+  // cancelar cola previa
+  try{ window.speechSynthesis.cancel(); }catch(e){}
+
+  const u = new SpeechSynthesisUtterance(text);
+  if(voice) u.voice = voice;
+  u.lang = (voice && voice.lang) ? voice.lang : "es-ES";
+  u.rate = settings.rate;
+  u.pitch = settings.pitch;
+  u.volume = settings.volume;
+
+  const speakPromise = new Promise((resolve) => {
+    u.onend = () => resolve(true);
+    u.onerror = () => resolve(false);
+  });
+
+  // Algunos navegadores requieren interaccion del usuario; si no suena,
+  // reintentamos en el primer click.
+  let started = false;
+  u.onstart = () => { started = true; };
+
+  try{
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+
+  if(!started){
+    const once = () => {
+      document.removeEventListener("click", once, true);
+      try{ window.speechSynthesis.cancel(); }catch(e){}
+      try{ window.speechSynthesis.speak(u); }catch(e){}
+    };
+    document.addEventListener("click", once, true);
+  }
+
+  await speakPromise;
+
+  // Reanudar microfono si estaba activo
+  if(resumeMic && rec){
+    try{
+      rfRecOn = true;
+      rec.start();
+    }catch(e){
+      rfRecOn = false;
+    }
+  }
+}
 
     // saludo automatico (1 vez al dia)
     async function rfMaybeGreet(){
@@ -3493,6 +3543,9 @@ function rfTodayKey(){
       }
 
       if(!rfRecOn){
+        // Si esta hablando, lo cancelamos para que el microfono no se interrumpa
+        try{ if("speechSynthesis" in window) window.speechSynthesis.cancel(); }catch(e){}
+
         // 1) Pedir permiso de micrófono (para que salga el prompt)
         const ok = await rfEnsureMicPermission_();
         if(!ok) return;
@@ -3918,6 +3971,8 @@ function rfTodayKey(){
 
 </body>
 </html>
+
+
 
 
 
