@@ -3233,27 +3233,27 @@ function rfTodayKey(){
       return `${yyyy}-${mm}-${dd}`;
     }
 
-    function rfShouldGreet(company){
+    function rfGreetLSKey(userKey){
+      return `${RF_VOICE_GREET_KEY}_${String(userKey||"rf")}`;
+    }
+
+    function rfShouldGreet(userKey){
       try{
-        const raw = localStorage.getItem(RF_VOICE_GREET_KEY);
-        const obj = raw ? JSON.parse(raw) : null;
         const today = rfTodayKey();
-        if(!obj || obj.date !== today) return true;
-        // si cambio la compania, tambien saludamos (opcional)
-        if(company && obj.company && obj.company !== company) return true;
-        return false;
+        const key = rfGreetLSKey(userKey);
+        const last = localStorage.getItem(key);
+        return last !== today;
       }catch(e){
         return true;
       }
     }
 
-    function rfMarkGreet(company){
+    function rfMarkGreet(userKey){
       try{
-        localStorage.setItem(RF_VOICE_GREET_KEY, JSON.stringify({
-          date: rfTodayKey(),
-          company: String(company||"").trim()
-        }));
+        const key = rfGreetLSKey(userKey);
+        localStorage.setItem(key, rfTodayKey());
       }catch(e){}
+    }
     }
 
     function rfPickVoice(voices, preferGoogleES=true){
@@ -3394,24 +3394,29 @@ function rfTodayKey(){
 
     // saludo automatico (1 vez al dia)
     async function rfMaybeGreet(){
-      // si aun no tenemos company name, intentamos usar email como fallback
       const settings = rfGetVoiceSettings();
       if(!settings.enabled) return;
 
-      const company = String(rfCompanyName || "").trim();
-      if(!rfShouldGreet(company || "rf")) return;
-
-      // obtener email como fallback si no hay company
+      // clave estable: por usuario (evita que salude de nuevo al cambiar de modulo)
+      let userId = "";
       let email = "";
       try{
         const { data: ses } = await supabase.auth.getSession();
+        userId = ses?.session?.user?.id || "";
         email = ses?.session?.user?.email || "";
       }catch(e){}
+      if(!userId) return;
 
+      if(!rfShouldGreet(userId)) return;
+
+      const company = String(rfCompanyName || "").trim();
       const who = company || email || "tu cuenta";
       const motivation = rfPickMotivation(who, rfCountryLabel());
       const msg = `${rfTimeGreeting()}, ${who}. ${motivation} Te sugiero que revises las ofertas que hay disponibles en ${rfCountryLabel()}.`;
-      rfMarkGreet(company || email || "rf");
+
+      // marcar ANTES de hablar (para que aunque el navegador bloquee, no se repita al volver)
+      rfMarkGreet(userId);
+
       await rfSpeak(msg);
     }
 
@@ -3971,6 +3976,8 @@ function rfTodayKey(){
 
 </body>
 </html>
+
+
 
 
 
