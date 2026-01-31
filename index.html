@@ -3457,20 +3457,49 @@ function rfTodayKey(){
       return rec;
     }
 
-    async function rfToggleVoiceCommands(){
-      const settings = rfGetVoiceSettings();
-      if(!settings.enabled){
-        rfToast("Activa primero la voz (Ctrl+Shift+V) para usar comandos.");
-        return;
+    async function rfEnsureMicPermission_(){
+      // Fuerza el prompt de permiso en navegadores que lo soporten (HTTPS/localhost)
+      try{
+        if(!window.isSecureContext && location.hostname !== "localhost" && location.hostname !== "127.0.0.1"){
+          rfToast("El micrófono requiere HTTPS (o localhost).");
+          return false;
+        }
+        if(navigator?.mediaDevices?.getUserMedia){
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          // detener inmediatamente (solo era para pedir permiso)
+          stream.getTracks().forEach(t=>t.stop());
+        }
+        return true;
+      }catch(e){
+        console.warn("getUserMedia error:", e);
+        rfToast("Permiso de micrófono denegado o bloqueado.");
+        return false;
       }
+    }
+
+    async function rfToggleVoiceCommands(){
+      // Nota: los comandos por voz pueden funcionar aunque la voz (TTS) esté apagada.
+      // Si TTS está apagado, igual ejecuta comandos; solo no “habla” confirmaciones.
       const rec = rfInitVoiceCommands();
       if(!rec){
-        rfToast("Tu navegador no soporta comandos de voz.");
+        rfToast("Tu navegador no soporta comandos de voz (usa Chrome/Edge).");
         return;
       }
+
       if(!rfRecOn){
+        // 1) Pedir permiso de micrófono (para que salga el prompt)
+        const ok = await rfEnsureMicPermission_();
+        if(!ok) return;
+
+        // 2) Encender reconocimiento
         rfRecOn = true;
-        try{ rec.start(); }catch(e){ console.warn(e); rfRecOn=false; }
+        try{
+          rec.start();
+        }catch(e){
+          console.warn(e);
+          rfRecOn = false;
+          rfToast("No pude iniciar el micrófono. Revisa permisos del sitio.");
+        }
       }else{
         rfRecOn = false;
         try{ rec.stop(); }catch(e){}
