@@ -905,6 +905,48 @@
 
 
 
+  
+    /* KPI clickeable */
+    .kpiClick{ cursor:pointer; transition:transform .08s ease, box-shadow .2s ease, border-color .2s ease; }
+    .kpiClick:hover{ transform:translateY(-1px); box-shadow:0 18px 45px rgba(2,6,23,.10); border-color:rgba(37,99,235,.22); }
+    .kpiClick:active{ transform:translateY(0px); }
+
+    /* Modal Ofertas (Dashboard) */
+    .modalWide{ width:min(980px, 100%); }
+    .modalGrid2{ display:grid; grid-template-columns: 1.05fr 1.35fr; gap:14px; }
+    @media (max-width: 860px){ .modalGrid2{ grid-template-columns:1fr; } }
+    .listCard{
+      border:1px solid rgba(230,232,240,.95);
+      background:rgba(255,255,255,.92);
+      border-radius:14px;
+      padding:10px 12px;
+      cursor:pointer;
+      margin-bottom:10px;
+      transition:transform .06s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+    .listCard:hover{ border-color:rgba(37,99,235,.30); box-shadow:0 14px 28px rgba(2,6,23,.08); }
+    .listCard:active{ transform:translateY(1px); }
+    .listCard.active{ border-color:rgba(37,99,235,.55); box-shadow:0 14px 30px rgba(37,99,235,.14); }
+    .badge{
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:2px 8px; border-radius:999px;
+      font-size:12px; font-weight:900;
+      border:1px solid rgba(0,0,0,.08);
+      background:rgba(255,255,255,.70);
+      color:var(--mut);
+      white-space:nowrap;
+    }
+    .miniRow{ display:flex; gap:10px; align-items:center; justify-content:space-between; }
+    .muted2{ color:var(--mut); font-size:12px; }
+    .tag{
+      display:inline-flex; gap:6px; align-items:center;
+      padding:4px 10px; border-radius:999px;
+      border:1px solid rgba(37,99,235,.18);
+      background:rgba(37,99,235,.08);
+      color:var(--pri2);
+      font-size:12px; font-weight:800;
+    }
+
   </style>
 </head>
 
@@ -1006,10 +1048,10 @@
             <div class="s" id="kpiSearchTodaySub">Click para ver codigos por marca y region.</div>
             <div class="kpiHint">Ver detalle <span>▸</span></div>
           </div>
-          <div class="kpi">
-            <div class="t">Top autopartes</div>
-            <div class="v">—</div>
-            <div class="s">Bosch, Mahle, NGK, Febi, etc.</div>
+          <div class="kpi kpiClick" id="kpiOffers" title="Ver ofertas disponibles" role="button" tabindex="0">
+            <div class="t">Ofertas disponibles</div>
+            <div class="v" id="offersKpiValue">—</div>
+            <div class="s" id="offersKpiSub">Click para ver todas las ofertas.</div>
           </div>
           <div class="kpi">
             <div class="t">Top marcas</div>
@@ -2676,6 +2718,7 @@ if(role.includes("admin")){
     window.openTodayModelsModal = async function(){
       openModal("todayModelsBack");
       await rfLoadTopModelsToday(false);
+      await rfInitOffersDashboard();
     };
     window.closeTodayModelsModal = function(){
       closeModal("todayModelsBack");
@@ -2720,7 +2763,258 @@ if(role.includes("admin")){
 
 
 
-    async function init(){
+    
+    // ===================== DASHBOARD: OFERTAS DISPONIBLES (modal) =====================
+    const RF_OFFERS_TABLE = "offers";
+    let rfOffersCache = [];
+    let rfOffersSellers = {}; // id -> {email,name}
+    let rfOfferGroups = [];   // [{key, original, offers:[], countries:Set, sellers:Set}]
+
+    function rfNormCode(v){
+      return String(v||"").trim().toUpperCase().replace(/\s+/g,"").replace(/[^A-Z0-9]/g,"");
+    }
+    function rfMoney(price, cur){
+      const p = Number(price);
+      const c = String(cur||"USD").toUpperCase();
+      if(!Number.isFinite(p)) return "—";
+      return p.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})+" "+c;
+    }
+    function rfEsc(s){
+      return String(s??"").replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
+    }
+
+    async function rfLoadOffersForDashboard(){
+      try{
+        const nowIso = new Date().toISOString();
+        const { data, error } = await supabase
+          .from(RF_OFFERS_TABLE)
+          .select("id,original,original_norm,brand,price,currency,country,expires_at,created_at,seller_id")
+          .gt("expires_at", nowIso)
+          .order("created_at", { ascending:false })
+          .limit(700);
+        if(error) throw error;
+
+        rfOffersCache = data || [];
+
+        // cargar perfiles para email/nombre (si existe)
+        const sellerIds = Array.from(new Set(rfOffersCache.map(o=>o.seller_id).filter(Boolean)));
+        rfOffersSellers = {};
+        if(sellerIds.length){
+          try{
+            const { data: profs } = await supabase
+              .from("profiles")
+              .select("id,email,full_name,name,username")
+              .in("id", sellerIds)
+              .limit(1000);
+            (profs||[]).forEach(p=>{
+              const nm = p.full_name || p.name || p.username || null;
+              rfOffersSellers[p.id] = { email: p.email || null, name: nm };
+            });
+          }catch(_){}
+        }
+
+        // agrupar por codigo normalizado
+        const map = new Map();
+        for(const o of rfOffersCache){
+          const key = o.original_norm || rfNormCode(o.original);
+          if(!map.has(key)){
+            map.set(key, { key, original: o.original, offers:[], countries:new Set(), sellers:new Set() });
+          }
+          const g = map.get(key);
+          g.offers.push(o);
+          if(o.country) g.countries.add(o.country);
+          if(o.seller_id) g.sellers.add(o.seller_id);
+          // mantener un "original" bonito (el mas largo o el mas reciente)
+          if(String(o.original||"").length > String(g.original||"").length) g.original = o.original;
+        }
+        rfOfferGroups = Array.from(map.values()).sort((a,b)=> b.offers.length - a.offers.length);
+
+        // KPI: mostrar conteo de ofertas activas (no de codigos)
+        const kpiVal = document.getElementById("offersKpiValue");
+        const kpiSub = document.getElementById("offersKpiSub");
+        if(kpiVal) kpiVal.textContent = String(rfOffersCache.length || "0");
+        if(kpiSub) kpiSub.textContent = rfOfferGroups.length
+          ? `${rfOfferGroups.length} codigo(s) con oferta. Click para ver.`
+          : "Aun no hay ofertas activas.";
+      }catch(e){
+        console.error(e);
+        const kpiVal = document.getElementById("offersKpiValue");
+        const kpiSub = document.getElementById("offersKpiSub");
+        if(kpiVal) kpiVal.textContent = "—";
+        if(kpiSub) kpiSub.textContent = "No pude cargar ofertas.";
+      }
+    }
+
+    function rfBindOffersKpi(){
+      const k = document.getElementById("kpiOffers");
+      if(!k) return;
+      const open = ()=> openOffersModal();
+      k.addEventListener("click", open);
+      k.addEventListener("keydown", (ev)=>{
+        if(ev.key==="Enter" || ev.key===" "){ ev.preventDefault(); open(); }
+      });
+    }
+
+    // Exponer funciones para el modal (onclick en HTML)
+    window.openOffersModal = openOffersModal;
+    window.closeOffersModal = closeOffersModal;
+    window.refreshOffersModal = refreshOffersModal;
+
+    function openOffersModal(){
+      const back = document.getElementById("offersBack");
+      if(!back) return;
+      back.style.display = "flex";
+      const q = document.getElementById("offersQ");
+      if(q) q.focus();
+      rfRenderOffersModal();
+    }
+    function closeOffersModal(){
+      const back = document.getElementById("offersBack");
+      if(back) back.style.display = "none";
+    }
+    async function refreshOffersModal(){
+      await rfLoadOffersForDashboard();
+      rfRenderOffersModal();
+    }
+
+    function rfSellerLabel(sellerId){
+      const p = rfOffersSellers[sellerId] || {};
+      const main = p.email || p.name || sellerId || "—";
+      const sub = p.email && p.name ? p.name : (p.name && !p.email ? p.name : "");
+      return { main, sub };
+    }
+
+    let rfSelectedOfferKey = null;
+
+    function rfRenderOffersModal(){
+      const meta = document.getElementById("offersMeta");
+      const codeList = document.getElementById("offersCodeList");
+      const detail = document.getElementById("offersDetailList");
+      const tag = document.getElementById("offersSelectedTag");
+      const q = String(document.getElementById("offersQ")?.value || "").trim().toLowerCase();
+
+      // eventos search
+      const qEl = document.getElementById("offersQ");
+      if(qEl && !qEl.dataset.wired){
+        qEl.dataset.wired="1";
+        qEl.addEventListener("input", ()=> rfRenderOffersModal());
+      }
+
+      let groups = rfOfferGroups.slice();
+
+      if(q){
+        groups = groups.filter(g=>{
+          // match por codigo, marca, pais, vendedor
+          if(String(g.original||"").toLowerCase().includes(q)) return true;
+          const anyBrand = g.offers.some(o=> String(o.brand||"").toLowerCase().includes(q));
+          if(anyBrand) return true;
+          const anyCountry = Array.from(g.countries).some(c=> String(c||"").toLowerCase().includes(q));
+          if(anyCountry) return true;
+          const anySeller = Array.from(g.sellers).some(id=>{
+            const p = rfOffersSellers[id] || {};
+            return String(p.email||"").toLowerCase().includes(q) ||
+                   String(p.name||"").toLowerCase().includes(q);
+          });
+          return anySeller;
+        });
+      }
+
+      if(meta){
+        const nOffers = rfOffersCache.length || 0;
+        meta.textContent = `${groups.length} codigo(s) | ${nOffers} oferta(s) activa(s)`;
+      }
+
+      if(codeList){
+        if(!groups.length){
+          codeList.innerHTML = `<div class="muted2">No hay ofertas para mostrar.</div>`;
+        }else{
+          codeList.innerHTML = groups.map(g=>{
+            const active = (rfSelectedOfferKey === g.key) ? "active" : "";
+            const cList = Array.from(g.countries).slice(0,3).join(", ");
+            const more = g.countries.size > 3 ? ` +${g.countries.size-3}` : "";
+            return `
+              <div class="listCard ${active}" onclick="window.__rfPickOfferCode('${g.key}')">
+                <div class="miniRow">
+                  <div style="min-width:0">
+                    <div style="font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${rfEsc(g.original || g.key)}</div>
+                    <div class="muted2" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                      ${rfEsc(g.offers.length)} oferta(s) • ${rfEsc(g.sellers.size)} vendedor(es)
+                    </div>
+                    <div class="muted2" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                      ${rfEsc(cList)}${rfEsc(more)}
+                    </div>
+                  </div>
+                  <span class="badge">${rfEsc(g.offers.length)}</span>
+                </div>
+              </div>
+            `;
+          }).join("");
+        }
+      }
+
+      // detalle: si no hay seleccionado, mantener placeholder
+      if(!rfSelectedOfferKey || !groups.some(g=>g.key===rfSelectedOfferKey)){
+        rfSelectedOfferKey = groups[0]?.key || null;
+      }
+
+      if(!rfSelectedOfferKey){
+        if(tag) tag.textContent = "Selecciona un codigo";
+        if(detail) detail.innerHTML = `<div class="muted2">—</div>`;
+        return;
+      }
+
+      const g = groups.find(x=>x.key===rfSelectedOfferKey) || rfOfferGroups.find(x=>x.key===rfSelectedOfferKey);
+      if(!g){
+        if(tag) tag.textContent = "Selecciona un codigo";
+        if(detail) detail.innerHTML = `<div class="muted2">—</div>`;
+        return;
+      }
+
+      if(tag){
+        const ctry = Array.from(g.countries).slice(0,5).join(", ");
+        const more = g.countries.size > 5 ? ` +${g.countries.size-5}` : "";
+        tag.textContent = `${g.original || g.key} • ${g.offers.length} oferta(s) • ${g.sellers.size} vendedor(es) • ${ctry}${more}`;
+      }
+
+      // ordenar ofertas: precio asc, luego fecha desc
+      const offers = g.offers.slice().sort((a,b)=>{
+        const pa = Number(a.price), pb = Number(b.price);
+        if(Number.isFinite(pa) && Number.isFinite(pb) && pa!==pb) return pa-pb;
+        return new Date(b.created_at||0).getTime() - new Date(a.created_at||0).getTime();
+      });
+
+      if(detail){
+        detail.innerHTML = offers.map(o=>{
+          const s = rfSellerLabel(o.seller_id);
+          const exp = o.expires_at ? new Date(o.expires_at).toLocaleString() : "—";
+          return `
+            <div class="listCard" style="cursor:default">
+              <div class="miniRow">
+                <div style="min-width:0">
+                  <div style="font-weight:900">${rfEsc(o.brand || "—")} • ${rfEsc(rfMoney(o.price, o.currency))}</div>
+                  <div class="muted2">Pais: <b>${rfEsc(o.country || "—")}</b> • Expira: ${rfEsc(exp)}</div>
+                  <div class="muted2">Vendedor: <b>${rfEsc(s.main)}</b>${s.sub ? ` <span style="opacity:.8">(${rfEsc(s.sub)})</span>` : ""}</div>
+                </div>
+                <span class="badge">${rfEsc(o.country || "—")}</span>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+    }
+
+    // helper global para onclick (evita inline con module scope)
+    window.__rfPickOfferCode = function(key){
+      rfSelectedOfferKey = key;
+      rfRenderOffersModal();
+    };
+
+    async function rfInitOffersDashboard(){
+      rfBindOffersKpi();
+      await rfLoadOffersForDashboard();
+    }
+
+async function init(){
       $("y").textContent = new Date().getFullYear();
 
       // contador demo
@@ -2768,12 +3062,49 @@ if(role.includes("admin")){
 
       // ✅ KPI Busquedas (hoy) Radar-style (Top Modelos)
       await rfLoadTopModelsToday(false);
+      await rfInitOffersDashboard();
     }
 
     init();
   </script>
+
+  <!-- Modal: Ofertas disponibles (Dashboard) -->
+  <div class="modalBack" id="offersBack" onclick="if(event.target.id==='offersBack') closeOffersModal()">
+    <div class="modal modalWide">
+      <div class="modalHead">
+        <b>🔥 Ofertas disponibles</b>
+        <div class="row" style="gap:8px; align-items:center;">
+          <input id="offersQ" class="inp" placeholder="Buscar codigo / marca / pais / vendedor..." style="min-width:280px;"/>
+          <button class="btn btnGhost" onclick="refreshOffersModal()">Actualizar</button>
+          <button class="btn btnPrimary" onclick="closeOffersModal()">Cerrar</button>
+        </div>
+      </div>
+      <div class="modalBody">
+        <div class="miniRow" style="margin-bottom:10px;">
+          <div class="muted2" id="offersMeta">—</div>
+          <div class="muted2">Tip: agrupa por <b>codigo OEM</b>. Al entrar veras todos los vendedores y paises.</div>
+        </div>
+
+        <div class="modalGrid2">
+          <div>
+            <div class="muted2" style="font-weight:900; margin-bottom:8px">Codigos con oferta</div>
+            <div id="offersCodeList" style="max-height:520px; overflow:auto;"></div>
+          </div>
+
+          <div>
+            <div class="muted2" style="font-weight:900; margin-bottom:8px">Ofertas del codigo</div>
+            <div class="tag" id="offersSelectedTag" style="margin-bottom:10px;">Selecciona un codigo</div>
+            <div id="offersDetailList" style="max-height:520px; overflow:auto;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
+
+
 
 
 
