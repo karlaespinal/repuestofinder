@@ -597,12 +597,13 @@
       </div>
     </div>
   </div>
+</div>
 
 <!-- Modal: Artículos + Chats -->
 <div class="modalBack" id="artBack" onclick="if(event.target.id==='artBack') closeArticleModal()">
   <div class="modal modalWide">
     <div class="modalHead">
-      <b>📦 Artículos con chats</b>
+      <b>🗂️ Bandeja de chats (por artículo)</b>
       <div class="row">
         <button class="btn btnGhost btnSmall" onclick="showAllChatsInModal()">Ver todos</button>
         <button class="btn btnGhost btnSmall" onclick="closeArticleModal()">Cerrar</button>
@@ -611,8 +612,8 @@
     <div class="modalBody">
       <div class="row" style="justify-content:space-between; align-items:flex-end; margin-bottom:10px">
         <div class="field" style="flex:1; min-width:220px">
-          <label>Buscar artículo</label>
-          <input class="inp" id="artQ" oninput="renderArticleModal()" placeholder="OEM / marca / país"/>
+          <label>Buscar (OEM / marca / país)</label>
+          <input class="inp" id="artQ" oninput="renderArticleModal()" placeholder="Ej: A276 / MERCEDES / Republica..."/>
         </div>
         <span class="muted2" id="artMeta">—</span>
       </div>
@@ -620,23 +621,26 @@
       <div class="modalGrid2">
         <div>
           <div class="muted2" style="font-weight:900; margin-bottom:8px">Artículos</div>
-          <div id="artList" style="max-height:420px; overflow:auto;"></div>
+          <div id="artList" style="max-height:460px; overflow:auto;"></div>
         </div>
 
         <div>
           <div class="muted2" style="font-weight:900; margin-bottom:8px">Chats del artículo</div>
           <div class="pill" id="artSelectedTitle" style="margin-bottom:10px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Selecciona un artículo</div>
-          <div id="artChats" style="max-height:420px; overflow:auto;"></div>
+          <div id="artChats" style="max-height:460px; overflow:auto;"></div>
         </div>
+      </div>
+
+      <div class="dividerLine"></div>
+      <div class="muted2">
+        Tip: al hacer clic en un chat aquí, se selecciona automáticamente abajo para que respondas en el panel principal.
       </div>
     </div>
   </div>
 </div>
 
-
-</div>
-
 <script type="module">
+
   import { supabase } from "./assets/supabaseClient.js";
 
   const OFFERS_TABLE = "offers";
@@ -1343,64 +1347,9 @@ const priceRaw = String($("fPrice").value||"").trim().replace(/,/g,".");
         ? `Tienes <b>${list.length}</b> chat(s). Abre la <b>Bandeja de chats</b> para seleccionar el que quieres responder.`
         : `No hay chats.`;
     }
-
-    // Vista compacta (4 recientes) para no llenar la columna
-    if(quick){
-      if(!list.length){
-        quick.innerHTML = '';
-      }else{
-        const top = list.slice(0, 4);
-        quick.innerHTML = top.map(c=>{
-          const o = c.offer || {};
-          const title = `${o.original || "—"} • ${o.brand || "—"}`;
-          const sub = `${money(o.price,o.currency)} • ${o.country || ""}`.trim();
-          const when = new Date(c.created_at).toLocaleString();
-          const active = (selectedChat && selectedChat.id===c.id) ? "active" : "";
-          return `
-            <div class="listCard ${active}" onclick="selectChat('${c.id}')">
-              <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start">
-                <div style="min-width:0">
-                  <div style="font-weight:900; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(title)}</div>
-                  <div class="muted2" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(sub)}</div>
-                  <div class="tdSmall">Chat: ${escapeHtml(when)}</div>
-                </div>
-                <span class="badge">Abrir</span>
-              </div>
-            </div>
-          `;
-        }).join("");
-
-        // hint adicional
-        if(list.length > 4){
-          quick.innerHTML += `<div class="muted2" style="text-align:center; margin-top:6px;">+${list.length-4} más (ver en Bandeja)</div>`;
-        }
-      }
-    }
-
-    // Si algún día quieres volver a la lista completa, quita el .hidden del #chatList
-    if(inlineEnabled){
-      if(list.length===0){
-        inlineBox.innerHTML = '<div class="muted2">No hay chats.</div>';
-        return;
-      }
-
-      inlineBox.innerHTML = list.map(c=>{
-        const o = c.offer || {};
-        const title = `${o.original || "—"} • ${o.brand || "—"}`;
-        const sub = `${money(o.price,o.currency)} • ${o.country || ""}`.trim();
-        const active = (selectedChat && selectedChat.id===c.id) ? "style=\'border-color:rgba(59,130,246,.45)\'" : "";
-        return `
-          <div class="card" style="box-shadow:none; background:white; border-radius:14px; margin-bottom:8px; border:1px solid rgba(0,0,0,.08); cursor:pointer;" ${active}
-               onclick="selectChat('${c.id}')">
-            <div style="padding:10px 12px">
-              <div style="font-weight:900; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(title)}</div>
-              <div class="muted2" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(sub)}</div>
-              <div class="tdSmall">Chat: ${escapeHtml(new Date(c.created_at).toLocaleString())}</div>
-            </div>
-          </div>
-        `;
-      }).join("");
-    }
+    // Mantener la columna limpia: NO mostramos la lista de chats aqui (solo en el modal).
+    if(quick) quick.innerHTML = "";
+    if(inlineBox) inlineBox.innerHTML = "";
   }
 
   window.openChatsByOffer = function(offerId){
@@ -1818,6 +1767,7 @@ const desc = r.desc;
 
 </body>
 </html>
+
 
 
 
