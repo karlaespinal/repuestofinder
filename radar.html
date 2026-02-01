@@ -212,6 +212,26 @@
       gap:6px;
       margin:2px 4px 2px 0;
     }
+
+    .badgeOffer{
+      font-size:11px;
+      font-weight:900;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(16,185,129,.25);
+      background:rgba(16,185,129,.10);
+      color:#065f46;
+      white-space:nowrap;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+    .badgeOffer.off0{
+      border-color:rgba(148,163,184,.55);
+      background:rgba(148,163,184,.14);
+      color:rgba(30,41,59,.85);
+    }
+
     .bOk{ background:rgba(16,185,129,.10); color:var(--ok); border-color:rgba(16,185,129,.25); }
     .bBad{ background:rgba(239,68,68,.10); color:var(--bad); border-color:rgba(239,68,68,.25); }
     .bWarn{ background:rgba(245,158,11,.10); color:var(--warn); border-color:rgba(245,158,11,.25); }
@@ -330,22 +350,58 @@
         </select>
 
         <select id="gl" class="inp select" title="País (Google gl)">
-          <option value="DO">🇩🇴 República Dominicana (DO)</option>
+          <option value="DO" selected>🇩🇴 República Dominicana (DO)</option>
           <option value="US">🇺🇸 Estados Unidos (US)</option>
           <option value="MX">🇲🇽 México (MX)</option>
+          <option value="CA">🇨🇦 Canadá (CA)</option>
+          <option value="ES">🇪🇸 España (ES)</option>
           <option value="CO">🇨🇴 Colombia (CO)</option>
           <option value="CL">🇨🇱 Chile (CL)</option>
           <option value="PE">🇵🇪 Perú (PE)</option>
           <option value="AR">🇦🇷 Argentina (AR)</option>
           <option value="BR">🇧🇷 Brasil (BR)</option>
-          <option value="ES">🇪🇸 España (ES)</option>
-          <option value="CA">🇨🇦 Canadá (CA)</option>
+          <option value="EC">🇪🇨 Ecuador (EC)</option>
+          <option value="VE">🇻🇪 Venezuela (VE)</option>
+          <option value="BO">🇧🇴 Bolivia (BO)</option>
+          <option value="PY">🇵🇾 Paraguay (PY)</option>
+          <option value="UY">🇺🇾 Uruguay (UY)</option>
+          <option value="PA">🇵🇦 Panamá (PA)</option>
+          <option value="CR">🇨🇷 Costa Rica (CR)</option>
+          <option value="GT">🇬🇹 Guatemala (GT)</option>
+          <option value="SV">🇸🇻 El Salvador (SV)</option>
+          <option value="HN">🇭🇳 Honduras (HN)</option>
+          <option value="NI">🇳🇮 Nicaragua (NI)</option>
+          <option value="PR">🇵🇷 Puerto Rico (PR)</option>
+          <option value="JM">🇯🇲 Jamaica (JM)</option>
+          <option value="FR">🇫🇷 Francia (FR)</option>
+          <option value="DE">🇩🇪 Alemania (DE)</option>
+          <option value="IT">🇮🇹 Italia (IT)</option>
+          <option value="GB">🇬🇧 Reino Unido (GB)</option>
+          <option value="NL">🇳🇱 Países Bajos (NL)</option>
+          <option value="SE">🇸🇪 Suecia (SE)</option>
+          <option value="CH">🇨🇭 Suiza (CH)</option>
+          <option value="AU">🇦🇺 Australia (AU)</option>
+          <option value="JP">🇯🇵 Japón (JP)</option>
+          <option value="KR">🇰🇷 Corea del Sur (KR)</option>
         </select>
 
         <select id="hl" class="inp select" title="Idioma (Google hl)">
           <option value="es" selected>Español (es)</option>
           <option value="en">English (en)</option>
           <option value="pt">Português (pt)</option>
+          <option value="fr">Français (fr)</option>
+          <option value="de">Deutsch (de)</option>
+          <option value="it">Italiano (it)</option>
+          <option value="nl">Nederlands (nl)</option>
+          <option value="sv">Svenska (sv)</option>
+          <option value="tr">Türkçe (tr)</option>
+          <option value="ru">Русский (ru)</option>
+          <option value="ar">العربية (ar)</option>
+          <option value="hi">हिन्दी (hi)</option>
+          <option value="ja">日本語 (ja)</option>
+          <option value="ko">한국어 (ko)</option>
+          <option value="zh-CN">中文(简体) (zh-CN)</option>
+          <option value="zh-TW">中文(繁體) (zh-TW)</option>
         </select>
 
         <input id="q" class="inp text" placeholder="Filtrar / query (ej: corolla 2014 2017 brake pads)" />
@@ -401,7 +457,7 @@
         <div class="tableWrap compact">
           <table id="tTop">
             <thead>
-              <tr><th>Query</th><th>Línea</th><th>Veces</th><th>Estado</th></tr>
+              <tr><th>Query</th><th>Línea</th><th>Veces</th><th>Estado</th><th>Oferta disponible</th></tr>
             </thead>
             <tbody></tbody>
           </table>
@@ -525,7 +581,60 @@
       return d.toISOString();
     }
     function esc(s){
-      return String(s||"").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
+      return String(s||"").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }
+    const RF_OFFERS_TABLE = "offers";
+
+    function normCode(v){
+      return String(v||"").trim().toUpperCase().replace(/\s+/g,"").replace(/[^A-Z0-9]/g,"");
+    }
+
+    // Devuelve un map { normCode: { offers: nOffers, sellers: nSellers } } solo para ofertas activas (no expiradas)
+    async function fetchOfferAvailability(normCodes){
+      const out = new Map();
+      const list = Array.from(new Set((normCodes||[]).filter(Boolean)));
+      if(!list.length) return out;
+
+      // limitar tamaño por seguridad (Supabase in() muy grande puede fallar)
+      const chunkSize = 150;
+      const nowIso = new Date().toISOString();
+
+      for(let i=0; i<list.length; i+=chunkSize){
+        const chunk = list.slice(i, i+chunkSize);
+        try{
+          const { data, error } = await supabase
+            .from(RF_OFFERS_TABLE)
+            .select("original_norm,seller_id")
+            .gt("expires_at", nowIso)
+            .in("original_norm", chunk)
+            .limit(5000);
+          if(error) throw error;
+
+          for(const row of (data||[])){
+            const key = row.original_norm || "";
+            if(!key) continue;
+            if(!out.has(key)) out.set(key, { offers:0, sellers:new Set() });
+            const cur = out.get(key);
+            cur.offers++;
+            if(row.seller_id) cur.sellers.add(row.seller_id);
+          }
+        }catch(_){
+          // si falla, devolvemos lo que tengamos (silencioso)
+        }
+      }
+
+      // convertir sellers Set -> count
+      for(const [k,v] of out){
+        out.set(k, { offers: v.offers, sellers: v.sellers.size });
+      }
+      return out;
+    }
+
+    function offerBadge(nSellers){
+      const n = Number(nSellers||0);
+      if(n>0) return `<span class="badgeOffer">✅ ${n}</span>`;
+      return `<span class="badgeOffer off0">—</span>`;
+    }
+[c]));
     }
     function badgeStatus(result_status){
       if(result_status === "found") return `<span class="badge bOk">found</span>`;
@@ -680,14 +789,26 @@
       rows = filterRows(rows);
 
       const tbody = $("tTop").querySelector("tbody");
-      tbody.innerHTML = rows.slice(0,20).map(r=>`
+      const topRows = rows.slice(0,20);
+
+      // Oferta disponible (cantidad de vendedores con oferta activa para ese OEM)
+      const norms = topRows.map(r=>normCode(r.query_raw)).filter(Boolean);
+      const offerMap = await fetchOfferAvailability(norms);
+
+      tbody.innerHTML = topRows.map(r=>{
+        const key = normCode(r.query_raw);
+        const info = offerMap.get(key);
+        const sellers = info ? info.sellers : 0;
+        return `
         <tr>
           <td>${esc(r.query_raw)}</td>
           <td><span class="badge">${esc(r.category || "—")}</span></td>
           <td><b>${r.n}</b></td>
           <td>${badgeStatus(r.last_status)}</td>
+          <td>${offerBadge(sellers)}</td>
         </tr>
-      `).join("") || `<tr><td colspan="4" class="mut">Sin datos para el filtro.</td></tr>`;
+        `;
+      }).join("") || `<tr><td colspan="5" class="mut">Sin datos para el filtro.</td></tr>`;
 
       return rows;
     }
