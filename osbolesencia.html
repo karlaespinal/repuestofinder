@@ -317,30 +317,36 @@
   .alignGroup{
     display:inline-flex;
     align-items:center;
-    border:1px solid rgba(0,0,0,.08);
-    background:rgba(255,255,255,.75);
-    border-radius:999px;
-    overflow:hidden;
-    margin-bottom:2px;
+    justify-content:center;
+    gap:2px;
+    padding:2px;
+    border:1px solid rgba(0,0,0,.10);
+    background:rgba(255,255,255,.90);
+    border-radius:14px; /* mas "encerrado" y estetico */
+    width:fit-content;
+    max-width:100%;
   }
   .alignBtn{
     border:0;
     background:transparent;
-    padding:8px 10px;
+    padding:6px 8px;
+    border-radius:12px;
     cursor:pointer;
     display:inline-flex;
     align-items:center;
-    gap:6px;
+    justify-content:center;
     color:var(--ink);
     font-weight:900;
+    line-height:1;
+    min-width:34px;
+    min-height:30px;
   }
   .alignBtn:hover{ background:rgba(2,6,23,.04); }
   .alignBtn.active{
     background:rgba(59,130,246,.14);
     color:var(--pri2);
   }
-  .alignBtn svg{ width:16px; height:16px; opacity:.85; }
-
+  .alignBtn svg{ width:16px; height:16px; opacity:.90; }
 </style>
 </head>
 
@@ -780,6 +786,7 @@
 
   let me = null;
   let myRole = null; // "admin" | null
+  let myCompanyName = null;
   let offersCache = [];
   let chatsCache = [];
   let selectedChat = null; // {id, offer_id,...}
@@ -1167,13 +1174,17 @@ window.renderArticleModal = function(){
       return;
     }
 
-    $("who").textContent = me ? (me.email || me.id || "Usuario") : "Demo";
+    $("who").textContent = me ? (me.email || me.id || "Usuario") : "Demo"; // se reemplaza abajo cuando leemos profiles
 
     // rol (si existe profiles)
     try{
       if(me){
-        const { data } = await supabase.from("profiles").select("role").eq("id", me.id).maybeSingle();
+        const { data } = await supabase.from("profiles").select("role, company_name").eq("id", me.id).maybeSingle();
         myRole = (data?.role || null);
+        myCompanyName = (data?.company_name || null);
+        // Mostrar Company Name arriba (si existe)
+        const shown = String(myCompanyName || "").trim() || (me.email || me.id || "Usuario");
+        $("who").textContent = shown;
       }
     }catch(_){}
 
