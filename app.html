@@ -459,18 +459,18 @@
     return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
   }
 
+  
   function normalizeSpoken_(t){
     let s = String(t || "").toLowerCase();
 
-    // limpiar relleno comun
-    s = s.replace(/\b(quiero ver|quiero buscar|busca|buscar|search|encuentra|dame|mu[eé]strame)\b/g, (m)=>m); // dejamos "buscar" para comando
-    s = s.replace(/[.,;:!?]/g, " ");
+    // limpiar puntuacion / relleno
+    s = s.replace(/[，,.;:!?]/g, " ");
     s = s.replace(/\s+/g, " ").trim();
 
-    // guion
+    // convertir "guion" -> "-"
     s = s.replace(/\b(gui[oó]n|guion|dash)\b/g, "-");
 
-    // convertir palabras numericas basicas (0-20 y decenas comunes)
+    // numeros en palabras (basico)
     const map = {
       "cero":"0","uno":"1","un":"1","una":"1","dos":"2","tres":"3","cuatro":"4","cinco":"5",
       "seis":"6","siete":"7","ocho":"8","nueve":"9","diez":"10","once":"11","doce":"12",
@@ -480,75 +480,94 @@
     };
     s = s.split(" ").map(w => map[w] ?? w).join(" ");
 
-    // juntar secuencias de numeros separados por espacios para formar codigo
-    // ej: "11 12 42" => "111242"
-    s = s.replace(/\b(\d)\s+(\d)\b/g, "$1$2");
-    s = s.replace(/\b(\d{2})\s+(\d{2})\b/g, "$1$2");
-    // repetir por si quedaron mas
-    s = s.replace(/\b(\d)\s+(\d)\b/g, "$1$2");
+    // normalizar espacios alrededor de guiones
+    s = s.replace(/\s*-\s*/g, "-");
 
-    return s;
+    // 🔥 CLAVE: unir TODOS los numeros separados por espacios (sin limite)
+    // ej: "11 12 42" => "111242"
+    s = s.replace(/(?<=\d)\s+(?=\d)/g, "");
+
+    // unir letra+numero con espacios (ej: "m 276" => "m276")
+    s = s.replace(/(?<=[a-z])\s+(?=\d)/g, "");
+    s = s.replace(/(?<=\d)\s+(?=[a-z])/g, "");
+
+    return s.trim();
   }
+
+
 
   function parseVoiceCommand_(raw){
     const text = normalizeSpoken_(raw);
 
     const hasBuscar = /\b(buscar|busca|search)\b/.test(text);
 
-    // 1) intentar detectar un codigo "tipo OEM" (muchos digitos o alfanumerico con guion)
-    // aceptamos: "55300-3x100", "111242", "a 123 b" etc (simplificado)
-    // Preferimos el primer token que tenga digitos.
-    const tokens = text.split(" ").filter(Boolean);
+    // 🔎 Detectores para decidir si es "vehicular" o "codigo"
+    const hasYear = /\b(19[5-9]\d|20[0-4]\d|2050)\b/.test(text);
 
-    // reconstruir tokens con '-' pegados
-    // (si alguien dice "55300 - 3x100")
-    let joined = tokens.join(" ").replace(/\s*-\s*/g,"-");
+    const brands = ["honda","hyundai","mercedes","toyota","kia","bmw","nissan","mazda","ford","chevrolet","vw","volkswagen","audi","jeep","lexus","acura","mitsubishi","suzuki"];
+    const hasBrand = brands.some(b => text.includes(b));
 
-    // candidato de codigo: secuencia larga alfanumerica con opcional guion
-    const codeMatch = joined.match(/([a-z0-9]{3,}(?:-[a-z0-9]{2,})?)/i);
+    const hasVehicularHints = /\b(vehiculo|vehículo|modelo|motor|descripcion|descripci[oó]n)\b/.test(text);
 
-    // 2) detectar año (4 digitos razonables)
-    const yearMatch = joined.match(/\b(19[5-9]\d|20[0-4]\d|2050)\b/);
+    // candidato codigo: debe tener DIGITOS y ser principalmente alfanumerico/guion
+    const codeLike = text.match(/([a-z0-9]+(?:-[a-z0-9]+)?)/i);
+    const codeCandidate = codeLike ? codeLike[1] : "";
 
-    // Heuristica:
-    // - Si hay año => interpretamos como filtro vehicular (vehiculo + año + modelo...)
-    // - Si NO hay año => interpretamos como busqueda por codigo (si hay codeMatch)
-    if(yearMatch){
-      const year = yearMatch[1];
-      const before = joined.slice(0, yearMatch.index).trim();
-      const after = joined.slice((yearMatch.index || 0) + year.length).trim();
+    const digitCount = (text.match(/\d/g) || []).length;
+    const wordCount = text.split(/\s+/).filter(Boolean).length;
 
-      // vehiculo: ultimo token "de marca" antes del año (o todo antes)
-      let vehiculo = before;
-      vehiculo = vehiculo.replace(/\b(quiero|ver|buscar|busca|search|por|favor|el|la|los|las)\b/g," ").replace(/\s+/g," ").trim();
-      if(!vehiculo) vehiculo = ""; // opcional
+    // ✅ 1) Si hay año o marca o pistas => vehicular SIEMPRE (usa el buscador de abajo)
+    if(hasYear || hasBrand || hasVehicularHints){
+      const yearMatch = text.match(/\b(19[5-9]\d|20[0-4]\d|2050)\b/);
+      const year = yearMatch ? yearMatch[1] : "";
 
-      // modelo: 1-2 palabras al inicio de "after"
-      let modelo = "";
-      let motor = "";
-      let desc = "";
+      let before = text;
+      let after = "";
 
-      // si dicen "motor m276" o "motor 1.6"
-      const motorMatch = after.match(/\bmotor\s+([a-z0-9.]+)/i);
-      if(motorMatch) motor = motorMatch[1];
-
-      // descripcion: si aparecen palabras clave comunes
-      const descKeywords = ["alternador","filtro","bomba","radiador","pastilla","disco","amortiguador","sensor","bobina","bujia","terminal","rotula","empaque","junta","cadena","termostato"];
-      for(const kw of descKeywords){
-        if(after.includes(kw)){ desc = kw; break; }
+      if(yearMatch){
+        const idx = yearMatch.index || 0;
+        before = text.slice(0, idx).trim();
+        after  = text.slice(idx + year.length).trim();
       }
 
-      // modelo: tomamos las primeras 2 palabras que no sean "buscar/busca/motor/descripcion"
-      const afterClean = after
-        .replace(/\b(buscar|busca|search)\b/g," ")
-        .replace(/\bmotor\b/g," ")
+      let vehiculo = before
+        .replace(/\b(quiero|ver|buscar|busca|search|por|favor|el|la|los|las|un|una|me)\b/g," ")
+        .replace(/\s+/g," ")
         .trim();
 
-      const afterTokens = afterClean.split(/\s+/).filter(Boolean);
-      if(afterTokens.length){
-        // si primer token parece ser un motor (tiene punto o empieza con letra+digito), lo dejamos para motor si no habia
-        if(!motor && /(\d\.\d|^[a-z]+\d+)/i.test(afterTokens[0])) motor = afterTokens[0];
-        else modelo = afterTokens.slice(0,2).join(" ");
+      const base = (after || text)
+        .replace(/\b(quiero|ver|buscar|busca|search|por|favor)\b/g," ")
+        .trim();
+
+      let motor = "";
+      const motorMatch = base.match(/\bmotor\s+([a-z0-9.]+)/i);
+      if(motorMatch) motor = motorMatch[1];
+
+      let desc = "";
+      const descKeywords = ["alternador","filtro","bomba","radiador","pastilla","disco","amortiguador","sensor","bobina","bujia","terminal","rotula","empaque","junta","cadena","termostato"];
+      for(const kw of descKeywords){
+        if(base.includes(kw)){ desc = kw; break; }
+      }
+
+      let modelo = "";
+      let candidateText = after || "";
+      if(!candidateText){
+        candidateText = text.replace(vehiculo, "").trim();
+      }
+      candidateText = candidateText
+        .replace(/\b(buscar|busca|search)\b/g," ")
+        .replace(/\bmotor\b/g," ")
+        .replace(/\s+/g," ")
+        .trim();
+
+      const toks = candidateText.split(/\s+/).filter(Boolean);
+
+      if(!motor && toks[0] && /(\d\.\d|^[a-z]+\d+)/i.test(toks[0])){
+        motor = toks[0];
+        toks.shift();
+      }
+      if(toks.length){
+        modelo = toks.slice(0,2).join(" ");
       }
 
       return {
@@ -558,12 +577,22 @@
       };
     }
 
-    if(codeMatch){
-      return { type:"codigo", hasBuscar, code: codeMatch[1] };
+    // ✅ 2) Si NO parece vehicular, tratamos como CODIGO (buscador de arriba)
+    const looksLikeCode =
+      (digitCount >= 4) &&
+      (
+        /^[a-z0-9]+(-[a-z0-9]+)?$/i.test(codeCandidate) ||
+        /-/.test(codeCandidate)
+      ) &&
+      !(wordCount >= 3 && digitCount < 5);
+
+    if(looksLikeCode && codeCandidate){
+      return { type:"codigo", hasBuscar, code: codeCandidate };
     }
 
     return { type:"unknown", hasBuscar, text };
   }
+
 
   let recog_ = null;
   let isListening_ = false;
@@ -2110,44 +2139,5 @@ window.limpiar = function(){
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
