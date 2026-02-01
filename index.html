@@ -2912,20 +2912,6 @@ if(role.includes("admin")){
       meId: null
     };
 
-    function rfEsc(v){ return escapeHtml(String(v ?? "")); }
-
-    function rfMoney(price, currency){
-      if(price === null || price === undefined || price === "") return "—";
-      const n = Number(price);
-      const cur = String(currency || "USD").toUpperCase();
-      try{
-        if(Number.isFinite(n)){
-          return new Intl.NumberFormat("es-DO", { style:"currency", currency: cur, maximumFractionDigits: 2 }).format(n);
-        }
-      }catch(_){}
-      return `${price} ${cur}`.trim();
-    }
-
 
 
     function rfBuyerLabel(buyerId){
@@ -4529,49 +4515,3 @@ function rfPickVoice(voices, preferGoogleES=true){
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
