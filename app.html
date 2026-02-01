@@ -663,12 +663,14 @@
       if(codeNow){
         document.getElementById("code").value = codeNow;
         toast_("Encontrando codigo: " + codeNow);
-        await window.buscar();
+        const btn = document.querySelector('#btnBuscarCodigo') || document.querySelector('button[onclick*="buscar"]');
+        if(btn){ btn.click(); } else { await window.buscar(); }
         return;
       }
       if(fVeh || fAnio || fMod || fMot || fDes){
         toast_("Encontrando por filtros…");
-        await window.aplicarFiltroVehicular();
+        const btn2 = document.querySelector('#btnBuscarFiltro') || document.querySelector('button[onclick*="aplicarFiltroVehicular"]');
+        if(btn2){ btn2.click(); } else { await window.aplicarFiltroVehicular(); }
         return;
       }
       toast_("Di un codigo o un filtro primero, luego di 'encontrar'.");
@@ -681,7 +683,8 @@
         document.getElementById("code").value = code;
         if(parsed.hasEncontrar){
           toast_("Encontrando codigo: " + code);
-          await window.buscar();
+          const btn = document.querySelector('#btnBuscarCodigo') || document.querySelector('button[onclick*="buscar"]');
+        if(btn){ btn.click(); } else { await window.buscar(); }
         }else{
           toast_("Codigo listo: " + code + ". Ahora di 'encontrar'.");
         }
@@ -700,7 +703,8 @@
       const resumen = [f.vehiculo, f.anio, f.modelo].filter(Boolean).join(" ");
       if(parsed.hasEncontrar){
         toast_("Encontrando por filtros: " + resumen);
-        await window.aplicarFiltroVehicular();
+        const btn2 = document.querySelector('#btnBuscarFiltro') || document.querySelector('button[onclick*="aplicarFiltroVehicular"]');
+        if(btn2){ btn2.click(); } else { await window.aplicarFiltroVehicular(); }
       }else{
         toast_("Filtros listos: " + resumen + ". Ahora di 'encontrar'.");
       }
@@ -713,7 +717,8 @@
         document.getElementById("fDescripcion").value = desc;
         if(parsed.hasEncontrar){
           toast_("Encontrando por descripcion: " + desc);
-          await window.aplicarFiltroVehicular();
+          const btn2 = document.querySelector('#btnBuscarFiltro') || document.querySelector('button[onclick*="aplicarFiltroVehicular"]');
+        if(btn2){ btn2.click(); } else { await window.aplicarFiltroVehicular(); }
         }else{
           toast_("Descripcion lista: " + desc + ". Ahora di 'encontrar'.");
         }
@@ -2224,6 +2229,8 @@ window.limpiar = function(){
 </script>
 </body>
 </html>
+
+
 
 
 
