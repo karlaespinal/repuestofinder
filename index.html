@@ -225,6 +225,8 @@
       padding:12px;
       background:#fff;
     }
+    .kpi.disabled{opacity:.65}
+    .kpi.disabled .kpiHint{display:none}
     .kpi .t{font-size:12px;color:#94a3b8;font-weight:900;text-transform:uppercase;letter-spacing:.4px}
     .kpi .v{font-size:18px;font-weight:900;margin-top:6px}
     .kpi .s{font-size:12px;color:var(--mut);margin-top:6px;line-height:1.35}
@@ -1995,6 +1997,29 @@ if(role.includes("admin")){
       if(btnDemo)   btnDemo.style.display   = user ? "none" : "";
 
       paint();
+      // 🔒 KPI "Busquedas (hoy)" solo con sesion
+      rfApplySearchTodayAccess_(!!user);
+    }
+
+    function rfApplySearchTodayAccess_(logged){
+      const card = $("kpiSearchToday");
+      const v = $("kpiSearchTodayValue");
+      const sub = $("kpiSearchTodaySub");
+      if(!card || !v || !sub) return;
+
+      if(!logged){
+        // ocultar informacion y bloquear click
+        v.textContent = "—";
+        sub.textContent = "Inicia sesion para ver articulos buscados hoy.";
+        card.classList.add("disabled");
+        card.style.pointerEvents = "auto";
+        card.onclick = ()=> openAuth();
+        card.onkeydown = (ev)=>{ if(ev.key==="Enter" || ev.key===" "){ ev.preventDefault(); openAuth(); } };
+      }else{
+        card.classList.remove("disabled");
+        card.onclick = ()=> openTodayModelsModal();
+        card.onkeydown = (ev)=>{ if(ev.key==="Enter" || ev.key===" "){ ev.preventDefault(); openTodayModelsModal(); } };
+      }
     }
 
 
@@ -2752,6 +2777,13 @@ if(role.includes("admin")){
 
     // abrir/cerrar modal principal
     window.openTodayModelsModal = async function(){
+      const { data: ses } = await supabase.auth.getSession();
+      const user = ses?.session?.user;
+      if(!user){
+        setMsg($("topMsg"), "Inicia sesion para ver las busquedas de hoy.", true);
+        openAuth();
+        return;
+      }
       openModal("todayModelsBack");
       await rfLoadTopModelsToday(false);
       await rfInitOffersDashboard();
@@ -2840,12 +2872,12 @@ if(role.includes("admin")){
           try{
             const { data: profs } = await supabase
               .from("profiles")
-              .select("id,email,full_name,name,username")
+              .select("id,company_name,email,full_name,name,username")
               .in("id", sellerIds)
               .limit(1000);
             (profs||[]).forEach(p=>{
               const nm = p.full_name || p.name || p.username || null;
-              rfOffersSellers[p.id] = { email: p.email || null, name: nm };
+              rfOffersSellers[p.id] = { company_name: p.company_name || null, email: p.email || null, name: nm };
             });
           }catch(_){}
         }
@@ -3293,8 +3325,8 @@ if(role.includes("admin")){
 
     function rfSellerLabel(sellerId){
       const p = rfOffersSellers[sellerId] || {};
-      const main = p.email || p.name || sellerId || "—";
-      const sub = p.email && p.name ? p.name : (p.name && !p.email ? p.name : "");
+      const main = p.company_name || p.name || p.email || sellerId || "—";
+      const sub  = p.company_name && (p.name || p.email) ? (p.name || p.email) : (p.name && p.email ? p.email : "");
       return { main, sub };
     }
 
@@ -3474,8 +3506,14 @@ async function init(){
       // ✅ noticias del dia (ticker)
       await initNewsTicker();
 
-      // ✅ KPI Busquedas (hoy) Radar-style (Top Modelos)
-      await rfLoadTopModelsToday(false);
+      // ✅ KPI Busquedas (hoy) solo con sesion
+      if(user){
+        await rfLoadTopModelsToday(false);
+      }else{
+        // asegurar que no muestre datos si no hay sesion
+        try{ rfApplySearchTodayAccess_(false); }catch(_){}
+      }
+      // ✅ Ofertas disponibles y Mensajes recibidos (publicos)
       await rfInitOffersDashboard();
       await rfInitMsgsDashboard();
     }
@@ -4515,3 +4553,5 @@ function rfPickVoice(voices, preferGoogleES=true){
 
 </body>
 </html>
+
+
