@@ -1432,13 +1432,9 @@
     // Config de voz (guardada en localStorage)
     const RF_VOICE_SETTINGS_KEY = "rf_voice_settings_v1";
     const RF_VOICE_GREET_KEY = "rf_voice_greet_last_v1";
-    // Saludo SOLO UNA VEZ (no vuelve a saludar al navegar entre modulos)
-    const RF_VOICE_GREET_ONCE_KEY = "rf_voice_greet_once_v1";
-    // Tip de micrófono SOLO UNA VEZ
-    const RF_MIC_TIP_ONCE_KEY = "rf_mic_tip_once_v1";
-    // Auto-apagar micrófono si no escucha nada (ms)
-    const RF_MIC_IDLE_MS = 25000;
-function setFeatureUI(feature, allowed){
+    
+
+    function setFeatureUI(feature, allowed){
       const el = document.querySelector(`[data-feature="${feature}"]`);
       if(!el) return;
       el.style.display = allowed ? "flex" : "none";
@@ -3237,32 +3233,26 @@ function rfTodayKey(){
       return `${yyyy}-${mm}-${dd}`;
     }
 
-    function rfShouldGreet(){
-      // 1) si ya saludamos una vez en este navegador, no volver a saludar
-      try{
-        if(localStorage.getItem(RF_VOICE_GREET_ONCE_KEY) === "1") return false;
-      }catch(e){}
-      // 2) fallback: si no existe el flag, usamos el comportamiento por dia (por compatibilidad)
+    function rfShouldGreet(company){
       try{
         const raw = localStorage.getItem(RF_VOICE_GREET_KEY);
         const obj = raw ? JSON.parse(raw) : null;
         const today = rfTodayKey();
         if(!obj || obj.date !== today) return true;
+        // si cambio la compania, tambien saludamos (opcional)
+        if(company && obj.company && obj.company !== company) return true;
         return false;
       }catch(e){
         return true;
       }
     }
 
-    function rfMarkGreet(){
+    function rfMarkGreet(company){
       try{
-        localStorage.setItem(RF_VOICE_GREET_ONCE_KEY, "1");
-      }catch(e){}
-      try{
-        // mantenemos el registro por dia por si en el futuro quieres volver a ese modo
-        localStorage.setItem(RF_VOICE_GREET_KEY, JSON.stringify({ date: rfTodayKey() }));
-      }catch(e){}
-    }));
+        localStorage.setItem(RF_VOICE_GREET_KEY, JSON.stringify({
+          date: rfTodayKey(),
+          company: String(company||"").trim()
+        }));
       }catch(e){}
     }
 
@@ -3407,11 +3397,9 @@ function rfTodayKey(){
       // si aun no tenemos company name, intentamos usar email como fallback
       const settings = rfGetVoiceSettings();
       if(!settings.enabled) return;
-      // si el micrófono está activo, no interrumpimos con saludos
-      if(rfRecOn) return;
 
       const company = String(rfCompanyName || "").trim();
-      if(!rfShouldGreet()) return;
+      if(!rfShouldGreet(company || "rf")) return;
 
       // obtener email como fallback si no hay company
       let email = "";
@@ -3423,7 +3411,7 @@ function rfTodayKey(){
       const who = company || email || "tu cuenta";
       const motivation = rfPickMotivation(who, rfCountryLabel());
       const msg = `${rfTimeGreeting()}, ${who}. ${motivation} Te sugiero que revises las ofertas que hay disponibles en ${rfCountryLabel()}.`;
-      rfMarkGreet();
+      rfMarkGreet(company || email || "rf");
       await rfSpeak(msg);
     }
 
@@ -3431,8 +3419,6 @@ function rfTodayKey(){
     async function rfSpeakWelcome(force=false){
       const settings = rfGetVoiceSettings();
       if(!settings.enabled) return;
-      // si el micrófono está activo, no interrumpimos con saludos
-      if(rfRecOn) return;
       if(force){
         const company = String(rfCompanyName || "").trim();
         let email = "";
@@ -3466,9 +3452,7 @@ function rfTodayKey(){
     */
     let rfRec = null;
     let rfRecOn = false;
-    let rfMicIdleTimer = null;
-    function rfClearMicIdle_(){ try{ if(rfMicIdleTimer) clearTimeout(rfMicIdleTimer); }catch(e){} rfMicIdleTimer=null; }
-    function rfArmMicIdle_(){ rfClearMicIdle_(); rfMicIdleTimer = setTimeout(()=>{ try{ rfRecOn=false; rfRec&&rfRec.stop(); }catch(e){} rfToast("🎙️ Micrófono desactivado por inactividad."); const btn=$("btnMic"); if(btn) btn.classList.remove("activeMic"); }, RF_MIC_IDLE_MS); }
+
     function rfSpeechRecSupported(){
       return ("SpeechRecognition" in window) || ("webkitSpeechRecognition" in window);
     }
@@ -3495,7 +3479,6 @@ function rfTodayKey(){
       rec.onstart = () => {
         rfRecOn = true;
         rfToast("🎙️ Comandos de voz ACTIVADOS");
-        rfArmMicIdle_();
         const btn = $("btnMic");
         if(btn) btn.classList.add("activeMic");
       };
@@ -3517,7 +3500,6 @@ function rfTodayKey(){
       rec.onresult = async (evt) => {
         try{
           const t = evt?.results?.[evt.results.length-1]?.[0]?.transcript || "";
-          rfArmMicIdle_();
           const norm = rfNormTxt(t);
           if(!norm) return;
           console.log("🎙️ heard:", norm);
@@ -3569,16 +3551,7 @@ function rfTodayKey(){
         if(!ok) return;
 
         // 2) Encender reconocimiento
-        // Tip hablado SOLO la primera vez (misma voz)
-        try{
-          if(localStorage.getItem(RF_MIC_TIP_ONCE_KEY) !== "1"){
-            const tip = "Comandos de voz activados. Puedes decir: abre la app, abre ofertas, o abre herramientas. Si no hablas en 25 segundos, se apagara solo.";
-            await rfSpeak(tip);
-            localStorage.setItem(RF_MIC_TIP_ONCE_KEY, "1");
-          }
-        }catch(e){}
         rfRecOn = true;
-        rfArmMicIdle_();
         try{
           rec.start();
         }catch(e){
@@ -3588,7 +3561,6 @@ function rfTodayKey(){
         }
       }else{
         rfRecOn = false;
-        rfClearMicIdle_();
         try{ rec.stop(); }catch(e){}
         rfToast("🎙️ Comandos de voz DESACTIVADOS");
         const btn = $("btnMic");
@@ -3599,7 +3571,7 @@ function rfTodayKey(){
     async function rfHandleVoiceCommand(cmd){
       // Palabras clave
       const has = (...words)=>words.some(w=>cmd.includes(w));
-      const say = (m)=>{ if(rfRecOn) return Promise.resolve(); return rfSpeak(m).catch(()=>{}); };
+      const say = (m)=>rfSpeak(m).catch(()=>{});
 
       // detener / cancelar
       if(has("detener", "parar", "silencio") && has("voz", "microfono", "comandos")){
@@ -3999,6 +3971,9 @@ function rfTodayKey(){
 
 </body>
 </html>
+
+
+
 
 
 
