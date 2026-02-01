@@ -758,10 +758,13 @@
         const mergedInterim = interim.trim();
 
         // feedback leve
-        if(mergedInterim) setStatus("🎙️ " + mergedInterim);
+        if(mergedInterim){
+          const cleanInterim = mergedInterim.replace(/\b(encontrar|encuentra|encontralo|encuéntralo)\b/ig,"").replace(/\s+/g," ").trim();
+          if(cleanInterim) setStatus("🎙️ " + cleanInterim);
+        }
 
-        // Si tenemos final y contiene "buscar/busca", ejecutamos
-        if(mergedFinal && /\b(buscar|busca|search)\b/i.test(mergedFinal)){
+        // Si tenemos final y contiene "encontrar", ejecutamos
+        if(mergedFinal && /(encontrar|encuentra|encontralo|encuéntralo)/i.test(mergedFinal)){
           lastFinal = mergedFinal;
           setStatus("Procesando voz...");
           stopListening_();
@@ -2221,6 +2224,8 @@ window.limpiar = function(){
 </script>
 </body>
 </html>
+
+
 
 
 
