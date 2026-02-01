@@ -1061,10 +1061,10 @@
             <div class="v" id="offersKpiValue">—</div>
             <div class="s" id="offersKpiSub">Click para ver todas las ofertas.</div>
           </div>
-          <div class="kpi">
-            <div class="t">Top marcas</div>
-            <div class="v">—</div>
-            <div class="s">Basado en datos mundial.</div>
+          <div class="kpi" id="kpiMsgs" tabindex="0" role="button" aria-label="Mensajes recibidos">
+            <div class="t">Mensajes recibidos</div>
+            <div class="v" id="msgsKpiValue">—</div>
+            <div class="s" id="msgsKpiSub">De ofertas colocadas en Ofertas de Artículos.</div>
           </div>
         </div>
       </div>
@@ -2755,6 +2755,7 @@ if(role.includes("admin")){
       openModal("todayModelsBack");
       await rfLoadTopModelsToday(false);
       await rfInitOffersDashboard();
+      await rfInitMsgsDashboard();
     };
     window.closeTodayModelsModal = function(){
       closeModal("todayModelsBack");
@@ -2895,6 +2896,397 @@ if(role.includes("admin")){
     window.openOffersModal = openOffersModal;
     window.closeOffersModal = closeOffersModal;
     window.refreshOffersModal = refreshOffersModal;
+
+
+    // ===================== DASHBOARD: MENSAJES RECIBIDOS (ofertas -> chats) =====================
+    const RF_CHATS_TABLE = "offer_chats";
+    const RF_PROFILES_TABLE = "profiles";
+
+    let rfMsgsCache = {
+      loaded: false,
+      groups: [],        // [{ key, original, qtyTotal, offersCount, chatsCount, buyersCount, offers:[{...}] }]
+      buyers: {},        // buyer_id -> profile
+      page: 0,
+      pageSize: 10,
+      selectedKey: null,
+      meId: null
+    };
+
+    function rfEsc(v){ return escapeHtml(String(v ?? "")); }
+
+    function rfMoney(price, currency){
+      if(price === null || price === undefined || price === "") return "—";
+      const n = Number(price);
+      const cur = String(currency || "USD").toUpperCase();
+      try{
+        if(Number.isFinite(n)){
+          return new Intl.NumberFormat("es-DO", { style:"currency", currency: cur, maximumFractionDigits: 2 }).format(n);
+        }
+      }catch(_){}
+      return `${price} ${cur}`.trim();
+    }
+
+
+
+    function rfBuyerLabel(buyerId){
+      const p = rfMsgsCache.buyers[buyerId] || {};
+      return (p.company_name || p.name || p.email || buyerId || "—");
+    }
+
+    async function rfLoadMsgsForDashboard(){
+      try{
+        $("msgsMsg") && ( $("msgsMsg").textContent = "" );
+        rfMsgsCache.loaded = false;
+
+        const { data: ses } = await supabase.auth.getSession();
+        const user = ses?.session?.user;
+        if(!user){
+          rfMsgsCache.groups = [];
+          rfMsgsCache.buyers = {};
+          rfMsgsCache.loaded = true;
+          rfRenderMsgsKpi();
+          return;
+        }
+        rfMsgsCache.meId = user.id;
+
+        // 1) Traer mis ofertas (no expiran aquí; queremos ver mensajes aunque hayan expirado)
+        const { data: offers, error: e1 } = await supabase
+          .from(RF_OFFERS_TABLE)
+          .select("id,original,original_norm,brand,quantity_available,price,currency,country,created_at,seller_id")
+          .eq("seller_id", user.id)
+          .order("created_at", { ascending:false })
+          .limit(1200);
+        if(e1) throw e1;
+
+        const offerRows = offers || [];
+        const offerIds = offerRows.map(o=>o.id).filter(Boolean);
+
+        if(!offerIds.length){
+          rfMsgsCache.groups = [];
+          rfMsgsCache.buyers = {};
+          rfMsgsCache.loaded = true;
+          rfRenderMsgsKpi();
+          return;
+        }
+
+        // 2) Traer chats de esas ofertas
+        const { data: chats, error: e2 } = await supabase
+          .from(RF_CHATS_TABLE)
+          .select("id,offer_id,buyer_id,seller_id,created_at")
+          .in("offer_id", offerIds)
+          .order("created_at", { ascending:false })
+          .limit(3000);
+        if(e2) throw e2;
+
+        const chatRows = chats || [];
+        const buyerIds = Array.from(new Set(chatRows.map(c=>c.buyer_id).filter(Boolean)));
+
+        // 3) Resolver perfiles de compradores (company_name)
+        let buyersMap = {};
+        if(buyerIds.length){
+          const chunk = 200;
+          for(let i=0;i<buyerIds.length;i+=chunk){
+            const ids = buyerIds.slice(i, i+chunk);
+            const { data: profs, error: e3 } = await supabase
+              .from(RF_PROFILES_TABLE)
+              .select("id,company_name,name,email")
+              .in("id", ids);
+            if(e3) throw e3;
+            (profs||[]).forEach(p=>{ buyersMap[p.id] = p; });
+          }
+        }
+        rfMsgsCache.buyers = buyersMap;
+
+        // 4) Index chats por offer_id
+        const chatsByOffer = new Map();
+        for(const c of chatRows){
+          const k = c.offer_id;
+          if(!k) continue;
+          if(!chatsByOffer.has(k)) chatsByOffer.set(k, []);
+          chatsByOffer.get(k).push(c);
+        }
+
+        // 5) Agrupar por articulo (original_norm)
+        const grp = new Map(); // key -> group
+        for(const o of offerRows){
+          const k = (o.original_norm || o.original || "").toString();
+          if(!k) continue;
+          if(!grp.has(k)){
+            grp.set(k, {
+              key: k,
+              original: o.original || "",
+              offers: [],
+              qtyTotal: 0,
+              offersCount: 0,
+              chatsCount: 0,
+              buyers: new Set()
+            });
+          }
+          const g = grp.get(k);
+          const offerChats = chatsByOffer.get(o.id) || [];
+          offerChats.forEach(ch=> g.buyers.add(ch.buyer_id));
+          g.chatsCount += offerChats.length;
+          g.offersCount += 1;
+          g.qtyTotal += Number.isFinite(Number(o.quantity_available)) ? Number(o.quantity_available) : 0;
+
+          g.offers.push({
+            id: o.id,
+            original: o.original,
+            brand: o.brand,
+            quantity_available: o.quantity_available,
+            price: o.price,
+            currency: o.currency,
+            country: o.country,
+            created_at: o.created_at,
+            chats: offerChats
+          });
+        }
+
+        const groups = Array.from(grp.values())
+          .filter(g=>g.chatsCount>0) // solo articulos con mensajes
+          .map(g=>({ ...g, buyersCount: g.buyers.size }))
+          .sort((a,b)=> b.chatsCount - a.chatsCount);
+
+        rfMsgsCache.groups = groups;
+        rfMsgsCache.page = 0;
+        rfMsgsCache.selectedKey = groups[0]?.key || null;
+        rfMsgsCache.loaded = true;
+
+        rfRenderMsgsKpi();
+      }catch(e){
+        console.error(e);
+        rfMsgsCache.loaded = true;
+        rfMsgsCache.groups = [];
+        rfMsgsCache.buyers = {};
+        rfRenderMsgsKpi();
+        const box = $("msgsMsg");
+        if(box) box.textContent = "No pude cargar mensajes: " + (e?.message || e);
+      }
+    }
+
+    function rfRenderMsgsKpi(){
+      const v = $("msgsKpiValue");
+      const s = $("msgsKpiSub");
+      const groups = rfMsgsCache.groups || [];
+      const totalChats = groups.reduce((a,g)=> a + (g.chatsCount||0), 0);
+
+      if(v) v.textContent = rfMsgsCache.loaded ? String(totalChats || 0) : "—";
+      if(s){
+        s.textContent = groups.length
+          ? `${groups.length} artículo(s) con mensajes. Click para ver.`
+          : (rfMsgsCache.loaded ? "Aún no hay mensajes de tus ofertas." : "Cargando...");
+      }
+    }
+
+    function rfBindMsgsKpi(){
+      const k = $("kpiMsgs");
+      if(!k) return;
+      const open = ()=> openMsgsModal();
+      k.addEventListener("click", open);
+      k.addEventListener("keydown", (ev)=>{
+        if(ev.key==="Enter" || ev.key===" "){ ev.preventDefault(); open(); }
+      });
+    }
+
+    // Exponer funciones (onclick)
+    window.openMsgsModal = openMsgsModal;
+    window.closeMsgsModal = closeMsgsModal;
+    window.refreshMsgsModal = refreshMsgsModal;
+    window.msgsPrevPage = msgsPrevPage;
+    window.msgsNextPage = msgsNextPage;
+
+    async function openMsgsModal(){
+      const back = $("msgsBack");
+      if(!back) return;
+      back.style.display = "flex";
+      const q = $("msgsQ");
+      if(q) q.focus();
+      await rfEnsureMsgsLoaded_();
+      rfRenderMsgsModal();
+    }
+    function closeMsgsModal(){
+      const back = $("msgsBack");
+      if(back) back.style.display = "none";
+    }
+    async function refreshMsgsModal(){
+      await rfLoadMsgsForDashboard();
+      rfRenderMsgsModal();
+    }
+
+    async function rfEnsureMsgsLoaded_(){
+      if(rfMsgsCache.loaded) return;
+      await rfLoadMsgsForDashboard();
+    }
+
+    function msgsPrevPage(){
+      rfMsgsCache.page = Math.max(0, (rfMsgsCache.page||0) - 1);
+      rfRenderMsgsModal();
+    }
+    function msgsNextPage(){
+      const sz = Number($("msgsPageSize")?.value || rfMsgsCache.pageSize || 10);
+      rfMsgsCache.pageSize = sz;
+      const q = String($("msgsQ")?.value || "").trim().toLowerCase();
+      const filtered = rfFilterMsgGroups_(q);
+      const maxPage = Math.max(0, Math.ceil(filtered.length / sz) - 1);
+      rfMsgsCache.page = Math.min(maxPage, (rfMsgsCache.page||0) + 1);
+      rfRenderMsgsModal();
+    }
+
+    function rfFilterMsgGroups_(q){
+      const groups = rfMsgsCache.groups || [];
+      if(!q) return groups;
+      return groups.filter(g=>{
+        if(String(g.original||g.key||"").toLowerCase().includes(q)) return true;
+        // match por oferta (marca/pais)
+        for(const o of (g.offers||[])){
+          if(String(o.brand||"").toLowerCase().includes(q)) return true;
+          if(String(o.country||"").toLowerCase().includes(q)) return true;
+          // match por buyers
+          for(const c of (o.chats||[])){
+            const b = rfBuyerLabel(c.buyer_id);
+            if(String(b||"").toLowerCase().includes(q)) return true;
+          }
+        }
+        return false;
+      });
+    }
+
+    function rfRenderMsgsModal(){
+      // wire inputs once
+      const qEl = $("msgsQ");
+      if(qEl && !qEl.dataset.wired){
+        qEl.dataset.wired="1";
+        qEl.addEventListener("input", ()=>{ rfMsgsCache.page=0; rfRenderMsgsModal(); });
+      }
+      const ps = $("msgsPageSize");
+      if(ps && !ps.dataset.wired){
+        ps.dataset.wired="1";
+        ps.addEventListener("change", ()=>{ rfMsgsCache.page=0; rfRenderMsgsModal(); });
+      }
+
+      const q = String(qEl?.value || "").trim().toLowerCase();
+      const groups = rfFilterMsgGroups_(q);
+
+      // meta
+      const totalChats = groups.reduce((a,g)=> a + (g.chatsCount||0), 0);
+      const meta = $("msgsMeta");
+      if(meta) meta.textContent = `Total: ${totalChats} mensaje(s) • ${groups.length} artículo(s)`;
+
+      // page
+      const pageSize = Number(ps?.value || rfMsgsCache.pageSize || 10);
+      rfMsgsCache.pageSize = pageSize;
+      const maxPage = Math.max(0, Math.ceil(groups.length / pageSize) - 1);
+      rfMsgsCache.page = Math.min(maxPage, rfMsgsCache.page||0);
+
+      const page = rfMsgsCache.page || 0;
+      const slice = groups.slice(page*pageSize, (page+1)*pageSize);
+
+      const pageInfo = $("msgsPageInfo");
+      if(pageInfo) pageInfo.textContent = groups.length ? `Página ${page+1}/${maxPage+1}` : "—";
+
+      // left list
+      const list = $("msgsArtList");
+      if(!list) return;
+
+      if(!slice.length){
+        list.innerHTML = `<div class="muted2">No hay mensajes con ese filtro.</div>`;
+        const right = $("msgsRightBox");
+        if(right) right.innerHTML = `<div class="muted2">—</div>`;
+        return;
+      }
+
+      // mantener seleccion valida
+      if(!rfMsgsCache.selectedKey || !groups.some(g=>g.key===rfMsgsCache.selectedKey)){
+        rfMsgsCache.selectedKey = slice[0]?.key || null;
+      }
+
+      list.innerHTML = slice.map(g=>{
+        const active = (rfMsgsCache.selectedKey===g.key) ? "active" : "";
+        const title = g.original || g.key;
+        return `
+          <div class="listCard ${active}" data-key="${rfEsc(g.key)}">
+            <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start">
+              <div style="min-width:0">
+                <div style="font-weight:900; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${rfEsc(title)}</div>
+                <div class="muted2" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                  ${rfEsc(g.qtyTotal)} disponible • ${rfEsc(g.buyersCount)} usuario(s)
+                </div>
+              </div>
+              <span class="badge">${rfEsc(g.chatsCount)}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      list.querySelectorAll(".listCard").forEach(card=>{
+        card.onclick = ()=>{
+          rfMsgsCache.selectedKey = card.getAttribute("data-key") || "";
+          rfRenderMsgsModal();
+        };
+      });
+
+      rfRenderMsgsDetail(groups);
+    }
+
+    function rfRenderMsgsDetail(groupsAll){
+      const key = rfMsgsCache.selectedKey;
+      const g = (groupsAll||[]).find(x=>x.key===key) || (rfMsgsCache.groups||[]).find(x=>x.key===key);
+      const title = $("msgsRightTitle");
+      const right = $("msgsRightBox");
+      if(title) title.textContent = g ? `Detalle • ${g.original || g.key}` : "Detalle";
+      if(!right) return;
+      if(!g){
+        right.innerHTML = `<div class="muted2">Selecciona un artículo.</div>`;
+        return;
+      }
+
+      const offers = (g.offers||[]).slice().sort((a,b)=> new Date(b.created_at||0)-new Date(a.created_at||0));
+
+      right.innerHTML = offers.map(o=>{
+        const exp = "";
+        const qty = (o.quantity_available==null || o.quantity_available==="") ? "—" : String(o.quantity_available);
+        const head = `${o.brand || "—"} • ${rfMoney(o.price, o.currency)} • Qty: ${qty} • ${o.country || "—"}`;
+        const chats = (o.chats||[]).slice().sort((a,b)=> new Date(b.created_at||0)-new Date(a.created_at||0));
+        const chatList = chats.slice(0, 20).map(c=>{
+          const buyer = rfBuyerLabel(c.buyer_id);
+          const when = c.created_at ? new Date(c.created_at).toLocaleString() : "";
+          return `
+            <div class="listCard" style="cursor:default; padding:10px 12px">
+              <div class="miniRow">
+                <div style="min-width:0">
+                  <div style="font-weight:900; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${rfEsc(buyer)}</div>
+                  <div class="muted2">${rfEsc(when)}</div>
+                </div>
+                <button class="btn btnPrimary btnSmall" onclick="window.location.href='osbolesencia.html?openOffer=${encodeURIComponent(o.id)}'">Abrir chat</button>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+        const more = chats.length>20 ? `<div class="muted2" style="margin-top:8px">Mostrando 20 de ${chats.length} chats (usa el módulo de Ofertas para verlos todos).</div>` : "";
+
+        return `
+          <div class="listCard" style="cursor:default">
+            <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start">
+              <div style="min-width:0">
+                <div style="font-weight:900">${rfEsc(o.original || g.original || g.key)} • ${rfEsc(head)}</div>
+                <div class="muted2">Oferta ID: <span style="font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace">${rfEsc(o.id)}</span></div>
+              </div>
+              <span class="badge">${rfEsc(chats.length)}</span>
+            </div>
+            <div class="dividerLine"></div>
+            ${chatList || '<div class="muted2">Sin chats en esta oferta.</div>'}
+            ${more}
+          </div>
+        `;
+      }).join("") || `<div class="muted2">No hay ofertas para este artículo.</div>`;
+    }
+
+    async function rfInitMsgsDashboard(){
+      await rfLoadMsgsForDashboard();
+      rfBindMsgsKpi();
+    }
+
 
     function openOffersModal(){
       const back = document.getElementById("offersBack");
@@ -3099,6 +3491,7 @@ async function init(){
       // ✅ KPI Busquedas (hoy) Radar-style (Top Modelos)
       await rfLoadTopModelsToday(false);
       await rfInitOffersDashboard();
+      await rfInitMsgsDashboard();
     }
 
 
@@ -3862,6 +4255,55 @@ function rfPickVoice(voices, preferGoogleES=true){
       </div>
     </div>
   </div>
+  <!-- ✅ MODAL: Mensajes recibidos (ofertas -> chats) -->
+  <div class="modalBack" id="msgsBack" onclick="if(event.target.id==='msgsBack') closeMsgsModal()">
+    <div class="modal modalWide">
+      <div class="modalHead">
+        <b>💬 Mensajes recibidos</b>
+        <div class="row" style="gap:8px; align-items:center;">
+          <input id="msgsQ" class="inp" placeholder="Buscar artículo / marca / país / usuario..." style="min-width:280px;"/>
+          <select id="msgsPageSize" class="inp" style="min-width:110px;">
+            <option value="10">10</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          <button class="btn btnGhost" onclick="refreshMsgsModal()">Actualizar</button>
+          <button class="btn btnPrimary" onclick="closeMsgsModal()">Cerrar</button>
+        </div>
+      </div>
+
+      <div class="modalBody">
+        <div class="miniRow" style="margin-bottom:10px;">
+          <div class="muted2" id="msgsMeta">—</div>
+          <div class="muted2">Tip: click en un artículo para ver sus ofertas y abrir el chat.</div>
+        </div>
+
+        <div class="statsGrid" style="grid-template-columns:320px 1fr; margin-top:0">
+          <div class="statsPanel">
+            <div class="statsPanelHead">Artículos</div>
+            <div class="statsPanelBody">
+              <div class="list" id="msgsArtList"></div>
+              <div class="miniRow" style="margin-top:10px; justify-content:space-between;">
+                <button class="btn btnGhost btnSmall" onclick="msgsPrevPage()">◀</button>
+                <div class="muted2" id="msgsPageInfo">—</div>
+                <button class="btn btnGhost btnSmall" onclick="msgsNextPage()">▶</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="statsPanel">
+            <div class="statsPanelHead" id="msgsRightTitle">Detalle</div>
+            <div class="statsPanelBody">
+              <div id="msgsRightBox" class="list"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="msg" id="msgsMsg"></div>
+      </div>
+    </div>
+  </div>
+
 
 
 
@@ -4087,6 +4529,7 @@ function rfPickVoice(voices, preferGoogleES=true){
 
 </body>
 </html>
+
 
 
 
