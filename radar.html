@@ -580,8 +580,9 @@
       d.setDate(d.getDate() - Number(days || 7));
       return d.toISOString();
     }
-    function esc(s){
-      return String(s||"").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }
+        function esc(s){
+      return String(s||"").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[c]));
+    }
     const RF_OFFERS_TABLE = "offers";
 
     function normCode(v){
@@ -634,8 +635,7 @@
       if(n>0) return `<span class="badgeOffer">✅ ${n}</span>`;
       return `<span class="badgeOffer off0">—</span>`;
     }
-[c]));
-    }
+
     function badgeStatus(result_status){
       if(result_status === "found") return `<span class="badge bOk">found</span>`;
       if(result_status === "not_found") return `<span class="badge bBad">not_found</span>`;
