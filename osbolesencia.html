@@ -543,7 +543,7 @@
                 <span class="muted2" id="clientToggleTxt">Mostrar</span>
               </div>
               <div class="accBody hidden" id="clientBody">
-                <div class="kv"><b>Buyer ID</b><span id="ciBuyer">—</span></div>
+                <div class="kv"><b>Cliente</b><span id="ciBuyer">—</span></div>
                 <div class="kv"><b>Chat creado</b><span id="ciDate">—</span></div>
               </div>
             </div>
@@ -829,7 +829,8 @@ function getOfferGroups_(){
         return String(o.original||"").toLowerCase().includes(q) ||
                String(o.brand||"").toLowerCase().includes(q) ||
                String(o.country||"").toLowerCase().includes(q) ||
-               String(c.buyer_id||"").toLowerCase().includes(q);
+               String(c.buyer_id||"").toLowerCase().includes(q) ||
+               String(c.buyer_company||"").toLowerCase().includes(q);
       });
     }
 
@@ -841,7 +842,7 @@ function getOfferGroups_(){
     box.innerHTML = list.map(c=>{
       const o = c.offer || {};
       const when = new Date(c.created_at).toLocaleString();
-      const buyer = c.buyer_id || "—";
+      const buyer = buyerName_(c);
       const sub = `${money(o.price,o.currency)} • ${o.country || ""}`.trim();
       const active = (selectedChat && selectedChat.id===c.id) ? "active" : "";
       return `
@@ -937,7 +938,7 @@ window.renderArticleModal = function(){
 
     box.innerHTML = chats.map(c=>{
       const when = new Date(c.created_at).toLocaleString();
-      const buyer = c.buyer_id || "—";
+      const buyer = buyerName_(c);
       const active = (selectedChat && selectedChat.id===c.id) ? "active" : "";
       return `
         <div class="listCard ${active}" onclick="pickChatFromModal('${c.id}')">
@@ -970,6 +971,21 @@ window.renderArticleModal = function(){
   function escapeHtml(s){
     return String(s??"").replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[c]));
   }
+  function buyerName_(chat){
+    const company = String(chat?.buyer_company || "").trim();
+    const id = String(chat?.buyer_id || "").trim();
+    return company || id || "—";
+  }
+  function buyerDisplayWithId_(chat){
+    const company = String(chat?.buyer_company || "").trim();
+    const id = String(chat?.buyer_id || "").trim();
+    if(company && id){
+      const shortId = id.length > 10 ? (id.slice(0, 8) + "…") : id;
+      return `${company} (${shortId})`;
+    }
+    return company || id || "—";
+  }
+
   function setMsg(el, txt, err){
     if(!el) return;
     el.textContent = txt || "";
@@ -1034,7 +1050,7 @@ window.renderArticleModal = function(){
     // Cliente
     const buyer = document.getElementById("ciBuyer");
     const date  = document.getElementById("ciDate");
-    if(buyer) buyer.textContent = selectedChat.buyer_id || "—";
+    if(buyer) buyer.textContent = buyerDisplayWithId_(selectedChat);
     if(date)  date.textContent  = selectedChat.created_at ? new Date(selectedChat.created_at).toLocaleString() : "—";
 
     // Articulo
@@ -1313,7 +1329,23 @@ const priceRaw = String($("fPrice").value||"").trim().replace(/,/g,".");
         (ofs||[]).forEach(o=> offersById[o.id]=o);
       }
 
-      chatsCache = list.map(c=>({ ...c, offer: offersById[c.offer_id] || null }));
+      // traer nombres de compania (buyer) desde profiles
+      const buyerIds = Array.from(new Set(list.map(x=>x.buyer_id).filter(Boolean)));
+      let buyersById = {};
+      if(buyerIds.length){
+        const { data: buyers, error: bErr } = await supabase.from("profiles")
+          .select("id,company_name")
+          .in("id", buyerIds)
+          .limit(2000);
+        if(bErr) throw bErr;
+        (buyers||[]).forEach(p=>{ buyersById[p.id] = p.company_name || null; });
+      }
+
+      chatsCache = list.map(c=>({
+        ...c,
+        offer: offersById[c.offer_id] || null,
+        buyer_company: buyersById[c.buyer_id] || null
+      }));
       renderChats();
     }catch(e){
       console.error(e);
@@ -1333,7 +1365,8 @@ const priceRaw = String($("fPrice").value||"").trim().replace(/,/g,".");
         return String(o.original||"").toLowerCase().includes(qq) ||
                String(o.brand||"").toLowerCase().includes(qq) ||
                String(o.country||"").toLowerCase().includes(qq) ||
-               String(c.buyer_id||"").toLowerCase().includes(qq);
+               String(c.buyer_id||"").toLowerCase().includes(qq) ||
+               String(c.buyer_company||"").toLowerCase().includes(qq);
       });
     }
 
