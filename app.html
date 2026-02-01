@@ -483,13 +483,13 @@
     // normalizar espacios alrededor de guiones
     s = s.replace(/\s*-\s*/g, "-");
 
-    // 🔥 CLAVE: unir TODOS los numeros separados por espacios (sin limite)
+    // unir numeros separados por espacios (sin limite)
     // ej: "11 12 42" => "111242"
     s = s.replace(/(?<=\d)\s+(?=\d)/g, "");
 
-    // unir letra+numero con espacios (ej: "m 276" => "m276")
+    // unir letra+numero con espacios SOLO en ese sentido (ej: "m 276" => "m276")
+    // OJO: no unir numero+letra porque pegaria "111242 encontrar"
     s = s.replace(/(?<=[a-z])\s+(?=\d)/g, "");
-    s = s.replace(/(?<=\d)\s+(?=[a-z])/g, "");
 
     return s.trim();
   }
@@ -497,100 +497,127 @@
 
 
   function parseVoiceCommand_(raw){
-    const text = normalizeSpoken_(raw);
+    const text0 = normalizeSpoken_(raw);
 
-    const hasBuscar = /\b(buscar|busca|search)\b/.test(text);
+    // palabra reservada para ejecutar: "encontrar"
+    const hasEncontrar = /\b(encontrar|encuentra|encontralo|encuéntralo)\b/.test(text0);
 
-    // 🔎 Detectores para decidir si es "vehicular" o "codigo"
+    // quitamos SOLO la palabra reservada para no pegarla al codigo
+    const text = text0.replace(/\b(encontrar|encuentra|encontralo|encuéntralo)\b/g, " ").replace(/\s+/g," ").trim();
+
     const hasYear = /\b(19[5-9]\d|20[0-4]\d|2050)\b/.test(text);
 
     const brands = ["honda","hyundai","mercedes","toyota","kia","bmw","nissan","mazda","ford","chevrolet","vw","volkswagen","audi","jeep","lexus","acura","mitsubishi","suzuki"];
-    const hasBrand = brands.some(b => text.includes(b));
+    const brandHit = brands.find(b => text.includes(b)) || "";
+    const hasBrand = !!brandHit;
 
     const hasVehicularHints = /\b(vehiculo|vehículo|modelo|motor|descripcion|descripci[oó]n)\b/.test(text);
-
-    // candidato codigo: debe tener DIGITOS y ser principalmente alfanumerico/guion
-    const codeLike = text.match(/([a-z0-9]+(?:-[a-z0-9]+)?)/i);
-    const codeCandidate = codeLike ? codeLike[1] : "";
 
     const digitCount = (text.match(/\d/g) || []).length;
     const wordCount = text.split(/\s+/).filter(Boolean).length;
 
-    // ✅ 1) Si hay año o marca o pistas => vehicular SIEMPRE (usa el buscador de abajo)
+    // -------------------------
+    // VEHICULAR (buscador de abajo)
+    // -------------------------
     if(hasYear || hasBrand || hasVehicularHints){
-      const yearMatch = text.match(/\b(19[5-9]\d|20[0-4]\d|2050)\b/);
-      const year = yearMatch ? yearMatch[1] : "";
+      const tokens = text
+        .replace(/[，,.;:!?]/g," ")
+        .replace(/\s+/g," ")
+        .trim()
+        .split(" ")
+        .filter(Boolean);
 
-      let before = text;
-      let after = "";
-
-      if(yearMatch){
-        const idx = yearMatch.index || 0;
-        before = text.slice(0, idx).trim();
-        after  = text.slice(idx + year.length).trim();
+      // año
+      let anio = "";
+      let idxYear = -1;
+      for(let i=0;i<tokens.length;i++){
+        if(/^(19[5-9]\d|20[0-4]\d|2050)$/.test(tokens[i])){
+          anio = tokens[i];
+          idxYear = i;
+          break;
+        }
       }
 
-      let vehiculo = before
-        .replace(/\b(quiero|ver|buscar|busca|search|por|favor|el|la|los|las|un|una|me)\b/g," ")
-        .replace(/\s+/g," ")
-        .trim();
+      // vehiculo = marca (si la detectamos)
+      let vehiculo = "";
+      let idxBrand = -1;
+      for(let i=0;i<tokens.length;i++){
+        const t = tokens[i].toLowerCase();
+        if(brands.includes(t)){
+          vehiculo = t;
+          idxBrand = i;
+          break;
+        }
+      }
 
-      const base = (after || text)
-        .replace(/\b(quiero|ver|buscar|busca|search|por|favor)\b/g," ")
-        .trim();
-
+      // motor por keyword o por patron
       let motor = "";
-      const motorMatch = base.match(/\bmotor\s+([a-z0-9.]+)/i);
+      const lower = text.toLowerCase();
+      const motorMatch = lower.match(/\bmotor\s+([a-z0-9.]+)/i);
       if(motorMatch) motor = motorMatch[1];
 
+      // descripcion (keyword simple)
       let desc = "";
       const descKeywords = ["alternador","filtro","bomba","radiador","pastilla","disco","amortiguador","sensor","bobina","bujia","terminal","rotula","empaque","junta","cadena","termostato"];
       for(const kw of descKeywords){
-        if(base.includes(kw)){ desc = kw; break; }
+        if(lower.includes(kw)){ desc = kw; break; }
       }
 
-      let modelo = "";
-      let candidateText = after || "";
-      if(!candidateText){
-        candidateText = text.replace(vehiculo, "").trim();
+      // modelo: mas estricto
+      // regla:
+      // - si hay año: modelo = tokens DESPUES del año (hasta 2), ignorando palabras clave
+      // - si no hay año: modelo = tokens DESPUES de la marca (hasta 2)
+      const stopWords = new Set(["motor","vehiculo","vehículo","descripcion","descripción","modelo","por","favor"]);
+      function cleanModelTokens(arr){
+        return arr.filter(t => !stopWords.has(t.toLowerCase()) && !/^(19[5-9]\d|20[0-4]\d|2050)$/.test(t));
       }
-      candidateText = candidateText
-        .replace(/\b(buscar|busca|search)\b/g," ")
-        .replace(/\bmotor\b/g," ")
-        .replace(/\s+/g," ")
-        .trim();
 
-      const toks = candidateText.split(/\s+/).filter(Boolean);
+      let modeloToks = [];
+      if(idxYear >= 0){
+        modeloToks = tokens.slice(idxYear+1);
+      }else if(idxBrand >= 0){
+        modeloToks = tokens.slice(idxBrand+1);
+      }else{
+        // sin marca clara: tomamos primeros 2 como "vehiculo" y el resto como modelo
+        // (pero normalmente tendremos marca)
+        modeloToks = tokens.slice(1);
+      }
+      modeloToks = cleanModelTokens(modeloToks);
 
-      if(!motor && toks[0] && /(\d\.\d|^[a-z]+\d+)/i.test(toks[0])){
-        motor = toks[0];
-        toks.shift();
+      // si el primer token parece motor y aun no hay motor, lo usamos como motor
+      if(!motor && modeloToks[0] && /(\d\.\d|^[a-z]+\d+)/i.test(modeloToks[0])){
+        motor = modeloToks[0];
+        modeloToks = modeloToks.slice(1);
       }
-      if(toks.length){
-        modelo = toks.slice(0,2).join(" ");
-      }
+
+      const modelo = (modeloToks.slice(0,2).join(" ")).trim();
 
       return {
         type: "vehicular",
-        hasBuscar,
-        fields: { vehiculo, anio: year, modelo, motor, desc }
+        hasEncontrar,
+        fields: { vehiculo, anio, modelo, motor, desc }
       };
     }
 
-    // ✅ 2) Si NO parece vehicular, tratamos como CODIGO (buscador de arriba)
+    // -------------------------
+    // CODIGO (buscador de arriba)
+    // -------------------------
+    // Extraer candidato codigo con guion opcional
+    const m = text.match(/([a-z0-9]+(?:-[a-z0-9]+)*)/i);
+    const codeCandidate = m ? m[1] : "";
+
     const looksLikeCode =
       (digitCount >= 4) &&
       (
-        /^[a-z0-9]+(-[a-z0-9]+)?$/i.test(codeCandidate) ||
-        /-/.test(codeCandidate)
+        /^[a-z0-9]+(-[a-z0-9]+)*$/i.test(codeCandidate)
       ) &&
       !(wordCount >= 3 && digitCount < 5);
 
     if(looksLikeCode && codeCandidate){
-      return { type:"codigo", hasBuscar, code: codeCandidate };
+      return { type:"codigo", hasEncontrar, code: codeCandidate };
     }
 
-    return { type:"unknown", hasBuscar, text };
+    return { type:"unknown", hasEncontrar, text };
   }
 
 
@@ -616,30 +643,65 @@
   async function handleVoiceText_(t){
     const parsed = parseVoiceCommand_(t);
 
+    // Si solo dicen "encontrar" sin data, intentamos usar lo que ya esta escrito
+    const onlyEncontrar = /^\s*(encontrar|encuentra|encontralo|encuéntralo)\s*$/i.test(String(t||"").trim());
+
+    if(onlyEncontrar){
+      const codeNow = String(document.getElementById("code")?.value || "").trim();
+      const fVeh = String(document.getElementById("fVehiculo")?.value || "").trim();
+      const fAnio = String(document.getElementById("fAnio")?.value || "").trim();
+      const fMod = String(document.getElementById("fModelo")?.value || "").trim();
+      const fMot = String(document.getElementById("fMotor")?.value || "").trim();
+      const fDes = String(document.getElementById("fDescripcion")?.value || "").trim();
+
+      if(codeNow){
+        toast_("Encontrando codigo: " + codeNow);
+        await window.buscar();
+        return;
+      }
+      if(fVeh || fAnio || fMod || fMot || fDes){
+        toast_("Encontrando por filtros…");
+        await window.aplicarFiltroVehicular();
+        return;
+      }
+      toast_("Di un codigo o un filtro primero, luego di 'encontrar'.");
+      return;
+    }
+
     if(parsed.type === "codigo"){
       const code = String(parsed.code || "").toUpperCase();
       if(code){
         document.getElementById("code").value = code;
-        toast_("Buscando codigo: " + code);
-        await window.buscar();
+        if(parsed.hasEncontrar){
+          toast_("Encontrando codigo: " + code);
+          await window.buscar();
+        }else{
+          toast_("Codigo listo: " + code + ". Ahora di 'encontrar'.");
+        }
       }
       return;
     }
 
     if(parsed.type === "vehicular"){
       const f = parsed.fields || {};
+      // vehiculo: capitalizar 1ra letra
       if(f.vehiculo) document.getElementById("fVehiculo").value = (f.vehiculo || "").replace(/^./,c=>c.toUpperCase());
       if(f.anio)     document.getElementById("fAnio").value = f.anio;
       if(f.modelo)   document.getElementById("fModelo").value = (f.modelo || "").replace(/^./,c=>c.toUpperCase());
       if(f.motor)    document.getElementById("fMotor").value = String(f.motor || "").toUpperCase();
       if(f.desc)     document.getElementById("fDescripcion").value = (f.desc || "").toLowerCase();
 
-      toast_("Buscando por filtros: " + [f.vehiculo, f.anio, f.modelo].filter(Boolean).join(" "));
-      await window.aplicarFiltroVehicular();
+      const resumen = [f.vehiculo, f.anio, f.modelo].filter(Boolean).join(" ");
+      if(parsed.hasEncontrar){
+        toast_("Encontrando por filtros: " + resumen);
+        await window.aplicarFiltroVehicular();
+      }else{
+        toast_("Filtros listos: " + resumen + ". Ahora di 'encontrar'.");
+      }
       return;
     }
 
-    toast_("No entendi. Di un codigo o 'Marca Año Modelo' y luego 'buscar'.");
+    toast_("No entendi. Di un codigo o 'Marca Año Modelo' y luego di 'encontrar'.");
   }
 
   function startListening_(){
@@ -2139,5 +2201,6 @@ window.limpiar = function(){
 </script>
 </body>
 </html>
+
 
 
