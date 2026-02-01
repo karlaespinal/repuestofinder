@@ -1432,6 +1432,7 @@
     // Config de voz (guardada en localStorage)
     const RF_VOICE_SETTINGS_KEY = "rf_voice_settings_v1";
     const RF_VOICE_GREET_KEY = "rf_voice_greet_last_v1";
+    const RF_VOICE_MIC_HELP_KEY = "rf_voice_mic_help_last_v1";
     
 
     function setFeatureUI(feature, allowed){
@@ -3175,6 +3176,18 @@ function rfGetVoiceSettings(){
       return "Buenas noches";
     }
 
+    // Periodos para limitar saludos/ayuda por voz:
+    // - morning: 05:00-11:59
+    // - afternoon: 12:00-18:59
+    // - night: 19:00-04:59
+    function rfTimePeriod(){
+      const h = new Date().getHours();
+      if(h >= 5 && h < 12) return "morning";
+      if(h >= 12 && h < 19) return "afternoon";
+      return "night";
+    }
+
+
     
     // Frases de automotivacion (rotan cada dia)
     const RF_MOTIVATION_PHRASES = [
@@ -3233,15 +3246,27 @@ function rfTodayKey(){
       return `${yyyy}-${mm}-${dd}`;
     }
 
+    
     function rfShouldGreet(company){
       try{
         const raw = localStorage.getItem(RF_VOICE_GREET_KEY);
         const obj = raw ? JSON.parse(raw) : null;
         const today = rfTodayKey();
+        const period = rfTimePeriod();
+        const cname = String(company||"").trim();
+
+        // Si no hay registro o es otro dia => saluda en este periodo
         if(!obj || obj.date !== today) return true;
-        // si cambio la compania, tambien saludamos (opcional)
-        if(company && obj.company && obj.company !== company) return true;
-        return false;
+
+        // Si el periodo actual ya se saludo => no
+        const greeted = (obj.greeted && typeof obj.greeted === "object") ? obj.greeted : {};
+        if(greeted[period]) return false;
+
+        // Si cambio la compania, permitimos saludar (pero igual 1 vez por periodo)
+        if(cname && obj.company && obj.company !== cname) return true;
+
+        // No se ha saludado este periodo
+        return true;
       }catch(e){
         return true;
       }
@@ -3249,14 +3274,63 @@ function rfTodayKey(){
 
     function rfMarkGreet(company){
       try{
-        localStorage.setItem(RF_VOICE_GREET_KEY, JSON.stringify({
-          date: rfTodayKey(),
-          company: String(company||"").trim()
-        }));
+        const today = rfTodayKey();
+        const period = rfTimePeriod();
+        const cname = String(company||"").trim();
+
+        let obj = null;
+        try{
+          obj = JSON.parse(localStorage.getItem(RF_VOICE_GREET_KEY) || "null");
+        }catch(_){ obj = null; }
+
+        if(!obj || obj.date !== today){
+          obj = { date: today, company: cname, greeted: {} };
+        }
+        if(!obj.greeted || typeof obj.greeted !== "object") obj.greeted = {};
+        obj.company = cname || obj.company || "";
+        obj.greeted[period] = true;
+
+        localStorage.setItem(RF_VOICE_GREET_KEY, JSON.stringify(obj));
       }catch(e){}
     }
 
-    function rfPickVoice(voices, preferGoogleES=true){
+    
+
+    function rfShouldSpeakMicHelp(){
+      try{
+        const raw = localStorage.getItem(RF_VOICE_MIC_HELP_KEY);
+        const obj = raw ? JSON.parse(raw) : null;
+        const today = rfTodayKey();
+        const period = rfTimePeriod();
+        if(!obj || obj.date !== today) return true;
+        const periods = (obj.periods && typeof obj.periods === "object") ? obj.periods : {};
+        return !periods[period];
+      }catch(e){
+        return true;
+      }
+    }
+
+    function rfMarkMicHelpSpoken(){
+      try{
+        const today = rfTodayKey();
+        const period = rfTimePeriod();
+        let obj = null;
+        try{ obj = JSON.parse(localStorage.getItem(RF_VOICE_MIC_HELP_KEY) || "null"); }catch(_){ obj = null; }
+        if(!obj || obj.date !== today) obj = { date: today, periods: {} };
+        if(!obj.periods || typeof obj.periods !== "object") obj.periods = {};
+        obj.periods[period] = true;
+        localStorage.setItem(RF_VOICE_MIC_HELP_KEY, JSON.stringify(obj));
+      }catch(e){}
+    }
+
+    async function rfMaybeSpeakMicHelp(){
+      // Habla 1 vez por periodo (maniana/tarde/noche)
+      if(!rfShouldSpeakMicHelp()) return;
+      rfMarkMicHelpSpoken();
+      await rfSpeak("Comandos disponibles: abre la app, abre radar, abre perfil, o abre ofertas.", { allowDuringMic:true });
+    }
+
+function rfPickVoice(voices, preferGoogleES=true){
   if(!voices || !voices.length) return null;
 
   const lang = v => String(v.lang||"").toLowerCase();
@@ -3385,7 +3459,8 @@ function rfTodayKey(){
   if(resumeMic && rec){
     try{
       rfRecOn = true;
-      rec.start();
+      rec._rfMicIdleReset && rec._rfMicIdleReset();
+          rec.start();
     }catch(e){
       rfRecOn = false;
     }
@@ -3476,14 +3551,45 @@ function rfTodayKey(){
       rec.maxAlternatives = 1;
       rec.continuous = true;
 
+      // Auto-apagado por inactividad (sin audio reconocido) — 25s
+      const RF_MIC_IDLE_MS = 25000;
+      let rfMicIdleT = null;
+      const rfMicIdleReset = ()=>{
+        try{ clearTimeout(rfMicIdleT); }catch(e){}
+        rfMicIdleT = setTimeout(()=>{
+          try{
+            if(rfRecOn){
+              rfRecOn = false;
+              try{ rec.stop(); }catch(e){}
+              rfToast("🎙️ Microfono desactivado por inactividad");
+              const btn = $("btnMic");
+              if(btn) btn.classList.remove("activeMic");
+            }
+          }catch(e){}
+        }, RF_MIC_IDLE_MS);
+      };
+      const rfMicIdleClear = ()=>{
+        try{ clearTimeout(rfMicIdleT); }catch(e){}
+        rfMicIdleT = null;
+      };
+
+      // exponer helpers en la instancia (para poder limpiarlo desde toggle)
+      rec._rfMicIdleReset = rfMicIdleReset;
+      rec._rfMicIdleClear = rfMicIdleClear;
+
+
       rec.onstart = () => {
         rfRecOn = true;
         rfToast("🎙️ Comandos de voz ACTIVADOS");
+        rfMicIdleReset();
+        // Hablar opciones solo 1 vez por periodo (maniana/tarde/noche)
+        try{ rfMaybeSpeakMicHelp(); }catch(e){}
         const btn = $("btnMic");
         if(btn) btn.classList.add("activeMic");
       };
       rec.onend = () => {
         // Algunos navegadores paran solos; si el usuario lo dejó ON, reintentar.
+        rfMicIdleClear();
         const btn = $("btnMic");
         if(btn) btn.classList.remove("activeMic");
         if(rfRecOn){
@@ -3492,6 +3598,7 @@ function rfTodayKey(){
       };
       rec.onerror = (e) => {
         console.warn("SpeechRecognition error:", e);
+        rfMicIdleClear();
         rfToast("No pude activar el microfono. Verifica permisos.");
         rfRecOn = false;
         const btn = $("btnMic");
@@ -3499,6 +3606,7 @@ function rfTodayKey(){
       };
       rec.onresult = async (evt) => {
         try{
+          rfMicIdleReset();
           const t = evt?.results?.[evt.results.length-1]?.[0]?.transcript || "";
           const norm = rfNormTxt(t);
           if(!norm) return;
@@ -3561,7 +3669,9 @@ function rfTodayKey(){
         }
       }else{
         rfRecOn = false;
+        try{ rec._rfMicIdleClear && rec._rfMicIdleClear(); }catch(e){}
         try{ rec.stop(); }catch(e){}
+        try{ if(rfRec) rfRec.onend && 0; }catch(e){}
         rfToast("🎙️ Comandos de voz DESACTIVADOS");
         const btn = $("btnMic");
         if(btn) btn.classList.remove("activeMic");
@@ -3624,8 +3734,14 @@ function rfTodayKey(){
         return;
       }
 
-      // fallback simple
-      await say("Te escucho. Puedes decir: abre la app, abre radar, abre perfil, o abre ofertas.");
+      // fallback (no repetir lista todo el tiempo)
+      if(rfShouldSpeakMicHelp()){
+        rfMarkMicHelpSpoken();
+        await say("Te escucho. Puedes decir: abre la app, abre radar, abre perfil, o abre ofertas.");
+      }else{
+        // Mensaje corto para no molestar
+        await say("No entendi. Intenta de nuevo.");
+      }
     }
 
 
@@ -3971,6 +4087,8 @@ function rfTodayKey(){
 
 </body>
 </html>
+
+
 
 
 
