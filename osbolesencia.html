@@ -312,6 +312,35 @@
   }
   .dividerLine{ height:1px; background:rgba(229,231,235,.9); margin:10px 0; }
 
+
+  /* Alignment controls (Bulk sheet) */
+  .alignGroup{
+    display:inline-flex;
+    align-items:center;
+    border:1px solid rgba(0,0,0,.08);
+    background:rgba(255,255,255,.75);
+    border-radius:999px;
+    overflow:hidden;
+    margin-bottom:2px;
+  }
+  .alignBtn{
+    border:0;
+    background:transparent;
+    padding:8px 10px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    color:var(--ink);
+    font-weight:900;
+  }
+  .alignBtn:hover{ background:rgba(2,6,23,.04); }
+  .alignBtn.active{
+    background:rgba(59,130,246,.14);
+    color:var(--pri2);
+  }
+  .alignBtn svg{ width:16px; height:16px; opacity:.85; }
+
 </style>
 </head>
 
@@ -388,7 +417,22 @@
                   <option value="6m">6 meses</option>
                 </select>
               </div>
-              <div class="pill ok" style="margin-bottom:2px">
+              
+              <div class="field" style="min-width:170px; display:flex; flex-direction:column; gap:6px">
+                <label>Alinear celdas</label>
+                <div class="alignGroup" aria-label="Alinear celdas (OEM/Marca/Precio/Descripción)">
+                  <button class="alignBtn active" id="alignLeft"  type="button" title="Alinear a la izquierda" onclick="setBulkAlign('left')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h14M4 10h10M4 14h14M4 18h10"/></svg>
+                  </button>
+                  <button class="alignBtn" id="alignCenter" type="button" title="Centrar" onclick="setBulkAlign('center')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 6h14M7 10h10M5 14h14M7 18h10"/></svg>
+                  </button>
+                  <button class="alignBtn" id="alignRight" type="button" title="Alinear a la derecha" onclick="setBulkAlign('right')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6h14M10 10h10M6 14h14M10 18h10"/></svg>
+                  </button>
+                </div>
+              </div>
+<div class="pill ok" style="margin-bottom:2px">
                 ✅ Se aplica a todas las filas (Excel y 1×1)
               </div>
             </div>
@@ -733,6 +777,27 @@
   let chatsCache = [];
   let selectedChat = null; // {id, offer_id,...}
   let chatPoll = null;
+
+  // ===== Bulk alignment (left / center / right) =====
+  let bulkAlign = (localStorage.getItem("rf_bulk_align") || "left");
+  function syncAlignUI_(){
+    const aL = document.getElementById("alignLeft");
+    const aC = document.getElementById("alignCenter");
+    const aR = document.getElementById("alignRight");
+    if(aL) aL.classList.toggle("active", bulkAlign==="left");
+    if(aC) aC.classList.toggle("active", bulkAlign==="center");
+    if(aR) aR.classList.toggle("active", bulkAlign==="right");
+  }
+  window.setBulkAlign = function(align){
+    const v = (align==="center"||align==="right") ? align : "left";
+    bulkAlign = v;
+    try{ localStorage.setItem("rf_bulk_align", v); }catch(_){}
+    // aplicar a celdas existentes (solo bulk sheet)
+    document.querySelectorAll("#bulkBody .cell").forEach(el=>{
+      el.style.textAlign = v;
+    });
+    syncAlignUI_();
+  }
 
   // ===== Filtro por artículo (offer) + Modal selector =====
   let offerFilterId = null;        // si tiene valor, filtra la lista de chats
@@ -1510,6 +1575,9 @@ function buildBulkSheet(rows){
         div.dataset.c = String(idx);
         div.dataset.key = c.key;
 
+        // aplicar alineacion global
+        div.style.textAlign = bulkAlign;
+
         // tamaños
         if(c.key==="original") td.style.minWidth="190px";
         if(c.key==="brand") td.style.minWidth="170px";
@@ -1795,6 +1863,10 @@ const desc = r.desc;
 
   bindUI();
   populateGlobalSelects();
+  // init alignment buttons state
+  syncAlignUI_();
+  // apply stored alignment when sheet exists
+  window.setBulkAlign(bulkAlign);
   initAuth();
 </script>
 
