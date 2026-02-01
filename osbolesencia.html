@@ -1087,6 +1087,50 @@ window.renderArticleModal = function(){
     if(!Number.isFinite(p)) return "—";
     return p.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " " + c;
   }
+
+  // Convierte numeros pegados desde Excel/Sheets: "$68,000.00", "68.000,00", "68000", etc.
+  function parseNum(raw){
+    let s = String(raw ?? "").trim();
+    if(!s) return NaN;
+
+    // quitar simbolos y letras, mantener digitos, coma, punto y signo -
+    s = s.replace(/[^0-9,\.\-]/g, "");
+
+    if(!s || s === "-" || s === "," || s === ".") return NaN;
+
+    const hasComma = s.includes(",");
+    const hasDot   = s.includes(".");
+
+    if(hasComma && hasDot){
+      // El separador decimal suele ser el ultimo que aparece
+      const lastComma = s.lastIndexOf(",");
+      const lastDot   = s.lastIndexOf(".");
+      const dec = (lastDot > lastComma) ? "." : ",";
+      const thou = (dec === ".") ? "," : ".";
+      s = s.split(thou).join("");   // quitar miles
+      // reemplazar solo el ultimo separador decimal
+      const i = s.lastIndexOf(dec);
+      s = (i>=0) ? (s.slice(0,i) + "." + s.slice(i+1)) : s;
+    }else if(hasComma && !hasDot){
+      // Puede ser decimal (12,50) o miles (68,000)
+      const parts = s.split(",");
+      if(parts.length === 2 && parts[1].length <= 2){
+        s = parts[0] + "." + parts[1];
+      }else{
+        s = parts.join(""); // miles
+      }
+    }else if(!hasComma && hasDot){
+      // Puede ser decimal (12.50) o miles (68.000)
+      const parts = s.split(".");
+      if(parts.length === 2 && parts[1].length <= 2){
+        // decimal
+      }else{
+        s = parts.join(""); // miles
+      }
+    }
+    const n = Number(s);
+    return Number.isFinite(n) ? n : NaN;
+  }
   function explainSetupError(e){
     const msg = String(e?.message || e || "");
     const code = String(e?.code || "");
@@ -1252,8 +1296,7 @@ window.renderArticleModal = function(){
       const desc = String($("fDesc").value||"").trim();
       const country = String($("gCountry").value||"").trim();
       const currency = String($("gCurrency").value||"USD").trim().toUpperCase();
-const priceRaw = String($("fPrice").value||"").trim().replace(/,/g,".");
-      const price = Number(priceRaw);
+const price = parseNum($("fPrice").value);
 
       if(!original) throw new Error("Falta el número original.");
       if(!brand) throw new Error("Falta la marca.");
@@ -1799,6 +1842,11 @@ function buildBulkSheet(rows){
 
       const rows = readBulkRows();
 
+      const countryGlobal = String($("gCountry").value||"").trim();
+      const currencyGlobal = String($("gCurrency").value||"USD").trim().toUpperCase();
+      const durationGlobal = String($("gDuration").value||"24h").trim();
+      if(!countryGlobal) throw new Error("Selecciona un país (global) antes de guardar.");
+
       // validar y convertir
       const good = [];
       const badIdx = [];
@@ -1807,15 +1855,15 @@ function buildBulkSheet(rows){
         const r = rows[i];
         const original = r.original;
         const brand = r.brand;
-        const country = String($("gCountry").value||"").trim();
-        const currency = String($("gCurrency").value||"USD").trim().toUpperCase();
-        const duration = String($("gDuration").value||"24h").trim();
-const desc = r.desc;
+        const country = countryGlobal;
+        const currency = currencyGlobal;
+        const duration = durationGlobal;
+        const desc = r.desc;
 
         const qtyRaw = String(r.qty||"").trim();
-        const qty = qtyRaw==="" ? null : Number(qtyRaw);
+        const qty = qtyRaw==="" ? null : parseNum(qtyRaw);
 
-        const price = Number(String(r.price||"").replace(/,/g,"."));
+        const price = parseNum(r.price);
         const any = [original, brand, r.qty, r.price, desc].some(x=>String(x||"").trim().length>0);
         if(!any) continue; // fila vacía
 
@@ -1859,6 +1907,8 @@ const desc = r.desc;
 
       $("bulkHint").textContent = `Guardadas ✅ ${ok} oferta(s)` + (badIdx.length ? (" | Filas incompletas: " + badIdx.join(", ")) : "");
       await loadOffers(true);
+      // limpiar la hoja automaticamente al guardar
+      clearBulkSheet();
     }catch(e){
       console.error(e);
       setMsg($("msg"), (explainSetupError(e) || (e?.message || e)), true);
