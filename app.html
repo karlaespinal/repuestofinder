@@ -134,7 +134,45 @@
     .offerBtnPrimary:hover{filter:brightness(.95)}
     .offerEmpty{color:#6b7280;font-size:13px}
 
-    /* Codigo principal (link) */
+    
+    /* ===== Logos de Vehiculos (por marca) ===== */
+    .vehLogos{
+      margin-top:10px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+    }
+    .vehLogoItem{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border:1px solid #eef0f6;
+      border-radius:12px;
+      background:#fff;
+      box-shadow:0 1px 8px rgba(0,0,0,.03);
+      max-width: 220px;
+    }
+    .vehLogoImg{
+      width:34px;
+      height:22px;
+      object-fit:contain;
+      display:block;
+      filter: grayscale(0%);
+      opacity:.95;
+    }
+    .vehLogoText{
+      font-size:12px;
+      font-weight:900;
+      color:#111;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:150px;
+    }
+
+  /* Codigo principal (link) */
     .codeLink{color:#2563eb;text-decoration:underline;font-weight:900;cursor:pointer;}
     .codeLink:hover{filter:brightness(.9)}
 
@@ -294,6 +332,7 @@
       <div class="accBody">
         <div class="muted">URL: <a id="productUrl" href="#" target="_blank">-</a></div>
         <div style="margin-top:8px" class="muted" id="counts">Vehicles: 0 | Cambios: 0</div>
+        <div id="vehLogos" class="vehLogos" style="display:none"></div>
         <div id="offersWrap" class="offerBox" style="display:none"></div>
         <div style="margin-top:8px" class="muted" id="notes"></div>
       </div>
@@ -395,6 +434,23 @@
   // ✅ Tablas (v1 + v2)
   const VEH_TABLES = ["datos_vehiculares", "datos_vehiculares_v2"];
   const CAMBIOS_TABLES = ["cambios", "cambios_v2"];
+
+  // ✅ Logos por marca (ruta dentro del repo)
+  const AUTO_LOGO_BASE = "assets/logos/autos/";
+
+  // Placeholder (SVG) para cuando no exista un logo
+  const DEFAULT_CAR_SVG_DATAURI =
+    "data:image/svg+xml;charset=utf-8," +
+    encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="120" height="80" viewBox="0 0 120 80">
+        <rect x="0" y="0" width="120" height="80" rx="14" fill="#f3f4f6"/>
+        <path d="M30 48l8-16c2-4 6-6 10-6h24c4 0 8 2 10 6l8 16" fill="none" stroke="#9ca3af" stroke-width="4" stroke-linecap="round"/>
+        <path d="M26 48h68c6 0 10 4 10 10v6H16v-6c0-6 4-10 10-10z" fill="none" stroke="#9ca3af" stroke-width="4" stroke-linejoin="round"/>
+        <circle cx="34" cy="64" r="7" fill="#9ca3af"/>
+        <circle cx="86" cy="64" r="7" fill="#9ca3af"/>
+      </svg>
+    `);
+
 
   // ✅ Ofertas (Obsolescencia) en la App
   // Ajusta estos nombres si en tu BD difieren:
@@ -931,6 +987,98 @@
       .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
       .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
   }
+
+  function slugifyMake_(make){
+    return String(make||"")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-z0-9_]/g, "");
+  }
+
+  function titleCase_(s){
+    const t = String(s||"").trim().toLowerCase();
+    if(!t) return "";
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  }
+
+  function getLogoCandidates_(make){
+    const slug = slugifyMake_(make);
+    const tcase = titleCase_(make).replace(/\s+/g, "");
+    // Intentamos varias combinaciones (por si el repo tiene mayusculas/extension distinta)
+    const list = [];
+    if(slug)  list.push(AUTO_LOGO_BASE + slug + ".png", AUTO_LOGO_BASE + slug + ".jpg", AUTO_LOGO_BASE + slug + ".jpeg");
+    if(tcase) list.push(AUTO_LOGO_BASE + tcase + ".png", AUTO_LOGO_BASE + tcase + ".jpg", AUTO_LOGO_BASE + tcase + ".jpeg");
+    return list;
+  }
+
+  function renderVehicleLogos_(vehiclesTable){
+    const wrap = document.getElementById("vehLogos");
+    if(!wrap) return;
+
+    // limpiar por defecto
+    wrap.innerHTML = "";
+    wrap.style.display = "none";
+
+    if(!vehiclesTable || !Array.isArray(vehiclesTable.headers) || !Array.isArray(vehiclesTable.rows)) return;
+    if(!vehiclesTable.rows.length) return;
+
+    const headers = vehiclesTable.headers.map(h => String(h||"").toLowerCase());
+    const idxMake = headers.findIndex(h => h === "vehiculo" || h.includes("vehiculo") || h === "vehicle" || h.includes("vehicle"));
+    if(idxMake < 0) return;
+
+    const makes = [];
+    const seen = new Set();
+    for(const r of vehiclesTable.rows){
+      const mk = (r && r[idxMake] !== undefined) ? String(r[idxMake]||"").trim() : "";
+      if(!mk) continue;
+      const key = mk.toLowerCase();
+      if(seen.has(key)) continue;
+      seen.add(key);
+      makes.push(mk);
+      if(makes.length >= 10) break; // max 10 logos (2 filas de 5 aprox)
+    }
+
+    if(makes.length === 0) return;
+
+    // Construir HTML
+    let html = "";
+    for(const mk of makes){
+      const candidates = getLogoCandidates_(mk);
+      const firstSrc = candidates[0] || DEFAULT_CAR_SVG_DATAURI;
+
+      // onerror: intenta siguiente candidato, y si no, placeholder
+      const escMk = escapeHtml_(mk);
+      const candJson = escapeHtml_(JSON.stringify(candidates));
+      html += `
+        <div class="vehLogoItem" title="${escMk}">
+          <img class="vehLogoImg"
+               src="${firstSrc}"
+               alt="${escMk}"
+               data-candidates='${candJson}'
+               onerror="(function(img){
+                 try{
+                   const c = JSON.parse(img.getAttribute('data-candidates')||'[]');
+                   const i = Number(img.getAttribute('data-idx')||'0');
+                   const next = c[i+1];
+                   if(next){
+                     img.setAttribute('data-idx', String(i+1));
+                     img.src = next;
+                     return;
+                   }
+                 }catch(e){}
+                 img.onerror=null;
+                 img.src='${DEFAULT_CAR_SVG_DATAURI}';
+               })(this)">
+          <div class="vehLogoText">${escMk}</div>
+        </div>
+      `;
+    }
+
+    wrap.innerHTML = html;
+    wrap.style.display = "flex";
+  }
+
 
   function renderTableInto_(wrapId, tableObj){
     const wrap = document.getElementById(wrapId);
@@ -1605,8 +1753,8 @@ function uniqueJoin_(arr, sep=" / "){
       const filtered = { headers: headers2, rows: rows2 };
       lastPayload.tablas.vehicles = filtered;
       renderTableInto_("vehWrap", filtered);
-
-      document.getElementById("btnCopyVeh").disabled = !(rows.length>0);
+      renderVehicleLogos_(filtered);
+document.getElementById("btnCopyVeh").disabled = !(rows.length>0);
       document.getElementById("counts").textContent =
         "Vehicles: " + rows.length + " | Cambios: " + ((lastPayload.tablas?.cambios?.rows||[]).length || 0);
 
@@ -1635,7 +1783,8 @@ function uniqueJoin_(arr, sep=" / "){
       };
 
       renderTableInto_("vehWrap", veh);
-      renderTableInto_("oeWrap", { headers: [], rows: [] });
+      renderVehicleLogos_(veh);
+renderTableInto_("oeWrap", { headers: [], rows: [] });
 
       const vehCount = (veh?.rows||[]).length;
 
@@ -1671,8 +1820,8 @@ function uniqueJoin_(arr, sep=" / "){
     if(lastPayload && lastPayload.tablas && lastPayload.tablas.vehicles_full){
       lastPayload.tablas.vehicles = lastPayload.tablas.vehicles_full;
       renderTableInto_("vehWrap", lastPayload.tablas.vehicles_full);
-
-      const vehCount = (lastPayload.tablas.vehicles_full?.rows||[]).length;
+      renderVehicleLogos_(lastPayload.tablas.vehicles_full);
+const vehCount = (lastPayload.tablas.vehicles_full?.rows||[]).length;
       const cambCount = (lastPayload.tablas?.cambios?.rows||[]).length;
 
       document.getElementById("btnCopyVeh").disabled = vehCount===0;
@@ -2163,6 +2312,9 @@ window.limpiar = function(){
     renderTableInto_("vehWrap", vehicles);
     renderTableInto_("oeWrap", cambios);
 
+    // Logos de marcas (si existen en assets/logos/autos/)
+    renderVehicleLogos_(vehicles);
+
     const hasVeh = vehicles && Array.isArray(vehicles.rows) && vehicles.rows.length > 0;
     const hasCamb = cambios && Array.isArray(cambios.rows) && cambios.rows.length > 0;
 
@@ -2271,6 +2423,8 @@ window.limpiar = function(){
 </script>
 </body>
 </html>
+
+
 
 
 
