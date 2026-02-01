@@ -449,12 +449,12 @@
         <!-- BULK (Excel-like) -->
         <div id="bulkPane">
           <div class="pill" style="margin-bottom:10px">
-            ✅ Pega directo desde Excel/Sheets (CTRL+V). Orden: OEM, Marca, Precio, Descripción. (Moneda/País/Duración se toman de la configuración global).
+            ✅ Pega directo desde Excel/Sheets (CTRL+V). Orden: OEM, Marca, Cantidad disponible, Precio, Descripción. (Moneda/País/Duración se toman de la configuración global).
           </div>
 
           <div class="row" style="justify-content:space-between; margin-bottom:10px">
             <div class="muted2">
-              Columnas: <b>OEM</b> • Marca • Precio • Descripción
+              Columnas: <b>OEM</b> • Marca • Cantidad • Precio • Descripción
             </div>
             <div class="row">
               <button class="btn btnGhost btnSmall" onclick="downloadTemplate()">Exportar plantilla</button>
@@ -466,12 +466,13 @@
           <input type="file" id="bulkFile" class="hidden" accept=".csv,.txt" />
 
           <div class="sheetWrap" id="sheetWrap">
-            <table class="sheet" id="bulkTable" aria-label="Hoja de carga masiva (OEM, Marca, Precio, Descripción)">
+            <table class="sheet" id="bulkTable" aria-label="Hoja de carga masiva (OEM, Marca, Cantidad, Precio, Descripción)">
               <thead>
                 <tr>
                   <th class="rowNum">#</th>
                   <th>OEM</th>
                   <th>Marca</th>
+                  <th class="nowrap">Cantidad</th>
                   <th class="nowrap">Precio</th>
                   <th>Descripción (interna)</th>
                 </tr>
@@ -494,6 +495,10 @@
             <div class="field">
               <label>Marca</label>
               <input class="inp" id="fBrand" placeholder="Ej: Mercedes-Benz / Mahle / Bosch"/>
+            </div>
+            <div class="field">
+              <label>Cantidad disponible</label>
+              <input class="inp" id="fQty" placeholder="Ej: 3"/>
             </div>
             <div class="field">
               <label>Precio</label>
@@ -533,6 +538,7 @@
               <tr>
                 <th class="nowrap">OEM</th>
                 <th>Marca</th>
+                <th class="nowrap">Cantidad</th>
                 <th>Precio</th>
                 <th>País</th>
                 <th class="nowrap">Expira</th>
@@ -540,7 +546,7 @@
               </tr>
             </thead>
             <tbody id="offersTbody">
-              <tr><td class="tdSmall" colspan="6">Cargando...</td></tr>
+              <tr><td class="tdSmall" colspan="7">Cargando...</td></tr>
             </tbody>
           </table>
         </div>
@@ -600,6 +606,7 @@
               <div class="accBody hidden" id="articleBody">
                 <div class="kv"><b>OEM</b><span id="aiOEM">—</span></div>
                 <div class="kv"><b>Marca</b><span id="aiBrand">—</span></div>
+                <div class="kv"><b>Cantidad</b><span id="aiQty">—</span></div>
                 <div class="kv"><b>Precio</b><span id="aiPrice">—</span></div>
                 <div class="kv"><b>País</b><span id="aiCountry">—</span></div>
               </div>
@@ -989,7 +996,7 @@ window.renderArticleModal = function(){
 
     const title = document.getElementById("artSelectedTitle");
     if(title){
-      title.textContent = o ? `${o.original || "—"} • ${o.brand || "—"} • ${money(o.price,o.currency)} • ${o.country || ""}`.trim()
+      title.textContent = o ? `${o.original || "—"} • ${o.brand || "—"} • Qty: ${ (o.quantity_available==null||o.quantity_available==="") ? "—" : o.quantity_available } • ${money(o.price,o.currency)} • ${o.country || ""}`.trim()
                             : "Chats del artículo";
     }
 
@@ -1102,7 +1109,7 @@ window.renderArticleModal = function(){
   function updateChatSideInfo_(){
     // Si aun no hay chat seleccionado
     if(!selectedChat){
-      const ids = ["ciBuyer","ciDate","aiOEM","aiBrand","aiPrice","aiCountry"];
+      const ids = ["ciBuyer","ciDate","aiOEM","aiBrand","aiQty","aiPrice","aiCountry"];
       ids.forEach(id=>{
         const el = document.getElementById(id);
         if(el) el.textContent = "—";
@@ -1121,11 +1128,13 @@ window.renderArticleModal = function(){
     // Articulo
     const oem = document.getElementById("aiOEM");
     const br  = document.getElementById("aiBrand");
+    const qt  = document.getElementById("aiQty");
     const pr  = document.getElementById("aiPrice");
     const co  = document.getElementById("aiCountry");
 
     if(oem) oem.textContent = o.original || "—";
     if(br)  br.textContent  = o.brand || "—";
+    if(qt)  qt.textContent  = (o.quantity_available==null || o.quantity_available==="") ? "—" : String(o.quantity_available);
     if(pr)  pr.textContent  = (o.price!=null && o.price!=="" ? money(o.price, o.currency) : "—");
     if(co)  co.textContent  = o.country || "—";
   }
@@ -1215,7 +1224,7 @@ window.renderArticleModal = function(){
   }
 
   function clearForm(){
-    ["fOriginal","fBrand","fPrice","fDesc"].forEach(id=>{ const el=$(id); if(el) el.value=""; });
+    ["fOriginal","fBrand","fQty","fPrice","fDesc"].forEach(id=>{ const el=$(id); if(el) el.value=""; });
     $("hint").textContent = "—";
     setMsg($("msg"), "", false);
   }
@@ -1227,6 +1236,8 @@ window.renderArticleModal = function(){
 
       const original = String($("fOriginal").value||"").trim();
       const brand = String($("fBrand").value||"").trim();
+      const qtyRaw = String($("fQty").value||"").trim();
+      const qty = qtyRaw==="" ? null : Number(qtyRaw);
       const desc = String($("fDesc").value||"").trim();
       const country = String($("gCountry").value||"").trim();
       const currency = String($("gCurrency").value||"USD").trim().toUpperCase();
@@ -1235,6 +1246,7 @@ const priceRaw = String($("fPrice").value||"").trim().replace(/,/g,".");
 
       if(!original) throw new Error("Falta el número original.");
       if(!brand) throw new Error("Falta la marca.");
+      if(qty!==null && (!Number.isFinite(qty) || qty < 0)) throw new Error("Cantidad disponible inválida.");
       if(!Number.isFinite(price) || price <= 0) throw new Error("Precio inválido.");
       if(!country) throw new Error("Falta el país.");
 
@@ -1245,6 +1257,7 @@ const priceRaw = String($("fPrice").value||"").trim().replace(/,/g,".");
         original: original,
         original_norm: normCode(original),
         brand,
+        quantity_available: qty,
         description: desc || null,
         price,
         currency,
@@ -1277,7 +1290,7 @@ const priceRaw = String($("fPrice").value||"").trim().replace(/,/g,".");
       const nowIso = new Date().toISOString();
 
       let q = supabase.from(OFFERS_TABLE)
-        .select("id,original,original_norm,brand,price,currency,country,expires_at,created_at,seller_id")
+        .select("id,original,original_norm,brand,quantity_available,price,currency,country,expires_at,created_at,seller_id")
         .gt("expires_at", nowIso)
         .order("created_at", { ascending:false })
         .limit(500);
@@ -1308,7 +1321,7 @@ const priceRaw = String($("fPrice").value||"").trim().replace(/,/g,".");
     }
 
     if(rows.length===0){
-      $("offersTbody").innerHTML = '<tr><td colspan="6" class="tdSmall">No hay ofertas.</td></tr>';
+      $("offersTbody").innerHTML = '<tr><td colspan="7" class="tdSmall">No hay ofertas.</td></tr>';
       return;
     }
 
@@ -1323,6 +1336,7 @@ const priceRaw = String($("fPrice").value||"").trim().replace(/,/g,".");
         <tr>
           <td class="nowrap"><b>${escapeHtml(o.original||"")}</b><div class="tdSmall">${pill}</div></td>
           <td>${escapeHtml(o.brand||"")}</td>
+          <td class="nowrap">${escapeHtml((o.quantity_available==null || o.quantity_available==="") ? "—" : String(o.quantity_available))}</td>
           <td class="nowrap">${escapeHtml(money(o.price,o.currency))}</td>
           <td>${escapeHtml(o.country||"")}</td>
           <td class="nowrap">${escapeHtml(expTxt)}</td>
@@ -1387,7 +1401,7 @@ const priceRaw = String($("fPrice").value||"").trim().replace(/,/g,".");
       let offersById = {};
       if(offerIds.length){
         const { data: ofs, error: oErr } = await supabase.from(OFFERS_TABLE)
-          .select("id,original,brand,price,currency,country")
+          .select("id,original,brand,quantity_available,price,currency,country")
           .in("id", offerIds)
           .limit(500);
         if(oErr) throw oErr;
@@ -1466,7 +1480,7 @@ const priceRaw = String($("fPrice").value||"").trim().replace(/,/g,".");
     selectedChat = chat;
 
     const o = chat.offer || {};
-    $("chatTitle").textContent = `Chat • ${o.original || "—"} • ${o.brand || "—"} • ${money(o.price,o.currency)} • ${o.country || ""}`.trim();
+    $("chatTitle").textContent = `Chat • ${o.original || "—"} • ${o.brand || "—"} • Qty: ${ (o.quantity_available==null||o.quantity_available==="") ? "—" : o.quantity_available } • ${money(o.price,o.currency)} • ${o.country || ""}`.trim();
     updateChatSideInfo_();
 
 
@@ -1549,6 +1563,7 @@ const priceRaw = String($("fPrice").value||"").trim().replace(/,/g,".");
   const BULK_COLS = [
     { key:"original",  label:"OEM",        placeholder:"A2762001000" },
     { key:"brand",     label:"Marca",      placeholder:"Mahle" },
+    { key:"qty",       label:"Cantidad",   placeholder:"3" },
     { key:"price",     label:"Precio",     placeholder:"125.50" },
     { key:"desc",      label:"Desc",       placeholder:"Notas internas" },
   ];
@@ -1581,6 +1596,7 @@ function buildBulkSheet(rows){
         // tamaños
         if(c.key==="original") td.style.minWidth="190px";
         if(c.key==="brand") td.style.minWidth="170px";
+        if(c.key==="qty") td.style.minWidth="130px";
         if(c.key==="price") td.style.minWidth="120px";
         if(c.key==="desc") td.style.minWidth="520px";
 
@@ -1665,8 +1681,8 @@ function buildBulkSheet(rows){
 
   // ===== Import / Export template =====
   window.downloadTemplate = function(){
-    const header = ["OEM","Marca","Precio","Descripción"];
-    const sample = ["A2762001000","Mahle","125.50","Notas internas"];
+    const header = ["OEM","Marca","Cantidad","Precio","Descripción"];
+    const sample = ["A2762001000","Mahle","3","125.50","Notas internas"];
     const csv = [header.join(","), sample.map(x=>String(x).replace(/"/g,'""')).map(x=>`"${x}"`).join(",")].join("\n");
     const blob = new Blob([csv], { type:"text/csv;charset=utf-8" });
     const a = document.createElement("a");
@@ -1785,11 +1801,14 @@ function buildBulkSheet(rows){
         const duration = String($("gDuration").value||"24h").trim();
 const desc = r.desc;
 
+        const qtyRaw = String(r.qty||"").trim();
+        const qty = qtyRaw==="" ? null : Number(qtyRaw);
+
         const price = Number(String(r.price||"").replace(/,/g,"."));
-        const any = [original, brand, r.price, desc].some(x=>String(x||"").trim().length>0);
+        const any = [original, brand, r.qty, r.price, desc].some(x=>String(x||"").trim().length>0);
         if(!any) continue; // fila vacía
 
-        if(!original || !brand || !Number.isFinite(price) || price<=0){
+        if(!original || !brand || (qty!==null && (!Number.isFinite(qty) || qty<0)) || !Number.isFinite(price) || price<=0){
           badIdx.push(i+1);
           continue;
         }
@@ -1800,6 +1819,7 @@ const desc = r.desc;
           original,
           original_norm: normCode(original),
           brand,
+          quantity_available: qty,
           description: desc || null,
           price,
           currency: currency || "USD",
@@ -1872,6 +1892,7 @@ const desc = r.desc;
 
 </body>
 </html>
+
 
 
 
