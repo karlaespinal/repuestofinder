@@ -386,6 +386,7 @@
         <button class="tab active" id="tabUsers" onclick="switchAdminTab('users')">Usuarios</button>
         <button class="tab" id="tabSubs" onclick="switchAdminTab('subs')">Suscripciones</button>
         <button class="tab" id="tabPlans" onclick="switchAdminTab('plans')">Planes & Accesos</button>
+        <button class="tab" id="tabHist" onclick="switchAdminTab('hist')">Historial</button>
       </div>
 
       <div id="paneUsers">
@@ -441,10 +442,127 @@
         </table>
       </div>
 
+      
+      <!-- Historial de búsquedas (solo admin) -->
+      <div id="paneHist" style="display:none">
+        <div class="muted" style="margin:6px 0 10px">
+          Aquí ves el historial de búsquedas de los usuarios. Puedes filtrar por usuario, rango de tiempo y cambiar la vista (eventos o resumen por código).
+        </div>
+
+        <div class="two" style="margin:10px 0 10px">
+          <div class="field">
+            <label>Usuario</label>
+            <select class="select" id="adminHistUser"></select>
+          </div>
+          <div class="field">
+            <label>Rango</label>
+            <select class="select" id="adminHistRange">
+              <option value="7">Últimos 7 días</option>
+              <option value="30" selected>Últimos 30 días</option>
+              <option value="90">Últimos 90 días</option>
+              <option value="0">Todo</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Vista</label>
+            <select class="select" id="adminHistMode">
+              <option value="events" selected>Eventos (más reciente)</option>
+              <option value="codes">Resumen por código (más buscado)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Mostrar</label>
+            <select class="select" id="adminHistLimit">
+              <option value="10">10</option>
+              <option value="50" selected>50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+          <button class="btn btnGhost btnSmall" onclick="loadAdminHistory()">Aplicar filtros</button>
+          <span class="pill" id="adminHistPill">—</span>
+        </div>
+
+        <table>
+          <thead id="adminHistHead"></thead>
+          <tbody id="adminHistBody">
+            <tr><td class="muted">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+
       <div class="msg" id="msgAdmin"></div>
     </div>
 
   </div>
+
+    <!-- Historial de búsquedas (Usuario / Admin) -->
+    <div class="card" id="historyCard" style="margin-top:14px;display:none">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div>
+          <h2>Historial de búsquedas</h2>
+          <div class="muted" id="histSubtitle">Tus búsquedas recientes.</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btnGhost btnSmall" onclick="loadMyHistory()">Actualizar</button>
+        </div>
+      </div>
+
+      <div class="two" style="margin-top:12px">
+        <div class="field">
+          <label>Rango</label>
+          <select class="select" id="myHistRange">
+            <option value="7">Últimos 7 días</option>
+            <option value="30" selected>Últimos 30 días</option>
+            <option value="90">Últimos 90 días</option>
+            <option value="0">Todo</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Vista</label>
+          <select class="select" id="myHistMode">
+            <option value="events" selected>Eventos (más reciente)</option>
+            <option value="codes">Resumen por código (más buscado)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Mostrar</label>
+          <select class="select" id="myHistLimit">
+            <option value="10">10</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Orden</label>
+          <select class="select" id="myHistSort">
+            <option value="recent" selected>Más reciente</option>
+            <option value="most">Más buscado</option>
+            <option value="results">Más resultados</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button class="btn btnPrimary btnSmall" onclick="loadMyHistory()">Aplicar</button>
+        <span class="pill" id="myHistPill">—</span>
+      </div>
+
+      <div style="margin-top:10px">
+        <table>
+          <thead id="myHistHead"></thead>
+          <tbody id="myHistBody">
+            <tr><td class="muted">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="msg" id="myHistMsg"></div>
+    </div>
+
 
   <!-- Modal renovar membresía -->
   <div class="modalBack" id="renewBack">
@@ -601,9 +719,19 @@
       $("tabUsers").classList.toggle("active", tab==="users");
       $("tabSubs").classList.toggle("active", tab==="subs");
       $("tabPlans").classList.toggle("active", tab==="plans");
+      $("tabHist").classList.toggle("active", tab==="hist");
+
       $("paneUsers").style.display = (tab==="users") ? "block" : "none";
       $("paneSubs").style.display  = (tab==="subs")  ? "block" : "none";
       $("panePlans").style.display = (tab==="plans") ? "block" : "none";
+      $("paneHist").style.display  = (tab==="hist")  ? "block" : "none";
+
+      if(tab==="hist"){
+        // carga lazy
+        loadAdminHistory().catch(e=>{
+          setMsg($("msgAdmin"), "No pude cargar historial: " + (e?.message || e), true);
+        });
+      }
     };
 
     // ====== DATA LOADERS ======
@@ -1314,6 +1442,236 @@ window.savePlanFeatures = async (planId)=>{
       }).render("#ppBtn_" + planId);
     };
 
+
+    // ======================================================
+    // 🔎 HISTORIAL DE BUSQUEDAS (search_events)
+    // Requiere tabla: search_events (ya la usa app.html)
+    // Campos esperados: created_at, user_id, query_raw, query_type, results_count, result_status
+    // ======================================================
+
+    function rangeToSinceISO(days){
+      const d = Number(days || 0);
+      if(!d) return null;
+      const since = new Date(Date.now() - d*24*60*60*1000);
+      return since.toISOString();
+    }
+
+    function normalizeQueryLabel(q){
+      const s = String(q || "").trim();
+      return s || "—";
+    }
+
+    function buildHistHeadForMode(mode, isAdminTable){
+      if(mode === "codes"){
+        return `<tr>
+          ${isAdminTable ? "<th>Usuario</th>" : ""}
+          <th>Código / Búsqueda</th>
+          <th>Veces buscado</th>
+          <th>Última vez</th>
+        </tr>`;
+      }
+      // events
+      return `<tr>
+        ${isAdminTable ? "<th>Usuario</th>" : ""}
+        <th>Fecha</th>
+        <th>Búsqueda</th>
+        <th>Tipo</th>
+        <th>Resultados</th>
+        <th>Status</th>
+      </tr>`;
+    }
+
+    function userLabelFromId(uid){
+      const p = profilesById.get(uid);
+      if(!p) return uid ? String(uid).slice(0,8) + "…" : "—";
+      const company = (p.company_name || "").trim();
+      const name = fullName(p);
+      if(company) return `${company} • ${name}`;
+      return name;
+    }
+
+    function renderHistTable({ headEl, bodyEl, mode, rows, isAdminTable=false }){
+      headEl.innerHTML = buildHistHeadForMode(mode, isAdminTable);
+
+      if(!rows || rows.length === 0){
+        bodyEl.innerHTML = `<tr><td class="muted" colspan="${mode==='codes' ? (isAdminTable?4:3) : (isAdminTable?6:5)}">Sin datos para este filtro.</td></tr>`;
+        return;
+      }
+
+      if(mode === "codes"){
+        bodyEl.innerHTML = rows.map(r=>{
+          const userTd = isAdminTable ? `<td>${escapeHtml(userLabelFromId(r.user_id))}</td>` : "";
+          return `<tr>
+            ${userTd}
+            <td><b>${escapeHtml(normalizeQueryLabel(r.query_raw))}</b></td>
+            <td>${Number(r.count || 0)}</td>
+            <td>${escapeHtml(fmtDate(r.last_at))}</td>
+          </tr>`;
+        }).join("");
+        return;
+      }
+
+      // events
+      bodyEl.innerHTML = rows.map(r=>{
+        const userTd = isAdminTable ? `<td>${escapeHtml(userLabelFromId(r.user_id))}</td>` : "";
+        return `<tr>
+          ${userTd}
+          <td>${escapeHtml(fmtDate(r.created_at))}</td>
+          <td><b>${escapeHtml(normalizeQueryLabel(r.query_raw))}</b></td>
+          <td>${escapeHtml(r.query_type || "—")}</td>
+          <td>${Number(r.results_count || 0)}</td>
+          <td>${escapeHtml(r.result_status || "—")}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    async function fetchSearchEvents({ userId=null, sinceISO=null, limit=50 }){
+      let q = supabase
+        .from("search_events")
+        .select("created_at,user_id,query_raw,query_type,results_count,result_status")
+        .order("created_at", { ascending:false })
+        .limit(Number(limit || 50));
+
+      if(userId) q = q.eq("user_id", userId);
+      if(sinceISO) q = q.gte("created_at", sinceISO);
+
+      const { data, error } = await q;
+      if(error) throw error;
+      return data || [];
+    }
+
+    function aggregateCodes(events){
+      const map = new Map(); // query_raw -> {query_raw,count,last_at}
+      for(const ev of (events||[])){
+        const key = String(ev.query_raw || "").trim();
+        if(!key) continue;
+        const it = map.get(key) || { query_raw:key, count:0, last_at: ev.created_at };
+        it.count += 1;
+        if(ev.created_at && (!it.last_at || new Date(ev.created_at) > new Date(it.last_at))) it.last_at = ev.created_at;
+        map.set(key, it);
+      }
+      return Array.from(map.values());
+    }
+
+    window.loadMyHistory = async function loadMyHistory(){
+      const card = $("historyCard");
+      const headEl = $("myHistHead");
+      const bodyEl = $("myHistBody");
+      const pillEl = $("myHistPill");
+      const msgEl = $("myHistMsg");
+
+      try{
+        setMsg(msgEl, "", false);
+
+        if(!myUserId){
+          card.style.display = "none";
+          return;
+        }
+
+        card.style.display = "block";
+
+        const mode = $("myHistMode")?.value || "events";
+        const range = $("myHistRange")?.value || "30";
+        const sort  = $("myHistSort")?.value || "recent";
+        const limit = Number($("myHistLimit")?.value || 50);
+
+        const sinceISO = rangeToSinceISO(range);
+        const takeForAgg = Math.max(limit, 500); // para resumen por código
+        const events = await fetchSearchEvents({ userId: myUserId, sinceISO, limit: (mode==="codes" ? takeForAgg : limit) });
+
+        let rows = [];
+        if(mode === "codes"){
+          rows = aggregateCodes(events);
+          if(sort === "most") rows.sort((a,b)=> (b.count||0) - (a.count||0));
+          else if(sort === "results") rows.sort((a,b)=> (new Date(b.last_at||0) - new Date(a.last_at||0)));
+          else rows.sort((a,b)=> (new Date(b.last_at||0) - new Date(a.last_at||0)));
+          rows = rows.slice(0, limit);
+        }else{
+          rows = events.slice(0, limit);
+        }
+
+        renderHistTable({ headEl, bodyEl, mode, rows, isAdminTable:false });
+        pillEl.textContent = `Mostrando ${rows.length} ${mode==="codes" ? "códigos" : "eventos"}`;
+
+      }catch(e){
+        renderHistTable({ headEl, bodyEl, mode:"events", rows:[], isAdminTable:false });
+        pillEl.textContent = "—";
+        setMsg(msgEl, "No pude leer el historial. Si eres usuario normal, revisa RLS de 'search_events'. " + (e?.message || e), true);
+      }
+    };
+
+    function fillAdminHistUserSelect(){
+      const sel = $("adminHistUser");
+      if(!sel) return;
+
+      // opción "Todos"
+      const opts = [`<option value="">Todos los usuarios</option>`];
+
+      // ordenar por company_name / name
+      const list = (adminProfiles || []).slice().sort((a,b)=>{
+        const ca = (a.company_name||"").toLowerCase();
+        const cb = (b.company_name||"").toLowerCase();
+        if(ca && cb && ca !== cb) return ca.localeCompare(cb);
+        return (fullName(a)||"").localeCompare(fullName(b)||"");
+      });
+
+      for(const p of list){
+        const label = userLabelFromId(p.id);
+        opts.push(`<option value="${escapeHtml(p.id)}">${escapeHtml(label)}</option>`);
+      }
+
+      sel.innerHTML = opts.join("");
+    }
+
+    window.loadAdminHistory = async function loadAdminHistory(){
+      if(!isAdmin) return;
+
+      const headEl = $("adminHistHead");
+      const bodyEl = $("adminHistBody");
+      const pillEl = $("adminHistPill");
+
+      const userId = $("adminHistUser")?.value || "";
+      const mode   = $("adminHistMode")?.value || "events";
+      const range  = $("adminHistRange")?.value || "30";
+      const limit  = Number($("adminHistLimit")?.value || 50);
+
+      try{
+        const sinceISO = rangeToSinceISO(range);
+        const takeForAgg = Math.max(limit, 1000);
+
+        // Si es "Todos", traemos más eventos para poder resumir (pero sin volarnos)
+        const events = await fetchSearchEvents({ userId: userId || null, sinceISO, limit: (mode==="codes" ? takeForAgg : limit) });
+
+        let rows = [];
+        if(mode === "codes"){
+          const byUser = new Map(); // key userId|query -> agg
+          for(const ev of (events||[])){
+            const q = String(ev.query_raw||"").trim();
+            if(!q) continue;
+            const k = `${ev.user_id}||${q}`;
+            const it = byUser.get(k) || { user_id: ev.user_id, query_raw: q, count:0, last_at: ev.created_at };
+            it.count += 1;
+            if(ev.created_at && (!it.last_at || new Date(ev.created_at) > new Date(it.last_at))) it.last_at = ev.created_at;
+            byUser.set(k, it);
+          }
+          rows = Array.from(byUser.values());
+          rows.sort((a,b)=> (b.count||0) - (a.count||0));
+          rows = rows.slice(0, limit);
+        }else{
+          rows = events.slice(0, limit);
+        }
+
+        renderHistTable({ headEl, bodyEl, mode, rows, isAdminTable:true });
+        pillEl.textContent = `Mostrando ${rows.length} ${mode==="codes" ? "registros (resumen)" : "eventos"}`;
+
+      }catch(e){
+        headEl.innerHTML = buildHistHeadForMode("events", true);
+        bodyEl.innerHTML = `<tr><td class="muted">No pude cargar historial: ${escapeHtml(e?.message || e)}</td></tr>`;
+        pillEl.textContent = "—";
+      }
+    };
+
+
     // ====== INIT ======
     async function init(){
       setMsg($("msgProfile"), "", false);
@@ -1377,6 +1735,14 @@ window.savePlanFeatures = async (planId)=>{
         // Botón de renovar/upgrade SOLO para usuarios normales
         $("btnPayPlans").style.display = isAdmin ? "none" : "";
 
+        // Historial (todos los usuarios logueados ven su historial)
+        try{ await loadMyHistory(); }catch(_){ }
+
+        // Admin: preparar selector de usuarios para historial
+        if(isAdmin){
+          try{ fillAdminHistUserSelect(); }catch(_){ }
+        }
+
       }catch(err){
         setMsg($("msgProfile"), "Error cargando: " + (err?.message || err), true);
       }
@@ -1388,4 +1754,5 @@ window.savePlanFeatures = async (planId)=>{
   </script>
 </body>
 </html>
+
 
