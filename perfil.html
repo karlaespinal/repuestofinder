@@ -1490,7 +1490,40 @@ window.savePlanFeatures = async (planId)=>{
       return name;
     }
 
-    function renderHistTable({ headEl, bodyEl, mode, rows, isAdminTable=false }){
+    
+    // ==========================
+    // Historial de busquedas (search_events)
+    // Nota: en tu BD la columna de tiempo NO siempre se llama created_at.
+    // Vamos a detectar automaticamente la columna correcta.
+    // ==========================
+    let searchEventsTimeCol = null;
+
+    async function detectSearchEventsTimeCol_(){
+      if(searchEventsTimeCol) return searchEventsTimeCol;
+
+      const candidates = ["created_at","inserted_at","created","created_on","createdon","event_time","timestamp","ts"];
+      for(const col of candidates){
+        try{
+          const { error } = await supabase
+            .from("search_events")
+            .select(col)
+            .order(col, { ascending:false })
+            .limit(1);
+          if(!error){
+            searchEventsTimeCol = col;
+            return searchEventsTimeCol;
+          }
+        }catch(e){
+          // sigue probando
+        }
+      }
+
+      // fallback (sin columna de tiempo detectable)
+      searchEventsTimeCol = null;
+      return null;
+    }
+
+    function renderHistTable({ headEl, bodyEl, mode, rows, isAdminTable=false, timeCol="created_at" }){
       headEl.innerHTML = buildHistHeadForMode(mode, isAdminTable);
 
       if(!rows || rows.length === 0){
@@ -1514,9 +1547,10 @@ window.savePlanFeatures = async (planId)=>{
       // events
       bodyEl.innerHTML = rows.map(r=>{
         const userTd = isAdminTable ? `<td>${escapeHtml(userLabelFromId(r.user_id))}</td>` : "";
+        const ts = (timeCol && r ? r[timeCol] : null) || r.created_at || r.inserted_at || r.created || null;
         return `<tr>
           ${userTd}
-          <td>${escapeHtml(fmtDate(r.created_at))}</td>
+          <td>${escapeHtml(fmtDate(ts))}</td>
           <td><b>${escapeHtml(normalizeQueryLabel(r.query_raw))}</b></td>
           <td>${escapeHtml(r.query_type || "—")}</td>
           <td>${Number(r.results_count || 0)}</td>
@@ -1526,28 +1560,62 @@ window.savePlanFeatures = async (planId)=>{
     }
 
     async function fetchSearchEvents({ userId=null, sinceISO=null, limit=50 }){
+      const timeCol = await detectSearchEventsTimeCol_();
+
+      // columnas base (si tu tabla tiene mas, no importa)
+      const baseCols = ["user_id","query_raw","query_type","results_count","result_status"];
+      const cols = timeCol ? [timeCol, ...baseCols] : baseCols;
+
       let q = supabase
         .from("search_events")
-        .select("created_at,user_id,query_raw,query_type,results_count,result_status")
-        .order("created_at", { ascending:false })
+        .select(cols.join(","))
         .limit(Number(limit || 50));
 
+      // orden por tiempo si existe; si no, por id (si existe) o sin orden
+      if(timeCol){
+        q = q.order(timeCol, { ascending:false });
+      }else{
+        // intenta ordenar por id si existe
+        try{ q = q.order("id", { ascending:false }); }catch(e){}
+      }
+
       if(userId) q = q.eq("user_id", userId);
-      if(sinceISO) q = q.gte("created_at", sinceISO);
+      if(sinceISO && timeCol) q = q.gte(timeCol, sinceISO);
 
       const { data, error } = await q;
       if(error) throw error;
-      return data || [];
+
+      // attach meta de timeCol para quien lo llame (opcional)
+      return { rows: (data || []), timeCol: (timeCol || "created_at") };
     }
 
-    function aggregateCodes(events){
+    function getEventTs_(ev, timeCol){
+      if(!ev) return null;
+      return (timeCol && ev[timeCol]) || ev.created_at || ev.inserted_at || ev.created || null;
+    }
+
+    function aggregateCodes(events, timeCol){
       const map = new Map(); // query_raw -> {query_raw,count,last_at}
       for(const ev of (events||[])){
         const key = String(ev.query_raw || "").trim();
         if(!key) continue;
-        const it = map.get(key) || { query_raw:key, count:0, last_at: ev.created_at };
+
+        const ts = getEventTs_(ev, timeCol);
+        const it = map.get(key) || { query_raw:key, count:0, last_at: ts };
+
         it.count += 1;
-        if(ev.created_at && (!it.last_at || new Date(ev.created_at) > new Date(it.last_at))) it.last_at = ev.created_at;
+        if(ts && (!it.last_at || new Date(ts) > new Date(it.last_at))) it.last_at = ts;
+
+        map.set(key, it);
+      }
+      return Array.from(map.values());
+    }
+      for(const ev of (events||[])){
+        const key = String(ev.query_raw || "").trim();
+        if(!key) continue;
+        const it = map.get(key) || { query_raw:key, count:0, last_at: getEventTs_(ev, timeCol) };
+        it.count += 1;
+        { const ts = getEventTs_(ev, timeCol); if(ts && (!it.last_at || new Date(ts) > new Date(it.last_at))) it.last_at = ts; }
         map.set(key, it);
       }
       return Array.from(map.values());
@@ -1581,7 +1649,7 @@ window.savePlanFeatures = async (planId)=>{
 
         let rows = [];
         if(mode === "codes"){
-          rows = aggregateCodes(events);
+          rows = aggregateCodes(events, timeCol);
           if(sort === "most") rows.sort((a,b)=> (b.count||0) - (a.count||0));
           else if(sort === "results") rows.sort((a,b)=> (new Date(b.last_at||0) - new Date(a.last_at||0)));
           else rows.sort((a,b)=> (new Date(b.last_at||0) - new Date(a.last_at||0)));
@@ -1590,7 +1658,7 @@ window.savePlanFeatures = async (planId)=>{
           rows = events.slice(0, limit);
         }
 
-        renderHistTable({ headEl, bodyEl, mode, rows, isAdminTable:false });
+        renderHistTable({ headEl, bodyEl, mode, rows, isAdminTable:false, timeCol });
         pillEl.textContent = `Mostrando ${rows.length} ${mode==="codes" ? "códigos" : "eventos"}`;
 
       }catch(e){
@@ -1649,9 +1717,9 @@ window.savePlanFeatures = async (planId)=>{
             const q = String(ev.query_raw||"").trim();
             if(!q) continue;
             const k = `${ev.user_id}||${q}`;
-            const it = byUser.get(k) || { user_id: ev.user_id, query_raw: q, count:0, last_at: ev.created_at };
+            const it = byUser.get(k) || { user_id: ev.user_id, query_raw: q, count:0, last_at: getEventTs_(ev, timeCol) };
             it.count += 1;
-            if(ev.created_at && (!it.last_at || new Date(ev.created_at) > new Date(it.last_at))) it.last_at = ev.created_at;
+            { const ts = getEventTs_(ev, timeCol); if(ts && (!it.last_at || new Date(ts) > new Date(it.last_at))) it.last_at = ts; }
             byUser.set(k, it);
           }
           rows = Array.from(byUser.values());
@@ -1661,7 +1729,7 @@ window.savePlanFeatures = async (planId)=>{
           rows = events.slice(0, limit);
         }
 
-        renderHistTable({ headEl, bodyEl, mode, rows, isAdminTable:true });
+        renderHistTable({ headEl, bodyEl, mode, rows, isAdminTable:true, timeCol });
         pillEl.textContent = `Mostrando ${rows.length} ${mode==="codes" ? "registros (resumen)" : "eventos"}`;
 
       }catch(e){
