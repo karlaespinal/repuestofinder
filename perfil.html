@@ -1555,6 +1555,12 @@ window.savePlanFeatures = async (planId)=>{
 
     window.loadMyHistory = async function loadMyHistory(){
       const card = $("historyCard");
+
+      // Si eres admin, usamos el historial de la pestaña ADMIN (arriba) y ocultamos este bloque.
+      if (isAdmin){
+        if(card) card.style.display = "none";
+        return;
+      }
       const headEl = $("myHistHead");
       const bodyEl = $("myHistBody");
       const pillEl = $("myHistPill");
@@ -1735,8 +1741,13 @@ window.savePlanFeatures = async (planId)=>{
         // Botón de renovar/upgrade SOLO para usuarios normales
         $("btnPayPlans").style.display = isAdmin ? "none" : "";
 
-        // Historial (todos los usuarios logueados ven su historial)
-        try{ await loadMyHistory(); }catch(_){ }
+        // Historial: solo usuarios normales (admins usan la pestaña 'Historial' arriba)
+        if(!isAdmin){
+          try{ await loadMyHistory(); }catch(_){ }
+        }else{
+          const hc = $("historyCard");
+          if(hc) hc.style.display = "none";
+        }
 
         // Admin: preparar selector de usuarios para historial
         if(isAdmin){
@@ -1754,6 +1765,7 @@ window.savePlanFeatures = async (planId)=>{
   </script>
 </body>
 </html>
+
 
 
 
