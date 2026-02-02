@@ -1596,31 +1596,6 @@ window.savePlanFeatures = async (planId)=>{
 
     function aggregateCodes(events, timeCol){
       const map = new Map(); // query_raw -> {query_raw,count,last_at}
-      for(const ev of (events||[])){
-        const key = String(ev.query_raw || "").trim();
-        if(!key) continue;
-
-        const ts = getEventTs_(ev, timeCol);
-        const it = map.get(key) || { query_raw:key, count:0, last_at: ts };
-
-        it.count += 1;
-        if(ts && (!it.last_at || new Date(ts) > new Date(it.last_at))) it.last_at = ts;
-
-        map.set(key, it);
-      }
-      return Array.from(map.values());
-    }
-      for(const ev of (events||[])){
-        const key = String(ev.query_raw || "").trim();
-        if(!key) continue;
-        const it = map.get(key) || { query_raw:key, count:0, last_at: getEventTs_(ev, timeCol) };
-        it.count += 1;
-        { const ts = getEventTs_(ev, timeCol); if(ts && (!it.last_at || new Date(ts) > new Date(it.last_at))) it.last_at = ts; }
-        map.set(key, it);
-      }
-      return Array.from(map.values());
-    }
-
     window.loadMyHistory = async function loadMyHistory(){
       const card = $("historyCard");
       const headEl = $("myHistHead");
@@ -1645,7 +1620,7 @@ window.savePlanFeatures = async (planId)=>{
 
         const sinceISO = rangeToSinceISO(range);
         const takeForAgg = Math.max(limit, 500); // para resumen por código
-        const events = await fetchSearchEvents({ userId: myUserId, sinceISO, limit: (mode==="codes" ? takeForAgg : limit) });
+        const { rows: events, timeCol } = await fetchSearchEvents({ userId: myUserId, sinceISO, limit: (mode==="codes" ? takeForAgg : limit) });
 
         let rows = [];
         if(mode === "codes"){
@@ -1708,7 +1683,7 @@ window.savePlanFeatures = async (planId)=>{
         const takeForAgg = Math.max(limit, 1000);
 
         // Si es "Todos", traemos más eventos para poder resumir (pero sin volarnos)
-        const events = await fetchSearchEvents({ userId: userId || null, sinceISO, limit: (mode==="codes" ? takeForAgg : limit) });
+        const { rows: events, timeCol } = await fetchSearchEvents({ userId: userId || null, sinceISO, limit: (mode==="codes" ? takeForAgg : limit) });
 
         let rows = [];
         if(mode === "codes"){
