@@ -188,17 +188,36 @@
       overflow:hidden;
     }
 
-    /* Caja con scroll para tablas largas (especialmente Historial del usuario normal) */
-    .tableWrap{
+    /* Historial (usuario normal) - compacto como admin */
+    #historyCard{
+      max-width: 980px;
+      margin-left:auto;
+      margin-right:auto;
+    }
+    #historyCard .two{ grid-template-columns: 1fr 1fr; }
+    @media(max-width:980px){ #historyCard{max-width:100%} }
+    #historyCard .histTableWrap{
       margin-top:10px;
-      border-radius:14px;
+      max-height:360px;
       overflow:auto;
       border:1px solid rgba(230,232,240,.95);
+      border-radius:14px;
       background:#fff;
-      max-height:480px;
     }
-    /* Evita doble borde cuando la tabla va dentro del wrap */
-    .tableWrap table{ border:0; border-radius:0; }
+    #historyCard table{
+      border:0;
+      border-radius:0;
+      overflow:visible;
+      background:transparent;
+      min-width: 860px; /* permite que no se aprieten columnas */
+    }
+    #historyCard thead th{
+      position:sticky;
+      top:0;
+      z-index:2;
+      background:#f8fafc;
+    }
+
     th,td{padding:10px;border-bottom:1px solid rgba(230,232,240,.75);text-align:left;vertical-align:middle}
     th{
       background:rgba(246,247,251,.8);
@@ -563,7 +582,7 @@
         <span class="pill" id="myHistPill">—</span>
       </div>
 
-      <div class="tableWrap">
+      <div class="histTableWrap">
         <table>
           <thead id="myHistHead"></thead>
           <tbody id="myHistBody">
@@ -1766,6 +1785,7 @@ window.savePlanFeatures = async (planId)=>{
   </script>
 </body>
 </html>
+
 
 
 
