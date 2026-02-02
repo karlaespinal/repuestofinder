@@ -187,6 +187,18 @@
       border-radius:14px;
       overflow:hidden;
     }
+
+    /* Caja con scroll para tablas largas (especialmente Historial del usuario normal) */
+    .tableWrap{
+      margin-top:10px;
+      border-radius:14px;
+      overflow:auto;
+      border:1px solid rgba(230,232,240,.95);
+      background:#fff;
+      max-height:480px;
+    }
+    /* Evita doble borde cuando la tabla va dentro del wrap */
+    .tableWrap table{ border:0; border-radius:0; }
     th,td{padding:10px;border-bottom:1px solid rgba(230,232,240,.75);text-align:left;vertical-align:middle}
     th{
       background:rgba(246,247,251,.8);
@@ -551,7 +563,7 @@
         <span class="pill" id="myHistPill">—</span>
       </div>
 
-      <div style="margin-top:10px">
+      <div class="tableWrap">
         <table>
           <thead id="myHistHead"></thead>
           <tbody id="myHistBody">
@@ -1555,12 +1567,6 @@ window.savePlanFeatures = async (planId)=>{
 
     window.loadMyHistory = async function loadMyHistory(){
       const card = $("historyCard");
-
-      // Si eres admin, usamos el historial de la pestaña ADMIN (arriba) y ocultamos este bloque.
-      if (isAdmin){
-        if(card) card.style.display = "none";
-        return;
-      }
       const headEl = $("myHistHead");
       const bodyEl = $("myHistBody");
       const pillEl = $("myHistPill");
@@ -1741,13 +1747,8 @@ window.savePlanFeatures = async (planId)=>{
         // Botón de renovar/upgrade SOLO para usuarios normales
         $("btnPayPlans").style.display = isAdmin ? "none" : "";
 
-        // Historial: solo usuarios normales (admins usan la pestaña 'Historial' arriba)
-        if(!isAdmin){
-          try{ await loadMyHistory(); }catch(_){ }
-        }else{
-          const hc = $("historyCard");
-          if(hc) hc.style.display = "none";
-        }
+        // Historial (todos los usuarios logueados ven su historial)
+        try{ await loadMyHistory(); }catch(_){ }
 
         // Admin: preparar selector de usuarios para historial
         if(isAdmin){
