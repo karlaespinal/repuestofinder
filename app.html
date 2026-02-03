@@ -1972,25 +1972,23 @@ window.limpiar = function(){
     if(isMobile_()) setMobileDefault_();
   };
 
-  window.buscar = async function(){
+    window.buscar = async function(){
     const t0 = performance.now();
 
-    if(__isSearching){
-      // evita doble click / doble llamada que a veces deja la pagina en 'Buscando...'
-      return;
-    }
+    // evita doble click / doble llamada que a veces deja la pagina en 'Buscando...'
+    if (window.__isSearching) return;
 
-
-    const raw = (document.getElementById("code").value || "").trim();
+    const raw = (document.getElementById("code")?.value || "").trim();
     if(!raw){ setStatus("Escribe un codigo."); return; }
 
-    __isSearching = true;
+    window.__isSearching = true;
     try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=true; }catch(e){}
 
     const norm = normalizeCode_(raw);
     const candidates = unique_([ raw, raw.toUpperCase(), norm ]).filter(Boolean);
 
     setStatus("Buscando...");
+
     try{
       const codigoMostrado = candidates[0] || raw;
 
@@ -2053,8 +2051,6 @@ window.limpiar = function(){
           vehicle_year_to: vehSummary?.year_to || null,
           vehicle_engine: vehSummary?.engine || null,
           vehicle_serie: vehSummary?.serie || null,
-
-          // ✅ meta para saber que buscamos en v1+v2
           used_vehicle_tables: VEH_TABLES,
           used_cambios_tables: CAMBIOS_TABLES
         }
@@ -2069,7 +2065,6 @@ window.limpiar = function(){
       alert("Error consultando: " + (e && e.message ? e.message : e));
 
       const t1 = performance.now();
-
       await logSearchEvent_({
         queryRaw: raw,
         queryType: "oem",
@@ -2078,15 +2073,10 @@ window.limpiar = function(){
         resultStatus: "unknown",
         resultsCount: 0,
         responseTimeMs: Math.round(t1 - t0),
-        meta: {
-          error: (e && e.message) ? e.message : String(e)
-        }
+        meta: { error: (e && e.message) ? e.message : String(e) }
       });
-    }
-  };
-
     }finally{
-      __isSearching = false;
+      window.__isSearching = false;
       try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
       // Si por alguna razon se quedo en "Buscando...", lo llevamos a estado listo.
       try{
@@ -2094,7 +2084,7 @@ window.limpiar = function(){
         if(st.toLowerCase().includes("buscando")) setStatus("Listo ✅");
       }catch(e){}
     }
-
+  };
 
   // ======================================================
   // ✅ Ofertas: buscar y renderizar debajo de Vehicles/Cambios
@@ -2561,6 +2551,7 @@ function isOfferActive_(o){
 </script>
 </body>
 </html>
+
 
 
 
