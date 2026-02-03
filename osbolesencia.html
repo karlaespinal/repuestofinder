@@ -347,6 +347,69 @@
     color:var(--pri2);
   }
   .alignBtn svg{ width:16px; height:16px; opacity:.90; }
+
+/* Lotes (batch) */
+.batchWrap{ display:flex; flex-direction:column; gap:6px; min-width:220px; flex:1; }
+.batchRow{ display:flex; gap:8px; align-items:center; }
+.batchHint{ font-size:12px; color:var(--muted); }
+.dropdown{
+  position:relative;
+  display:inline-block;
+}
+.dropBtn{
+  border:1px solid rgba(0,0,0,.10);
+  background:rgba(255,255,255,.90);
+  border-radius:12px;
+  padding:10px 12px;
+  font-weight:900;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  user-select:none;
+  white-space:nowrap;
+}
+.dropBtn:hover{ background:rgba(255,255,255,.98); }
+.dropPanel{
+  position:absolute;
+  right:0;
+  top:calc(100% + 8px);
+  width:min(360px, 92vw);
+  background:white;
+  border:1px solid rgba(0,0,0,.10);
+  border-radius:14px;
+  box-shadow:0 18px 40px rgba(2,6,23,.12);
+  padding:10px;
+  z-index:120;
+  display:none;
+}
+.dropPanel.open{ display:block; }
+.dropHead{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px; }
+.dropList{ max-height:260px; overflow:auto; padding-right:4px; }
+.chk{
+  display:flex; align-items:center; gap:10px;
+  padding:8px 8px;
+  border-radius:12px;
+  cursor:pointer;
+}
+.chk:hover{ background:rgba(2,6,23,.04); }
+.chk input{ width:16px; height:16px; }
+.mini{ font-size:12px; color:var(--muted); }
+.groupRow{
+  background:rgba(2,6,23,.02);
+  border:1px solid rgba(229,231,235,.9);
+}
+.groupTitle{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  font-weight:900;
+  cursor:pointer;
+}
+.caret{
+  width:22px; height:22px; display:grid; place-items:center;
+  border-radius:10px;
+  border:1px solid rgba(0,0,0,.08);
+  background:rgba(255,255,255,.8);
+}
 </style>
 </head>
 
@@ -438,6 +501,15 @@
                   </button>
                 </div>
               </div>
+
+<div class="field batchWrap">
+  <label>Lote (global)</label>
+  <div class="batchRow">
+    <input class="inp" id="gBatch" placeholder="Ej: Ofertas de verano / Ofertas de invierno" />
+    <button class="btn btnGhost btnSmall" type="button" onclick="clearBatch()">Limpiar</button>
+  </div>
+  <div class="batchHint">Este nombre se guarda como etiqueta interna (el cliente no lo ve) y te permite filtrar tus ofertas por lote.</div>
+</div>
 <div class="pill ok" style="margin-bottom:2px">
                 ✅ Se aplica a todas las filas (Excel y 1×1)
               </div>
@@ -530,8 +602,27 @@
         <!-- MIS OFERTAS -->
         <div class="row" style="justify-content:space-between">
           <b>Mis ofertas</b>
-          <div class="row">
-            <input class="inp" id="q" oninput="renderOffers()" placeholder="Filtrar (OEM / marca / país)" style="min-width:300px"/>
+          <div class="row" style="align-items:stretch">
+            <input class="inp" id="q" oninput="renderOffers()" placeholder="Filtrar (OEM / marca / país)" style="min-width:260px"/>
+
+            <div class="dropdown" id="batchDrop">
+              <button class="dropBtn" type="button" onclick="event.stopPropagation(); toggleBatchDropdown()" title="Filtrar por lote">
+                🧩 Lotes <span class="badge" id="batchCount">0</span>
+              </button>
+              <div class="dropPanel" id="batchPanel" onclick="event.stopPropagation()">
+                <div class="dropHead">
+                  <div style="font-weight:900">Filtrar por lote</div>
+                  <div class="row" style="gap:6px">
+                    <button class="btn btnGhost btnSmall" type="button" onclick="selectAllBatches()">Todos</button>
+                    <button class="btn btnGhost btnSmall" type="button" onclick="clearBatchSelection()">Ninguno</button>
+                  </div>
+                </div>
+                <div class="mini" style="margin-bottom:8px">Marca los lotes que quieres ver. Si no marcas ninguno, se muestran <b>todos</b>.</div>
+                <div class="dropList" id="batchList"></div>
+              </div>
+            </div>
+
+            <button class="btn btnGhost btnSmall" type="button" onclick="toggleGroupMode()" id="btnGroupMode" title="Agrupar por lote">📁 Ver por lote</button>
             <button class="btn btnGhost btnSmall" id="btnRefreshOffers">Actualizar</button>
           </div>
         </div>
@@ -789,6 +880,163 @@
   let myCompanyName = null;
   let offersCache = [];
   let chatsCache = [];
+
+// ===== Lotes (batch) =====
+// Guardamos el lote como etiqueta interna dentro de "description" (no visible al cliente)
+// Formato: "\nRF_BATCH::NOMBRE_DEL_LOTE"
+const BATCH_TAG = "RF_BATCH::";
+
+let groupMode = (localStorage.getItem("rf_offers_groupmode") || "1") === "1"; // ver por lote
+let selectedBatches = new Set(); // si está vacío => mostrar todos
+
+function cleanBatchName(name){
+  return String(name||"").trim().replace(/\s+/g," ").slice(0, 60);
+}
+function embedBatchIntoDesc(desc, batch){
+  const d = String(desc||"").trim();
+  const b = cleanBatchName(batch);
+  // quitar tags anteriores
+  const cleaned = stripBatchFromDesc(d);
+  if(!b) return cleaned || null;
+  const joiner = cleaned ? "\n\n" : "";
+  return (cleaned + joiner + BATCH_TAG + b).trim();
+}
+function stripBatchFromDesc(desc){
+  const d = String(desc||"").trim();
+  if(!d) return "";
+  // elimina cualquier linea que empiece con RF_BATCH::
+  return d.split(/\n/).filter(line=>!String(line||"").trim().startsWith(BATCH_TAG)).join("\n").trim();
+}
+function extractBatchFromDesc(desc){
+  const d = String(desc||"");
+  const line = d.split(/\n/).map(x=>String(x||"").trim()).find(x=>x.startsWith(BATCH_TAG));
+  if(!line) return "";
+  return cleanBatchName(line.slice(BATCH_TAG.length));
+}
+
+window.clearBatch = function(){
+  const el = document.getElementById("gBatch");
+  if(el) el.value = "";
+  try{ localStorage.setItem("rf_last_batch", ""); }catch(_){}
+}
+
+function getCurrentBatch_(){
+  const el = document.getElementById("gBatch");
+  const v = cleanBatchName(el?.value || "");
+  return v;
+}
+
+function saveLastBatch_(v){
+  try{ localStorage.setItem("rf_last_batch", v || ""); }catch(_){}
+}
+
+function restoreLastBatch_(){
+  const el = document.getElementById("gBatch");
+  if(!el) return;
+  const v = String(localStorage.getItem("rf_last_batch") || "");
+  if(v && !el.value) el.value = v;
+}
+
+function uniqueBatchesFromOffers_(){
+  const set = new Set();
+  let hasNone = false;
+  for(const o of offersCache){
+    const b = o._batch || "";
+    if(b) set.add(b);
+    else hasNone = true;
+  }
+  const arr = Array.from(set).sort((a,b)=>a.localeCompare(b, undefined, { sensitivity:"base" }));
+  if(hasNone) arr.unshift("— Sin lote —");
+  return arr;
+}
+
+function isNoneBatchLabel_(b){ return b === "— Sin lote —"; }
+
+function offerMatchesBatch_(o){
+  if(selectedBatches.size === 0) return true; // sin filtro => todo
+  const b = o._batch || "";
+  const key = b ? b : "— Sin lote —";
+  return selectedBatches.has(key);
+}
+
+window.toggleBatchDropdown = function(){
+  const p = document.getElementById("batchPanel");
+  if(!p) return;
+  p.classList.toggle("open");
+}
+
+function closeBatchDropdown_(){
+  const p = document.getElementById("batchPanel");
+  if(p) p.classList.remove("open");
+}
+
+window.selectAllBatches = function(){
+  selectedBatches = new Set(uniqueBatchesFromOffers_());
+  renderBatchFilterUI_();
+  renderOffers();
+}
+
+window.clearBatchSelection = function(){
+  selectedBatches = new Set(); // vacío => todos
+  renderBatchFilterUI_();
+  renderOffers();
+}
+
+function renderBatchFilterUI_(){
+  const list = document.getElementById("batchList");
+  const count = document.getElementById("batchCount");
+  if(count) count.textContent = String(selectedBatches.size);
+
+  if(!list) return;
+
+  const batches = uniqueBatchesFromOffers_();
+  if(!batches.length){
+    list.innerHTML = '<div class="mini">Aún no tienes lotes. Crea uno arriba y guarda ofertas.</div>';
+    return;
+  }
+
+  list.innerHTML = batches.map(b=>{
+    const checked = selectedBatches.size===0 ? false : selectedBatches.has(b);
+    const label = escapeHtml(b);
+    return `
+      <label class="chk">
+        <input type="checkbox" ${checked ? "checked" : ""} onchange="toggleBatchPick('${escapeHtml(b).replace(/'/g,"&#039;")}')"/>
+        <div style="min-width:0">
+          <div style="font-weight:900; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${label}</div>
+        </div>
+      </label>
+    `;
+  }).join("");
+}
+
+window.toggleBatchPick = function(batchLabel){
+  // batchLabel viene escapado en HTML, pero el browser lo entrega como texto normal
+  const b = String(batchLabel || "");
+  if(selectedBatches.size === 0){
+    // si estaba en "todos", empezar desde los actuales marcados (ninguno) => inicializar con todos menos el que desmarcará?
+    // más simple: al primer click, selecciona ese lote.
+    selectedBatches = new Set([b]);
+  }else{
+    if(selectedBatches.has(b)) selectedBatches.delete(b);
+    else selectedBatches.add(b);
+  }
+  renderBatchFilterUI_();
+  renderOffers();
+}
+
+window.toggleGroupMode = function(){
+  groupMode = !groupMode;
+  try{ localStorage.setItem("rf_offers_groupmode", groupMode ? "1" : "0"); }catch(_){}
+  updateGroupBtn_();
+  renderOffers();
+}
+
+function updateGroupBtn_(){
+  const btn = document.getElementById("btnGroupMode");
+  if(!btn) return;
+  btn.textContent = groupMode ? "📄 Ver lista" : "📁 Ver por lote";
+  btn.title = groupMode ? "Mostrar en lista (sin agrupar)" : "Agrupar por lote";
+}
   let selectedChat = null; // {id, offer_id,...}
   let chatPoll = null;
 
@@ -1294,6 +1542,9 @@ window.renderArticleModal = function(){
       const qtyRaw = String($("fQty").value||"").trim();
       const qty = qtyRaw==="" ? null : Number(qtyRaw);
       const desc = String($("fDesc").value||"").trim();
+      const batch = getCurrentBatch_();
+      saveLastBatch_(batch);
+      const descTagged = embedBatchIntoDesc(desc, batch);
       const country = String($("gCountry").value||"").trim();
       const currency = String($("gCurrency").value||"USD").trim().toUpperCase();
 const price = parseNum($("fPrice").value);
@@ -1312,7 +1563,7 @@ const price = parseNum($("fPrice").value);
         original_norm: normCode(original),
         brand,
         quantity_available: qty,
-        description: desc || null,
+        description: descTagged || null,
         price,
         currency,
         country,
@@ -1336,6 +1587,8 @@ const price = parseNum($("fPrice").value);
     try{
       if(!me){
         offersCache = [];
+        renderBatchFilterUI_();
+        updateGroupBtn_();
         renderOffers();
         return;
       }
@@ -1344,7 +1597,7 @@ const price = parseNum($("fPrice").value);
       const nowIso = new Date().toISOString();
 
       let q = supabase.from(OFFERS_TABLE)
-        .select("id,original,original_norm,brand,quantity_available,price,currency,country,expires_at,created_at,seller_id")
+        .select("id,original,original_norm,brand,quantity_available,price,currency,country,expires_at,created_at,seller_id,description")
         .gt("expires_at", nowIso)
         .order("created_at", { ascending:false })
         .limit(500);
@@ -1354,7 +1607,12 @@ const price = parseNum($("fPrice").value);
       const { data, error } = await q;
       if(error) throw error;
 
-      offersCache = data || [];
+      offersCache = (data || []).map(o=>({
+        ...o,
+        _batch: extractBatchFromDesc(o.description || "")
+      }));
+      renderBatchFilterUI_();
+      updateGroupBtn_();
       renderOffers();
     }catch(e){
       console.error(e);
@@ -1362,48 +1620,128 @@ const price = parseNum($("fPrice").value);
     }
   }
 
-  function renderOffers(){
-    const qq = String($("q").value||"").trim().toLowerCase();
-    let rows = offersCache.slice();
+  
+function renderOffers(){
+  const qq = String(document.getElementById("q")?.value || "").trim().toLowerCase();
+  let rows = offersCache.slice();
 
-    if(qq){
-      rows = rows.filter(o=>{
-        return String(o.original||"").toLowerCase().includes(qq) ||
-               String(o.brand||"").toLowerCase().includes(qq) ||
-               String(o.country||"").toLowerCase().includes(qq);
-      });
-    }
-
-    if(rows.length===0){
-      $("offersTbody").innerHTML = '<tr><td colspan="7" class="tdSmall">No hay ofertas.</td></tr>';
-      return;
-    }
-
-    $("offersTbody").innerHTML = rows.map(o=>{
-      const exp = new Date(o.expires_at);
-      const expTxt = exp.toLocaleString();
-      const leftMs = exp.getTime() - Date.now();
-      const warn = leftMs < 6*60*60*1000;
-      const pill = warn ? '<span class="pill warn">Pronto</span>' : '<span class="pill ok">Activa</span>';
-
-      return `
-        <tr>
-          <td class="nowrap"><b>${escapeHtml(o.original||"")}</b><div class="tdSmall">${pill}</div></td>
-          <td>${escapeHtml(o.brand||"")}</td>
-          <td class="nowrap">${escapeHtml((o.quantity_available==null || o.quantity_available==="") ? "—" : String(o.quantity_available))}</td>
-          <td class="nowrap">${escapeHtml(money(o.price,o.currency))}</td>
-          <td>${escapeHtml(o.country||"")}</td>
-          <td class="nowrap">${escapeHtml(expTxt)}</td>
-          <td style="text-align:right" class="nowrap">
-            <div class="tActions">
-              <button class="btn btnGhost btnSmall" onclick="openChatsByOffer('${o.id}')">Ver chats</button>
-              <button class="btn btnBad btnSmall" onclick="askDel('${o.id}')">Eliminar</button>
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join("");
+  // filtro texto
+  if(qq){
+    rows = rows.filter(o=>{
+      return String(o.original||"").toLowerCase().includes(qq) ||
+             String(o.brand||"").toLowerCase().includes(qq) ||
+             String(o.country||"").toLowerCase().includes(qq) ||
+             String(o._batch||"").toLowerCase().includes(qq);
+    });
   }
+
+  // filtro por lote (checkbox)
+  rows = rows.filter(offerMatchesBatch_);
+
+  const tb = document.getElementById("offersTbody");
+  if(!tb) return;
+
+  if(rows.length===0){
+    tb.innerHTML = '<tr><td colspan="7" class="tdSmall">No hay ofertas.</td></tr>';
+    return;
+  }
+
+  // Si no hay lotes en absoluto, forzar modo lista
+  const hasAnyBatch = rows.some(o=>!!(o._batch||""));
+  const useGroup = groupMode && hasAnyBatch;
+
+  if(!useGroup){
+    tb.innerHTML = rows.map(o=>renderOfferRow_(o)).join("");
+    return;
+  }
+
+  // Agrupar por lote
+  const groups = new Map();
+  for(const o of rows){
+    const key = o._batch ? o._batch : "— Sin lote —";
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(o);
+  }
+
+  // ordenar grupos
+  const keys = Array.from(groups.keys()).sort((a,b)=>{
+    if(isNoneBatchLabel_(a)) return 1;
+    if(isNoneBatchLabel_(b)) return -1;
+    return a.localeCompare(b, undefined, { sensitivity:"base" });
+  });
+
+  // estado colapsado persistente
+  const collapsed = new Set();
+  try{
+    const raw = JSON.parse(localStorage.getItem("rf_batch_collapsed") || "[]");
+    (raw||[]).forEach(x=>collapsed.add(String(x)));
+  }catch(_){}
+
+  const htmlOut = [];
+  for(const k of keys){
+    const list = groups.get(k) || [];
+    // ordenar dentro del grupo por created_at desc (ya viene, pero aseguramos)
+    list.sort((a,b)=> new Date(b.created_at||0).getTime() - new Date(a.created_at||0).getTime());
+
+    const isCol = collapsed.has(k);
+    const caret = isCol ? "▸" : "▾";
+    htmlOut.push(`
+      <tr class="groupRow">
+        <td colspan="7">
+          <div class="groupTitle" onclick="toggleBatchGroup('${escapeHtml(k).replace(/'/g,"&#039;")}')">
+            <div style="min-width:0; display:flex; align-items:center; gap:10px">
+              <span class="caret">${caret}</span>
+              <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(k)}</span>
+              <span class="badge" title="Cantidad de ofertas">${list.length}</span>
+            </div>
+            <span class="mini">${isCol ? "Mostrar" : "Ocultar"}</span>
+          </div>
+        </td>
+      </tr>
+    `);
+
+    if(!isCol){
+      htmlOut.push(list.map(o=>renderOfferRow_(o)).join(""));
+    }
+  }
+
+  tb.innerHTML = htmlOut.join("");
+}
+
+function renderOfferRow_(o){
+  const exp = new Date(o.expires_at);
+  const expTxt = exp.toLocaleString();
+  const leftMs = exp.getTime() - Date.now();
+  const warn = leftMs < 6*60*60*1000;
+  const pill = warn ? '<span class="pill warn">Pronto</span>' : '<span class="pill ok">Activa</span>';
+
+  return `
+    <tr>
+      <td class="nowrap"><b>${escapeHtml(o.original||"")}</b><div class="tdSmall">${pill}</div></td>
+      <td>${escapeHtml(o.brand||"")}</td>
+      <td class="nowrap">${escapeHtml((o.quantity_available==null || o.quantity_available==="") ? "—" : String(o.quantity_available))}</td>
+      <td class="nowrap">${escapeHtml(money(o.price,o.currency))}</td>
+      <td>${escapeHtml(o.country||"")}</td>
+      <td class="nowrap">${escapeHtml(expTxt)}</td>
+      <td style="text-align:right" class="nowrap">
+        <div class="tActions">
+          <button class="btn btnGhost btnSmall" onclick="openChatsByOffer('${o.id}')">Ver chats</button>
+          <button class="btn btnBad btnSmall" onclick="askDel('${o.id}')">Eliminar</button>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+window.toggleBatchGroup = function(batchKey){
+  const k = String(batchKey||"");
+  let arr = [];
+  try{ arr = JSON.parse(localStorage.getItem("rf_batch_collapsed") || "[]") || []; }catch(_){}
+  const set = new Set(arr.map(String));
+  if(set.has(k)) set.delete(k); else set.add(k);
+  try{ localStorage.setItem("rf_batch_collapsed", JSON.stringify(Array.from(set))); }catch(_){}
+  renderOffers();
+}
 
   // ===== Delete offer =====
   let delId = null;
@@ -1845,6 +2183,8 @@ function buildBulkSheet(rows){
       const countryGlobal = String($("gCountry").value||"").trim();
       const currencyGlobal = String($("gCurrency").value||"USD").trim().toUpperCase();
       const durationGlobal = String($("gDuration").value||"24h").trim();
+      const batchGlobal = getCurrentBatch_();
+      saveLastBatch_(batchGlobal);
       if(!countryGlobal) throw new Error("Selecciona un país (global) antes de guardar.");
 
       // validar y convertir
@@ -1859,6 +2199,7 @@ function buildBulkSheet(rows){
         const currency = currencyGlobal;
         const duration = durationGlobal;
         const desc = r.desc;
+        const descTagged = embedBatchIntoDesc(desc, batchGlobal);
 
         const qtyRaw = String(r.qty||"").trim();
         const qty = qtyRaw==="" ? null : parseNum(qtyRaw);
@@ -1879,7 +2220,7 @@ function buildBulkSheet(rows){
           original_norm: normCode(original),
           brand,
           quantity_available: qty,
-          description: desc || null,
+          description: descTagged || null,
           price,
           currency: currency || "USD",
           country,
@@ -1946,6 +2287,11 @@ function buildBulkSheet(rows){
   populateGlobalSelects();
   // init alignment buttons state
   syncAlignUI_();
+  restoreLastBatch_();
+  updateGroupBtn_();
+
+  // cerrar dropdown de lotes al hacer click fuera
+  document.addEventListener('click', ()=>{ closeBatchDropdown_(); });
   // apply stored alignment when sheet exists
   window.setBulkAlign(bulkAlign);
   initAuth();
@@ -1953,6 +2299,7 @@ function buildBulkSheet(rows){
 
 </body>
 </html>
+
 
 
 
