@@ -525,9 +525,48 @@ function clearInputsAfterCodeSearch_(){
 
 
 // ======================================================
-// ✅ Anti-cuelgue: control de busqueda en curso + timeout
+// ✅ Anti-cuelgue: Busy manager + timeout + reintentos
+//   - Evita que el boton se quede "pegado" si una consulta tarda o falla
+//   - Permite reintentar aunque una busqueda anterior haya quedado colgada
 // ======================================================
-let __isSearching = false;
+const BUSY_STATE_ = {
+  busy: false,
+  startedAt: 0,
+  token: 0
+};
+
+function setBusy_(isBusy, label){
+  BUSY_STATE_.busy = !!isBusy;
+  if(isBusy) BUSY_STATE_.startedAt = Date.now();
+
+  try{
+    const b1 = document.getElementById("btnBuscarCodigo");
+    if(b1) b1.disabled = !!isBusy;
+
+    const b2 = document.getElementById("btnBuscarFiltro");
+    if(b2) b2.disabled = !!isBusy;
+
+    // Opcional: estilo visual
+    document.body.style.cursor = isBusy ? "progress" : "";
+  }catch(e){}
+  if(isBusy && label) setStatus(label);
+}
+
+function canStartNewSearch_(){
+  // Si esta busy pero lleva demasiado tiempo (ej. red lenta), deja reintentar.
+  if(!BUSY_STATE_.busy) return true;
+  const elapsed = Date.now() - (BUSY_STATE_.startedAt || 0);
+  return elapsed > 40000; // 40s: desbloqueo de seguridad
+}
+
+function nextSearchToken_(){
+  BUSY_STATE_.token = (BUSY_STATE_.token || 0) + 1;
+  return BUSY_STATE_.token;
+}
+
+function isTokenCurrent_(t){
+  return t === BUSY_STATE_.token;
+}
 
 function withTimeout_(promise, ms, label){
   let t;
@@ -542,9 +581,9 @@ function withTimeout_(promise, ms, label){
 // Reintentos simples (solo en timeouts / fallos temporales)
 async function retryWithTimeout_(fn, opts){
   const retries = Number(opts?.retries ?? 1);
-  const timeoutMs = Number(opts?.timeoutMs ?? 15000);
+  const timeoutMs = Number(opts?.timeoutMs ?? 30000);
   const label = String(opts?.label ?? "operacion");
-  const baseDelay = Number(opts?.baseDelay ?? 350);
+  const baseDelay = Number(opts?.baseDelay ?? 450);
 
   let lastErr = null;
   for(let attempt=0; attempt<=retries; attempt++){
@@ -554,6 +593,7 @@ async function retryWithTimeout_(fn, opts){
       lastErr = e;
       const msg = String(e?.message || e || "");
       const isTimeout = msg.toLowerCase().includes("timeout");
+      // Si NO es timeout, no reintentamos (error real de BD/RLS)
       if(attempt >= retries || !isTimeout){
         throw lastErr;
       }
@@ -1841,204 +1881,142 @@ function uniqueJoin_(arr, sep=" / "){
   }
 
   window.aplicarFiltroVehicular = async function(){
-    const filtro = readFiltro_();
-    if(!filtro.hasAny){
-      setFiltroPill_("Sin filtro");
-      alert("Escribe al menos un campo para buscar.");
+    // Este filtro dispara busquedas; protegemos con el mismo "busy manager"
+    if(!canStartNewSearch_()){
       return;
     }
 
-    // Si ya hay resultado OEM cargado, filtra SOLO eso (más rápido)
-    if(lastPayload && lastPayload.tablas && lastPayload.tablas.vehicles_full){
-      const base = lastPayload.tablas.vehicles_full;
-      // Filtrado client-side usando los mismos headers esperados
-      const idxVeh = base.headers.findIndex(h => String(h).toLowerCase().includes("vehiculo"));
-      const idxY1  = base.headers.findIndex(h => String(h).toLowerCase().includes("año inicio") || String(h).toLowerCase().includes("anio inicio"));
-      const idxY2  = base.headers.findIndex(h => String(h).toLowerCase().includes("año final")  || String(h).toLowerCase().includes("anio final"));
-      const idxMod = base.headers.findIndex(h => String(h).toLowerCase().includes("modelo"));
-      const idxMot = base.headers.findIndex(h => String(h).toLowerCase().includes("motor"));
-      const idxDes = base.headers.findIndex(h => String(h).toLowerCase().includes("descripcion") || String(h).toLowerCase().includes("descripción") || String(h).toLowerCase().includes("description"));
+    const myToken = nextSearchToken_();
+    setBusy_(true, "Buscando...");
 
-      const rows = (base.rows||[]).filter(r=>{
-        const vVeh = idxVeh>=0 ? strNorm_(r[idxVeh]) : "";
-        const vMod = idxMod>=0 ? strNorm_(r[idxMod]) : "";
-        const vMot = idxMot>=0 ? strNorm_(r[idxMot]) : "";
-        const vDes = idxDes>=0 ? strNorm_(r[idxDes]) : "";
+    try{
+      const vehiculo = cleanInput_(document.getElementById("fVehiculo")?.value);
+      const anio = cleanInput_(document.getElementById("fAnio")?.value);
+      const modelo = cleanInput_(document.getElementById("fModelo")?.value);
+      const motor = cleanInput_(document.getElementById("fMotor")?.value);
+      const desc = cleanInput_(document.getElementById("fDescripcion")?.value);
 
-        if(filtro.vehiculo && !vVeh.includes(filtro.vehiculo)) return false;
-        if(filtro.modelo && !vMod.includes(filtro.modelo)) return false;
-        if(filtro.motor && !vMot.includes(filtro.motor)) return false;
-        if(filtro.desc && !vDes.includes(filtro.desc)) return false;
+      if(!vehiculo && !anio && !modelo && !motor && !desc){
+        setStatus("Coloca al menos 1 filtro.");
+        return;
+      }
 
-        if(filtro.anio && (idxY1>=0 || idxY2>=0)){
-          const y1 = idxY1>=0 ? Number(String(r[idxY1]??"").replace(/[^0-9]/g,"")) : NaN;
-          const y2 = idxY2>=0 ? Number(String(r[idxY2]??"").replace(/[^0-9]/g,"")) : NaN;
-          if(Number.isFinite(y1) && Number.isFinite(y2)){
-            if(!(filtro.anio >= y1 && filtro.anio <= y2)) return false;
-          }
-        }
-        return true;
+      // 1) Buscar vehicles por filtros (timeout + retry)
+      const veh = await retryWithTimeout_(
+        ()=> fetchVehiclesByFilters_({
+          vehiculo,
+          anio,
+          modelo,
+          motor,
+          desc
+        }),
+        { timeoutMs: 45000, label: "vehicles_filtro", retries: 1 }
+      );
+
+      if(!isTokenCurrent_(myToken)) return;
+
+      // 2) Obtener originals a partir de vehicles encontrados
+      const originalNorms = extractOriginalNormsFromVehicles_(veh);
+
+      if(!originalNorms.length){
+        render({
+          codigo: "(filtro)",
+          codigo_norm: "",
+          original_norms: [],
+          productUrl: "",
+          tablas: { vehicles: veh, cambios: { rows: [] } }
+        });
+        renderOffersIntoProducto_([]);
+        setStatus("Sin resultados.");
+        return;
+      }
+
+      // 3) Buscar cambios por esos originals
+      const camb = await retryWithTimeout_(
+        ()=> fetchCambiosByOriginals_(originalNorms),
+        { timeoutMs: 45000, label: "cambios_filtro", retries: 1 }
+      );
+
+      if(!isTokenCurrent_(myToken)) return;
+
+      render({
+        codigo: "(filtro)",
+        codigo_norm: "",
+        original_norms: originalNorms,
+        productUrl: "",
+        tablas: { vehicles: veh, cambios: camb }
       });
 
-      // ✅ Cuando se filtra por Vehiculo/Año/Modelo/Motor/Descripcion, mostramos "Codigo principal"
-      const principal = (lastPayload?.original_norms && lastPayload.original_norms[0]) ? String(lastPayload.original_norms[0]) :
-                        (lastPayload?.codigo_norm ? String(lastPayload.codigo_norm) : (lastPayload?.codigo ? String(lastPayload.codigo) : ""));
-      const headers2 = base.headers.concat(["Codigo principal"]);
-      const rows2 = rows.map(r => (r || []).concat([principal]));
-      const filtered = { headers: headers2, rows: rows2 };
-      lastPayload.tablas.vehicles = filtered;
-      renderTableInto_("vehWrap", filtered);
-      renderVehicleLogos_(filtered);
-document.getElementById("btnCopyVeh").disabled = !(rows.length>0);
-      document.getElementById("counts").textContent =
-        "Vehicles: " + rows.length + " | Cambios: " + ((lastPayload.tablas?.cambios?.rows||[]).length || 0);
+      // 4) Ofertas activas
+      lastOffersError = "";
+      try{
+        lastOffers = await retryWithTimeout_(
+          ()=> fetchOffersByOriginals_(originalNorms, null),
+          { timeoutMs: 30000, label: "offers_filtro", retries: 1 }
+        );
+      }catch(eOffers){
+        lastOffersError = (eOffers?.message || String(eOffers||""));
+        lastOffers = [];
+      }
 
-      document.getElementById("btnExport").disabled = rows.length===0 && ((lastPayload.tablas?.cambios?.rows||[]).length||0)===0;
-
-      const used = [];
-      if(filtro.vehiculo) used.push("Vehiculo");
-      if(filtro.anio) used.push("Año");
-      if(filtro.modelo) used.push("Modelo");
-      if(filtro.motor) used.push("Motor");
-      if(filtro.desc) used.push("Descripcion");
-      setFiltroPill_("Filtro activo", "Campos: " + used.join(", "));
-      return;
-    }
-
-    // Si no hay OEM cargado => buscar directo en BD
-    setStatus("Buscando vehiculos...");
-
-    try{
-      const veh = await fetchVehiclesByFilters_(filtro);
-
-      lastPayload = {
-        codigo: "FILTRO_VEHICULAR",
-        productUrl: buildGoogleUrl_("vehiculo " + (filtro.vehiculo||"")),
-        tablas: { vehicles: veh, cambios: { headers: [], rows: [] }, vehicles_full: veh }
-      };
-
-      renderTableInto_("vehWrap", veh);
-      renderVehicleLogos_(veh);
-renderTableInto_("oeWrap", { headers: [], rows: [] });
-
-      const vehCount = (veh?.rows||[]).length;
-
-      document.getElementById("pillCode").textContent = "Filtro Vehicular";
-      document.getElementById("counts").textContent = "Vehicles: " + vehCount + " | Cambios: 0";
-      document.getElementById("btnCopyVeh").disabled = vehCount===0;
-      document.getElementById("btnCopyOE").disabled = true;
-      document.getElementById("btnExport").disabled = vehCount===0;
-
-      const used = [];
-      if(filtro.vehiculo) used.push("Vehiculo");
-      if(filtro.anio) used.push("Año");
-      if(filtro.modelo) used.push("Modelo");
-      if(filtro.motor) used.push("Motor");
-      if(filtro.desc) used.push("Descripcion");
-      setFiltroPill_(vehCount? "Filtro activo" : "Sin resultados", "Campos: " + used.join(", "));
+      if(!isTokenCurrent_(myToken)) return;
+      renderOffersIntoProducto_(lastOffers);
 
       setStatus("Listo ✅");
+
     }catch(e){
       console.error(e);
-      setStatus("Error: " + (e?.message || e));
-      alert("Error buscando en BD: " + (e?.message || e));
+      if(!isTokenCurrent_(myToken)) return;
+      setStatus("Error: " + (e && e.message ? e.message : e));
+      alert("Error consultando: " + (e && e.message ? e.message : e));
     }finally{
-      __isSearching = false;
-      try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
-    }
-  };
-
-  window.limpiarFiltroVehicular = function(){
-    ["fVehiculo","fAnio","fModelo","fMotor","fDescripcion"].forEach(id=>{
-      const el = document.getElementById(id);
-      if(el) el.value = "";
-    });
-    setFiltroPill_("Sin filtro");
-
-    if(lastPayload && lastPayload.tablas && lastPayload.tablas.vehicles_full){
-      lastPayload.tablas.vehicles = lastPayload.tablas.vehicles_full;
-      renderTableInto_("vehWrap", lastPayload.tablas.vehicles_full);
-      renderVehicleLogos_(lastPayload.tablas.vehicles_full);
-const vehCount = (lastPayload.tablas.vehicles_full?.rows||[]).length;
-      const cambCount = (lastPayload.tablas?.cambios?.rows||[]).length;
-
-      document.getElementById("btnCopyVeh").disabled = vehCount===0;
-      document.getElementById("counts").textContent = "Vehicles: " + vehCount + " | Cambios: " + cambCount;
-      document.getElementById("btnExport").disabled = (vehCount===0 && cambCount===0);
-    }
-  };
-
-  // ✅ Click en "Codigo principal" (desde tabla Vehicles por filtros)
-  window.buscarCodigoPrincipal = async function(code){
-    const c = String(code || "").trim();
-    if(!c) return;
-    const input = document.getElementById("code");
-    if(input) input.value = c;
-    // lleva al buscador de codigo arriba
-    try{ window.scrollTo({ top: 0, behavior: "smooth" }); }catch(e){ window.scrollTo(0,0); }
-    // ejecutar busqueda OEM
-    try{
-      await window.buscar();
-    }catch(e){
-      // fallback
-      const btn = document.querySelector('button[onclick*="buscar"]');
-      if(btn) btn.click();
+      if(isTokenCurrent_(myToken)){
+        setBusy_(false);
+      }
     }
   };
 
 
-
-window.limpiar = function(){
-    lastPayload = null;
-    document.getElementById("btnExport").disabled = true;
-    document.getElementById("btnCopyOE").disabled = true;
-    document.getElementById("btnCopyVeh").disabled = true;
-
-    document.getElementById("pillCode").textContent = "-";
-    document.getElementById("productUrl").textContent = "-";
-    document.getElementById("productUrl").href = "#";
-    document.getElementById("counts").textContent = "Vehicles: 0 | Cambios: 0";
-    const ow = document.getElementById("offersWrap");
-    if(ow){ ow.style.display="none"; ow.innerHTML=""; }
-    lastOffers = [];
-    document.getElementById("notes").textContent = "";
-
-    document.getElementById("oeWrap").innerHTML = "No hay filas detectadas.";
-    document.getElementById("vehWrap").innerHTML = "No hay filas detectadas.";
-
-    setStatus("Listo");
-    if(isMobile_()) setMobileDefault_();
-  };
-
-    window.buscar = async function(){
+window.buscar = async function(){
     const t0 = performance.now();
 
-    // evita doble click / doble llamada que a veces deja la pagina en 'Buscando...'
-    if (window.__isSearching) return;
+    // Permitir reintento si una busqueda anterior quedo colgada
+    if(!canStartNewSearch_()){
+      // ya hay una busqueda corriendo
+      return;
+    }
 
     const raw = (document.getElementById("code")?.value || "").trim();
     if(!raw){ setStatus("Escribe un codigo."); return; }
 
-    window.__isSearching = true;
-    try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=true; }catch(e){}
+    const myToken = nextSearchToken_();
+    setBusy_(true, "Buscando...");
 
     const norm = normalizeCode_(raw);
     const candidates = unique_([ raw, raw.toUpperCase(), norm ]).filter(Boolean);
 
-    setStatus("Buscando...");
-
     try{
       const codigoMostrado = candidates[0] || raw;
 
-      // ✅ originals desde cambios + cambios_v2
-      const originalNorms = await retryWithTimeout_(()=> resolveOriginals_(norm), { timeoutMs: 25000, label: 'originals', retries: 1 });
+      // ✅ 1) originals desde cambios + cambios_v2
+      const originalNorms = await retryWithTimeout_(
+        ()=> resolveOriginals_(norm),
+        { timeoutMs: 35000, label: "originals", retries: 1 }
+      );
 
-      // ✅ vehicles desde datos_vehiculares + datos_vehiculares_v2
-      // ✅ cambios desde cambios + cambios_v2
-      const [veh, camb] = await retryWithTimeout_(()=> Promise.all([
-        fetchVehiclesByOriginals_(originalNorms),
-        fetchCambiosByOriginals_(originalNorms),
-      ]), { timeoutMs: 30000, label: 'vehicles/cambios', retries: 1 });
+      // Si ya arrancó otra busqueda, no seguimos pintando
+      if(!isTokenCurrent_(myToken)) return;
+
+      // ✅ 2) vehicles + cambios en paralelo
+      const [veh, camb] = await retryWithTimeout_(
+        ()=> Promise.all([
+          fetchVehiclesByOriginals_(originalNorms),
+          fetchCambiosByOriginals_(originalNorms),
+        ]),
+        { timeoutMs: 45000, label: "vehicles/cambios", retries: 1 }
+      );
+
+      if(!isTokenCurrent_(myToken)) return;
 
       const payload = {
         codigo: codigoMostrado,
@@ -2050,11 +2028,23 @@ window.limpiar = function(){
 
       render(payload);
 
-      // ✅ Ofertas activas para este codigo
-      lastOffersError = '';
-      lastOffers = await retryWithTimeout_(()=> fetchOffersByOriginals_(originalNorms, norm), { timeoutMs: 20000, label: 'offers', retries: 1 });
+      // ✅ 3) Ofertas activas
+      lastOffersError = "";
+      try{
+        lastOffers = await retryWithTimeout_(
+          ()=> fetchOffersByOriginals_(originalNorms, norm),
+          { timeoutMs: 30000, label: "offers", retries: 1 }
+        );
+      }catch(eOffers){
+        // no bloquea el resto
+        lastOffersError = (eOffers?.message || String(eOffers||""));
+        lastOffers = [];
+      }
+
+      if(!isTokenCurrent_(myToken)) return;
       renderOffersIntoProducto_(lastOffers);
 
+      // ===== logging (no-bloqueante) =====
       const vehCount = (veh && Array.isArray(veh.rows)) ? veh.rows.length : 0;
       const cambCount = (camb && Array.isArray(camb.rows)) ? camb.rows.length : 0;
       const totalResults = vehCount + cambCount;
@@ -2094,11 +2084,21 @@ window.limpiar = function(){
         }
       });
 
-      // ✅ limpiar inputs luego de buscar por codigo
-      clearInputsAfterCodeSearch_();
+      // ✅ para que sea rapido pegar otro codigo: selecciona el input
+      try{
+        const codeEl = document.getElementById("code");
+        if(codeEl){
+          codeEl.focus();
+          codeEl.select();
+        }
+      }catch(e){}
+
+      setStatus("Listo ✅");
 
     }catch(e){
       console.error(e);
+      if(!isTokenCurrent_(myToken)) return;
+
       setStatus("Error: " + (e && e.message ? e.message : e));
       alert("Error consultando: " + (e && e.message ? e.message : e));
 
@@ -2113,25 +2113,18 @@ window.limpiar = function(){
         responseTimeMs: Math.round(t1 - t0),
         meta: { error: (e && e.message) ? e.message : String(e) }
       });
+
     }finally{
-      window.__isSearching = false;
-      try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
-      // Si por alguna razon se quedo en "Buscando...", lo llevamos a estado listo.
-      try{
-        const st = (document.getElementById("status")?.textContent || "");
-        if(st.toLowerCase().includes("buscando")) setStatus("Listo ✅");
-      }catch(e){}
+      // Solo el token vigente puede desbloquear la UI
+      if(isTokenCurrent_(myToken)){
+        setBusy_(false);
+        try{
+          const st = (document.getElementById("status")?.textContent || "");
+          if(st.toLowerCase().includes("buscando")) setStatus("Listo ✅");
+        }catch(e){}
+      }
     }
   };
-
-  // ======================================================
-  // ✅ Ofertas: buscar y renderizar debajo de Vehicles/Cambios
-  // ======================================================
-
-  function fmtMoney_(n){
-    const v = Number(n);
-    return Number.isFinite(v) ? v.toFixed(2) : String(n ?? "—");
-  }
 
 function isOfferActive_(o){
   const exp = o?.expires_at;
@@ -2589,6 +2582,8 @@ function isOfferActive_(o){
 </script>
 </body>
 </html>
+
+
 
 
 
