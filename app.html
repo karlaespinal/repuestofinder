@@ -295,7 +295,7 @@
       </div>
 
       <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-        <button class="btn" onclick="buscar()">Buscar</button>
+        <button class="btn" id="btnBuscarCodigo" onclick="buscar()">Buscar</button>
         <button class="btn2" onclick="limpiar()">Limpiar</button>
         <button class="btn3" onclick="exportar()" id="btnExport" disabled>Exportar a Excel</button>
       </div>
@@ -343,7 +343,7 @@
       </div>
 
       <div class="filterActions">
-        <button class="btn" onclick="aplicarFiltroVehicular()">Buscar</button>
+        <button class="btn" id="btnBuscarFiltro" onclick="aplicarFiltroVehicular()">Buscar</button>
         <button class="btn2" onclick="limpiarFiltroVehicular()">Limpiar</button>
       </div>
     </div>
@@ -522,6 +522,20 @@ function clearInputsAfterCodeSearch_(){
   });
   setFiltroPill_("Sin filtro");
 }
+
+
+// ======================================================
+// ✅ Anti-cuelgue: control de busqueda en curso + timeout
+// ======================================================
+let __isSearching = false;
+
+function withTimeout_(promise, ms, label){
+  return Promise.race([
+    promise,
+    new Promise((_, reject)=> setTimeout(()=> reject(new Error(`Timeout (${label||"operacion"}) - ${ms}ms`)), ms))
+  ]);
+}
+
 
 
   // ======================================================
@@ -1890,6 +1904,9 @@ renderTableInto_("oeWrap", { headers: [], rows: [] });
       console.error(e);
       setStatus("Error: " + (e?.message || e));
       alert("Error buscando en BD: " + (e?.message || e));
+    }finally{
+      __isSearching = false;
+      try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
     }
   };
 
@@ -1958,6 +1975,13 @@ window.limpiar = function(){
   window.buscar = async function(){
     const t0 = performance.now();
 
+    if(__isSearching){
+      // evita doble click / doble llamada que a veces deja la pagina en 'Buscando...'
+      return;
+    }
+    __isSearching = true;
+    try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=true; }catch(e){}
+
     const raw = (document.getElementById("code").value || "").trim();
     if(!raw){ setStatus("Escribe un codigo."); return; }
 
@@ -1969,14 +1993,14 @@ window.limpiar = function(){
       const codigoMostrado = candidates[0] || raw;
 
       // ✅ originals desde cambios + cambios_v2
-      const originalNorms = await resolveOriginals_(norm);
+      const originalNorms = await withTimeout_(resolveOriginals_(norm), 12000, 'originals');
 
       // ✅ vehicles desde datos_vehiculares + datos_vehiculares_v2
       // ✅ cambios desde cambios + cambios_v2
-      const [veh, camb] = await Promise.all([
+      const [veh, camb] = await withTimeout_(Promise.all([
         fetchVehiclesByOriginals_(originalNorms),
         fetchCambiosByOriginals_(originalNorms),
-      ]);
+      ]), 18000, 'vehicles/cambios');
 
       const payload = {
         codigo: codigoMostrado,
@@ -1990,7 +2014,7 @@ window.limpiar = function(){
 
       // ✅ Ofertas activas para este codigo
       lastOffersError = '';
-      lastOffers = await fetchOffersByOriginals_(originalNorms, norm);
+      lastOffers = await withTimeout_(fetchOffersByOriginals_(originalNorms, norm), 12000, 'offers');
       renderOffersIntoProducto_(lastOffers);
 
       const vehCount = (veh && Array.isArray(veh.rows)) ? veh.rows.length : 0;
@@ -2069,42 +2093,58 @@ window.limpiar = function(){
     return Number.isFinite(v) ? v.toFixed(2) : String(n ?? "—");
   }
 
+function isOfferActive_(o){
+  const exp = o?.expires_at;
+  if(!exp) return true; // si no tiene expiracion, la tratamos como activa
+  const t = new Date(exp).getTime();
+  if(!Number.isFinite(t)) return true;
+  return t > Date.now();
+}
+
+
   async function fetchOffersByOriginals_(originalNorms, codeNorm){
-    // Intentamos por original_norm IN (...) y, por si acaso, tambien por original_norm==codeNorm
-    const norms = unique_([...(originalNorms||[]), codeNorm].filter(Boolean));
+  // ✅ NO mostrar ofertas vencidas:
+  //    - Activa si expires_at es NULL, o expires_at > ahora
+  const norms = unique_([...(originalNorms||[]), codeNorm].filter(Boolean));
+  const selectCols = "id, original, original_norm, brand, description, price, currency, country, expires_at, seller_id, created_at";
 
-    // Campos minimos + extras (si existen en tu tabla, supabase los trae; si no, no rompe)
-    const selectCols = "id, original, original_norm, brand, description, price, currency, country, expires_at, seller_id";
+  const nowIso = new Date().toISOString();
 
-    try{
-      const { data, error } = await supabase
+  try{
+    let q = supabase
+      .from(OFFERS_TABLE)
+      .select(selectCols)
+      .in("original_norm", norms)
+      .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+      .order("created_at", { ascending: false })
+      .limit(25);
+
+    const { data, error } = await q;
+    if(error){
+      // fallback si la tabla no tiene created_at u order falla
+      const { data: d2, error: e2 } = await supabase
         .from(OFFERS_TABLE)
         .select(selectCols)
         .in("original_norm", norms)
-        .order("created_at", { ascending: false })
+        .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
         .limit(25);
-
-      if(error){
-        // fallback: algunos proyectos no tienen created_at o usan otra columna
-        const { data: d2, error: e2 } = await supabase
-          .from(OFFERS_TABLE)
-          .select(selectCols)
-          .in("original_norm", norms)
-          .limit(25);
-        if(e2) throw e2;
-        return d2 || [];
-      }
-      return data || [];
-    }catch(e){
-      lastOffersError = (e?.message || String(e||''));
-      console.warn("No pude leer ofertas:", lastOffersError);
-      return [];
+      if(e2) throw e2;
+      return (d2 || []);
     }
+    return (data || []);
+  }catch(e){
+    lastOffersError = (e?.message || String(e||''));
+    console.warn("No pude leer ofertas:", lastOffersError);
+    return [];
   }
+}
 
   function renderOffersIntoProducto_(offers){
     const wrap = document.getElementById("offersWrap");
     if(!wrap) return;
+
+    // ✅ Seguridad extra: filtrar vencidas en el cliente tambien
+    offers = (offers || []).filter(isOfferActive_);
 
     if(!offers || offers.length === 0){
       // Si hubo error (ej: RLS bloqueando), mostramos pista
@@ -2509,6 +2549,7 @@ window.limpiar = function(){
 </script>
 </body>
 </html>
+
 
 
 
