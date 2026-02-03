@@ -267,30 +267,6 @@
       font-weight:800;
       margin-top:8px;
     }
-  /* ====== AJUSTE: HISTORIAL (USUARIOS NORMALES) MISMA DIMENSION QUE TARJETAS SUPERIORES ====== */
-/* El historial de usuarios normales (#historyCard) se muestra en media columna (como "Mis datos" / "Mi membresía") */
-#historyCard{
-  width:100%;
-  max-width: calc((min(1180px, 100%) - 14px) / 2);
-  margin-left:auto;
-  margin-right:auto;
-}
-@media(max-width:980px){
-  #historyCard{ max-width: 100%; }
-}
-/* Caja interna de la tabla con scroll para que no se expanda */
-#historyCard .histTableWrap{
-  margin-top:10px;
-  max-height: 420px;
-  overflow:auto;
-  border-radius:14px;
-}
-/* Encabezado sticky para mejor lectura */
-#historyCard .histTableWrap thead th{
-  position: sticky;
-  top: 0;
-  z-index: 2;
-}
   </style>
 </head>
 
@@ -398,6 +374,140 @@
         <div class="msg" id="msgSub"></div>
       </div>
     </div>
+
+    <!-- Historial de búsquedas (Usuario / Admin) -->
+    <div class="card" id="historyCard" style="margin-top:14px;display:none;width:100%">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div>
+          <h2>Historial de búsquedas</h2>
+          <div class="muted" id="histSubtitle">Tus búsquedas recientes.</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btnGhost btnSmall" onclick="loadMyHistory()">Actualizar</button>
+        </div>
+      </div>
+
+      <div class="two" style="margin-top:12px">
+        <div class="field">
+          <label>Rango</label>
+          <select class="select" id="myHistRange">
+            <option value="7">Últimos 7 días</option>
+            <option value="30" selected>Últimos 30 días</option>
+            <option value="90">Últimos 90 días</option>
+            <option value="0">Todo</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Vista</label>
+          <select class="select" id="myHistMode">
+            <option value="events" selected>Eventos (más reciente)</option>
+            <option value="codes">Resumen por código (más buscado)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Mostrar</label>
+          <select class="select" id="myHistLimit">
+            <option value="10">10</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Orden</label>
+          <select class="select" id="myHistSort">
+            <option value="recent" selected>Más reciente</option>
+            <option value="most">Más buscado</option>
+            <option value="results">Más resultados</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button class="btn btnPrimary btnSmall" onclick="loadMyHistory()">Aplicar</button>
+        <span class="pill" id="myHistPill">—</span>
+      </div>
+
+      <div style="margin-top:10px">
+        <table>
+          <thead id="myHistHead"></thead>
+          <tbody id="myHistBody">
+            <tr><td class="muted">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="msg" id="myHistMsg"></div>
+    </div>
+
+
+  <!-- Modal renovar membresía -->
+  <div class="modalBack" id="renewBack">
+    <div class="modal">
+      <div class="modalHead">
+        <div>
+          <h3>Renovar membresía</h3>
+          <div class="muted" id="renewSubtitle">—</div>
+        </div>
+        <button class="btn btnGhost btnTiny" onclick="closeRenew()">✕</button>
+      </div>
+
+      <div class="modalBody">
+        <div class="two">
+          <div class="field">
+            <label>Plan</label>
+            <select class="select" id="renewPlanSelect"></select>
+          </div>
+          <div class="field">
+            <label>Días</label>
+            <input class="inp" id="renewDays" type="number" min="1" value="30">
+          </div>
+        </div>
+
+        <div class="hint">
+          Esto intenta renovar creando/actualizando un registro en <b>subscriptions</b> y ajustando <b>profiles.active_plan_id</b>.
+          Si tu RLS no permite que el admin edite suscripciones de otros, te saldrá error (y ahí lo hacemos por Edge Function).
+        </div>
+
+        <div class="msg" id="renewMsg"></div>
+      </div>
+
+      <div class="modalFoot">
+        <button class="btn btnGhost" onclick="closeRenew()">Cancelar</button>
+        <button class="btn btnPrimary" onclick="confirmRenew()">Confirmar renovación</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Planes (Usuarios) -->
+<div class="modalBack" id="payBack">
+  <div class="modal">
+    <div class="modalHead">
+      <div>
+        <h3>Renovar / Upgrade de Plan</h3>
+        <div class="muted" id="paySubtitle">Elige un plan y paga con PayPal.</div>
+      </div>
+      <button class="btn btnGhost btnTiny" onclick="closePayPlans()">✕</button>
+    </div>
+
+    <div class="modalBody">
+      <div class="msg" id="payMsg"></div>
+
+      <div class="hint" style="margin-bottom:10px">
+        💙 Gracias por volver. Elige el plan que mejor te convenga y completa el pago.
+      </div>
+
+      <div id="plansWrap" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
+
+      <div class="hint" id="paypalHint" style="display:none;margin-top:10px">
+        Si no ves el botón de PayPal, revisa tu <b>PAYPAL_CLIENT_ID</b> o bloqueadores del navegador.
+      </div>
+    </div>
+
+    <div class="modalFoot">
+      <button class="btn btnGhost" onclick="closePayPlans()">Cerrar</button>
+    </div>
+  </div>
+</div>
 
     <!-- Admin -->
     <div class="card" id="adminCard" style="display:none;margin-top:14px">
@@ -523,138 +633,7 @@
 
   </div>
 
-    <!-- Historial de búsquedas (Usuario / Admin) -->
-    <div class="card" id="historyCard" style="margin-top:14px;display:none">
-      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap">
-        <div>
-          <h2>Historial de búsquedas</h2>
-          <div class="muted" id="histSubtitle">Tus búsquedas recientes.</div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btnGhost btnSmall" onclick="loadMyHistory()">Actualizar</button>
-        </div>
-      </div>
-
-      <div class="two" style="margin-top:12px">
-        <div class="field">
-          <label>Rango</label>
-          <select class="select" id="myHistRange">
-            <option value="7">Últimos 7 días</option>
-            <option value="30" selected>Últimos 30 días</option>
-            <option value="90">Últimos 90 días</option>
-            <option value="0">Todo</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Vista</label>
-          <select class="select" id="myHistMode">
-            <option value="events" selected>Eventos (más reciente)</option>
-            <option value="codes">Resumen por código (más buscado)</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Mostrar</label>
-          <select class="select" id="myHistLimit">
-            <option value="10">10</option>
-            <option value="50" selected>50</option>
-            <option value="100">100</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Orden</label>
-          <select class="select" id="myHistSort">
-            <option value="recent" selected>Más reciente</option>
-            <option value="most">Más buscado</option>
-            <option value="results">Más resultados</option>
-          </select>
-        </div>
-      </div>
-
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-        <button class="btn btnPrimary btnSmall" onclick="loadMyHistory()">Aplicar</button>
-        <span class="pill" id="myHistPill">—</span>
-      </div>
-
-      <div class="histTableWrap"><table>
-          <thead id="myHistHead"></thead>
-          <tbody id="myHistBody">
-            <tr><td class="muted">Cargando…</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="msg" id="myHistMsg"></div>
-    </div>
-
-
-  <!-- Modal renovar membresía -->
-  <div class="modalBack" id="renewBack">
-    <div class="modal">
-      <div class="modalHead">
-        <div>
-          <h3>Renovar membresía</h3>
-          <div class="muted" id="renewSubtitle">—</div>
-        </div>
-        <button class="btn btnGhost btnTiny" onclick="closeRenew()">✕</button>
-      </div>
-
-      <div class="modalBody">
-        <div class="two">
-          <div class="field">
-            <label>Plan</label>
-            <select class="select" id="renewPlanSelect"></select>
-          </div>
-          <div class="field">
-            <label>Días</label>
-            <input class="inp" id="renewDays" type="number" min="1" value="30">
-          </div>
-        </div>
-
-        <div class="hint">
-          Esto intenta renovar creando/actualizando un registro en <b>subscriptions</b> y ajustando <b>profiles.active_plan_id</b>.
-          Si tu RLS no permite que el admin edite suscripciones de otros, te saldrá error (y ahí lo hacemos por Edge Function).
-        </div>
-
-        <div class="msg" id="renewMsg"></div>
-      </div>
-
-      <div class="modalFoot">
-        <button class="btn btnGhost" onclick="closeRenew()">Cancelar</button>
-        <button class="btn btnPrimary" onclick="confirmRenew()">Confirmar renovación</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Planes (Usuarios) -->
-<div class="modalBack" id="payBack">
-  <div class="modal">
-    <div class="modalHead">
-      <div>
-        <h3>Renovar / Upgrade de Plan</h3>
-        <div class="muted" id="paySubtitle">Elige un plan y paga con PayPal.</div>
-      </div>
-      <button class="btn btnGhost btnTiny" onclick="closePayPlans()">✕</button>
-    </div>
-
-    <div class="modalBody">
-      <div class="msg" id="payMsg"></div>
-
-      <div class="hint" style="margin-bottom:10px">
-        💙 Gracias por volver. Elige el plan que mejor te convenga y completa el pago.
-      </div>
-
-      <div id="plansWrap" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
-
-      <div class="hint" id="paypalHint" style="display:none;margin-top:10px">
-        Si no ves el botón de PayPal, revisa tu <b>PAYPAL_CLIENT_ID</b> o bloqueadores del navegador.
-      </div>
-    </div>
-
-    <div class="modalFoot">
-      <button class="btn btnGhost" onclick="closePayPlans()">Cerrar</button>
-    </div>
-  </div>
-</div>
+    
 
   <script type="module">
     import { supabase } from "./assets/supabaseClient.js";
@@ -1788,6 +1767,7 @@ window.savePlanFeatures = async (planId)=>{
   </script>
 </body>
 </html>
+
 
 
 
