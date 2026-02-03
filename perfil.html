@@ -267,6 +267,30 @@
       font-weight:800;
       margin-top:8px;
     }
+  /* ====== AJUSTE: HISTORIAL (USUARIOS NORMALES) MISMA DIMENSION QUE TARJETAS SUPERIORES ====== */
+/* El historial de usuarios normales (#historyCard) se muestra en media columna (como "Mis datos" / "Mi membresía") */
+#historyCard{
+  width:100%;
+  max-width: calc((min(1180px, 100%) - 14px) / 2);
+  margin-left:auto;
+  margin-right:auto;
+}
+@media(max-width:980px){
+  #historyCard{ max-width: 100%; }
+}
+/* Caja interna de la tabla con scroll para que no se expanda */
+#historyCard .histTableWrap{
+  margin-top:10px;
+  max-height: 420px;
+  overflow:auto;
+  border-radius:14px;
+}
+/* Encabezado sticky para mejor lectura */
+#historyCard .histTableWrap thead th{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
   </style>
 </head>
 
@@ -551,8 +575,7 @@
         <span class="pill" id="myHistPill">—</span>
       </div>
 
-      <div style="margin-top:10px">
-        <table>
+      <div class="histTableWrap"><table>
           <thead id="myHistHead"></thead>
           <tbody id="myHistBody">
             <tr><td class="muted">Cargando…</td></tr>
@@ -1555,6 +1578,12 @@ window.savePlanFeatures = async (planId)=>{
 
     window.loadMyHistory = async function loadMyHistory(){
       const card = $("historyCard");
+
+      // Si eres admin, usamos el historial de la pestaña ADMIN (arriba) y ocultamos este bloque.
+      if (isAdmin){
+        if(card) card.style.display = "none";
+        return;
+      }
       const headEl = $("myHistHead");
       const bodyEl = $("myHistBody");
       const pillEl = $("myHistPill");
@@ -1735,8 +1764,13 @@ window.savePlanFeatures = async (planId)=>{
         // Botón de renovar/upgrade SOLO para usuarios normales
         $("btnPayPlans").style.display = isAdmin ? "none" : "";
 
-        // Historial (todos los usuarios logueados ven su historial)
-        try{ await loadMyHistory(); }catch(_){ }
+        // Historial: solo usuarios normales (admins usan la pestaña 'Historial' arriba)
+        if(!isAdmin){
+          try{ await loadMyHistory(); }catch(_){ }
+        }else{
+          const hc = $("historyCard");
+          if(hc) hc.style.display = "none";
+        }
 
         // Admin: preparar selector de usuarios para historial
         if(isAdmin){
@@ -1754,6 +1788,7 @@ window.savePlanFeatures = async (planId)=>{
   </script>
 </body>
 </html>
+
 
 
 
