@@ -1979,11 +1979,13 @@ window.limpiar = function(){
       // evita doble click / doble llamada que a veces deja la pagina en 'Buscando...'
       return;
     }
-    __isSearching = true;
-    try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=true; }catch(e){}
+
 
     const raw = (document.getElementById("code").value || "").trim();
     if(!raw){ setStatus("Escribe un codigo."); return; }
+
+    __isSearching = true;
+    try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=true; }catch(e){}
 
     const norm = normalizeCode_(raw);
     const candidates = unique_([ raw, raw.toUpperCase(), norm ]).filter(Boolean);
@@ -2082,6 +2084,16 @@ window.limpiar = function(){
       });
     }
   };
+
+    }finally{
+      __isSearching = false;
+      try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
+      // Si por alguna razon se quedo en "Buscando...", lo llevamos a estado listo.
+      try{
+        const st = (document.getElementById("status")?.textContent || "");
+        if(st.toLowerCase().includes("buscando")) setStatus("Listo ✅");
+      }catch(e){}
+    }
 
 
   // ======================================================
@@ -2549,6 +2561,8 @@ function isOfferActive_(o){
 </script>
 </body>
 </html>
+
+
 
 
 
