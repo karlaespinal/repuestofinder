@@ -451,8 +451,14 @@
 
           <div class="row2" style="margin-top:10px;">
             <div class="field">
-              <label>Username (opcional)</label>
-              <input id="username" autocomplete="username" placeholder="ej: AUTOCENTER123"/>
+              <label>Tipo de compañía (opcional)</label>
+              <select id="company_type">
+                <option value="">Selecciona el tipo</option>
+                <option value="Taller">Taller</option>
+                <option value="Importadora">Importadora</option>
+                <option value="Repuestos">Repuestos</option>
+                <option value="Distribuidor">Distribuidor</option>
+              </select>
             </div>
             <div class="field">
               <label>País</label>
@@ -808,7 +814,7 @@
     el("company_name").value = "Repuesto FinderRD";
     el("phone").value = "+1 809 000 0000";
     el("email").value = "demo+" + Date.now() + "@mail.com";
-    el("username").value = "luis" + Math.floor(Math.random()*1000);
+    el("company_type").value = "Repuestos";
     el("pais").value = "República Dominicana";
     el("pass").value = "Demo12345!";
     el("pass2").value = "Demo12345!";
@@ -968,9 +974,10 @@
     showMsg("", "");
     const first_name = (el("first_name").value || "").trim();
     const last_name  = (el("last_name").value || "").trim();
+    const company_name = (el("company_name").value || "").trim();
     const phone = (el("phone").value || "").trim();
     const email = (el("email").value || "").trim();
-    const username = (el("username").value || "").trim();
+    const company_type = (el("company_type").value || "").trim();
     const pais = (el("pais").value || "").trim();
     const pass  = (el("pass").value || "").trim();
     const pass2 = (el("pass2").value || "").trim();
@@ -988,7 +995,7 @@
       ok:true,
       signup:{
         first_name, last_name, company_name, phone, email,
-        username: username || null,
+        company_type: company_type || null,
         pais: pais || null,
         password: pass
       }
@@ -1109,6 +1116,7 @@
 </script>
 </body>
 </html>
+
 
 
 
