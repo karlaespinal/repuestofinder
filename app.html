@@ -6,14 +6,30 @@
   <title>RepuestoFinder - App</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <style>
-    body{font-family:Arial,Helvetica,sans-serif;background:#f6f7fb;margin:0;padding:22px;color:#111}
+    :root{
+      --rf-bg:#f6f7fb;
+      --rf-card:#ffffff;
+      --rf-surface:#fafbff;
+    }
+    body.theme-sky{
+      --rf-bg:#eaf3ff;
+      --rf-card:#ffffff;
+      --rf-surface:#f3f8ff;
+    }
+    body.theme-mint{
+      --rf-bg:#e9fff6;
+      --rf-card:#ffffff;
+      --rf-surface:#f2fffb;
+    }
+
+    body{font-family:Arial,Helvetica,sans-serif;background:var(--rf-bg);margin:0;padding:22px;color:#111}
     .topbar{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0 0 14px 0;}
     h1{margin:0;font-size:26px}
     .watermark{font-size:12px;color:#9ca3af;font-weight:800;letter-spacing:.4px;user-select:none;white-space:nowrap;opacity:.65;text-transform:uppercase;}
     .nav{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
     a.navlink{color:#2563eb;text-decoration:none;font-weight:900}
     a.navlink:hover{text-decoration:underline}
-    .card{background:#fff;border:1px solid #e6e8f0;border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 1px 8px rgba(0,0,0,.04)}
+    .card{background:var(--rf-card);border:1px solid #e6e8f0;border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 1px 8px rgba(0,0,0,.04)}
     .row{display:flex;gap:12px;flex-wrap:wrap}
     .grow{flex:1}
     input{width:100%;padding:12px 12px;border-radius:10px;border:1px solid #d7dbe7;font-size:15px}
@@ -26,7 +42,7 @@
     .dot{width:10px;height:10px;border-radius:50%;background:#10b981;display:inline-block}
     table{width:100%;border-collapse:collapse;margin-top:10px}
     th,td{border-bottom:1px solid #eef0f6;padding:10px;text-align:left;font-size:13px;vertical-align:top;white-space:nowrap}
-    th{background:#fafbff;position:sticky;top:0;z-index:1}
+    th{background:var(--rf-surface);position:sticky;top:0;z-index:1}
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     @media(max-width:900px){.grid2{grid-template-columns:1fr}}
     .searchBox{max-width:420px}
@@ -123,7 +139,7 @@
 
   
     /* ===== OFERTAS (Obsolescencia) dentro de APP ===== */
-    .offerBox{margin-top:12px;border:1px solid #eef0f6;border-radius:12px;padding:12px;background:#fafbff}
+    .offerBox{margin-top:12px;border:1px solid #eef0f6;border-radius:12px;padding:12px;background:var(--rf-surface)}
     .offerRow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
     .offerTitle{font-weight:900}
     .offerMeta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -212,6 +228,21 @@
       70%{transform:scale(1.25);opacity:.55}
       100%{transform:scale(1);opacity:1}
     }
+
+/* ===== Theme (cambios de fondo) ===== */
+.themeBar{display:inline-flex;align-items:center;gap:8px;margin-left:6px}
+.themeBtn{
+  width:26px;height:26px;border-radius:999px;border:1px solid #e6e8f0;
+  cursor:pointer;box-shadow:0 1px 8px rgba(0,0,0,.04);
+  background:#fff;
+}
+.themeBtn:hover{filter:brightness(.97)}
+.themeBtn:active{transform:translateY(1px)}
+.themeBtn.active{outline:3px solid rgba(37,99,235,.22);border-color:#2563eb}
+.themeBtn[data-theme="default"]{background:#f6f7fb}
+.themeBtn[data-theme="sky"]{background:#eaf3ff}
+.themeBtn[data-theme="mint"]{background:#e9fff6}
+
     .rfToast{
       position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
       background:rgba(17,17,17,.92);color:#fff;padding:10px 12px;border-radius:12px;
@@ -240,6 +271,13 @@
         </svg>
         <span class="micDot" id="micDot" aria-hidden="true"></span>
       </button>
+
+
+<div class="themeBar" aria-label="Cambiar fondo">
+  <button class="themeBtn" data-theme="default" title="Fondo por defecto" aria-label="Fondo por defecto"></button>
+  <button class="themeBtn" data-theme="sky" title="Fondo azul" aria-label="Fondo azul"></button>
+  <button class="themeBtn" data-theme="mint" title="Fondo verde" aria-label="Fondo verde"></button>
+  </div>
 
       <a class="navlink" href="/?stay=1">Volver al sitio</a>
       <a class="navlink" href="#" id="loginLink" style="display:none">Iniciar sesion</a>
@@ -471,6 +509,20 @@
   let profileCity = null;
 
   function setStatus(txt){ document.getElementById("status").textContent = txt; }
+
+function clearInputsAfterCodeSearch_(){
+  // limpia casillas para que el usuario pueda buscar otro codigo de inmediato
+  const codeEl = document.getElementById("code");
+  if(codeEl){ codeEl.value = ""; codeEl.focus(); }
+
+  // opcional: limpiar filtro vehicular tambien
+  ["fVehiculo","fAnio","fModelo","fMotor","fDescripcion"].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = "";
+  });
+  setFiltroPill_("Sin filtro");
+}
+
 
   // ======================================================
   // ✅ VOZ (busqueda por microfono) - APP
@@ -941,6 +993,37 @@
 
   // Estado inicial de botones de mensajeria (si alguien abre modal)
   updateOfferModalAuthUI_();
+
+
+// ===== Theme (fondos) =====
+function applyTheme_(name){
+  const b = document.body;
+  b.classList.remove("theme-sky","theme-mint");
+  if(name === "sky") b.classList.add("theme-sky");
+  else if(name === "mint") b.classList.add("theme-mint");
+  
+  // default = sin clase
+  try{ localStorage.setItem("rf_app_theme", name || "default"); }catch(e){}
+  // UI active state
+  document.querySelectorAll(".themeBtn").forEach(btn=>{
+    const t = btn.getAttribute("data-theme") || "default";
+    btn.classList.toggle("active", t === (name || "default"));
+  });
+}
+
+// iniciar theme guardado
+try{
+  const saved = localStorage.getItem("rf_app_theme") || "default";
+  applyTheme_(saved);
+}catch(e){}
+
+// clicks
+document.querySelectorAll(".themeBtn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    const t = btn.getAttribute("data-theme") || "default";
+    applyTheme_(t);
+  });
+});
 
   // Microfono (voz)
   const micBtn = document.getElementById("micBtn");
@@ -1950,6 +2033,9 @@ window.limpiar = function(){
           used_cambios_tables: CAMBIOS_TABLES
         }
       });
+
+      // ✅ limpiar inputs luego de buscar por codigo
+      clearInputsAfterCodeSearch_();
 
     }catch(e){
       console.error(e);
