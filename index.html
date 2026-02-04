@@ -209,6 +209,154 @@
     }
     .heroActions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
 
+
+    /* ===== Banner Radar de Codigos (futurista) ===== */
+    .rfBanner{
+      position:relative;
+      margin-top:14px;
+      border-radius:20px;
+      border:1px solid rgba(37,99,235,.18);
+      background:
+        radial-gradient(900px 220px at 10% 0%, rgba(37,99,235,.22), transparent 60%),
+        radial-gradient(700px 240px at 90% 10%, rgba(16,185,129,.18), transparent 58%),
+        linear-gradient(135deg, rgba(255,255,255,.92), rgba(255,255,255,.80));
+      box-shadow:0 18px 55px rgba(2,6,23,.12);
+      overflow:hidden;
+      padding:14px 14px 12px;
+      min-height:160px;
+    }
+    .rfBanner::before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:linear-gradient(90deg, rgba(37,99,235,.25), rgba(16,185,129,.18), rgba(37,99,235,.25));
+      filter: blur(16px);
+      opacity:.55;
+      pointer-events:none;
+    }
+    .rfBanner::after{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.72), rgba(255,255,255,0)),
+        repeating-linear-gradient(90deg, rgba(15,23,42,.06) 0 1px, transparent 1px 22px);
+      opacity:.55;
+      pointer-events:none;
+    }
+    .rfBannerInner{ position:relative; z-index:1; }
+    .rfBannerTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .rfBannerTitle{
+      font-weight:900;
+      letter-spacing:-.2px;
+      font-size:14px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .rfBannerTitle .dot{
+      width:10px;height:10px;border-radius:999px;
+      background:rgba(16,185,129,.95);
+      box-shadow:0 0 0 6px rgba(16,185,129,.16), 0 10px 22px rgba(16,185,129,.18);
+      animation: rfPulseDot 1.8s ease-in-out infinite;
+    }
+    @keyframes rfPulseDot{
+      0%,100%{ transform:scale(1); opacity:.95; }
+      50%{ transform:scale(1.12); opacity:.75; }
+    }
+    .rfChip{
+      font-size:11px;
+      font-weight:900;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(230,232,240,.95);
+      background:rgba(15,23,42,.06);
+      color:#0f172a;
+      white-space:nowrap;
+    }
+    .rfBannerMetrics{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+    .rfMetric{
+      border-radius:16px;
+      border:1px solid rgba(230,232,240,.95);
+      background:rgba(255,255,255,.86);
+      padding:12px;
+      overflow:hidden;
+      position:relative;
+    }
+    .rfMetric::before{
+      content:"";
+      position:absolute; inset:0;
+      background:radial-gradient(420px 140px at 20% 0%, rgba(37,99,235,.12), transparent 55%);
+      opacity:.8;
+      pointer-events:none;
+    }
+    .rfMetricInner{ position:relative; z-index:1; }
+    .rfMetric .lbl{
+      font-size:11px;
+      font-weight:900;
+      color:#64748b;
+      text-transform:uppercase;
+      letter-spacing:.4px;
+    }
+    .rfMetric .num{
+      margin-top:6px;
+      font-size:26px;
+      font-weight:900;
+      letter-spacing:-.4px;
+    }
+    .rfMetric .sub{
+      margin-top:6px;
+      font-size:12px;
+      color:#64748b;
+      font-weight:800;
+      line-height:1.25;
+    }
+    .rfBannerFoot{
+      margin-top:10px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 10px;
+      border-radius:14px;
+      border:1px solid rgba(230,232,240,.95);
+      background:rgba(255,255,255,.78);
+      font-size:12px;
+      color:#334155;
+      font-weight:800;
+    }
+    .rfWave{
+      width:44px;
+      height:10px;
+      border-radius:999px;
+      background:
+        linear-gradient(90deg, rgba(37,99,235,.25), rgba(16,185,129,.35), rgba(37,99,235,.25));
+      position:relative;
+      overflow:hidden;
+      flex:0 0 auto;
+    }
+    .rfWave::before{
+      content:"";
+      position:absolute; inset:-40% -40%;
+      background:conic-gradient(from 180deg, rgba(255,255,255,.0), rgba(255,255,255,.55), rgba(255,255,255,.0));
+      animation: rfSweep 1.6s linear infinite;
+    }
+    @keyframes rfSweep{ to{ transform: rotate(360deg); } }
+
+    @media(max-width:860px){
+      .rfBanner{ min-height:auto; }
+      .rfBannerMetrics{ grid-template-columns:1fr; }
+      .rfMetric .num{ font-size:24px; }
+    }
+
     .kpis{
       border:1px solid rgba(230,232,240,.95);
       border-radius:18px;
@@ -1051,6 +1199,39 @@
           </p>
 
                 <div class="msg" id="topMsg"></div>
+
+          <!-- 🚀 Banner Radar de Codigos (nuevo) -->
+          <div class="rfBanner" id="rfCodeRadar" aria-live="polite">
+            <div class="rfBannerInner">
+              <div class="rfBannerTop">
+                <div class="rfBannerTitle"><span class="dot"></span> Radar de Referencias</div>
+                <div class="rfChip" id="rfCodeRadarUpdated">Actualizando…</div>
+              </div>
+
+              <div class="rfBannerMetrics">
+                <div class="rfMetric">
+                  <div class="rfMetricInner">
+                    <div class="lbl">Codigos totales</div>
+                    <div class="num" id="rfTotalCodes">—</div>
+                    <div class="sub">En nuestra base de datos</div>
+                  </div>
+                </div>
+
+                <div class="rfMetric">
+                  <div class="rfMetricInner">
+                    <div class="lbl">Ingresados hoy</div>
+                    <div class="num" id="rfCodesToday">—</div>
+                    <div class="sub" id="rfCodesTodaySub">Hasta ahora</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rfBannerFoot">
+                <div class="rfWave" aria-hidden="true"></div>
+                <div>Cada dia agregamos nuevas referencias para que vendas mas rapido.</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="kpis">
@@ -3462,6 +3643,90 @@ if(role.includes("admin")){
       await rfLoadOffersForDashboard();
     }
 
+
+
+    /* =========================
+       🚀 Radar de Referencias (conteo total + hoy)
+       - Muestra crecimiento diario para crear sensacion de movimiento
+       - Intenta tablas en este orden (puedes ajustar):
+         1) cambio
+         2) datos_vehiculares_v2
+       - Requiere columna created_at (si no existe, hoy queda en —)
+    ========================= */
+    const RF_CODE_STATS_TABLES = ["cambio", "datos_vehiculares_v2"];
+
+    function rfStartOfTodayISO_(){
+      const d = new Date();
+      d.setHours(0,0,0,0);
+      return d.toISOString();
+    }
+
+    async function rfTryCount_(table, isoToday){
+      // total
+      const totalRes = await supabase.from(table).select("id", { count: "exact", head: true });
+      if(totalRes.error) throw totalRes.error;
+      const total = totalRes.count ?? null;
+
+      // hoy (si existe created_at)
+      let today = null;
+      try{
+        const todayRes = await supabase
+          .from(table)
+          .select("id", { count: "exact", head: true })
+          .gte("created_at", isoToday);
+        if(!todayRes.error) today = todayRes.count ?? null;
+      }catch(_){
+        today = null;
+      }
+
+      return { total, today };
+    }
+
+    async function rfLoadCodeRadar(){
+      const elTotal = document.getElementById("rfTotalCodes");
+      const elToday = document.getElementById("rfCodesToday");
+      const elUp = document.getElementById("rfCodeRadarUpdated");
+
+      if(!elTotal || !elToday || !elUp) return;
+
+      elUp.textContent = "Actualizando…";
+
+      const isoToday = rfStartOfTodayISO_();
+
+      let picked = null;
+      let usedTable = null;
+
+      for(const t of RF_CODE_STATS_TABLES){
+        try{
+          const r = await rfTryCount_(t, isoToday);
+          if(r && (typeof r.total === "number")){
+            picked = r;
+            usedTable = t;
+            break;
+          }
+        }catch(e){ /* intenta siguiente */ }
+      }
+
+      if(!picked){
+        elTotal.textContent = "—";
+        elToday.textContent = "—";
+        elUp.textContent = "Sin datos";
+        return;
+      }
+
+      elTotal.textContent = (picked.total ?? 0).toLocaleString();
+      elToday.textContent = (picked.today ?? 0).toLocaleString();
+
+      const sub = document.getElementById("rfCodesTodaySub");
+      if(sub){
+        sub.textContent = (picked.today == null)
+          ? "Hoy: no disponible (sin fecha)"
+          : "Nuevas referencias agregadas hoy";
+      }
+
+      elUp.textContent = `Actualizado ${new Date().toLocaleTimeString()} • ${usedTable}`;
+    }
+
 async function init(){
       $("y").textContent = new Date().getFullYear();
 
@@ -3518,6 +3783,14 @@ async function init(){
       // ✅ Ofertas disponibles y Mensajes recibidos (publicos)
       await rfInitOffersDashboard();
       await rfInitMsgsDashboard();
+
+      // 🚀 Banner radar (conteo de codigos)
+      await rfLoadCodeRadar();
+      try{
+        clearInterval(window.__rfCodeRadarTimer);
+        window.__rfCodeRadarTimer = setInterval(()=>{ rfLoadCodeRadar(); }, 90000);
+      }catch(_){ }
+
     }
 
 
@@ -4555,6 +4828,8 @@ function rfPickVoice(voices, preferGoogleES=true){
 
 </body>
 </html>
+
+
 
 
 
