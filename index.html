@@ -36,7 +36,198 @@
     }
     .page{ width:min(1180px, 100%); margin:0 auto; padding:18px 18px 28px; }
 
-    .nav{
+    
+    /* ===== Left Rail (contador por marca) ===== */
+    .shell{
+      position:relative;
+      min-height:100vh;
+    }
+    .leftRail{
+      position:fixed;
+      left:18px;
+      top:92px; /* debajo del nav */
+      width:270px;
+      z-index:20;
+      display:none;
+    }
+    .leftRailCard{
+      position:relative;
+      border-radius:22px;
+      border:1px solid rgba(37,99,235,.18);
+      background:
+        radial-gradient(900px 320px at 15% 0%, rgba(37,99,235,.18), transparent 60%),
+        radial-gradient(700px 280px at 90% 20%, rgba(16,185,129,.14), transparent 58%),
+        linear-gradient(135deg, rgba(255,255,255,.92), rgba(255,255,255,.82));
+      box-shadow:0 18px 55px rgba(2,6,23,.12);
+      overflow:hidden;
+      padding:14px;
+    }
+    .leftRailCard::before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        linear-gradient(90deg, rgba(37,99,235,.18), rgba(16,185,129,.14), rgba(37,99,235,.18));
+      filter: blur(18px);
+      opacity:.55;
+      pointer-events:none;
+    }
+    .lrTop{
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .lrTitle{
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .lrTitle b{
+      font-size:13px;
+      letter-spacing:.25px;
+      text-transform:uppercase;
+    }
+    .lrTitle span{
+      font-size:12px;
+      color:var(--mut);
+    }
+    .lrPulse{
+      width:10px; height:10px; border-radius:999px;
+      background:rgba(16,185,129,.95);
+      box-shadow:0 0 0 0 rgba(16,185,129,.55);
+      animation: lrPulse 1.6s infinite;
+      flex:0 0 auto;
+    }
+    @keyframes lrPulse{
+      0%{ box-shadow:0 0 0 0 rgba(16,185,129,.55); }
+      70%{ box-shadow:0 0 0 10px rgba(16,185,129,0); }
+      100%{ box-shadow:0 0 0 0 rgba(16,185,129,0); }
+    }
+    .lrSlide{
+      position:relative;
+      border-radius:18px;
+      border:1px solid rgba(230,232,240,.95);
+      background:rgba(255,255,255,.88);
+      padding:12px;
+      overflow:hidden;
+      min-height:110px;
+    }
+    .lrBrandRow{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .lrLogo{
+      width:46px; height:46px;
+      border-radius:16px;
+      background:linear-gradient(135deg, rgba(37,99,235,.10), rgba(16,185,129,.10));
+      border:1px solid rgba(37,99,235,.14);
+      display:grid;
+      place-items:center;
+      overflow:hidden;
+      flex:0 0 auto;
+    }
+    .lrLogo img{
+      width:38px; height:38px;
+      object-fit:contain;
+      filter: drop-shadow(0 10px 18px rgba(2,6,23,.10));
+    }
+    .lrBrandMeta{
+      min-width:0;
+      flex:1 1 auto;
+    }
+    .lrBrandMeta .name{
+      font-weight:800;
+      letter-spacing:-.2px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .lrBrandMeta .sub{
+      margin-top:2px;
+      font-size:12px;
+      color:var(--mut);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .lrCount{
+      font-weight:900;
+      font-size:20px;
+      letter-spacing:-.6px;
+      white-space:nowrap;
+    }
+    .lrBar{
+      margin-top:10px;
+      height:10px;
+      border-radius:999px;
+      background:rgba(148,163,184,.25);
+      overflow:hidden;
+      border:1px solid rgba(148,163,184,.22);
+      position:relative;
+    }
+    .lrBar > i{
+      display:block;
+      height:100%;
+      width:40%;
+      border-radius:999px;
+      background:linear-gradient(90deg, rgba(37,99,235,.85), rgba(16,185,129,.85));
+      box-shadow:0 10px 18px rgba(2,6,23,.12);
+      transform:translateX(-15%);
+      animation: lrFlow 2.2s ease-in-out infinite alternate;
+    }
+    @keyframes lrFlow{
+      from{ transform:translateX(-12%); }
+      to{ transform:translateX(12%); }
+    }
+    .lrFooter{
+      position:relative;
+      margin-top:10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      color:var(--mut);
+      font-size:12px;
+    }
+    .lrMiniBtn{
+      border:1px solid rgba(226,232,240,.95);
+      background:rgba(255,255,255,.75);
+      border-radius:999px;
+      padding:6px 9px;
+      cursor:pointer;
+      font-size:12px;
+      color:var(--pri2);
+      font-weight:700;
+    }
+    .lrMiniBtn:hover{ filter:brightness(.98); }
+    .lrHint{
+      display:flex; align-items:center; gap:8px;
+      min-width:0;
+    }
+    .lrHint .dot{
+      width:7px; height:7px; border-radius:999px;
+      background:rgba(37,99,235,.9);
+      box-shadow:0 0 0 0 rgba(37,99,235,.5);
+      animation: lrPulseBlue 1.9s infinite;
+    }
+    @keyframes lrPulseBlue{
+      0%{ box-shadow:0 0 0 0 rgba(37,99,235,.50); }
+      70%{ box-shadow:0 0 0 9px rgba(37,99,235,0); }
+      100%{ box-shadow:0 0 0 0 rgba(37,99,235,0); }
+    }
+
+    /* Reservar espacio para el rail en pantallas anchas */
+    @media (min-width: 1280px){
+      .leftRail{ display:block; }
+      .page{ margin-left:300px; width:min(1180px, calc(100% - 300px)); }
+    }
+    @media (max-width: 1279px){
+      .leftRail{ display:none; }
+      .page{ margin-left:auto; width:min(1180px, 100%); }
+    }
+
+.nav{
       position:sticky;
       top:0;
       z-index:30;
@@ -1103,7 +1294,44 @@
 </head>
 
 <body>
-  <div class="page">
+  <div class="shell">
+
+    <!-- LEFT RAIL: contador por marca / banner dinámico -->
+    <aside class="leftRail" aria-label="Contador por marca">
+      <div class="leftRailCard">
+        <div class="lrTop">
+          <div class="lrTitle">
+            <b>Radar por Marca</b>
+            <span id="lrSubtitle">Códigos por vehículo (estimado)</span>
+          </div>
+          <div class="lrPulse" title="Actualizando"></div>
+        </div>
+
+        <div class="lrSlide" id="lrSlide">
+          <div class="lrBrandRow">
+            <div class="lrLogo" id="lrLogo">
+              <span style="font-weight:900;color:rgba(37,99,235,.9)">RF</span>
+            </div>
+            <div class="lrBrandMeta">
+              <div class="name" id="lrBrandName">Cargando…</div>
+              <div class="sub" id="lrBrandSub">Calculando distribución de códigos…</div>
+            </div>
+            <div class="lrCount" id="lrBrandCount">—</div>
+          </div>
+          <div class="lrBar"><i id="lrBarFill"></i></div>
+        </div>
+
+        <div class="lrFooter">
+          <div class="lrHint">
+            <span class="dot"></span>
+            <span id="lrHintText" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Se normalizan marcas (ej: AHONDA → HONDA)</span>
+          </div>
+          <button class="lrMiniBtn" id="lrRefresh" type="button">Actualizar</button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="page">
     <div class="nav">
       <div class="navLeft">
         <div class="brand">
@@ -4520,6 +4748,296 @@ function rfPickVoice(voices, preferGoogleES=true){
     window.openOffersModal = openOffersModal;
     window.rfPlayGuestIntro = rfPlayGuestIntro;
 
+
+
+    /*******************************
+     * LEFT RAIL - CONTADOR POR MARCA
+     *  - Calcula cantidad de codigos por "vehiculo" en datos_vehiculares_v2
+     *  - Normaliza faltas comunes (ej: "ahonda" -> "honda") via fuzzy match
+     *  - Cache en localStorage por 6 horas para no descargar la tabla completa siempre
+     *******************************/
+    const LR = {
+      CACHE_KEY: "rf_lr_vehicle_counts_v1",
+      CACHE_TTL_MS: 6 * 60 * 60 * 1000, // 6h
+      PAGE_SIZE: 5000,
+      LOGO_BASE: "./assets/logos/autos/"
+    };
+
+    const LR_CANON = [
+      { key:"MERCEDES BENZ", slug:"mercedes-benz", aliases:["MERCEDES","MB","MERCEDESBENZ","MERCEDES BENZ","MERCEDES-BENZ"] },
+      { key:"TOYOTA", slug:"toyota", aliases:["TOYOTA"] },
+      { key:"HONDA", slug:"honda", aliases:["HONDA","AHONDA"] },
+      { key:"HYUNDAI", slug:"hyundai", aliases:["HYUNDAI","HUNDAY","HIUNDAY"] },
+      { key:"KIA", slug:"kia", aliases:["KIA","KIIA"] },
+      { key:"NISSAN", slug:"nissan", aliases:["NISSAN"] },
+      { key:"BMW", slug:"bmw", aliases:["BMW"] },
+      { key:"VOLKSWAGEN", slug:"volkswagen", aliases:["VW","VOLKSWAGEN","VOLKSWAGEN AG"] },
+      { key:"FORD", slug:"ford", aliases:["FORD"] },
+      { key:"CHEVROLET", slug:"chevrolet", aliases:["CHEVROLET","CHEVY"] },
+      { key:"JEEP", slug:"jeep", aliases:["JEEP"] }
+    ];
+
+    function lrNorm_(s){
+      return (s||"")
+        .toString()
+        .trim()
+        .toUpperCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+        .replace(/[^A-Z0-9 ]+/g," ")
+        .replace(/\s+/g," ")
+        .trim();
+    }
+
+    // Levenshtein simple (para fuzzy)
+    function lrLev_(a,b){
+      a=lrNorm_(a); b=lrNorm_(b);
+      if(!a) return b.length;
+      if(!b) return a.length;
+      const m=a.length, n=b.length;
+      const dp=new Array(n+1);
+      for(let j=0;j<=n;j++) dp[j]=j;
+      for(let i=1;i<=m;i++){
+        let prev=dp[0]; dp[0]=i;
+        for(let j=1;j<=n;j++){
+          const tmp=dp[j];
+          const cost = a[i-1]===b[j-1] ? 0 : 1;
+          dp[j]=Math.min(
+            dp[j]+1,      // del
+            dp[j-1]+1,    // ins
+            prev+cost     // sub
+          );
+          prev=tmp;
+        }
+      }
+      return dp[n];
+    }
+
+    function lrCanonizeVehicle_(raw){
+      const v = lrNorm_(raw);
+      if(!v) return null;
+
+      // 1) alias exacto
+      for(const c of LR_CANON){
+        if(c.key===v) return c;
+        if((c.aliases||[]).some(a=>lrNorm_(a)===v)) return c;
+      }
+
+      // 2) fuzzy contra claves canonicas
+      let best=null, bestScore=1e9;
+      for(const c of LR_CANON){
+        const d = lrLev_(v, c.key);
+        if(d < bestScore){ bestScore=d; best=c; }
+      }
+      // umbral: tolerar 1-2 errores, segun longitud
+      const thr = Math.max(1, Math.floor(best.key.length * 0.18));
+      if(best && bestScore <= thr) return best;
+
+      // 3) default: devuelve como "OTROS" pero respetando el texto
+      return { key:v, slug: lrSlug_(v), raw:true };
+    }
+
+    function lrSlug_(s){
+      return lrNorm_(s)
+        .toLowerCase()
+        .replace(/\s+/g,"-")
+        .replace(/-+/g,"-")
+        .trim();
+    }
+
+    async function lrGetTotalRows_(){
+      const { count, error } = await supabase
+        .from(RF_DV_2)
+        .select(RF_DV_VEH, { count:"exact", head:true });
+
+      if(error) throw error;
+      return count || 0;
+    }
+
+    async function lrFetchAllVehicles_(){
+      const total = await lrGetTotalRows_();
+      const pages = Math.ceil(total / LR.PAGE_SIZE);
+      const counts = new Map();
+
+      for(let p=0; p<pages; p++){
+        const from = p*LR.PAGE_SIZE;
+        const to = Math.min(total-1, from + LR.PAGE_SIZE - 1);
+
+        const { data, error } = await supabase
+          .from(RF_DV_2)
+          .select(RF_DV_VEH)
+          .range(from, to);
+
+        if(error) throw error;
+
+        for(const row of (data||[])){
+          const canon = lrCanonizeVehicle_(row?.[RF_DV_VEH]);
+          if(!canon) continue;
+          const k = canon.key;
+          counts.set(k, (counts.get(k)||0) + 1);
+        }
+      }
+
+      // a array ordenado
+      const arr = Array.from(counts.entries()).map(([key,count])=>{
+        const canon = lrCanonizeVehicle_(key);
+        return {
+          key: canon?.key || key,
+          slug: canon?.slug || lrSlug_(key),
+          count
+        };
+      }).sort((a,b)=> b.count - a.count);
+
+      return { totalRows: total, items: arr };
+    }
+
+    function lrCacheLoad_(){
+      try{
+        const raw = localStorage.getItem(LR.CACHE_KEY);
+        if(!raw) return null;
+        const obj = JSON.parse(raw);
+        if(!obj?.ts || !obj?.payload) return null;
+        if((Date.now() - obj.ts) > LR.CACHE_TTL_MS) return null;
+        return obj.payload;
+      }catch(e){ return null; }
+    }
+
+    function lrCacheSave_(payload){
+      try{
+        localStorage.setItem(LR.CACHE_KEY, JSON.stringify({ ts: Date.now(), payload }));
+      }catch(e){}
+    }
+
+    function lrHuman_(n){
+      const x = Number(n||0);
+      if(x>=1_000_000) return (x/1_000_000).toFixed(2).replace(/\.00$/,"")+"M";
+      if(x>=1_000) return (x/1_000).toFixed(1).replace(/\.0$/,"")+"K";
+      return x.toLocaleString("es-DO");
+    }
+
+    function lrSetLogo_(slug, label){
+      const box = document.getElementById("lrLogo");
+      if(!box) return;
+
+      const tryFiles = [
+        `${slug}.png`,
+        `${slug}.webp`,
+        `${slug.replace(/-/g," ")}.png`,
+        `${slug.replace(/-/g," ")}.webp`,
+        `${slug.toUpperCase()}.png`,
+        `${slug.toUpperCase()}.webp`
+      ];
+
+      let i=0;
+      const img = new Image();
+      img.alt = label || slug;
+      img.onload = ()=>{ box.innerHTML=""; box.appendChild(img); };
+      img.onerror = ()=>{
+        i++;
+        if(i < tryFiles.length){
+          img.src = LR.LOGO_BASE + tryFiles[i];
+        }else{
+          // fallback initials
+          const initials = (label||slug||"RF").split(" ").slice(0,2).map(x=>x[0]).join("").toUpperCase();
+          box.innerHTML = `<span style="font-weight:900;color:rgba(37,99,235,.9)">${escapeHtml(initials)}</span>`;
+        }
+      };
+      img.src = LR.LOGO_BASE + tryFiles[i];
+    }
+
+    function lrStartCarousel_(payload){
+      const slide = document.getElementById("lrSlide");
+      const nameEl = document.getElementById("lrBrandName");
+      const subEl  = document.getElementById("lrBrandSub");
+      const countEl= document.getElementById("lrBrandCount");
+      const hintEl = document.getElementById("lrHintText");
+      const subTitle = document.getElementById("lrSubtitle");
+      const pulse = document.querySelector(".lrPulse");
+
+      if(!slide || !nameEl || !countEl || !subEl) return;
+
+      const items = (payload?.items||[]).slice(0, 30);
+      const totalRows = payload?.totalRows || items.reduce((a,b)=>a+(b.count||0),0);
+
+      if(subTitle) subTitle.textContent = `Códigos por vehículo • Base: ${lrHuman_(totalRows)} regs`;
+      if(pulse) pulse.title = "Actualizado";
+
+      if(!items.length){
+        nameEl.textContent = "Sin datos";
+        subEl.textContent = "No se pudo calcular el contador por marca.";
+        countEl.textContent = "—";
+        return;
+      }
+
+      let idx = 0;
+      const max = items[0].count || 1;
+
+      const paint = ()=>{
+        const it = items[idx];
+        const pct = Math.max(2, Math.round((it.count / max) * 100));
+        nameEl.textContent = it.key;
+        subEl.textContent  = `Participación aprox: ${Math.round((it.count/totalRows)*100)}%`;
+        countEl.textContent= lrHuman_(it.count);
+        lrSetLogo_(it.slug, it.key);
+
+        const bar = document.getElementById("lrBarFill");
+        if(bar) bar.style.width = `${Math.min(100,pct)}%`;
+
+        if(hintEl){
+          hintEl.textContent = `Normalizamos marcas (ej: AHONDA → HONDA) • ${idx+1}/${items.length}`;
+        }
+
+        slide.animate([
+          { transform:"translateY(4px)", opacity:.0 },
+          { transform:"translateY(0px)", opacity:1 }
+        ], { duration: 420, easing:"cubic-bezier(.2,.8,.2,1)" });
+
+        idx = (idx + 1) % items.length;
+      };
+
+      paint();
+      // rotación
+      if(window.__lrTimer) clearInterval(window.__lrTimer);
+      window.__lrTimer = setInterval(paint, 3800);
+    }
+
+    async function lrInitLeftRail_(force=false){
+      const refreshBtn = document.getElementById("lrRefresh");
+      if(refreshBtn && !refreshBtn.__bound){
+        refreshBtn.__bound = true;
+        refreshBtn.addEventListener("click", ()=>lrInitLeftRail_(true));
+      }
+
+      // Solo en pantallas grandes
+      if(window.matchMedia("(min-width: 1280px)").matches === false) return;
+
+      try{
+        document.getElementById("lrBrandName")?.textContent && (document.getElementById("lrBrandName").textContent="Cargando…");
+        const cached = (!force) ? lrCacheLoad_() : null;
+        if(cached){
+          lrStartCarousel_(cached);
+          return;
+        }
+
+        const pulse = document.querySelector(".lrPulse");
+        if(pulse){ pulse.title="Actualizando…"; }
+
+        const payload = await lrFetchAllVehicles_();
+        lrCacheSave_(payload);
+        lrStartCarousel_(payload);
+      }catch(e){
+        console.warn("LeftRail error:", e);
+        const nameEl = document.getElementById("lrBrandName");
+        const subEl  = document.getElementById("lrBrandSub");
+        const countEl= document.getElementById("lrBrandCount");
+        if(nameEl) nameEl.textContent = "No disponible";
+        if(subEl) subEl.textContent = "No se pudo cargar el contador por marca.";
+        if(countEl) countEl.textContent = "—";
+      }
+    }
+
+    // Iniciar left rail al cargar
+    window.addEventListener("load", ()=>lrInitLeftRail_(false));
+
 </script>
 
   <!-- Modal: Ofertas disponibles (Dashboard) -->
@@ -4826,8 +5344,11 @@ function rfPickVoice(voices, preferGoogleES=true){
 })();
 </script>
 
+  </div>
 </body>
 </html>
+
+
 
 
 
