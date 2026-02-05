@@ -420,29 +420,7 @@
     .mapTooltip .mini{ margin-top:8px; font-size:12px; color:#0f172a; font-weight:900; }
     .mapTooltip .mini span{ font-weight:800; color:#64748b; }
 
-  
-    /* ✅ Leaflet container */
-    .rfLeafletMap{
-      height: 440px;
-      border:1px solid rgba(230,232,240,.95);
-      border-radius:16px;
-      overflow:hidden;
-      background:rgba(2,6,23,.02);
-    }
-    @media(max-width:900px){
-      .rfLeafletMap{ height: 360px; }
-    }
-    .leaflet-container{
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      border-radius:16px;
-    }
-
   </style>
-
-  <!-- ✅ Leaflet (mapa real con OpenStreetMap) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-
 </head>
 
 <body>
@@ -700,33 +678,37 @@
       </div>
 
       <div class="mapCanvas">
-        
-          <div class="mapTitle">
-            <b>Mapa mundial</b>
-            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end">
-              <button class="chipBtn" id="btnChoro" onclick="setMapMode('choro')" title="Mapa por país (tasa de oportunidad)">Choropleth</button>
-              <button class="chipBtn" id="btnHeat" onclick="setMapMode('heat')" title="Heatmap por volumen y oportunidad">Heatmap</button>
-              <div class="mapHint">Pasa el mouse por un país para ver el resumen</div>
-            </div>
-          </div>
+        <div class="mapTitle">
+          <b>Zona / país seleccionado</b>
+          <div class="mapHint">Pasa el mouse por el mapa para ver el resumen</div>
+        </div>
 
+        <div id="mapTooltip" class="mapTooltip"></div>
 
-          <div id="mapTooltip" class="mapTooltip"></div>
+        <!-- Mapa estilizado por regiones (ligero, sin librerías externas) -->
+        <svg class="rfMapSvg" viewBox="0 0 1000 520" aria-label="Mapa por regiones">
+          <rect x="0" y="0" width="1000" height="520" fill="transparent"></rect>
 
-        <!-- ✅ Mapa real (Leaflet + OpenStreetMap) -->
-          <div id="rfLeafletMap" class="rfLeafletMap"></div>
+          <path id="rg-NA" class="rg" d="M70,140 C120,70 260,60 360,110 C420,150 420,220 350,250 C290,275 210,270 150,240 C95,215 55,185 70,140 Z"></path>
+          <path id="rg-SA" class="rg" d="M260,275 C320,250 395,275 410,330 C430,410 375,475 305,480 C260,482 235,455 225,420 C210,365 215,310 260,275 Z"></path>
+          <path id="rg-EU" class="rg" d="M470,150 C510,115 610,110 670,145 C700,165 695,200 655,215 C600,235 520,225 485,205 C455,185 450,165 470,150 Z"></path>
+          <path id="rg-AF" class="rg" d="M520,235 C575,215 655,230 690,290 C725,355 690,445 615,470 C560,488 510,455 490,400 C465,330 480,265 520,235 Z"></path>
+          <path id="rg-AS" class="rg" d="M690,140 C760,75 920,95 955,165 C985,225 945,280 875,290 C810,300 740,285 705,245 C675,210 660,165 690,140 Z"></path>
+          <path id="rg-OC" class="rg" d="M820,350 C870,325 945,340 965,385 C985,430 940,470 875,470 C830,470 790,440 790,405 C790,380 800,362 820,350 Z"></path>
+
+          <text x="200" y="170" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">N. América</text>
+          <text x="300" y="430" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">S. América</text>
+          <text x="560" y="170" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">Europa</text>
+          <text x="585" y="380" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">África</text>
+          <text x="810" y="190" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">Asia</text>
+          <text x="845" y="430" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">Oceanía</text>
+        </svg>
       </div>
     </div>
   </div>
 </div>
 
-
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
-  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-
-  <script type="module">
+<script type="module">
     import { supabase } from "./assets/supabaseClient.js";
     const $ = (id)=>document.getElementById(id);
 
@@ -1316,320 +1298,6 @@
       };
     })();
 
-
-    // ✅ Centroides/zoom por país (para enfocar el mapa al país del usuario)
-    const COUNTRY_VIEW = {
-      DO: {lat: 18.7357, lng: -70.1627, z: 7},
-      PA: {lat: 8.5380,  lng: -80.7821, z: 7},
-      PR: {lat: 18.2208, lng: -66.5901, z: 8},
-      US: {lat: 39.8283, lng: -98.5795, z: 4},
-      MX: {lat: 23.6345, lng: -102.5528, z: 5},
-      CO: {lat: 4.5709,  lng: -74.2973, z: 6},
-      VE: {lat: 6.4238,  lng: -66.5897, z: 6},
-      CL: {lat: -35.6751,lng: -71.5430, z: 5},
-      AR: {lat: -38.4161,lng: -63.6167, z: 4},
-      BR: {lat: -14.2350,lng: -51.9253, z: 4},
-      ES: {lat: 40.4637, lng: -3.7492, z: 5},
-      FR: {lat: 46.2276, lng: 2.2137,  z: 5},
-      DE: {lat: 51.1657, lng: 10.4515, z: 5},
-      IT: {lat: 41.8719, lng: 12.5674, z: 5},
-      GB: {lat: 55.3781, lng: -3.4360, z: 5},
-      TR: {lat: 38.9637, lng: 35.2433, z: 5},
-      SA: {lat: 23.8859, lng: 45.0792, z: 5},
-      AE: {lat: 23.4241, lng: 53.8478, z: 6},
-      JP: {lat: 36.2048, lng: 138.2529, z: 5},
-      KR: {lat: 35.9078, lng: 127.7669, z: 6},
-      CN: {lat: 35.8617, lng: 104.1954, z: 4},
-      IN: {lat: 20.5937, lng: 78.9629, z: 4},
-      AU: {lat: -25.2744,lng: 133.7751, z: 4}
-    };
-
-    let __rfLeafletMap = null;
-    let __rfLeafletLayer = null;
-    let __rfLeafletMarker = null;
-
-    function initLeafletMapOnce(){
-      const el = document.getElementById("rfLeafletMap");
-      if(!el) return;
-      if(__rfLeafletMap) return;
-
-      // mapa
-      __rfLeafletMap = L.map(el, {
-        zoomControl: true,
-        attributionControl: true,
-        scrollWheelZoom: false
-      });
-
-      __rfLeafletLayer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "&copy; OpenStreetMap contributors"
-      }).addTo(__rfLeafletMap);
-
-      // marcador inicial
-      __rfLeafletMarker = L.circleMarker([0,0], {
-        radius: 10,
-        weight: 2,
-        opacity: 0.9,
-        fillOpacity: 0.25
-      }).addTo(__rfLeafletMap);
-
-      // evitar que el scroll de la modal haga zoom accidental
-      __rfLeafletMap.on("focus", ()=> __rfLeafletMap.scrollWheelZoom.disable());
-    }
-
-    function updateLeafletView(gl, total, top){
-      initLeafletMapOnce();
-      if(!__rfLeafletMap) return;
-
-      const view = COUNTRY_VIEW[gl] || {lat: 18.7357, lng: -70.1627, z: 5};
-      __rfLeafletMap.setView([view.lat, view.lng], view.z, { animate: true });
-
-      // tamaño del marcador según total
-      const r = Math.max(8, Math.min(26, Math.round((total || 0) / 8)));
-      __rfLeafletMarker.setLatLng([view.lat, view.lng]);
-      __rfLeafletMarker.setStyle({ radius: r });
-
-      const label = glLabel().label;
-      const lines = (top||[]).map(x=>`${x.name}: ${x.pct}`).join("<br>");
-      __rfLeafletMarker.bindPopup(`<b>${esc(label)}</b><div class="mut" style="margin-top:6px;line-height:1.35">${lines || "Sin datos"}</div>`);
-    }
-
-
-    // ==============================
-    // ✅ MAPA PRO: Choropleth + Heatmap (listo para multi-país)
-    // - Si search_events tiene columna country/gl por evento: agrega datos por país.
-    // - Si NO: usa el país seleccionado (gl) como única señal.
-    // ==============================
-    let __rfWorldGeo = null;
-    let __rfChoroLayer = null;
-    let __rfHeatLayer = null;
-    let __rfMapMode = "choro";
-
-    window.setMapMode = function(mode){
-      __rfMapMode = mode === "heat" ? "heat" : "choro";
-      const b1 = document.getElementById("btnChoro");
-      const b2 = document.getElementById("btnHeat");
-      if(b1) b1.classList.toggle("active", __rfMapMode === "choro");
-      if(b2) b2.classList.toggle("active", __rfMapMode === "heat");
-      renderWorldLayers();
-    };
-
-    async function fetchWorldGeo(){
-      if(__rfWorldGeo) return __rfWorldGeo;
-
-      // GeoJSON liviano (países). Si algún CDN falla, puedes cambiar esta URL.
-      const url = "https://cdn.jsdelivr.net/gh/datasets/geo-countries@master/data/countries.geojson";
-      const res = await fetch(url);
-      if(!res.ok) throw new Error("No se pudo cargar el mapa mundial (GeoJSON).");
-      __rfWorldGeo = await res.json();
-      return __rfWorldGeo;
-    }
-
-    // Detecta si la tabla search_events tiene 'country' o 'gl' (para futuro)
-    async function detectEventCountryField(){
-      try{
-        const { data, error } = await supabase.from("search_events").select("country").limit(1);
-        if(!error) return "country";
-      }catch(_e){}
-      try{
-        const { data, error } = await supabase.from("search_events").select("gl").limit(1);
-        if(!error) return "gl";
-      }catch(_e){}
-      return null;
-    }
-
-    function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
-    function lerp(a,b,t){ return a + (b-a)*t; }
-
-    // Color scale (0% -> verde suave, 100% -> naranja/rojo)
-    function oppColor(pct){
-      const t = clamp((pct||0)/100, 0, 1);
-      // mezcla: verde -> amarillo -> rojo
-      const r = t < 0.5 ? lerp(16, 245, t*2) : lerp(245, 239, (t-0.5)*2);
-      const g = t < 0.5 ? lerp(185, 158, t*2) : lerp(158, 68, (t-0.5)*2);
-      const b = t < 0.5 ? lerp(129, 11, t*2)  : lerp(11, 68, (t-0.5)*2);
-      return `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},0.55)`;
-    }
-
-    function baseStyle(feature){
-      const iso2 = (feature?.properties?.ISO_A2 || feature?.properties?.iso_a2 || "").toUpperCase();
-      const agg = window.__rfCountryAgg?.get(iso2);
-      const pct = agg ? agg.opp : null;
-      const gl = (glLabel().gl||"").toUpperCase();
-      const isSel = iso2 && iso2 === gl;
-
-      return {
-        weight: isSel ? 2.2 : 1,
-        opacity: 0.9,
-        color: isSel ? "rgba(37,99,235,.75)" : "rgba(148,163,184,.55)",
-        fillOpacity: agg ? 0.70 : 0.18,
-        fillColor: agg ? oppColor(pct) : "rgba(255,255,255,.45)"
-      };
-    }
-
-    function renderTooltipCountry(iso2, featureName){
-      const tip = document.getElementById("mapTooltip");
-      if(!tip) return;
-
-      const agg = window.__rfCountryAgg?.get(iso2);
-      const name = featureName || iso2 || "—";
-
-      if(!agg){
-        tip.innerHTML = `<b>${esc(name)}</b><div class="mut" style="margin-top:6px">Sin datos en el rango actual.</div>`;
-        tip.style.display = "block";
-        return;
-      }
-
-      const lines = (agg.topModels||[])
-        .slice(0,6)
-        .map(x=>`<div class="mini">${esc(x.name)} <span>· ${esc(x.pct)}</span></div>`)
-        .join("");
-
-      tip.innerHTML = `
-        <b>${esc(name)} (${esc(iso2)})</b>
-        <div class="mut" style="margin-top:6px">
-          Total: <b>${agg.total}</b> · No encontrado: <b>${agg.notFound}</b> · Oportunidad: <b>${agg.opp.toFixed(1)}%</b>
-        </div>
-        ${lines ? `<div style="margin-top:8px">${lines}</div>` : `<div class="mut" style="margin-top:8px">Modelos: (solo disponible para el país actual por ahora)</div>`}
-        <div class="mut" style="margin-top:8px">Tip: “Desconocido” = búsquedas sin resultado o sin mapeo.</div>
-      `;
-      tip.style.display = "block";
-    }
-
-    function onEachCountry(feature, layer){
-      layer.on("mouseover", (e)=>{
-        const iso2 = (feature?.properties?.ISO_A2 || feature?.properties?.iso_a2 || "").toUpperCase();
-        const name = feature?.properties?.ADMIN || feature?.properties?.name || iso2;
-        layer.setStyle({ weight: 2.2, color:"rgba(37,99,235,.75)" });
-        renderTooltipCountry(iso2, name);
-      });
-      layer.on("mouseout", ()=>{
-        __rfChoroLayer && __rfChoroLayer.resetStyle(layer);
-      });
-      layer.on("click", ()=>{
-        // al click: enfoca el país y abre popup en el marcador
-        const iso2 = (feature?.properties?.ISO_A2 || feature?.properties?.iso_a2 || "").toUpperCase();
-        const agg = window.__rfCountryAgg?.get(iso2);
-        if(!agg || !__rfLeafletMap) return;
-
-        // enfocar bounds del país
-        try{
-          const b = layer.getBounds();
-          __rfLeafletMap.fitBounds(b, { padding:[20,20] });
-        }catch(_e){}
-      });
-    }
-
-    function renderWorldLayers(){
-      if(!__rfLeafletMap) return;
-
-      // limpiar capas previas
-      if(__rfChoroLayer){ __rfChoroLayer.remove(); __rfChoroLayer = null; }
-      if(__rfHeatLayer){ __rfHeatLayer.remove(); __rfHeatLayer = null; }
-
-      if(__rfMapMode === "heat"){
-        const pts = window.__rfHeatPoints || [];
-        __rfHeatLayer = L.heatLayer(pts, {
-          radius: 28,
-          blur: 20,
-          maxZoom: 6
-        }).addTo(__rfLeafletMap);
-        return;
-      }
-
-      const geo = __rfWorldGeo;
-      if(!geo) return;
-
-      __rfChoroLayer = L.geoJSON(geo, {
-        style: baseStyle,
-        onEachFeature: onEachCountry
-      }).addTo(__rfLeafletMap);
-    }
-
-    // Construye agregados por país:
-    // - total = eventos tipo código (isCodeLike)
-    // - notFound = result_status = not_found
-    // - opp = notFound/total
-    // Además: topModels solo para el país actual (gl) para que se vea brutal desde ya
-    async function buildCountryAggAndHeat(){
-      const from = dtFromRange($("range").value);
-      const cat = ($("category").value || "").trim();
-
-      const field = await detectEventCountryField(); // "country" | "gl" | null
-      let selectCols = "query_raw, category, result_status, searched_at";
-      if(field) selectCols += "," + field;
-
-      let q = supabase.from("search_events").select(selectCols).gte("searched_at", from);
-      if(cat) q = q.eq("category", cat);
-
-      const { data, error } = await q;
-      if(error) throw error;
-
-      const events = (data||[]);
-      const { gl } = glLabel();
-
-      // agrupar por país
-      const agg = new Map(); // iso2 -> {total, notFound}
-      const forGL = []; // eventos del país actual
-      for(const r of events){
-        const key = normKey(r.query_raw);
-        if(!isCodeLike(key)) continue;
-
-        const iso2 = String((field ? r[field] : gl) || gl).toUpperCase().trim() || gl;
-        const st = String(r.result_status||"");
-        const a = agg.get(iso2) || { total:0, notFound:0, opp:0, topModels:null };
-        a.total++;
-        if(st==="not_found") a.notFound++;
-        agg.set(iso2, a);
-
-        if(iso2 === gl) forGL.push({ q:key, status: st });
-      }
-
-      // opportunity
-      for(const [k,v] of agg.entries()){
-        v.opp = v.total ? (v.notFound / v.total)*100 : 0;
-      }
-
-      // Top modelos SOLO para el país actual (por performance y porque hoy no tenemos país por evento en tu tabla)
-      if(forGL.length){
-        // reusar lógica de distribución por modelo
-        const queries = forGL.map(x=>x.q);
-        const qToOrigNorm = await resolveToOriginalNorm(queries);
-        const origNorms = Array.from(new Set(Array.from(qToOrigNorm.values())));
-        const origNormToVeh = await resolveVehiculoForOriginalNorm(origNorms);
-
-        const counts = new Map();
-        let unknown = 0;
-
-        for(const ev of forGL){
-          if(ev.status==="not_found"){ unknown++; continue; }
-          const on = qToOrigNorm.get(ev.q);
-          if(!on){ unknown++; continue; }
-          const veh = origNormToVeh.get(on);
-          if(!veh){ unknown++; continue; }
-          counts.set(veh, (counts.get(veh)||0)+1);
-        }
-        const dist = Array.from(counts.entries()).map(([name,count])=>({name, count}));
-        if(unknown>0) dist.push({ name:"DESCONOCIDO", count: unknown });
-        const total = dist.reduce((a,b)=>a+b.count,0) || 0;
-
-        const top = dist.sort((a,b)=>b.count-a.count).slice(0,6).map(x=>({
-          name: x.name==="DESCONOCIDO" ? "Desconocido" : x.name,
-          pct: (total?((x.count/total)*100):0).toFixed(1)+"%"
-        }));
-
-        const a = agg.get(gl) || { total:0, notFound:0, opp:0, topModels:null };
-        a.topModels = top;
-        agg.set(gl, a);
-      }
-
-      // GeoJSON mundial (países)
-      const geo = await fetchWorldGeo();
-
-      // Heat points se calculan luego usando los bounds de cada país.
-      return { agg, geo };
-    }
-
     function glLabel(){
       const gl = ($("gl")?.value || "DO").toUpperCase();
       const opt = Array.from($("gl").options).find(o=>o.value===gl);
@@ -1744,15 +1412,10 @@
       if(sub){
         const { gl, label } = glLabel();
         sub.textContent = `País: ${label} · Rango: ${$("range").value} día(s) · Línea: ${$("category").value || "todas"}`;
-        const b1=document.getElementById("btnChoro"); const b2=document.getElementById("btnHeat");
-        if(b1) b1.classList.add("active"); if(b2) b2.classList.remove("active");
         setActiveRegion(ISO_TO_REGION(gl));
       }
 
       if(overlay) overlay.style.display = "flex";
-
-      // Leaflet necesita recalcular tamaño al abrir modal
-      setTimeout(()=>{ try{ initLeafletMapOnce(); __rfLeafletMap && __rfLeafletMap.invalidateSize(); }catch(_e){} }, 60);
 
       // cargar distribución
       try{
@@ -1760,56 +1423,47 @@
         const { dist, total, top } = await buildModelDistributionForMap();
         renderBars(dist);
 
-        // ✅ actualizar mapa real al país actual
-        const { gl } = glLabel();
-        updateLeafletView(gl, total, top);
-
-        // ✅ PRO: cargar choropleth mundial + heatmap (si hay datos)
-        try{
-          const { agg, geo } = await buildCountryAggAndHeat();
-          window.__rfCountryAgg = agg;
-          __rfWorldGeo = geo;
-
-          // Si ya existe capa choropleth, renderiza. Luego calcula heat points por centro de país usando bounds.
-          renderWorldLayers();
-
-          // Heat: generar puntos usando el centro del país (bounds) desde la capa choropleth
-          const pts = [];
-          if(__rfChoroLayer){
-            __rfChoroLayer.eachLayer(l=>{
-              const f = l.feature;
-              const iso2 = (f?.properties?.ISO_A2 || f?.properties?.iso_a2 || "").toUpperCase();
-              const a = agg.get(iso2);
-              if(!a || !a.total) return;
-              const c = l.getBounds().getCenter();
-              // peso: mezcla volumen y oportunidad (más not_found, más fuerte)
-              const w = Math.max(0.05, Math.min(1.0, (a.total/50) * (a.opp/100 + 0.20)));
-              pts.push([c.lat, c.lng, w]);
-            });
-          }
-          window.__rfHeatPoints = pts;
-
-          // activar botones estado
-          setMapMode(__rfMapMode);
-
-          // tooltip inicial país actual (con top modelos)
-          const cur = agg.get(gl);
-          const label = glLabel().label;
-          renderTooltipCountry(gl, label);
-        }catch(e){
-          // si falla el geojson, mantenemos el mapa normal con marcador
-          console.warn("Mapa PRO no disponible:", e);
-        }
-
-
         // tooltip inicial (país actual)
         const { label, gl } = glLabel();
         if(tip){
           tip.innerHTML = tooltipHTML(`Resumen · ${label}`, top);
           tip.style.display = "block";
         }
-        // ✅ Ya no usamos regiones SVG: el mapa real muestra el país actual.
-        // Tip: puedes hacer click en el marcador para ver el popup.
+
+        // Bind hover por regiones (una sola vez)
+        const bindOnceKey = "__rf_map_bound";
+        if(!window[bindOnceKey]){
+          ["NA","SA","EU","AF","AS","OC"].forEach(region=>{
+            const el = document.getElementById("rg-"+region);
+            if(!el) return;
+
+            el.addEventListener("mouseenter", ()=>{
+              if(!tip) return;
+              const regionName = ({
+                NA:"Norteamérica", SA:"Suramérica", EU:"Europa", AF:"África", AS:"Asia", OC:"Oceanía"
+              })[region] || region;
+
+              // Mostramos el mismo top (por ahora) porque search_events no tiene país por evento.
+              // Visualmente el usuario entiende la zona del país seleccionado.
+              tip.innerHTML = tooltipHTML(`Zona · ${regionName} (país ${glLabel().gl})`, top);
+              tip.style.display = "block";
+            });
+
+            el.addEventListener("mouseleave", ()=>{
+              if(!tip) return;
+              const { label } = glLabel();
+              tip.innerHTML = tooltipHTML(`Resumen · ${label}`, top);
+              tip.style.display = "block";
+            });
+
+            el.addEventListener("click", ()=>{
+              // al click, lo marcamos como activo visualmente
+              setActiveRegion(region);
+            });
+          });
+
+          window[bindOnceKey] = true;
+        }
       }catch(e){
         renderBars([{ name:"DESCONOCIDO", count: 0 }]);
         if(tip){
@@ -1852,9 +1506,6 @@
       }
 
       if(overlay) overlay.style.display = "flex";
-
-      // Leaflet necesita recalcular tamaño al abrir modal
-      setTimeout(()=>{ try{ initLeafletMapOnce(); __rfLeafletMap && __rfLeafletMap.invalidateSize(); }catch(_e){} }, 60);
     };
 
     window.closeModelModal = function(ev){
