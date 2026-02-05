@@ -420,7 +420,23 @@
     .mapTooltip .mini{ margin-top:8px; font-size:12px; color:#0f172a; font-weight:900; }
     .mapTooltip .mini span{ font-weight:800; color:#64748b; }
 
+
+/* ✅ Leaflet container (Mapa real) */
+#rfLeafletMap{
+  width:100%;
+  height:420px;
+  border-radius:14px;
+  overflow:hidden;
+}
+.leaflet-container{
+  border-radius:14px;
+  font-family: Arial,Helvetica,sans-serif;
+}
   </style>
+<!-- Leaflet (Mapa real) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 </head>
 
 <body>
@@ -685,25 +701,9 @@
 
         <div id="mapTooltip" class="mapTooltip"></div>
 
-        <!-- Mapa estilizado por regiones (ligero, sin librerías externas) -->
-        <svg class="rfMapSvg" viewBox="0 0 1000 520" aria-label="Mapa por regiones">
-          <rect x="0" y="0" width="1000" height="520" fill="transparent"></rect>
-
-          <path id="rg-NA" class="rg" d="M70,140 C120,70 260,60 360,110 C420,150 420,220 350,250 C290,275 210,270 150,240 C95,215 55,185 70,140 Z"></path>
-          <path id="rg-SA" class="rg" d="M260,275 C320,250 395,275 410,330 C430,410 375,475 305,480 C260,482 235,455 225,420 C210,365 215,310 260,275 Z"></path>
-          <path id="rg-EU" class="rg" d="M470,150 C510,115 610,110 670,145 C700,165 695,200 655,215 C600,235 520,225 485,205 C455,185 450,165 470,150 Z"></path>
-          <path id="rg-AF" class="rg" d="M520,235 C575,215 655,230 690,290 C725,355 690,445 615,470 C560,488 510,455 490,400 C465,330 480,265 520,235 Z"></path>
-          <path id="rg-AS" class="rg" d="M690,140 C760,75 920,95 955,165 C985,225 945,280 875,290 C810,300 740,285 705,245 C675,210 660,165 690,140 Z"></path>
-          <path id="rg-OC" class="rg" d="M820,350 C870,325 945,340 965,385 C985,430 940,470 875,470 C830,470 790,440 790,405 C790,380 800,362 820,350 Z"></path>
-
-          <text x="200" y="170" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">N. América</text>
-          <text x="300" y="430" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">S. América</text>
-          <text x="560" y="170" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">Europa</text>
-          <text x="585" y="380" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">África</text>
-          <text x="810" y="190" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">Asia</text>
-          <text x="845" y="430" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">Oceanía</text>
-        </svg>
-      </div>
+        <!-- ✅ MAPA REAL (Leaflet + MapTiler Outdoor / fallback OSM) -->
+<div id="rfLeafletMap" style="width:100%;height:420px;border-radius:14px;"></div>
+</div>
     </div>
   </div>
 </div>
@@ -749,7 +749,74 @@
         function esc(s){
       return String(s||"").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[c]));
     }
-    const RF_OFFERS_TABLE = "offers";
+    
+
+// ✅ MapTiler Outdoor (Basemap premium)
+// Para activar MapTiler, guarda tu API Key en el navegador:
+// localStorage.setItem("RF_MAPTILER_KEY","TU_KEY");
+function getMapTilerKey(){
+  try{
+    return (window.MAPTILER_KEY || localStorage.getItem("RF_MAPTILER_KEY") || "").trim();
+  }catch(_e){
+    return (window.MAPTILER_KEY || "").trim();
+  }
+}
+
+let __rfLeafletMap = null;
+let __rfLeafletLayer = null;
+
+// Centro/zoom por país (solo país)
+const COUNTRY_CENTER = {
+  DO:[18.7357,-70.1627], PR:[18.2208,-66.5901], US:[39.8283,-98.5795], CA:[56.1304,-106.3468],
+  MX:[23.6345,-102.5528], CO:[4.5709,-74.2973], CL:[-35.6751,-71.5430], PE:[-9.1900,-75.0152],
+  AR:[-38.4161,-63.6167], BR:[-14.2350,-51.9253], EC:[-1.8312,-78.1834], VE:[6.4238,-66.5897],
+  BO:[-16.2902,-63.5887], PY:[-23.4425,-58.4438], UY:[-32.5228,-55.7658], PA:[8.5380,-80.7821],
+  CR:[9.7489,-83.7534], GT:[15.7835,-90.2308], SV:[13.7942,-88.8965], HN:[15.2000,-86.2419],
+  NI:[12.8654,-85.2072], JM:[18.1096,-77.2975], FR:[46.2276,2.2137], DE:[51.1657,10.4515],
+  IT:[41.8719,12.5674], ES:[40.4637,-3.7492], GB:[55.3781,-3.4360], NL:[52.1326,5.2913],
+  SE:[60.1282,18.6435], CH:[46.8182,8.2275], AU:[-25.2744,133.7751], JP:[36.2048,138.2529],
+  KR:[35.9078,127.7669]
+};
+
+function initLeafletMapOnce(){
+  const el = document.getElementById("rfLeafletMap");
+  if(!el) return;
+
+  if(!__rfLeafletMap){
+    __rfLeafletMap = L.map(el, { zoomControl:true, attributionControl:true });
+
+    const mtKey = getMapTilerKey();
+    if(mtKey){
+      __rfLeafletLayer = L.tileLayer(
+        `https://api.maptiler.com/maps/outdoor/256/{z}/{x}/{y}.png?key=${mtKey}`,
+        {
+          maxZoom: 19,
+          tileSize: 256,
+          attribution: '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank" rel="noreferrer">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>'
+        }
+      ).addTo(__rfLeafletMap);
+    }else{
+      __rfLeafletLayer = L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        { maxZoom: 19, attribution: "&copy; OpenStreetMap contributors" }
+      ).addTo(__rfLeafletMap);
+    }
+  }else{
+    // Si ya existe el mapa, asegúrate de que Leaflet recalcule tamaños cuando abras el modal
+    try{ __rfLeafletMap.invalidateSize(); }catch(_e){}
+  }
+}
+
+function setMapViewByCountry(iso){
+  const c = String(iso||"DO").toUpperCase().trim();
+  const center = COUNTRY_CENTER[c] || [20, 0];
+  const zoom = COUNTRY_CENTER[c] ? 5 : 2;
+  try{
+    __rfLeafletMap.setView(center, zoom, { animate: true });
+  }catch(_e){}
+}
+
+const RF_OFFERS_TABLE = "offers";
 
     function normCode(v){
       return String(v||"").trim().toUpperCase().replace(/\s+/g,"").replace(/[^A-Z0-9]/g,"");
@@ -1416,6 +1483,26 @@
       }
 
       if(overlay) overlay.style.display = "flex";
+
+      // ✅ Inicializar mapa real (Leaflet) y centrar por país
+      initLeafletMapOnce();
+      const { gl: __glNow } = glLabel();
+      setMapViewByCountry(__glNow);
+      setTimeout(()=>{ try{ __rfLeafletMap.invalidateSize(); }catch(_e){} }, 250);
+
+      // ✅ Tooltip: seguir el mouse sobre el mapa (solo visual)
+      const __tip = document.getElementById("mapTooltip");
+      const __mapEl = document.getElementById("rfLeafletMap");
+      if(__tip && __mapEl && !window.__rf_map_leaflet_tip_bound){
+        __mapEl.addEventListener("mousemove", (ev)=>{
+          const r = __mapEl.getBoundingClientRect();
+          const x = Math.max(12, Math.min(r.width-380, ev.clientX - r.left + 12));
+          const y = Math.max(12, Math.min(r.height-140, ev.clientY - r.top + 12));
+          __tip.style.left = x + "px";
+          __tip.style.top  = y + "px";
+        });
+        window.__rf_map_leaflet_tip_bound = true;
+      }
 
       // cargar distribución
       try{
