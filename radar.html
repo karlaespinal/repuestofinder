@@ -627,92 +627,88 @@
   </div>
 
   <!-- ✅ MODAL: Detalle de códigos por modelo -->
-  <div id="modelModalOverlay" class="modalOverlay" onclick="closeModelModal(event)">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modelModalTitle" onclick="event.stopPropagation()">
-      <div class="modalHead">
-        <div>
-          <b id="modelModalTitle">Detalle</b>
-          <div class="mut" id="modelModalSub">—</div>
-        </div>
-        <button class="modalClose" onclick="closeModelModal()">Cerrar</button>
+<div id="modelModalOverlay" class="modalOverlay" onclick="closeModelModal(event)">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modelModalTitle" onclick="event.stopPropagation()">
+    <div class="modalHead">
+      <div>
+        <b id="modelModalTitle">Detalle</b>
+        <div class="mut" id="modelModalSub">—</div>
       </div>
-      <div class="modalBody">
-        <div class="tableWrap" style="max-height:420px">
-          <table id="tModelCodes">
-            <thead>
-              <tr>
-                <th>Código buscado</th>
-                <th>Veces</th>
-                <th>Original (resuelto)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td class="mut">—</td><td class="mut">—</td><td class="mut">—</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="mut" style="margin-top:10px;line-height:1.35">
-          * “Original (resuelto)” es el <b>original_norm</b> encontrado via <b>cambios / datos_vehiculares</b>.  
-          Si sale “—”, ese código no pudo resolverse en el catálogo.
-        </div>
-      </div>
+      <button class="modalClose" onclick="closeModelModal()">Cerrar</button>
     </div>
-  
-  <!-- ✅ MODAL: MAPA + % por modelos (incluye 'Desconocido') -->
-  <div id="mapOverlay" class="modalOverlay" onclick="closeMapModal(event)">
-    <div class="mapModal" role="dialog" aria-modal="true" aria-labelledby="mapModalTitle" onclick="event.stopPropagation()">
-      <div class="modalHead">
-        <div>
-          <b id="mapModalTitle">Mapa · Modelos más buscados</b>
-          <div class="mut" id="mapModalSub">—</div>
-        </div>
-        <button class="modalClose" onclick="closeMapModal()">Cerrar</button>
+    <div class="modalBody">
+      <div class="tableWrap" style="max-height:420px">
+        <table id="tModelCodes">
+          <thead>
+            <tr>
+              <th>Código buscado</th>
+              <th>Veces</th>
+              <th>Original (resuelto)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="mut">—</td><td class="mut">—</td><td class="mut">—</td></tr>
+          </tbody>
+        </table>
       </div>
-
-      <div class="mapGrid">
-        <div class="mapSide">
-          <h3>Distribución por modelo</h3>
-          <div class="mut" id="mapSideNote">* “Desconocido” = búsquedas <b>no_found</b> o códigos que no logramos mapear a un vehículo.</div>
-          <div id="mapBars" style="margin-top:10px"></div>
-        </div>
-
-        <div class="mapCanvas">
-          <div class="mapTitle">
-            <b>Zona / país seleccionado</b>
-            <div class="mapHint">Pasa el mouse por el mapa para ver el resumen</div>
-          </div>
-
-          <div id="mapTooltip" class="mapTooltip"></div>
-
-          <!-- Mapa estilizado por regiones (ligero, sin librerías externas) -->
-          <svg class="rfMapSvg" viewBox="0 0 1000 520" aria-label="Mapa por regiones">
-            <!-- Océano (fondo) -->
-            <rect x="0" y="0" width="1000" height="520" fill="transparent"></rect>
-
-            <!-- Regiones aproximadas -->
-            <path id="rg-NA" class="rg" d="M70,140 C120,70 260,60 360,110 C420,150 420,220 350,250 C290,275 210,270 150,240 C95,215 55,185 70,140 Z"></path>
-            <path id="rg-SA" class="rg" d="M260,275 C320,250 395,275 410,330 C430,410 375,475 305,480 C260,482 235,455 225,420 C210,365 215,310 260,275 Z"></path>
-            <path id="rg-EU" class="rg" d="M470,150 C510,115 610,110 670,145 C700,165 695,200 655,215 C600,235 520,225 485,205 C455,185 450,165 470,150 Z"></path>
-            <path id="rg-AF" class="rg" d="M520,235 C575,215 655,230 690,290 C725,355 690,445 615,470 C560,488 510,455 490,400 C465,330 480,265 520,235 Z"></path>
-            <path id="rg-AS" class="rg" d="M690,140 C760,75 920,95 955,165 C985,225 945,280 875,290 C810,300 740,285 705,245 C675,210 660,165 690,140 Z"></path>
-            <path id="rg-OC" class="rg" d="M820,350 C870,325 945,340 965,385 C985,430 940,470 875,470 C830,470 790,440 790,405 C790,380 800,362 820,350 Z"></path>
-
-            <!-- Labels (opcional / sutil) -->
-            <text x="200" y="170" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">N. América</text>
-            <text x="300" y="430" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">S. América</text>
-            <text x="560" y="170" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">Europa</text>
-            <text x="585" y="380" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">África</text>
-            <text x="810" y="190" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">Asia</text>
-            <text x="845" y="430" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">Oceanía</text>
-          </svg>
-        </div>
+      <div class="mut" style="margin-top:10px;line-height:1.35">
+        * “Original (resuelto)” es el <b>original_norm</b> encontrado via <b>cambios / datos_vehiculares</b>.  
+        Si sale “—”, ese código no pudo resolverse en el catálogo.
       </div>
     </div>
   </div>
-
 </div>
 
-  <script type="module">
+<!-- ✅ MODAL: MAPA + % por modelos (incluye 'Desconocido') -->
+<div id="mapOverlay" class="modalOverlay" onclick="closeMapModal(event)">
+  <div class="mapModal" role="dialog" aria-modal="true" aria-labelledby="mapModalTitle" onclick="event.stopPropagation()">
+    <div class="modalHead">
+      <div>
+        <b id="mapModalTitle">Mapa · Modelos más buscados</b>
+        <div class="mut" id="mapModalSub">—</div>
+      </div>
+      <button class="modalClose" onclick="closeMapModal()">Cerrar</button>
+    </div>
+
+    <div class="mapGrid">
+      <div class="mapSide">
+        <h3>Distribución por modelo</h3>
+        <div class="mut" id="mapSideNote">* “Desconocido” = búsquedas <b>no_found</b> o códigos que no logramos mapear a un vehículo.</div>
+        <div id="mapBars" style="margin-top:10px"></div>
+      </div>
+
+      <div class="mapCanvas">
+        <div class="mapTitle">
+          <b>Zona / país seleccionado</b>
+          <div class="mapHint">Pasa el mouse por el mapa para ver el resumen</div>
+        </div>
+
+        <div id="mapTooltip" class="mapTooltip"></div>
+
+        <!-- Mapa estilizado por regiones (ligero, sin librerías externas) -->
+        <svg class="rfMapSvg" viewBox="0 0 1000 520" aria-label="Mapa por regiones">
+          <rect x="0" y="0" width="1000" height="520" fill="transparent"></rect>
+
+          <path id="rg-NA" class="rg" d="M70,140 C120,70 260,60 360,110 C420,150 420,220 350,250 C290,275 210,270 150,240 C95,215 55,185 70,140 Z"></path>
+          <path id="rg-SA" class="rg" d="M260,275 C320,250 395,275 410,330 C430,410 375,475 305,480 C260,482 235,455 225,420 C210,365 215,310 260,275 Z"></path>
+          <path id="rg-EU" class="rg" d="M470,150 C510,115 610,110 670,145 C700,165 695,200 655,215 C600,235 520,225 485,205 C455,185 450,165 470,150 Z"></path>
+          <path id="rg-AF" class="rg" d="M520,235 C575,215 655,230 690,290 C725,355 690,445 615,470 C560,488 510,455 490,400 C465,330 480,265 520,235 Z"></path>
+          <path id="rg-AS" class="rg" d="M690,140 C760,75 920,95 955,165 C985,225 945,280 875,290 C810,300 740,285 705,245 C675,210 660,165 690,140 Z"></path>
+          <path id="rg-OC" class="rg" d="M820,350 C870,325 945,340 965,385 C985,430 940,470 875,470 C830,470 790,440 790,405 C790,380 800,362 820,350 Z"></path>
+
+          <text x="200" y="170" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">N. América</text>
+          <text x="300" y="430" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">S. América</text>
+          <text x="560" y="170" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">Europa</text>
+          <text x="585" y="380" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">África</text>
+          <text x="810" y="190" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">Asia</text>
+          <text x="845" y="430" font-size="14" font-weight="900" fill="rgba(100,116,139,.85)">Oceanía</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
     import { supabase } from "./assets/supabaseClient.js";
     const $ = (id)=>document.getElementById(id);
 
