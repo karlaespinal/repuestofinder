@@ -1364,31 +1364,44 @@ body, html {
 </style>
 
 
-<style>
-/* === AJUSTES FINALES DE ESTETICA (REQUEST) === */
+<style id="rf-fix-arex-v2">
+/* ============================
+   FIX V2 (Arex) - 2026-02-05
+   - Reduce espacio vacío derecha (desktop)
+   - Centra mejor el contenedor "Radar por Marca"
+   ============================ */
 
-/* Reduce un poco mas el ancho del rail izquierdo */
-.dashboard-grid,
-.main-grid,
-.layout-grid {
-  grid-template-columns: 220px 1fr !important;
+/* 1) Usa más ancho de pantalla en desktop (evita el "hueco" derecho) */
+.page{
+  width: min(1400px, 100%) !important; /* antes: 1180px */
 }
 
-/* Centrar el contenedor "Radar por Marca" dentro del rail izquierdo */
-.leftRail {
-  display: flex !important;
-  justify-content: center !important;
+/* Cuando el LeftRail aparece (>=1280px), deja que el contenido aproveche el resto del ancho */
+@media (min-width:1280px){
+  .page{
+    width: calc(100% - 300px - 36px) !important; /* 300 rail + padding/gap */
+    max-width: none !important;
+    margin-left: 318px !important; /* mantiene tu rail fijo */
+    margin-right: 10px !important;  /* reduce el aire a la derecha */
+  }
 }
 
-.leftRailCard {
-  margin: 0 auto !important;
+/* 2) Centrar visualmente el bloque del radar dentro del rail izquierdo */
+.leftRail{
+  display:flex !important;
+  justify-content:center !important;
 }
 
-/* Ajuste fino del boton flotante de Instagram (menos aire a la derecha) */
-.instagram-float,
-.ig-float,
-.btn-instagram {
-  right: 8px !important;
+.leftRailCard{
+  width:100% !important;
+  max-width:300px !important;
+  margin:0 auto !important;
+}
+
+/* 3) Botón Instagram más pegado al borde */
+.ig-float{
+  right:10px !important;
+  bottom:18px !important;
 }
 </style>
 
@@ -5485,6 +5498,8 @@ async function lrInitLeftRail_(force=false){
   </div>
 </body>
 </html>
+
+
 
 
 
