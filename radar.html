@@ -1622,6 +1622,10 @@
         a.topModels = top;
         agg.set(gl, a);
       }
+
+      // GeoJSON mundial (países)
+      const geo = await fetchWorldGeo();
+
       // Heat points se calculan luego usando los bounds de cada país.
       return { agg, geo };
     }
