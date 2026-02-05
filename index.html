@@ -1363,6 +1363,35 @@ body, html {
 }
 </style>
 
+
+<style>
+/* === AJUSTES FINALES DE ESTETICA (REQUEST) === */
+
+/* Reduce un poco mas el ancho del rail izquierdo */
+.dashboard-grid,
+.main-grid,
+.layout-grid {
+  grid-template-columns: 220px 1fr !important;
+}
+
+/* Centrar el contenedor "Radar por Marca" dentro del rail izquierdo */
+.leftRail {
+  display: flex !important;
+  justify-content: center !important;
+}
+
+.leftRailCard {
+  margin: 0 auto !important;
+}
+
+/* Ajuste fino del boton flotante de Instagram (menos aire a la derecha) */
+.instagram-float,
+.ig-float,
+.btn-instagram {
+  right: 8px !important;
+}
+</style>
+
 </head>
 
 <body>
@@ -5456,6 +5485,7 @@ async function lrInitLeftRail_(force=false){
   </div>
 </body>
 </html>
+
 
 
 
