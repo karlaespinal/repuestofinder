@@ -1317,32 +1317,49 @@
   </style>
 
 <style>
-/* === OVERRIDE: AJUSTE ESPACIO DERECHO GLOBAL === */
-body {
+/* === AJUSTE REAL DE ANCHO DERECHO (FORZADO) === */
+
+/* Contenedor raíz */
+body, html {
+  max-width: 100vw;
   overflow-x: hidden;
 }
 
-/* contenedor principal */
-.main-container, .dashboard-container, .page-wrapper {
-  max-width: 1400px !important;
-  padding-right: 24px !important;
-  margin-right: auto !important;
+/* Wrapper principal del dashboard */
+.dashboard,
+.dashboard-wrapper,
+.main-wrapper,
+.page-wrapper,
+.container {
+  width: 100%;
+  max-width: 1280px !important;
+  margin: 0 auto !important;
+  padding-right: 16px !important;
+  padding-left: 16px !important;
 }
 
-/* grid principal */
-.main-grid, .content-grid {
+/* Grid principal */
+.dashboard-grid,
+.main-grid,
+.layout-grid {
+  grid-template-columns: 260px 1fr !important;
   gap: 16px !important;
 }
 
-/* tarjetas */
-.card, .panel {
-  margin-right: 0 !important;
+/* Elimina cualquier gutter fantasma */
+.right-space,
+.right-gutter,
+.spacer-right {
+  display: none !important;
+  width: 0 !important;
 }
 
-/* boton instagram */
-.instagram-float, .ig-float, .btn-instagram {
-  right: 18px !important;
-  bottom: 22px !important;
+/* Instagram más cerca */
+.instagram-float,
+.ig-float,
+.btn-instagram {
+  right: 12px !important;
+  bottom: 20px !important;
 }
 </style>
 
@@ -5439,6 +5456,8 @@ async function lrInitLeftRail_(force=false){
   </div>
 </body>
 </html>
+
+
 
 
 
