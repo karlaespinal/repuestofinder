@@ -36,6 +36,18 @@
     }
     .page{ width:min(1180px, 100%); margin:0 auto; padding:18px 18px 28px; }
 
+    /* ===== Layout tweak when LeftRail is visible (desktop) ===== */
+    @media (min-width:1280px){
+      /* LeftRail se muestra solo en desktop; anclamos el contenido para reducir el espacio en blanco a la derecha */
+      .page{
+        width: min(1180px, calc(100% - 300px - 26px));
+        margin-left: 318px; /* 300 rail + 18px gap aprox */
+        margin-right: 18px;
+      }
+      .leftRail{ display:block; }
+    }
+
+
     
     /* ===== Left Rail (contador por marca) ===== */
     .shell{
@@ -46,7 +58,7 @@
       position:fixed;
       left:18px;
       top:92px; /* debajo del nav */
-      width:270px;
+      width: 300px;
       z-index:20;
       display:none;
     }
@@ -112,6 +124,18 @@
       overflow:hidden;
       min-height:110px;
     }
+
+    .lrBrandList{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    /* Compactamos filas para que quepan 3 marcas */
+    .lrBrandRow{ gap:10px; }
+    .lrLogo{ width:42px; height:42px; border-radius:14px; }
+    .lrLogo img{ width:34px; height:34px; }
+    .lrCount{ font-size:18px; }
+    .lrSlide{ min-height:164px; }
     .lrBrandRow{
       display:flex;
       align-items:center;
@@ -1308,17 +1332,42 @@
         </div>
 
         <div class="lrSlide" id="lrSlide">
-          <div class="lrBrandRow">
-            <div class="lrLogo" id="lrLogo">
-              <span style="font-weight:900;color:rgba(37,99,235,.9)">RF</span>
+
+          <div class="lrBrandList">
+            <div class="lrBrandRow">
+              <div class="lrLogo" id="lrLogo0">
+                <span style="font-weight:900;color:rgba(37,99,235,.9)">RF</span>
+              </div>
+              <div class="lrBrandMeta">
+                <div class="name" id="lrBrandName0">Cargando…</div>
+                <div class="sub" id="lrBrandSub0">Calculando distribución de códigos…</div>
+              </div>
+              <div class="lrCount" id="lrBrandCount0">—</div>
             </div>
-            <div class="lrBrandMeta">
-              <div class="name" id="lrBrandName">Cargando…</div>
-              <div class="sub" id="lrBrandSub">Calculando distribución de códigos…</div>
+
+            <div class="lrBrandRow">
+              <div class="lrLogo" id="lrLogo1">
+                <span style="font-weight:900;color:rgba(37,99,235,.9)">RF</span>
+              </div>
+              <div class="lrBrandMeta">
+                <div class="name" id="lrBrandName1">—</div>
+                <div class="sub" id="lrBrandSub1">—</div>
+              </div>
+              <div class="lrCount" id="lrBrandCount1">—</div>
             </div>
-            <div class="lrCount" id="lrBrandCount">—</div>
+
+            <div class="lrBrandRow">
+              <div class="lrLogo" id="lrLogo2">
+                <span style="font-weight:900;color:rgba(37,99,235,.9)">RF</span>
+              </div>
+              <div class="lrBrandMeta">
+                <div class="name" id="lrBrandName2">—</div>
+                <div class="sub" id="lrBrandSub2">—</div>
+              </div>
+              <div class="lrCount" id="lrBrandCount2">—</div>
+            </div>
           </div>
-          <div class="lrBar"><i id="lrBarFill"></i></div>
+<div class="lrBar"><i id="lrBarFill"></i></div>
         </div>
 
         <div class="lrFooter">
@@ -4914,8 +4963,8 @@ function rfPickVoice(voices, preferGoogleES=true){
       return x.toLocaleString("es-DO");
     }
 
-    function lrSetLogo_(slug, label){
-      const box = document.getElementById("lrLogo");
+    function lrSetLogo_(slug, label, boxId){
+      const box = document.getElementById(boxId || "lrLogo0") || document.getElementById("lrLogo");
       if(!box) return;
 
       const tryFiles = [
@@ -4944,27 +4993,35 @@ function rfPickVoice(voices, preferGoogleES=true){
       img.src = LR.LOGO_BASE + tryFiles[i];
     }
 
-    function lrStartCarousel_(payload){
+    
+function lrStartCarousel_(payload){
       const slide = document.getElementById("lrSlide");
-      const nameEl = document.getElementById("lrBrandName");
-      const subEl  = document.getElementById("lrBrandSub");
-      const countEl= document.getElementById("lrBrandCount");
       const hintEl = document.getElementById("lrHintText");
       const subTitle = document.getElementById("lrSubtitle");
       const pulse = document.querySelector(".lrPulse");
 
-      if(!slide || !nameEl || !countEl || !subEl) return;
+      // 3 slots
+      const slots = [0,1,2].map(i=>({
+        name: document.getElementById(`lrBrandName${i}`) || document.getElementById("lrBrandName"),
+        sub:  document.getElementById(`lrBrandSub${i}`)  || document.getElementById("lrBrandSub"),
+        count:document.getElementById(`lrBrandCount${i}`)|| document.getElementById("lrBrandCount"),
+        logoId: document.getElementById(`lrLogo${i}`) ? `lrLogo${i}` : "lrLogo"
+      }));
 
-      const items = (payload?.items||[]).slice(0, 30);
+      if(!slide || !slots[0].name || !slots[0].count || !slots[0].sub) return;
+
+      const items = (payload?.items||[]).slice(0, 60);
       const totalRows = payload?.totalRows || items.reduce((a,b)=>a+(b.count||0),0);
 
       if(subTitle) subTitle.textContent = `Códigos por vehículo • Base: ${lrHuman_(totalRows)} regs`;
       if(pulse) pulse.title = "Actualizado";
 
       if(!items.length){
-        nameEl.textContent = "Sin datos";
-        subEl.textContent = "No se pudo calcular el contador por marca.";
-        countEl.textContent = "—";
+        slots.forEach(s=>{
+          s.name.textContent="Sin datos";
+          s.sub.textContent="No se pudo calcular el contador por marca.";
+          s.count.textContent="—";
+        });
         return;
       }
 
@@ -4972,18 +5029,24 @@ function rfPickVoice(voices, preferGoogleES=true){
       const max = items[0].count || 1;
 
       const paint = ()=>{
-        const it = items[idx];
-        const pct = Math.max(2, Math.round((it.count / max) * 100));
-        nameEl.textContent = it.key;
-        subEl.textContent  = `Participación aprox: ${Math.round((it.count/totalRows)*100)}%`;
-        countEl.textContent= lrHuman_(it.count);
-        lrSetLogo_(it.slug, it.key);
+        for(let s=0; s<3; s++){
+          const it = items[(idx + s) % items.length];
+          const pctLocal = Math.max(2, Math.round((it.count / max) * 100));
+          slots[s].name.textContent = it.key;
+          slots[s].sub.textContent  = `Participación aprox: ${Math.round((it.count/totalRows)*100)}%`;
+          slots[s].count.textContent= lrHuman_(it.count);
+          lrSetLogo_(it.slug, it.key, slots[s].logoId);
 
-        const bar = document.getElementById("lrBarFill");
-        if(bar) bar.style.width = `${Math.min(100,pct)}%`;
+          // barra: usamos el top (slot 0) para el fill
+          if(s===0){
+            const bar = document.getElementById("lrBarFill");
+            if(bar) bar.style.width = `${Math.min(100,pctLocal)}%`;
+          }
+        }
 
         if(hintEl){
-          hintEl.textContent = `Normalizamos marcas (ej: AHONDA → HONDA) • ${idx+1}/${items.length}`;
+          const endIdx = Math.min(items.length, idx+3);
+          hintEl.textContent = `Normalizamos marcas (ej: AHONDA → HONDA) • Mostrando ${idx+1}-${Math.min(idx+3, items.length)} de ${items.length}`;
         }
 
         slide.animate([
@@ -4991,16 +5054,14 @@ function rfPickVoice(voices, preferGoogleES=true){
           { transform:"translateY(0px)", opacity:1 }
         ], { duration: 420, easing:"cubic-bezier(.2,.8,.2,1)" });
 
-        idx = (idx + 1) % items.length;
+        idx = (idx + 3) % items.length;
       };
 
       paint();
-      // rotación
       if(window.__lrTimer) clearInterval(window.__lrTimer);
-      window.__lrTimer = setInterval(paint, 3800);
+      window.__lrTimer = setInterval(paint, 4200);
     }
-
-    async function lrInitLeftRail_(force=false){
+async function lrInitLeftRail_(force=false){
       const refreshBtn = document.getElementById("lrRefresh");
       if(refreshBtn && !refreshBtn.__bound){
         refreshBtn.__bound = true;
@@ -5011,7 +5072,7 @@ function rfPickVoice(voices, preferGoogleES=true){
       if(window.matchMedia("(min-width: 1280px)").matches === false) return;
 
       try{
-        document.getElementById("lrBrandName")?.textContent && (document.getElementById("lrBrandName").textContent="Cargando…");
+        document.getElementById("lrBrandName0")?.textContent && (document.getElementById("lrBrandName0").textContent="Cargando…");
         const cached = (!force) ? lrCacheLoad_() : null;
         if(cached){
           lrStartCarousel_(cached);
@@ -5026,9 +5087,9 @@ function rfPickVoice(voices, preferGoogleES=true){
         lrStartCarousel_(payload);
       }catch(e){
         console.warn("LeftRail error:", e);
-        const nameEl = document.getElementById("lrBrandName");
-        const subEl  = document.getElementById("lrBrandSub");
-        const countEl= document.getElementById("lrBrandCount");
+        const nameEl = document.getElementById("lrBrandName0") || document.getElementById("lrBrandName");
+        const subEl  = document.getElementById("lrBrandSub0") || document.getElementById("lrBrandSub");
+        const countEl= document.getElementById("lrBrandCount0") || document.getElementById("lrBrandCount");
         if(nameEl) nameEl.textContent = "No disponible";
         if(subEl) subEl.textContent = "No se pudo cargar el contador por marca.";
         if(countEl) countEl.textContent = "—";
@@ -5347,6 +5408,9 @@ function rfPickVoice(voices, preferGoogleES=true){
   </div>
 </body>
 </html>
+
+</html>
+
 
 
 
