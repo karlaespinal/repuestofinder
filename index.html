@@ -121,7 +121,7 @@
       border:1px solid rgba(230,232,240,.95);
       background:rgba(255,255,255,.88);
       padding:12px;
-      overflow:hidden;
+      overflow:auto;
       min-height:110px;
     }
 
@@ -130,12 +130,12 @@
       flex-direction:column;
       gap:10px;
     }
-    /* Compactamos filas para que quepan 3 marcas */
+    /* Compactamos filas para que quepan 10 marcas */
     .lrBrandRow{ gap:10px; }
     .lrLogo{ width:42px; height:42px; border-radius:14px; }
     .lrLogo img{ width:34px; height:34px; }
     .lrCount{ font-size:18px; }
-    .lrSlide{ min-height:164px; }
+    .lrSlide{ min-height:260px; max-height:calc(100vh - 240px); overflow:auto; }
     .lrBrandRow{
       display:flex;
       align-items:center;
@@ -1435,7 +1435,7 @@ body, html {
         <div class="lrSlide" id="lrSlide">
 
           <div class="lrBrandList">
-            <div class="lrBrandRow">
+                        <div class="lrBrandRow">
               <div class="lrLogo" id="lrLogo0">
                 <span style="font-weight:900;color:rgba(37,99,235,.9)">RF</span>
               </div>
@@ -1466,6 +1466,83 @@ body, html {
                 <div class="sub" id="lrBrandSub2">—</div>
               </div>
               <div class="lrCount" id="lrBrandCount2">—</div>
+            </div>
+
+            <div class="lrBrandRow">
+              <div class="lrLogo" id="lrLogo3">
+                <span style="font-weight:900;color:rgba(37,99,235,.9)">RF</span>
+              </div>
+              <div class="lrBrandMeta">
+                <div class="name" id="lrBrandName3">—</div>
+                <div class="sub" id="lrBrandSub3">—</div>
+              </div>
+              <div class="lrCount" id="lrBrandCount3">—</div>
+            </div>
+
+            <div class="lrBrandRow">
+              <div class="lrLogo" id="lrLogo4">
+                <span style="font-weight:900;color:rgba(37,99,235,.9)">RF</span>
+              </div>
+              <div class="lrBrandMeta">
+                <div class="name" id="lrBrandName4">—</div>
+                <div class="sub" id="lrBrandSub4">—</div>
+              </div>
+              <div class="lrCount" id="lrBrandCount4">—</div>
+            </div>
+
+            <div class="lrBrandRow">
+              <div class="lrLogo" id="lrLogo5">
+                <span style="font-weight:900;color:rgba(37,99,235,.9)">RF</span>
+              </div>
+              <div class="lrBrandMeta">
+                <div class="name" id="lrBrandName5">—</div>
+                <div class="sub" id="lrBrandSub5">—</div>
+              </div>
+              <div class="lrCount" id="lrBrandCount5">—</div>
+            </div>
+
+            <div class="lrBrandRow">
+              <div class="lrLogo" id="lrLogo6">
+                <span style="font-weight:900;color:rgba(37,99,235,.9)">RF</span>
+              </div>
+              <div class="lrBrandMeta">
+                <div class="name" id="lrBrandName6">—</div>
+                <div class="sub" id="lrBrandSub6">—</div>
+              </div>
+              <div class="lrCount" id="lrBrandCount6">—</div>
+            </div>
+
+            <div class="lrBrandRow">
+              <div class="lrLogo" id="lrLogo7">
+                <span style="font-weight:900;color:rgba(37,99,235,.9)">RF</span>
+              </div>
+              <div class="lrBrandMeta">
+                <div class="name" id="lrBrandName7">—</div>
+                <div class="sub" id="lrBrandSub7">—</div>
+              </div>
+              <div class="lrCount" id="lrBrandCount7">—</div>
+            </div>
+
+            <div class="lrBrandRow">
+              <div class="lrLogo" id="lrLogo8">
+                <span style="font-weight:900;color:rgba(37,99,235,.9)">RF</span>
+              </div>
+              <div class="lrBrandMeta">
+                <div class="name" id="lrBrandName8">—</div>
+                <div class="sub" id="lrBrandSub8">—</div>
+              </div>
+              <div class="lrCount" id="lrBrandCount8">—</div>
+            </div>
+
+            <div class="lrBrandRow">
+              <div class="lrLogo" id="lrLogo9">
+                <span style="font-weight:900;color:rgba(37,99,235,.9)">RF</span>
+              </div>
+              <div class="lrBrandMeta">
+                <div class="name" id="lrBrandName9">—</div>
+                <div class="sub" id="lrBrandSub9">—</div>
+              </div>
+              <div class="lrCount" id="lrBrandCount9">—</div>
             </div>
           </div>
 <div class="lrBar"><i id="lrBarFill"></i></div>
@@ -5101,8 +5178,8 @@ function lrStartCarousel_(payload){
       const subTitle = document.getElementById("lrSubtitle");
       const pulse = document.querySelector(".lrPulse");
 
-      // 3 slots
-      const slots = [0,1,2].map(i=>({
+      // 10 slots
+      const slots = Array.from({length:10}, (_,i)=>i).map(i=>({
         name: document.getElementById(`lrBrandName${i}`) || document.getElementById("lrBrandName"),
         sub:  document.getElementById(`lrBrandSub${i}`)  || document.getElementById("lrBrandSub"),
         count:document.getElementById(`lrBrandCount${i}`)|| document.getElementById("lrBrandCount"),
@@ -5130,7 +5207,7 @@ function lrStartCarousel_(payload){
       const max = items[0].count || 1;
 
       const paint = ()=>{
-        for(let s=0; s<3; s++){
+        for(let s=0; s<slots.length; s++){
           const it = items[(idx + s) % items.length];
           const pctLocal = Math.max(2, Math.round((it.count / max) * 100));
           slots[s].name.textContent = it.key;
@@ -5146,8 +5223,8 @@ function lrStartCarousel_(payload){
         }
 
         if(hintEl){
-          const endIdx = Math.min(items.length, idx+3);
-          hintEl.textContent = `Normalizamos marcas (ej: AHONDA → HONDA) • Mostrando ${idx+1}-${Math.min(idx+3, items.length)} de ${items.length}`;
+          const endIdx = Math.min(items.length, idx+slots.length);
+          hintEl.textContent = `Normalizamos marcas (ej: AHONDA → HONDA) • Mostrando ${idx+1}-${Math.min(idx+slots.length, items.length)} de ${items.length}`;
         }
 
         slide.animate([
@@ -5155,7 +5232,7 @@ function lrStartCarousel_(payload){
           { transform:"translateY(0px)", opacity:1 }
         ], { duration: 420, easing:"cubic-bezier(.2,.8,.2,1)" });
 
-        idx = (idx + 3) % items.length;
+        idx = (idx + slots.length) % items.length;
       };
 
       paint();
