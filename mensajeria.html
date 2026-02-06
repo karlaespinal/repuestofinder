@@ -59,7 +59,7 @@
       background:rgba(255,255,255,.8);color:var(--txt);font-weight:800;
     }
     .btn2:active{transform:translateY(1px)}
-    .grid{display:grid;grid-template-columns: 1.25fr .75fr;gap:14px;margin-top:14px}
+    .grid{display:grid;grid-template-columns: .75fr 1.25fr;gap:14px;margin-top:14px}
     @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
     .card{
       border:1px solid var(--line);background:var(--card);
@@ -87,6 +87,7 @@
     .mut{color:var(--mut);font-size:12px;margin:0}
     .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
     .input, .ta, select{
+      text-transform: uppercase; /* visual */
       width:100%;
       border:1px solid var(--line);background:rgba(255,255,255,.82);
       border-radius:14px;padding:11px 12px;font-size:14px;outline:none;
@@ -188,6 +189,30 @@
       border-radius:16px;
       padding:10px 12px;
     }
+  
+    .tagStatRow{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.82);
+      border-radius:14px;
+      padding:10px 10px;
+      cursor:pointer;
+      font-weight:900;
+      font-size:12px;
+      color:var(--txt);
+    }
+    .tagStatRow:hover{filter:brightness(.98)}
+    .tagStatRow:active{transform:translateY(1px)}
+    .tagStatName{
+      text-align:left;
+      color:var(--mut);
+      letter-spacing:.4px;
+    }
+
   </style>
 </head>
 
@@ -211,7 +236,43 @@
     </div>
 
     <div class="grid">
-      <!-- MAIN -->
+      <div class="card">
+        <h2 class="h2">Reglas rápidas</h2>
+        <p class="mut" style="margin-bottom:10px">
+          Mantengamos esto útil: describe el caso, pon contexto y evita datos sensibles.
+        </p>
+
+        <div class="item">
+          <p class="title">✅ Foro Abierto</p>
+          <p class="mut">Ideas, debates, sugerencias y temas generales (con etiquetas).</p>
+        </div>
+        <div class="item">
+          <p class="title">🔒 Mensaje a Admin</p>
+          <p class="mut">Soporte, casos específicos o conversación privada.</p>
+        </div>
+        <div class="item">
+          <p class="title">⭐ Calificación</p>
+          <p class="mut">Cada usuario califica 1 vez por post (1–5). Se muestra promedio.</p>
+        </div>
+        <div class="item" id="adminBox" style="display:none">
+          <p class="title">🛡️ Moderación (Admin)</p>
+          <p class="mut">Fijar temas, cerrar y eliminar spam.</p>
+        </div>
+
+        <div class="hr"></div>
+
+        <h2 class="h2">Tu estado</h2>
+        <div class="item">
+          <p class="mut" id="meInfo">Cargando...</p>
+        </div>
+
+        <div class="hr"></div>
+
+        <h2 class="h2">Etiquetas (casos)</h2>
+        <div class="item" id="tagStatsBox">
+          <p class="mut">Cargando...</p>
+        </div>
+
       <div class="card">
         <div class="tabs">
           <button class="tab active" id="tabForum">
@@ -358,46 +419,9 @@
           </div>
         </section>
       </div>
-
-      <!-- SIDEBAR -->
-      <div class="card">
-        <h2 class="h2">Reglas rápidas</h2>
-        <p class="mut" style="margin-bottom:10px">
-          Mantengamos esto útil: describe el caso, pon contexto y evita datos sensibles.
-        </p>
-
-        <div class="item">
-          <p class="title">✅ Foro Abierto</p>
-          <p class="mut">Ideas, debates, sugerencias y temas generales (con etiquetas).</p>
-        </div>
-        <div class="item">
-          <p class="title">🔒 Mensaje a Admin</p>
-          <p class="mut">Soporte, casos específicos o conversación privada.</p>
-        </div>
-        <div class="item">
-          <p class="title">⭐ Calificación</p>
-          <p class="mut">Cada usuario califica 1 vez por post (1–5). Se muestra promedio.</p>
-        </div>
-        <div class="item" id="adminBox" style="display:none">
-          <p class="title">🛡️ Moderación (Admin)</p>
-          <p class="mut">Fijar temas, cerrar y eliminar spam.</p>
-        </div>
-
-        <div class="hr"></div>
-
-        <h2 class="h2">Tu estado</h2>
-        <div class="item">
-          <p class="mut" id="meInfo">Cargando...</p>
-        </div>
-
-        <div class="hr"></div>
-
-        <h2 class="h2">Etiquetas (casos)</h2>
-        <div class="item" id="tagStatsBox">
-          <p class="mut">Cargando...</p>
-        </div>
-      </div>
     </div>
+
+  </div>
 
   </div>
 
@@ -631,7 +655,7 @@ let AVG_MAP={};
 
 function initTagFilter(){
   const sel = document.getElementById("tagFilter");
-  sel.innerHTML = `<option value="">Todas las etiquetas</option>`;
+  sel.innerHTML = `<option value="">TODAS LAS ETIQUETAS</option>`;
   const set = new Set(DEFAULT_TAGS);
   for(const p of CACHED_POSTS){
     for(const t of (p.tags||[])) set.add(t);
@@ -639,7 +663,7 @@ function initTagFilter(){
   for(const t of Array.from(set).sort((a,b)=>a.localeCompare(b))){
     const opt = document.createElement("option");
     opt.value = t;
-    opt.textContent = t;
+    opt.textContent = String(t).toUpperCase();
     sel.appendChild(opt);
   }
 }
@@ -649,6 +673,8 @@ function renderTagStats(){
   if(!box) return;
 
   const counts = {};
+  const total = (CACHED_POSTS||[]).length;
+
   for(const p of (CACHED_POSTS||[])){
     const tags = Array.isArray(p.tags) ? p.tags : [];
     if(!tags.length) counts["(Sin etiqueta)"] = (counts["(Sin etiqueta)"]||0) + 1;
@@ -658,17 +684,43 @@ function renderTagStats(){
   }
 
   const entries = Object.entries(counts).sort((a,b)=> b[1]-a[1] || a[0].localeCompare(b[0]));
-  if(!entries.length){
+  if(!total){
     box.innerHTML = `<p class="mut">Aún no hay casos.</p>`;
     return;
   }
 
-  box.innerHTML = entries.slice(0, 20).map(([tag,n])=> `
-    <div class="row" style="justify-content:space-between">
-      <span style="font-weight:900;font-size:12px">${escapeHtml(tag)}</span>
-      <span class="badge">${n}</span>
-    </div>
-  `).join("");
+  // Helper para click
+  function row(tag, n, isTotal=false){
+    const label = isTotal ? "TOTAL TEMAS" : String(tag).toUpperCase();
+    const dataAttr = isTotal ? "" : `data-tag="${escapeHtml(tag)}"`;
+    return `
+      <button class="tagStatRow" ${dataAttr} ${isTotal ? 'data-tag=""' : ''} title="Filtrar">
+        <span class="tagStatName">${escapeHtml(label)}</span>
+        <span class="badge">${n}</span>
+      </button>
+    `;
+  }
+
+  box.innerHTML = `
+    ${row("", total, true)}
+    <div style="height:8px"></div>
+    ${entries.slice(0, 30).map(([tag,n])=> row(tag,n,false)).join("")}
+    <div class="inlineHint" style="margin-top:10px">Tip: haz click en una etiqueta para filtrar el foro.</div>
+  `;
+
+  // Eventos (delegación)
+  box.querySelectorAll(".tagStatRow").forEach(btn=>{
+    btn.addEventListener("click", async ()=>{
+      const t = btn.getAttribute("data-tag") || "";
+      // Forzar tab foro, aplicar filtro y refrescar
+      setTab("forum");
+      stopThreadPolling();
+      document.getElementById("tagFilter").value = t;
+      await loadForum();
+      // Llevar al foro (lista)
+      document.getElementById("secForum").scrollIntoView({behavior:"smooth", block:"start"});
+    });
+  });
 }
 
 async function loadForum(){
@@ -1264,4 +1316,3 @@ initAndBoot();
 
 </body>
 </html>
-
