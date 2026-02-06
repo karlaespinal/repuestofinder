@@ -909,6 +909,12 @@ let __rfCountryDistCache = new Map();
 let __rfCountryHoverTimer = null;
 let __rfCountryPinnedISO = null;
 
+// ✅ Burbujeo por país (solo cuando gl = ALL)
+let __rfCountryBubbleLayer = null;
+let __rfCountryActivityCache = new Map();
+let __rfCountryLayerByISO = new Map(); // iso -> leaflet layer
+
+
 async function fetchCountriesGeoJSONOnce(){
   if(__rfCountriesGeo) return __rfCountriesGeo;
   const url = "https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson";
@@ -959,6 +965,192 @@ function styleCountryPinned(){
 function setCountryLayerStyle(layer, styleObj){
   try{ layer.setStyle(styleObj); }catch(_e){}
 }
+function setCountryLayerStyle(layer, styleObj){
+  try{ layer.setStyle(styleObj); }catch(_e){}
+}
+
+
+/* ===========================
+   ✅ Burbuja de actividad por país (cuando gl = ALL)
+   - Tamaño = más búsquedas = burbuja más grande
+   - Click: fija el país en el dropdown y refresca todo
+   =========================== */
+function __rfBubbleRadius(count){
+  const c = Math.max(0, Number(count||0));
+  // escala suave (sqrt) para no explotar el tamaño
+  return Math.min(42, 6 + Math.sqrt(c) * 2.2);
+}
+function __rfBubbleColor(count){
+  const c = Math.max(0, Number(count||0));
+  if(c >= 200) return "#1d4ed8"; // alto
+  if(c >= 80)  return "#2563eb"; // medio
+  if(c >= 20)  return "#3b82f6"; // bajo
+  return "#93c5fd"; // muy bajo
+}
+
+async function getCountryActivityCountsCached(){
+  // Cache por filtros (range + category + query + line + hl)
+  const from = dtFromRange($("range").value);
+  const cat = ($("category").value || "").trim();
+  const qf  = ($("qfilter").value || "").trim().toLowerCase();
+  const line = String($("category").value||"").trim(); // category ya hace de línea en tu UI
+  const hl = String($("hl").value||"").trim();
+
+  const key = JSON.stringify({ from, cat, qf, line, hl });
+  if(__rfCountryActivityCache.has(key)) return __rfCountryActivityCache.get(key);
+
+  // Query base
+  const baseQ = (fromCol) => {
+    let qq = supabase
+      .from("search_events")
+      .select(fromCol)
+      .gte("searched_at", from);
+    if(cat) qq = qq.eq("category", cat);
+    if(qf)  qq = qq.ilike("query_raw", `%${qf}%`);
+    return qq;
+  };
+
+  // Paginación defensiva
+  async function pullAll(colName){
+    const out = [];
+    let fromI = 0;
+    const pageSize = 1000;
+    const maxRows = 50000; // límite defensivo
+    while(fromI < maxRows){
+      const toI = fromI + pageSize - 1;
+      const { data, error } = await baseQ(colName).range(fromI, toI);
+      if(error) throw error;
+      const arr = data || [];
+      out.push(...arr);
+      if(arr.length < pageSize) break;
+      fromI += pageSize;
+    }
+    return out;
+  }
+
+  let rows = null;
+  let usedCol = null;
+
+  // Intento 1: gl
+  try{
+    rows = await pullAll("gl");
+    usedCol = "gl";
+  }catch(_e1){
+    // Intento 2: country
+    try{
+      rows = await pullAll("country");
+      usedCol = "country";
+    }catch(_e2){
+      rows = [];
+      usedCol = null;
+    }
+  }
+
+  const counts = new Map();
+  if(usedCol){
+    for(const r of (rows||[])){
+      const iso = String(r[usedCol]||"").toUpperCase().trim();
+      if(!iso) continue;
+      counts.set(iso, (counts.get(iso)||0) + 1);
+    }
+  }
+
+  const payload = { key, counts, usedCol };
+  __rfCountryActivityCache.set(key, payload);
+  return payload;
+}
+
+function clearCountryBubbles(){
+  if(__rfCountryBubbleLayer){
+    try{ __rfCountryBubbleLayer.clearLayers(); }catch(_e){}
+    try{ __rfLeafletMap.removeLayer(__rfCountryBubbleLayer); }catch(_e){}
+  }
+  __rfCountryBubbleLayer = L.layerGroup().addTo(__rfLeafletMap);
+  // pane arriba de países
+  try{
+    if(!__rfLeafletMap.getPane("rfBubbles")){
+      const p = __rfLeafletMap.createPane("rfBubbles");
+      p.style.zIndex = 650;
+    }
+  }catch(_e){}
+}
+
+async function renderCountryBubblesIfAll(){
+  if(!__rfLeafletMap) return;
+  const { gl } = glLabel();
+  const iso = String(gl||"").toUpperCase().trim();
+
+  // Solo en ALL mostramos burbujas globales (por país)
+  if(iso !== "ALL"){
+    // Si no es ALL, solo resalta país (sin burbujas globales)
+    if(__rfCountryBubbleLayer){
+      try{ __rfCountryBubbleLayer.clearLayers(); }catch(_e){}
+    }
+    return;
+  }
+
+  // Asegura capa países y bubble layer
+  await addCountriesLayerOnce();
+  clearCountryBubbles();
+
+  const { counts, usedCol } = await getCountryActivityCountsCached();
+  if(!usedCol || !counts || counts.size === 0){
+    // Sin datos de país guardados
+    return;
+  }
+
+  // Para escalar tamaño con relación al máximo
+  let max = 0;
+  for(const v of counts.values()) max = Math.max(max, v||0);
+  if(!max) return;
+
+  // Creamos burbujas sobre el centro del país (centroid basado en bounds del polígono)
+  for(const [iso2, count] of counts.entries()){
+    const layer = __rfCountryLayerByISO.get(iso2);
+    if(!layer) continue;
+
+    let center = null;
+    try{
+      const b = layer.getBounds();
+      center = b.getCenter();
+    }catch(_e){}
+
+    if(!center) continue;
+
+    const r = __rfBubbleRadius(count);
+    const col = __rfBubbleColor(count);
+
+    const marker = L.circleMarker(center, {
+      pane: "rfBubbles",
+      radius: r,
+      color: col,
+      weight: 2,
+      fillColor: col,
+      fillOpacity: 0.35
+    });
+
+    // Tooltip + click
+    marker.bindTooltip(`${iso2}: ${count} búsquedas`, { direction:"top", opacity:0.95, sticky:true });
+
+    marker.on("click", async ()=>{
+      // fija país y refresca todo (incluye mapa y paneles)
+      const sel = $("gl");
+      if(sel){
+        sel.value = iso2;
+        // dispara change real
+        sel.dispatchEvent(new Event("change", { bubbles:true }));
+      }
+      // en el modal, también actualiza el panel de distribución de inmediato
+      try{
+        __rfCountryPinnedISO = iso2;
+        await updateUIForCountry(iso2);
+        setMapViewByCountry(iso2);
+      }catch(_e){}
+    });
+
+    marker.addTo(__rfCountryBubbleLayer);
+  }
+}
 
 async function getCountryDistributionCached(iso){
   const key = String(iso||"").toUpperCase().trim();
@@ -1005,6 +1197,7 @@ async function addCountriesLayerOnce(){
 
       if(!iso) return;
 
+      __rfCountryLayerByISO.set(iso, layer);
       layer.on("mousemove", ()=>{
         // si hay un país fijado, igual mostramos hover pero no sobreescribimos el pin
         if(__rfCountryHoverTimer) clearTimeout(__rfCountryHoverTimer);
@@ -1083,6 +1276,28 @@ function setMapViewByCountry(iso){
   try{
     __rfLeafletMap.setView(center, zoom, { animate: true });
   }catch(_e){}
+}
+
+
+function pinCountryISO(iso){
+  const c = String(iso||"").toUpperCase().trim();
+  __rfCountryPinnedISO = c && c !== "ALL" ? c : null;
+
+  if(!__rfCountriesLayer) return;
+
+  try{
+    __rfCountriesLayer.eachLayer((ly)=>{
+      // reset a default
+      try{ setCountryLayerStyle(ly, styleCountryDefault()); }catch(_e){}
+    });
+  }catch(_e){}
+
+  if(!__rfCountryPinnedISO) return;
+
+  const ly = __rfCountryLayerByISO.get(__rfCountryPinnedISO);
+  if(ly){
+    try{ setCountryLayerStyle(ly, styleCountryPinned()); }catch(_e){}
+  }
 }
 
 const RF_OFFERS_TABLE = "offers";
@@ -1761,8 +1976,11 @@ const RF_OFFERS_TABLE = "offers";
       __rfCountryPinnedISO = null;
       const { gl: __glNow } = glLabel();
       setMapViewByCountry(__glNow);
+      try{ pinCountryISO(__glNow); }catch(_e){}
       // Inicializar panel izquierdo con el país seleccionado
       try{ await updateUIForCountry(__glNow, glLabel().label); }catch(_e){}
+      // ✅ Si es GLOBAL (ALL), pintar burbujas por país (actividad)
+      try{ await renderCountryBubblesIfAll(); }catch(_e){}
       setTimeout(()=>{ try{ __rfLeafletMap.invalidateSize(); }catch(_e){} }, 250);
 
       // ✅ Tooltip: seguir el mouse sobre el mapa (solo visual)
@@ -2050,6 +2268,20 @@ const RF_OFFERS_TABLE = "offers";
         await loadOpp();
         await loadEbay(topRows);
         await loadGoogleSuggest(topRows);
+
+        // ✅ Si el modal del mapa está abierto, actualiza panel + zoom + burbujas según país
+        try{
+          const ov = document.getElementById("mapOverlay");
+          if(ov && ov.style.display === "flex"){
+            __rfCountryDistCache = new Map();
+            const { gl: __glNow } = glLabel();
+            try{ await updateUIForCountry(__glNow, glLabel().label); }catch(_e){}
+            try{ setMapViewByCountry(__glNow); }catch(_e){}
+            try{ pinCountryISO(__glNow); }catch(_e){}
+            try{ await renderCountryBubblesIfAll(); }catch(_e){}
+          }
+        }catch(_e){}
+
         setMsg("", false);
       }catch(e){
         setMsg("Error: " + (e?.message || e), true);
