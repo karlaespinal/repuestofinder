@@ -727,6 +727,58 @@
     import { supabase } from "./assets/supabaseClient.js";
     const $ = (id)=>document.getElementById(id);
 
+    // ==========================
+    // País activo (dropdown o selección en el mapa)
+    // ==========================
+    function activeISO(){
+      const iso = (window.__rfCountryPinnedISO || $("gl")?.value || "").toString().toUpperCase().trim();
+      return iso;
+    }
+
+    // Helper: trae eventos filtrados (por rango, categoría y país)
+    async function fetchSearchEventsFiltered(selectCols){
+      const from = dtFromRange($("range").value);
+      const cat  = ($("category").value || "").trim();
+      const iso  = activeISO();
+
+      const makeBase = () => {
+        let q = supabase
+          .from("search_events")
+          .select(selectCols)
+          .gte("searched_at", from);
+        if(cat) q = q.eq("category", cat);
+        return q;
+      };
+
+      // sin país
+      if(!iso){
+        const { data, error } = await makeBase();
+        if(error) throw error;
+        return data || [];
+      }
+
+      // primero intentamos con 'gl'
+      {
+        const { data, error } = await makeBase().eq("gl", iso);
+        if(!error) return data || [];
+        // si la columna no existe o no está habilitada, intentamos con 'country'
+        const msg = (error?.message || "").toLowerCase();
+        const isMissingColumn = msg.includes("column") && (msg.includes("gl") || msg.includes("country"));
+        const isBadRequest = String(error?.code || "").includes("42703") || String(error?.status || "").includes("400");
+        if(!(isMissingColumn || isBadRequest)){
+          // Si fue otro error real, lo lanzamos
+          throw error;
+        }
+      }
+
+      // fallback: 'country'
+      {
+        const { data, error } = await makeBase().eq("country", iso);
+        if(error) throw error;
+        return data || [];
+      }
+    }
+
     function setMsg(text, isErr){
       const el = $("msg");
       if(!el) return;
@@ -929,7 +981,15 @@ async function addCountriesLayerOnce(){
           }else{
             setCountryLayerStyle(layer, styleCountryHover());
           }
-          await updateUIForCountry(iso, nm);
+          // sincronizar filtro país del radar (dropdown) y recargar módulos
+        try{
+          const sel = document.getElementById("gl");
+          if(sel && sel.value !== iso){ sel.value = iso; }
+          try{ saveLocale(); }catch(_e){}
+          if(typeof refreshAll === "function"){ refreshAll(); }
+        }catch(_e){}
+
+        await updateUIForCountry(iso, nm);
         }, 80);
       });
 
@@ -960,6 +1020,14 @@ async function addCountriesLayerOnce(){
         try{
           const b = layer.getBounds();
           if(b && b.isValid()) __rfLeafletMap.fitBounds(b, { padding:[20,20] });
+        }catch(_e){}
+
+        // sincronizar filtro país del radar (dropdown) y recargar módulos
+        try{
+          const sel = document.getElementById("gl");
+          if(sel && sel.value !== iso){ sel.value = iso; }
+          try{ saveLocale(); }catch(_e){}
+          if(typeof refreshAll === "function"){ refreshAll(); }
         }catch(_e){}
 
         await updateUIForCountry(iso, nm);
@@ -1141,19 +1209,7 @@ const RF_OFFERS_TABLE = "offers";
     }
 
     async function loadKpis(){
-      const from = dtFromRange($("range").value);
-      const cat = ($("category").value || "").trim();
-
-      let q = supabase
-        .from("search_events")
-        .select("id, result_status, category, searched_at")
-        .gte("searched_at", from);
-
-      if(cat) q = q.eq("category", cat);
-
-      const { data, error } = await q;
-      if(error) throw error;
-
+      const data = await fetchSearchEventsFiltered("id, result_status");
       const total = (data||[]).length;
       const nf = (data||[]).filter(x=>x.result_status==="not_found").length;
       const pct = total ? Math.round((nf/total)*1000)/10 : 0;
@@ -1164,18 +1220,8 @@ const RF_OFFERS_TABLE = "offers";
     }
 
     async function loadTop(){
-      const from = dtFromRange($("range").value);
-      const cat = ($("category").value || "").trim();
+      const data = await fetchSearchEventsFiltered("query_raw, category, result_status");
 
-      let q = supabase
-        .from("search_events")
-        .select("query_raw, category, result_status, searched_at")
-        .gte("searched_at", from);
-
-      if(cat) q = q.eq("category", cat);
-
-      const { data, error } = await q;
-      if(error) throw error;
 
       const map = new Map();
       for(const r of (data||[])){
@@ -1214,18 +1260,8 @@ const RF_OFFERS_TABLE = "offers";
     }
 
     async function loadOpp(){
-      const from = dtFromRange($("range").value);
-      const cat = ($("category").value || "").trim();
+      const data = await fetchSearchEventsFiltered("query_raw, category, result_status");
 
-      let q = supabase
-        .from("search_events")
-        .select("query_raw, category, result_status, searched_at")
-        .gte("searched_at", from);
-
-      if(cat) q = q.eq("category", cat);
-
-      const { data, error } = await q;
-      if(error) throw error;
 
       const map = new Map();
       for(const r of (data||[])){
@@ -1298,6 +1334,7 @@ const RF_OFFERS_TABLE = "offers";
     function normKey(s){
       return String(s||"").trim().toUpperCase();
     }
+
 
     async function resolveToOriginalNorm(queries){
       const qList = Array.from(new Set(queries.map(normKey).filter(Boolean)));
@@ -1412,18 +1449,7 @@ const RF_OFFERS_TABLE = "offers";
 
       window.__rfModelDetails = {}; // reset
 
-      const from = dtFromRange(document.getElementById("range").value);
-      const cat = (document.getElementById("category").value || "").trim();
-
-      let q = supabase
-        .from("search_events")
-        .select("query_raw, category, searched_at")
-        .gte("searched_at", from);
-
-      if(cat) q = q.eq("category", cat);
-
-      const { data, error } = await q;
-      if(error) throw error;
+      const data = await fetchSearchEventsFiltered("query_raw, category");
 
       const events = (data||[]);
       const queries = events
@@ -1585,6 +1611,7 @@ const RF_OFFERS_TABLE = "offers";
         `;
       }).join("") || `<div class="mut" style="margin-top:10px">Sin distribución para mostrar.</div>`;
     }
+
 
     async function buildModelDistributionForMap(isoFilter){
   const from = dtFromRange($("range").value);
