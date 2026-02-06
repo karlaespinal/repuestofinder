@@ -1781,7 +1781,7 @@ function uniqueJoin_(arr, sep=" / "){
     const prefix = norm.slice(0, prefLen);
     if(prefix.length < 4) return [];
 
-    const selectCols = "original_norm, descripcion, vehiculo, modelo, anio_inicio, anio_final";
+    const selectCols = "original, original_norm, descripcion, vehiculo, modelo, anio_inicio, anio_final";
     let all = [];
 
     for(const t of VEH_TABLES){
@@ -1803,8 +1803,11 @@ function uniqueJoin_(arr, sep=" / "){
       const k = String(r?.original_norm || "").trim().toUpperCase();
       if(!k || seen.has(k)) continue;
       seen.add(k);
+      {
+      const disp = String(r?.original ?? "").toString().trim() || k;
       out.push({
-        code: k,
+        code: disp,          // mostrar ORIGINAL (con guiones)
+        code_norm: k,        // mantener original_norm para dedupe/uso interno si hace falta
         desc: (r?.descripcion ?? "").toString().trim(),
         vehiculo: (r?.vehiculo ?? "").toString().trim(),
         modelo: (r?.modelo ?? "").toString().trim(),
@@ -1812,6 +1815,7 @@ function uniqueJoin_(arr, sep=" / "){
         to: r?.anio_final ?? ""
       });
       if(out.length >= 10) break;
+    }
     }
     return out;
   }
