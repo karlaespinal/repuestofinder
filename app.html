@@ -556,7 +556,7 @@ function clearInputsAfterCodeSearch_(){
 // ======================================================
 // ✅ Anti-cuelgue: control de busqueda en curso + timeout
 // ======================================================
-let __isSearching = false;
+window.__isSearching = false;
 
 function withTimeout_(promise, ms, label){
   let t;
@@ -1781,7 +1781,7 @@ function uniqueJoin_(arr, sep=" / "){
     const prefix = norm.slice(0, prefLen);
     if(prefix.length < 4) return [];
 
-    const selectCols = "original_norm, descripcion, vehiculo, modelo, anio_inicio, anio_final";
+    const selectCols = "original, original_norm, descripcion, vehiculo, modelo, anio_inicio, anio_final";
     let all = [];
 
     for(const t of VEH_TABLES){
@@ -1805,6 +1805,7 @@ function uniqueJoin_(arr, sep=" / "){
       seen.add(k);
       out.push({
         code: k,
+        display: (r?.original ?? k).toString().trim(),
         desc: (r?.descripcion ?? "").toString().trim(),
         vehiculo: (r?.vehiculo ?? "").toString().trim(),
         modelo: (r?.modelo ?? "").toString().trim(),
@@ -1833,7 +1834,7 @@ function uniqueJoin_(arr, sep=" / "){
     if(hint) hint.textContent = `No encontramos "${String(searchedNorm||"").toUpperCase()}". Te sugerimos estos codigos similares:`;
 
     const rows = items.map(it=>{
-      const title = escapeHtml_(it.code);
+      const title = escapeHtml_(it.display || it.code);
       const sub = [it.vehiculo, it.modelo, (it.from||it.to) ? `${it.from||""}-${it.to||""}` : ""].filter(Boolean).join(" · ");
       const desc = it.desc ? `<div class="muted" style="margin-top:4px">${escapeHtml_(it.desc)}</div>` : "";
       const subHtml = sub ? `<div class="muted" style="margin-top:4px">${escapeHtml_(sub)}</div>` : "";
@@ -2164,7 +2165,7 @@ renderTableInto_("oeWrap", { headers: [], rows: [] });
       setStatus("Error: " + (e?.message || e));
       alert("Error buscando en BD: " + (e?.message || e));
     }finally{
-      __isSearching = false;
+      window.__isSearching = false;
       try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
     }
   };
@@ -2231,11 +2232,37 @@ window.limpiar = function(){
     if(isMobile_()) setMobileDefault_();
   };
 
-    window.buscar = async function(){
+      // ======================================================
+  // ✅ Busqueda por codigo (anti-cuelgue + cancelacion segura)
+  // ======================================================
+  window.__isSearching = false;
+  window.__searchSeq = 0;
+  window.__searchWatchdog = null;
+
+  function cancelActiveSearch_(reason){
+    try{
+      window.__searchSeq = (window.__searchSeq || 0) + 1; // invalida respuestas viejas
+      window.__isSearching = false;
+      if (window.__searchWatchdog) { clearTimeout(window.__searchWatchdog); window.__searchWatchdog = null; }
+      const b = document.getElementById('btnBuscarCodigo');
+      if (b) b.disabled = false;
+      if (reason) setStatus(reason);
+    }catch(e){}
+  }
+
+  function ensureActive_(seq){
+    if (seq !== window.__searchSeq) {
+      const err = new Error("Search cancelled");
+      err.__cancelled = true;
+      throw err;
+    }
+  }
+
+  window.buscar = async function(){
     const t0 = performance.now();
 
-    // evita doble click / doble llamada que a veces deja la pagina en 'Buscando...'
-    if (window.__isSearching) return;
+    // Si habia una busqueda colgada, la cancelamos y seguimos (esto evita el 'no busca mas')
+    if (window.__isSearching) cancelActiveSearch_("Reiniciando busqueda...");
 
     const raw0 = (document.getElementById("code")?.value || "").trim();
     const raw = raw0.toUpperCase();
@@ -2245,34 +2272,87 @@ window.limpiar = function(){
     // ✅ Asegura que el pais/ciudad del perfil esten cargados para guardar country en search_events
     await ensureMarketLoaded_();
 
+    const seq = (window.__searchSeq || 0) + 1;
+    window.__searchSeq = seq;
     window.__isSearching = true;
+
+    // watchdog: si algo se queda pegado (red, promise zombie, etc.), liberamos el boton
+    if (window.__searchWatchdog) { clearTimeout(window.__searchWatchdog); window.__searchWatchdog = null; }
+    window.__searchWatchdog = setTimeout(()=>{
+      if (window.__isSearching && seq === window.__searchSeq){
+        cancelActiveSearch_("Se tardo demasiado. Intenta de nuevo ✅");
+      }
+    }, 25000);
+
     try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=true; }catch(e){}
 
-    const norm = normalizeCode_(raw);
-    const candidates = unique_([ raw, raw.toUpperCase(), norm ]).filter(Boolean);
-
-    setStatus("Buscando...");
-
     try{
-      const codigoMostrado = candidates[0] || raw;
+      setStatus("Buscando...");
+      ensureActive_(seq);
 
-      // ✅ originals desde cambios + cambios_v2
-      const originalNorms = await retryWithTimeout_(()=> resolveOriginals_(norm), { timeoutMs: 25000, label: 'originals', retries: 1 });
+      const norm = normalizeCode_(raw);
+      const candidates = unique_([ raw, raw.toString().trim() ]);
 
-      // ✅ vehicles desde datos_vehiculares + datos_vehiculares_v2
-      // ✅ cambios desde cambios + cambios_v2
-      const [veh, camb] = await retryWithTimeout_(()=> Promise.all([
-        fetchVehiclesByOriginals_(originalNorms),
-        fetchCambiosByOriginals_(originalNorms),
-      ]), { timeoutMs: 30000, label: 'vehicles/cambios', retries: 1 });
+      // 1) Buscar coincidencias exactas en datos_vehiculares_v2 (original / original_norm / cambio)
+      const originals = await resolveOriginals_(candidates, norm);
+      ensureActive_(seq);
 
-      const payload = {
-        codigo: codigoMostrado,
-        codigo_norm: norm,
-        original_norms: originalNorms,
-        productUrl: buildGoogleUrl_(codigoMostrado),
-        tablas: { vehicles: veh, cambios: camb }
-      };
+      // 2) Traer vehiculos por esos originales
+      const vehicles = await fetchVehiclesByOriginals_(originals);
+      ensureActive_(seq);
+
+      // 3) Traer cambios por esos originales
+      const cambios  = await fetchCambiosByOriginals_(originals);
+      ensureActive_(seq);
+
+      // 4) UI
+      renderProducto_(raw, vehicles, cambios);
+      renderVehicles_(vehicles);
+      renderCambios_(cambios);
+
+      // 5) Similaridad (cuando NO hay match exacto)
+      if((vehicles?.length||0) === 0 && (cambios?.length||0) === 0){
+        await loadSimilaritySuggestions_(raw);
+        ensureActive_(seq);
+      }else{
+        clearSimilarity_();
+      }
+
+      // 6) Guardar evento (search_events) con country desde profile
+      try{
+        await logSearchEvent_({
+          queryRaw: raw0,
+          queryType: guessQueryType_(raw0),
+          normalizedQuery: norm,
+          resultStatus: ((vehicles?.length||0)>0 || (cambios?.length||0)>0) ? "hit" : "miss",
+          resultsCount: (vehicles?.length||0) + (cambios?.length||0),
+          responseTimeMs: Math.round(performance.now() - t0),
+          meta: {
+            market_country: (window.__profileMarket?.country || null),
+            market_city: (window.__profileMarket?.city || null),
+          }
+        });
+      }catch(e){ console.warn("logSearchEvent_ fallo", e); }
+
+      setStatus("Listo ✅");
+      clearInputsAfterCodeSearch_();
+
+    }catch(e){
+      if (e && e.__cancelled) return;
+      console.error(e);
+      setStatus("Error: " + (e?.message || e));
+      alert("Error buscando en BD: " + (e?.message || e));
+    }finally{
+      if (window.__searchWatchdog) { clearTimeout(window.__searchWatchdog); window.__searchWatchdog = null; }
+      window.__isSearching = false;
+      try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
+      // Si por alguna razon se quedo en "Buscando...", lo llevamos a estado listo
+      try{
+        const st = document.getElementById("status")?.textContent || "";
+        if(/Buscando/i.test(st)) setStatus("Listo ✅");
+      }catch(e){}
+    }
+  };
 
       render(payload);
 
