@@ -212,6 +212,7 @@
       width:42px;height:38px;border-radius:12px;border:1px solid #e6e8f0;
       background:#fff;color:#111;cursor:pointer;position:relative;
       box-shadow:0 1px 8px rgba(0,0,0,.04);
+      z-index:10;
     }
     .micBtn:hover{background:#f6f7fb}
     .micBtn:active{transform:translateY(1px)}
@@ -230,11 +231,16 @@
     }
 
 /* ===== Theme (cambios de fondo) ===== */
-.themeBar{display:inline-flex;align-items:center;gap:8px;margin-left:6px}
+.themeBar{display:inline-flex;align-items:center;gap:8px;margin-left:6px
+  position: relative;
+  z-index: 50;
+}
 .themeBtn{
   width:26px;height:26px;border-radius:999px;border:1px solid #e6e8f0;
   cursor:pointer;box-shadow:0 1px 8px rgba(0,0,0,.04);
   background:#fff;
+
+  pointer-events: auto;
 }
 .themeBtn:hover{filter:brightness(.97)}
 .themeBtn:active{transform:translateY(1px)}
@@ -242,6 +248,12 @@
 .themeBtn[data-theme="default"]{background:#f6f7fb}
 .themeBtn[data-theme="sky"]{background:#eaf3ff}
 .themeBtn[data-theme="mint"]{background:#e9fff6}
+
+/* FIX: asegurar que los botones de tema sean clickeables */
+.themeBar{position:relative;z-index:50;}
+.themeBtn{pointer-events:auto;cursor:pointer;}
+.micBtn{position:relative;z-index:10;}
+
 
     .rfToast{
       position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
