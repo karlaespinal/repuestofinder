@@ -376,7 +376,27 @@
       </div>
     </div>
 
-    <div class="card menuCard" id="cardOE">
+    
+
+    <div class="card menuCard" id="cardSimilitud">
+      <div class="accHeader" onclick="toggleAcc('cardSimilitud')">
+        <div class="accTitle">Similitud</div>
+        <div class="accRight" onclick="event.stopPropagation()">
+          <span class="pill" id="pillSimCount">0</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 9l6 6 6-6"></path>
+          </svg>
+        </div>
+      </div>
+
+      <div class="accBody">
+        <div class="muted" id="simHint">Si no encontramos coincidencia exacta, te mostraremos codigos similares aqui.</div>
+        <div id="simWrap" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+
+<div class="card menuCard" id="cardOE">
       <div class="accHeader" onclick="toggleAcc('cardOE')">
         <div class="accTitle">Cambios</div>
         <div class="accRight" onclick="event.stopPropagation()">
@@ -1745,7 +1765,116 @@ function uniqueJoin_(arr, sep=" / "){
 }
 
 
-  async function fetchVehiclesByOriginals_(originalNorms){
+  
+  // ======================================================
+  // ✅ SIMILITUD: sugerir codigos parecidos cuando no hay match
+  //  - Estrategia simple:
+  //    1) Tomar prefijo (ej: A2761800) del codigo normalizado
+  //    2) Buscar original_norm que empiecen por ese prefijo en VEH_TABLES
+  //    3) Dedupe + limitar a 10 sugerencias
+  // ======================================================
+  async function fetchSimilitudByPrefix_(normalized){
+    const norm = String(normalized || "").trim().toUpperCase();
+    if(!norm) return [];
+
+    const prefLen = Math.min(8, norm.length);
+    const prefix = norm.slice(0, prefLen);
+    if(prefix.length < 4) return [];
+
+    const selectCols = "original_norm, descripcion, vehiculo, modelo, anio_inicio, anio_final";
+    let all = [];
+
+    for(const t of VEH_TABLES){
+      const { data, error } = await supabase
+        .from(t)
+        .select(selectCols)
+        .ilike("original_norm", prefix + "%")
+        .limit(40);
+
+      if(error) throw error;
+      all = all.concat(data || []);
+    }
+
+    if(all.length === 0) return [];
+
+    const seen = new Set();
+    const out = [];
+    for(const r of all){
+      const k = String(r?.original_norm || "").trim().toUpperCase();
+      if(!k || seen.has(k)) continue;
+      seen.add(k);
+      out.push({
+        code: k,
+        desc: (r?.descripcion ?? "").toString().trim(),
+        vehiculo: (r?.vehiculo ?? "").toString().trim(),
+        modelo: (r?.modelo ?? "").toString().trim(),
+        from: r?.anio_inicio ?? "",
+        to: r?.anio_final ?? ""
+      });
+      if(out.length >= 10) break;
+    }
+    return out;
+  }
+
+  function renderSimilitud_(items, searchedNorm){
+    const wrap = document.getElementById("simWrap");
+    const pill = document.getElementById("pillSimCount");
+    const hint = document.getElementById("simHint");
+    if(pill) pill.textContent = String((items||[]).length);
+
+    if(!wrap) return;
+
+    if(!items || items.length === 0){
+      wrap.innerHTML = '<div class="muted">No hay sugerencias.</div>';
+      if(hint) hint.textContent = "No encontramos coincidencia exacta. Si existen codigos parecidos, apareceran aqui.";
+      return;
+    }
+
+    if(hint) hint.textContent = `No encontramos "${String(searchedNorm||"").toUpperCase()}". Te sugerimos estos codigos similares:`;
+
+    const rows = items.map(it=>{
+      const title = escapeHtml_(it.code);
+      const sub = [it.vehiculo, it.modelo, (it.from||it.to) ? `${it.from||""}-${it.to||""}` : ""].filter(Boolean).join(" · ");
+      const desc = it.desc ? `<div class="muted" style="margin-top:4px">${escapeHtml_(it.desc)}</div>` : "";
+      const subHtml = sub ? `<div class="muted" style="margin-top:4px">${escapeHtml_(sub)}</div>` : "";
+      return `
+        <div class="row" style="justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid rgba(20,28,45,.08)">
+          <div style="min-width:0">
+            <div style="font-weight:900">${title}</div>
+            ${subHtml}
+            ${desc}
+          </div>
+          <div style="flex:0 0 auto">
+            <button class="btn2" onclick="useSimilarCode_('${escapeJs_(it.code)}')">Usar</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    wrap.innerHTML = `<div>${rows}</div>`;
+  }
+
+  function useSimilarCode_(code){
+    try{
+      const ci = document.getElementById("code");
+      if(ci){
+        ci.value = String(code||"").toUpperCase();
+        ci.focus();
+      }
+      buscar();
+      try{ toggleAcc('cardSimilitud', false); }catch(e){}
+      try{ toggleAcc('cardProducto', true); }catch(e){}
+    }catch(e){}
+  }
+
+
+  function escapeJs_(s){
+    return String(s ?? "").replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+  }
+
+
+
+async function fetchVehiclesByOriginals_(originalNorms){
   // Solo traemos columnas necesarias (y descripcion)
   const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion, original_norm";
 
@@ -2108,7 +2237,9 @@ window.limpiar = function(){
     // evita doble click / doble llamada que a veces deja la pagina en 'Buscando...'
     if (window.__isSearching) return;
 
-    const raw = (document.getElementById("code")?.value || "").trim();
+    const raw0 = (document.getElementById("code")?.value || "").trim();
+    const raw = raw0.toUpperCase();
+    try{ const ci=document.getElementById("code"); if(ci) ci.value = raw; }catch(e){}
     if(!raw){ setStatus("Escribe un codigo."); return; }
 
     // ✅ Asegura que el pais/ciudad del perfil esten cargados para guardar country en search_events
@@ -2154,6 +2285,20 @@ window.limpiar = function(){
       const cambCount = (camb && Array.isArray(camb.rows)) ? camb.rows.length : 0;
       const totalResults = vehCount + cambCount;
       const resultStatus = totalResults > 0 ? "found" : "not_found";
+
+      // ✅ SIMILITUD: si NO hay resultados, sugerimos codigos parecidos
+      if(resultStatus === "not_found"){
+        try{
+          const sim = await retryWithTimeout_(()=> fetchSimilitudByPrefix_(norm), { timeoutMs: 15000, label: 'similitud', retries: 0 });
+          renderSimilitud_(sim, norm);
+          try{ toggleAcc('cardSimilitud', true); }catch(e){}
+        }catch(e){
+          try{ renderSimilitud_([], norm); }catch(_){}
+        }
+      }else{
+        try{ renderSimilitud_([], norm); }catch(e){}
+      }
+
 
       const pos = extractBestPosition_(veh);
       const catFromPos = classifyCategoryFromPosition_(pos);
@@ -2650,6 +2795,29 @@ function isOfferActive_(o){
 
   // ✅ init
   await initAuth_();
+
+  // ✅ Forzar MAYUSCULA en el input de codigo (a276... => A276...)
+  try{
+    const codeInput = document.getElementById("code");
+    if(codeInput){
+      const up = ()=>{
+        const s = String(codeInput.value || "");
+        const u = s.toUpperCase();
+        if(s !== u){
+          const p = codeInput.selectionStart;
+          const q = codeInput.selectionEnd;
+          codeInput.value = u;
+          if(typeof p === "number" && typeof q === "number"){
+            codeInput.setSelectionRange(p, q);
+          }
+        }
+      };
+      codeInput.addEventListener("input", up);
+      codeInput.addEventListener("paste", ()=> setTimeout(up, 0));
+    }
+  }catch(e){}
+
+
 
   // ===== PRESENCIA ONLINE (APP) =====
   const { data: ses } = await supabase.auth.getSession();
