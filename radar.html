@@ -432,7 +432,8 @@
   border-radius:14px;
   font-family: Arial,Helvetica,sans-serif;
 }
-  </style>
+  .btnIcon{ margin-right:8px; font-size:16px; vertical-align:-2px; }
+</style>
 <!-- Leaflet (Mapa real) -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -453,7 +454,7 @@
       <div class="navRight">
         <button class="btn btnGhost" onclick="goIndex()">Volver</button>
         <button class="btn btnGhost" onclick="goApp()">Ir a la App</button>
-        <button class="btn btnGhost" onclick="openMapModal()" title="Ver mapa y distribución por modelos">Mapa</button>
+        <button class="btn btnGhost" onclick="openMapModal()" title="Ver mapa y distribución por modelos"><span class="btnIcon">🗺️</span> Mapa</button>
         <button class="btn btnPrimary" onclick="refreshAll()">Actualizar</button>
       </div>
     </div>
@@ -701,7 +702,7 @@
 
         <div id="mapTooltip" class="mapTooltip"></div>
 
-        <!-- ✅ MAPA REAL (Leaflet + MapTiler Outdoor / fallback OSM) -->
+        <!-- ✅ MAPA REAL (Leaflet + OpenStreetMap Outdoor / fallback OSM) -->
 <div id="rfLeafletMap" style="width:100%;height:420px;border-radius:14px;"></div>
 </div>
     </div>
@@ -751,23 +752,14 @@
     }
     
 
-// ✅ MapTiler Outdoor (Basemap premium)
-// Para activar MapTiler, guarda tu API Key en el navegador:
-// localStorage.setItem("RF_MAPTILER_KEY","yidOLEyyyUnCL4plvIGl");
+// ✅ OpenStreetMap Outdoor (Basemap premium)
+// Para activar OpenStreetMap, guarda tu API Key en el navegador:
+// localStorage.setItem("RF_OpenStreetMap_KEY","TU_KEY");
 
 
 // ✅ KEY GLOBAL (para TODOS los usuarios)
-// Reemplaza el texto PASTE_MAPTILER_KEY_HERE por tu API Key real de MapTiler.
-// Puedes restringir por dominio desde el panel de MapTiler.
-window.MAPTILER_KEY = "PASTE_MAPTILER_KEY_HERE";
-function getMapTilerKey(){
-  try{
-    return (window.MAPTILER_KEY || localStorage.getItem("RF_MAPTILER_KEY") || "").trim();
-  }catch(_e){
-    return (window.MAPTILER_KEY || "").trim();
-  }
-}
-
+// Reemplaza el texto PASTE_OpenStreetMap_KEY_HERE por tu API Key real de OpenStreetMap.
+// Puedes restringir por dominio desde el panel de OpenStreetMap.
 let __rfLeafletMap = null;
 let __rfLeafletLayer = null;
 
@@ -791,29 +783,18 @@ function initLeafletMapOnce(){
   if(!__rfLeafletMap){
     __rfLeafletMap = L.map(el, { zoomControl:true, attributionControl:true });
 
-    const mtKey = getMapTilerKey();
-    if(mtKey){
-      __rfLeafletLayer = L.tileLayer(
-        `https://api.maptiler.com/maps/outdoor/256/{z}/{x}/{y}.png?key=${mtKey}`,
-        {
-          maxZoom: 19,
-          tileSize: 256,
-          attribution: '&copy; <a href="https://www.maptiler.com/copyright/" target="_blank" rel="noreferrer">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>'
-        }
-      ).addTo(__rfLeafletMap);
-    }else{
-      __rfLeafletLayer = L.tileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        { maxZoom: 19, attribution: "&copy; OpenStreetMap contributors" }
-      ).addTo(__rfLeafletMap);
-    }
+    // ✅ OpenStreetMap (sin API key, global para todos)
+    __rfLeafletLayer = L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      { maxZoom: 19, attribution: "&copy; OpenStreetMap contributors" }
+    ).addTo(__rfLeafletMap);
   }else{
     // Si ya existe el mapa, asegúrate de que Leaflet recalcule tamaños cuando abras el modal
     try{ __rfLeafletMap.invalidateSize(); }catch(_e){}
   }
 }
 
-/* ===========================
+/* ===========================/* ===========================
    ✅ Países interactivos (hover/click) en el mapa
    - Carga GeoJSON mundial (ISO_A2)
    - Al pasar el mouse por un país:
