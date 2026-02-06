@@ -986,6 +986,25 @@ function __rfBubbleColor(count){
   return "#93c5fd"; // muy bajo
 }
 
+function __rfNormISO(v){
+  // Acepta "DO", "do", "DO República Dominicana (DO)", "República Dominicana (DO)", etc.
+  const s0 = String(v||"").trim();
+  if(!s0) return "";
+  const s = s0.toUpperCase();
+
+  if(/^[A-Z]{2}$/.test(s)) return s;
+
+  // Preferir el ISO en paréntesis al final: "... (DO)"
+  let m = s.match(/\(([A-Z]{2})\)\s*$/);
+  if(m) return m[1];
+
+  // Fallback: primer token ISO2 que aparezca
+  m = s.match(/\b([A-Z]{2})\b/);
+  if(m) return m[1];
+
+  return "";
+}
+
 async function getCountryActivityCountsCached(){
   // Cache por filtros (range + category + query + line + hl)
   const from = dtFromRange($("range").value);
@@ -1047,7 +1066,7 @@ async function getCountryActivityCountsCached(){
   const counts = new Map();
   if(usedCol){
     for(const r of (rows||[])){
-      const iso = String(r[usedCol]||"").toUpperCase().trim();
+      const iso = __rfNormISO(r[usedCol]);
       if(!iso) continue;
       counts.set(iso, (counts.get(iso)||0) + 1);
     }
@@ -1078,11 +1097,38 @@ async function renderCountryBubblesIfAll(){
   const { gl } = glLabel();
   const iso = String(gl||"").toUpperCase().trim();
 
-  // Solo en ALL mostramos burbujas globales (por país)
+  // En ALL mostramos burbujas globales (por país).
+  // En un país específico, mostramos una burbuja "pin" sobre ese país para señalarlo.
   if(iso !== "ALL"){
-    // Si no es ALL, solo resalta país (sin burbujas globales)
-    if(__rfCountryBubbleLayer){
-      try{ __rfCountryBubbleLayer.clearLayers(); }catch(_e){}
+    await addCountriesLayerOnce();
+    clearCountryBubbles();
+
+    const layer = __rfCountryLayerByISO.get(iso);
+    if(layer){
+      let center = null;
+      try{ center = layer.getBounds().getCenter(); }catch(_e){}
+      if(center){
+        // Tamaño fijo elegante (pin) + pulso
+        const marker = L.circleMarker(center, {
+          pane: "rfBubbles",
+          radius: 16,
+          color: "#2563eb",
+          weight: 3,
+          fillColor: "#60a5fa",
+          fillOpacity: 0.35
+        });
+
+        // Clase para pulso (se aplica al path cuando está en el DOM)
+        marker.on("add", ()=>{
+          try{
+            const el = marker.getElement && marker.getElement();
+            if(el) el.classList.add("rfPulse");
+          }catch(_e){}
+        });
+
+        marker.bindTooltip(`${iso}: país seleccionado`, { direction:"top", opacity:0.95, sticky:true });
+        marker.addTo(__rfCountryBubbleLayer);
+      }
     }
     return;
   }
