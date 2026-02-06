@@ -4179,7 +4179,12 @@ if(role.includes("admin")){
           : "Nuevas referencias agregadas hoy";
       }
 
-      elUp.textContent = `Actualizado ${new Date().toLocaleTimeString()} • ${usedTable}`;
+      const tableAlias = {
+  datos_vehiculares_v2: "Datos Vehiculares",
+  cambio: "Cambios de Referencias"
+};
+
+elUp.textContent = `Actualizado ${new Date().toLocaleTimeString()} • ${tableAlias[usedTable] || usedTable}`;
     }
 
 async function init(){
