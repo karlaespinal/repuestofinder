@@ -754,6 +754,12 @@
 // ✅ MapTiler Outdoor (Basemap premium)
 // Para activar MapTiler, guarda tu API Key en el navegador:
 // localStorage.setItem("RF_MAPTILER_KEY","TU_KEY");
+
+
+// ✅ KEY GLOBAL (para TODOS los usuarios)
+// Reemplaza el texto PASTE_MAPTILER_KEY_HERE por tu API Key real de MapTiler.
+// Puedes restringir por dominio desde el panel de MapTiler.
+window.MAPTILER_KEY = "PASTE_MAPTILER_KEY_HERE";
 function getMapTilerKey(){
   try{
     return (window.MAPTILER_KEY || localStorage.getItem("RF_MAPTILER_KEY") || "").trim();
@@ -805,6 +811,172 @@ function initLeafletMapOnce(){
     // Si ya existe el mapa, asegúrate de que Leaflet recalcule tamaños cuando abras el modal
     try{ __rfLeafletMap.invalidateSize(); }catch(_e){}
   }
+}
+
+/* ===========================
+   ✅ Países interactivos (hover/click) en el mapa
+   - Carga GeoJSON mundial (ISO_A2)
+   - Al pasar el mouse por un país:
+       * Muestra tooltip con Top Modelos del país
+       * Actualiza el panel izquierdo (Distribución por modelo)
+   - Al hacer click: fija la selección del país y hace zoom al país
+   =========================== */
+
+let __rfCountriesLayer = null;
+let __rfCountriesGeo = null;
+let __rfCountryDistCache = new Map();
+let __rfCountryHoverTimer = null;
+let __rfCountryPinnedISO = null;
+
+async function fetchCountriesGeoJSONOnce(){
+  if(__rfCountriesGeo) return __rfCountriesGeo;
+  const url = "https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson";
+  const res = await fetch(url, { cache: "force-cache" });
+  if(!res.ok) throw new Error("No se pudo cargar el GeoJSON de países ("+res.status+").");
+  const geo = await res.json();
+  __rfCountriesGeo = geo;
+  return geo;
+}
+
+function isoFromFeature(f){
+  const p = (f && f.properties) ? f.properties : {};
+  const iso = String(p.ISO_A2 || p.ISO_A2_EH || "").toUpperCase().trim();
+  if(!iso || iso === "-99") return "";
+  return iso;
+}
+
+function nameFromFeature(f){
+  const p = (f && f.properties) ? f.properties : {};
+  return String(p.ADMIN || p.NAME_EN || p.name || p.NAME || "").trim() || "País";
+}
+
+function styleCountryDefault(){
+  return {
+    weight: 1,
+    color: "rgba(148,163,184,.55)",
+    fillColor: "rgba(37,99,235,.08)",
+    fillOpacity: 0.08
+  };
+}
+function styleCountryHover(){
+  return {
+    weight: 2,
+    color: "rgba(37,99,235,.85)",
+    fillColor: "rgba(37,99,235,.20)",
+    fillOpacity: 0.22
+  };
+}
+function styleCountryPinned(){
+  return {
+    weight: 2.5,
+    color: "rgba(16,185,129,.95)",
+    fillColor: "rgba(16,185,129,.18)",
+    fillOpacity: 0.22
+  };
+}
+
+function setCountryLayerStyle(layer, styleObj){
+  try{ layer.setStyle(styleObj); }catch(_e){}
+}
+
+async function getCountryDistributionCached(iso){
+  const key = String(iso||"").toUpperCase().trim();
+  if(!key) return { dist: [], top: [], total: 0, noCountry:false };
+  if(__rfCountryDistCache.has(key)) return __rfCountryDistCache.get(key);
+  const res = await buildModelDistributionForMap(key);
+  __rfCountryDistCache.set(key, res);
+  return res;
+}
+
+async function updateUIForCountry(iso, displayName){
+  const sub = document.getElementById("mapModalSub");
+  const tip = document.getElementById("mapTooltip");
+
+  // Actualizar header del modal
+  if(sub){
+    const label = displayName ? `${displayName} (${iso})` : iso;
+    sub.textContent = `País: ${label} · Rango: ${document.getElementById("range").value} día(s) · Línea: ${(document.getElementById("category").value || "todas")}`;
+  }
+
+  // Distribución + tooltip
+  const { dist, top, noCountry } = await getCountryDistributionCached(iso);
+  renderBars(dist);
+
+  if(tip){
+    const label = displayName ? `${displayName} (${iso})` : iso;
+    tip.innerHTML = tooltipHTML(`Resumen · ${label}`, top) +
+      (noCountry ? `<div class="mut" style="margin-top:8px">⚠️ Aún no hay país por búsqueda en <b>search_events</b>. Agrega la columna <b>gl</b> (ISO2) al guardar cada evento.</div>` : ``);
+    tip.style.display = "block";
+  }
+}
+
+async function addCountriesLayerOnce(){
+  if(!__rfLeafletMap) return;
+  if(__rfCountriesLayer) return;
+
+  const geo = await fetchCountriesGeoJSONOnce();
+
+  __rfCountriesLayer = L.geoJSON(geo, {
+    style: ()=> styleCountryDefault(),
+    onEachFeature: (feature, layer)=>{
+      const iso = isoFromFeature(feature);
+      const nm = nameFromFeature(feature);
+
+      if(!iso) return;
+
+      layer.on("mousemove", ()=>{
+        // si hay un país fijado, igual mostramos hover pero no sobreescribimos el pin
+        if(__rfCountryHoverTimer) clearTimeout(__rfCountryHoverTimer);
+        __rfCountryHoverTimer = setTimeout(async ()=>{
+          if(__rfCountryPinnedISO && __rfCountryPinnedISO === iso){
+            // mantener estilo pinned
+            setCountryLayerStyle(layer, styleCountryPinned());
+          }else{
+            setCountryLayerStyle(layer, styleCountryHover());
+          }
+          await updateUIForCountry(iso, nm);
+        }, 80);
+      });
+
+      layer.on("mouseout", ()=>{
+        if(__rfCountryPinnedISO === iso){
+          setCountryLayerStyle(layer, styleCountryPinned());
+        }else{
+          setCountryLayerStyle(layer, styleCountryDefault());
+        }
+      });
+
+      layer.on("click", async ()=>{
+        // fijar selección
+        __rfCountryPinnedISO = iso;
+
+        // reset estilos de todos y aplicar pinned al seleccionado
+        try{
+          __rfCountriesLayer.eachLayer(l=>{
+            const f = l.feature;
+            const i = isoFromFeature(f);
+            if(!i) return;
+            if(i === iso) setCountryLayerStyle(l, styleCountryPinned());
+            else setCountryLayerStyle(l, styleCountryDefault());
+          });
+        }catch(_e){}
+
+        // zoom al país
+        try{
+          const b = layer.getBounds();
+          if(b && b.isValid()) __rfLeafletMap.fitBounds(b, { padding:[20,20] });
+        }catch(_e){}
+
+        await updateUIForCountry(iso, nm);
+      });
+
+      // Tooltip nativo simple
+      layer.bindTooltip(`${nm} (${iso})`, { sticky:true, direction:"top", opacity:0.9 });
+    }
+  }).addTo(__rfLeafletMap);
+
+  // Mantener arriba los bordes
+  try{ __rfCountriesLayer.bringToFront(); }catch(_e){}
 }
 
 function setMapViewByCountry(iso){
@@ -1413,7 +1585,7 @@ const RF_OFFERS_TABLE = "offers";
       }).join("") || `<div class="mut" style="margin-top:10px">Sin distribución para mostrar.</div>`;
     }
 
-    async function buildModelDistributionForMap(){
+    async function buildModelDistributionForMap(isoFilter){
       const from = dtFromRange($("range").value);
       const cat = ($("category").value || "").trim();
 
@@ -1424,10 +1596,39 @@ const RF_OFFERS_TABLE = "offers";
 
       if(cat) q = q.eq("category", cat);
 
-      const { data, error } = await q;
-      if(error) throw error;
+// ✅ Filtrar por país cuando exista columna en search_events (gl o country)
+let __rf_noCountryColumn = false;
+const iso = String(isoFilter||"").toUpperCase().trim();
+if(iso){
+  // Intento 1: columna "gl"
+  let { data: _test1, error: _err1 } = await q.eq("gl", iso);
+  if(!_err1){
+    // Si funcionó, ya tenemos data en _test1, úsala abajo
+    var data = _test1;
+  }else{
+    // Intento 2: columna "country"
+    let q2 = supabase
+      .from("search_events")
+      .select("query_raw, category, result_status, searched_at")
+      .gte("searched_at", from);
+    if(cat) q2 = q2.eq("category", cat);
+    let { data: _test2, error: _err2 } = await q2.eq("country", iso);
+    if(!_err2){
+      var data = _test2;
+    }else{
+      // No hay columna de país; caemos al comportamiento original
+      __rf_noCountryColumn = true;
+    }
+  }
+}
 
-      const events = (data||[]);
+      let data, error;
+if(typeof data === "undefined"){
+  const res = await q;
+  data = res.data; error = res.error;
+  if(error) throw error;
+}
+const events = (data||[]);
       const codeEvents = events
         .map(r=>({ q: normKey(r.query_raw), status: String(r.result_status||"") }))
         .filter(x=> isCodeLike(x.q));
@@ -1468,7 +1669,7 @@ const RF_OFFERS_TABLE = "offers";
         .slice(0,5)
         .map(x=>({ name:x.name==="DESCONOCIDO" ? "Desconocido" : x.name, pct: (total?((x.count/total)*100):0).toFixed(1)+"%" }));
 
-      return { dist, total, unknown, top };
+      return { dist, total, unknown, top, noCountry: __rf_noCountryColumn };
     }
 
     window.openMapModal = async function(){
@@ -1486,8 +1687,15 @@ const RF_OFFERS_TABLE = "offers";
 
       // ✅ Inicializar mapa real (Leaflet) y centrar por país
       initLeafletMapOnce();
+      // ✅ Capa interactiva de países
+      try{ await addCountriesLayerOnce(); }catch(_e){}
+      // reset cache por si cambió rango/línea
+      __rfCountryDistCache = new Map();
+      __rfCountryPinnedISO = null;
       const { gl: __glNow } = glLabel();
       setMapViewByCountry(__glNow);
+      // Inicializar panel izquierdo con el país seleccionado
+      try{ await updateUIForCountry(__glNow, glLabel().label); }catch(_e){}
       setTimeout(()=>{ try{ __rfLeafletMap.invalidateSize(); }catch(_e){} }, 250);
 
       // ✅ Tooltip: seguir el mouse sobre el mapa (solo visual)
@@ -1507,13 +1715,13 @@ const RF_OFFERS_TABLE = "offers";
       // cargar distribución
       try{
         if(tip){ tip.style.display="none"; tip.innerHTML=""; }
-        const { dist, total, top } = await buildModelDistributionForMap();
+        const { dist, total, top, noCountry } = await buildModelDistributionForMap(__glNow);
         renderBars(dist);
 
         // tooltip inicial (país actual)
         const { label, gl } = glLabel();
         if(tip){
-          tip.innerHTML = tooltipHTML(`Resumen · ${label}`, top);
+          tip.innerHTML = tooltipHTML(`Resumen · ${label}`, top) + (noCountry ? `<div class="mut" style="margin-top:8px">⚠️ Aún no hay país por búsqueda en <b>search_events</b>. Para que el hover funcione por país, agrega la columna <b>gl</b> (ISO2) al guardar cada evento.</div>` : ``);
           tip.style.display = "block";
         }
 
@@ -1539,7 +1747,7 @@ const RF_OFFERS_TABLE = "offers";
             el.addEventListener("mouseleave", ()=>{
               if(!tip) return;
               const { label } = glLabel();
-              tip.innerHTML = tooltipHTML(`Resumen · ${label}`, top);
+              tip.innerHTML = tooltipHTML(`Resumen · ${label}`, top) + (noCountry ? `<div class="mut" style="margin-top:8px">⚠️ Aún no hay país por búsqueda en <b>search_events</b>. Para que el hover funcione por país, agrega la columna <b>gl</b> (ISO2) al guardar cada evento.</div>` : ``);
               tip.style.display = "block";
             });
 
