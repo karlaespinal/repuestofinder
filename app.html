@@ -6,6 +6,7 @@
   <title>RepuestoFinder - App</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <style>
+
     :root{
       --rf-bg:#f6f7fb;
       --rf-card:#ffffff;
@@ -208,12 +209,20 @@
   
     /* ===== Microfono (busqueda por voz) ===== */
     .micBtn{
-      display:inline-flex;align-items:center;justify-content:center;
-      width:42px;height:38px;border-radius:12px;border:1px solid #e6e8f0;
-      background:#fff;color:#111;cursor:pointer;position:relative;
-      box-shadow:0 1px 8px rgba(0,0,0,.04);
-      z-index:10;
-    }
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:42px;
+  height:38px;
+  border-radius:12px;
+  border:1px solid #e6e8f0;
+  background:#fff;
+  color:#111;
+  cursor:pointer;
+  position:relative;
+  z-index:10;
+  box-shadow:0 1px 8px rgba(0,0,0,.04);
+}
     .micBtn:hover{background:#f6f7fb}
     .micBtn:active{transform:translateY(1px)}
     .micBtn.listening{border-color:#2563eb}
@@ -231,16 +240,25 @@
     }
 
 /* ===== Theme (cambios de fondo) ===== */
-.themeBar{display:inline-flex;align-items:center;gap:8px;margin-left:6px
-  position: relative;
-  z-index: 50;
+.themeBar{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin-left:6px;
+  position:relative;
+  z-index:9999;
 }
 .themeBtn{
-  width:26px;height:26px;border-radius:999px;border:1px solid #e6e8f0;
-  cursor:pointer;box-shadow:0 1px 8px rgba(0,0,0,.04);
+  width:26px;
+  height:26px;
+  border-radius:999px;
+  border:1px solid #e6e8f0;
   background:#fff;
-
-  pointer-events: auto;
+  box-shadow:0 1px 8px rgba(0,0,0,.04);
+  cursor:pointer;
+  pointer-events:auto;
+  position:relative;
+  z-index:10000;
 }
 .themeBtn:hover{filter:brightness(.97)}
 .themeBtn:active{transform:translateY(1px)}
@@ -262,7 +280,14 @@
       box-shadow:0 12px 40px rgba(0,0,0,.25);
     }
 
-  </style>
+  
+
+/* HARD OVERRIDE (click themes) */
+.topbar{position:relative;z-index:5;}
+.themeBar,.themeBtn{pointer-events:auto !important;}
+.themeBtn{touch-action:manipulation;}
+
+</style>
 </head>
 
 <body>
