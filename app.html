@@ -507,6 +507,15 @@
   // ✅ Perfil (country/city)
   let profileCountry = null;
   let profileCity = null;
+  let __marketLoaded = false;
+
+  async function ensureMarketLoaded_(){
+    // Garantiza que profileCountry/profileCity ya fueron leidos antes de loggear.
+    if(__marketLoaded) return;
+    try{ await loadProfileMarket_(); }catch(e){}
+    __marketLoaded = true;
+  }
+
 
   function setStatus(txt){ document.getElementById("status").textContent = txt; }
 
@@ -1445,6 +1454,7 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
     }
 
     paintMarketPills_();
+    __marketLoaded = true;
   }
 
   function paintMarketPills_(){
@@ -1502,6 +1512,7 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
         query_type: queryType || "mixed",
         normalized_query: normalizedQuery || null,
         category: category || null,
+        country: profileCountry ? String(profileCountry).toUpperCase() : null,
         result_status: resultStatus || "unknown",
         results_count: Number.isFinite(resultsCount) ? resultsCount : 0,
         response_time_ms: Number.isFinite(responseTimeMs) ? responseTimeMs : null,
@@ -2018,6 +2029,9 @@ window.limpiar = function(){
 
     const raw = (document.getElementById("code")?.value || "").trim();
     if(!raw){ setStatus("Escribe un codigo."); return; }
+
+    // ✅ Asegura que el pais/ciudad del perfil esten cargados para guardar country en search_events
+    await ensureMarketLoaded_();
 
     window.__isSearching = true;
     try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=true; }catch(e){}
@@ -2589,28 +2603,3 @@ function isOfferActive_(o){
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
