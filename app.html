@@ -1854,14 +1854,14 @@ function uniqueJoin_(arr, sep=" / "){
     wrap.innerHTML = `<div>${rows}</div>`;
   }
 
-  window.useSimilarCode_ = function(code){
+  window.useSimilarCode_ = async function(code){
     try{
       const ci = document.getElementById("code");
       if(ci){
         ci.value = String(code||"").toUpperCase();
         ci.focus();
       }
-      buscar();
+      if(typeof window.buscar === 'function') { await window.buscar(); } else { try{ document.getElementById('btnBuscar')?.click(); }catch(e){} }
       try{ toggleAcc('cardSimilitud', false); }catch(e){}
       try{ toggleAcc('cardProducto', true); }catch(e){}
     }catch(e){}
