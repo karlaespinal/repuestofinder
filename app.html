@@ -2261,7 +2261,7 @@ window.limpiar = function(){
   window.buscar = async function(){
     const t0 = performance.now();
 
-    // Si habia una busqueda colgada, la cancelamos y seguimos (esto evita el 'no busca mas')
+    // Si habia una busqueda colgada, la cancelamos y seguimos (evita el "no busca mas")
     if (window.__isSearching) cancelActiveSearch_("Reiniciando busqueda...");
 
     const raw0 = (document.getElementById("code")?.value || "").trim();
@@ -2269,14 +2269,14 @@ window.limpiar = function(){
     try{ const ci=document.getElementById("code"); if(ci) ci.value = raw; }catch(e){}
     if(!raw){ setStatus("Escribe un codigo."); return; }
 
-    // ✅ Asegura que el pais/ciudad del perfil esten cargados para guardar country en search_events
-    await ensureMarketLoaded_();
+    // ✅ Asegura que el pais/ciudad del profile esten cargados (para guardar country en search_events)
+    try{ await ensureMarketLoaded_(); }catch(e){}
 
     const seq = (window.__searchSeq || 0) + 1;
     window.__searchSeq = seq;
     window.__isSearching = true;
 
-    // watchdog: si algo se queda pegado (red, promise zombie, etc.), liberamos el boton
+    // watchdog: si algo se queda pegado (red/promise zombie), liberamos el boton
     if (window.__searchWatchdog) { clearTimeout(window.__searchWatchdog); window.__searchWatchdog = null; }
     window.__searchWatchdog = setTimeout(()=>{
       if (window.__isSearching && seq === window.__searchSeq){
@@ -2291,82 +2291,41 @@ window.limpiar = function(){
       ensureActive_(seq);
 
       const norm = normalizeCode_(raw);
-      const candidates = unique_([ raw, raw.toString().trim() ]);
 
-      // 1) Buscar coincidencias exactas en datos_vehiculares_v2 (original / original_norm / cambio)
-      const originals = await resolveOriginals_(candidates, norm);
+      // 1) Resolver los original_norm asociados (si no hay, usa el mismo norm)
+      const originalNorms = await resolveOriginals_(norm);
       ensureActive_(seq);
 
-      // 2) Traer vehiculos por esos originales
-      const vehicles = await fetchVehiclesByOriginals_(originals);
+      // 2) Buscar vehiculos y cambios por esos originales
+      const veh  = await fetchVehiclesByOriginals_(originalNorms);
       ensureActive_(seq);
 
-      // 3) Traer cambios por esos originales
-      const cambios  = await fetchCambiosByOriginals_(originals);
+      const camb = await fetchCambiosByOriginals_(originalNorms);
       ensureActive_(seq);
 
-      // 4) UI
-      renderProducto_(raw, vehicles, cambios);
-      renderVehicles_(vehicles);
-      renderCambios_(cambios);
-
-      // 5) Similaridad (cuando NO hay match exacto)
-      if((vehicles?.length||0) === 0 && (cambios?.length||0) === 0){
-        await loadSimilaritySuggestions_(raw);
-        ensureActive_(seq);
-      }else{
-        clearSimilarity_();
-      }
-
-      // 6) Guardar evento (search_events) con country desde profile
-      try{
-        await logSearchEvent_({
-          queryRaw: raw0,
-          queryType: guessQueryType_(raw0),
-          normalizedQuery: norm,
-          resultStatus: ((vehicles?.length||0)>0 || (cambios?.length||0)>0) ? "hit" : "miss",
-          resultsCount: (vehicles?.length||0) + (cambios?.length||0),
-          responseTimeMs: Math.round(performance.now() - t0),
-          meta: {
-            market_country: (window.__profileMarket?.country || null),
-            market_city: (window.__profileMarket?.city || null),
-          }
-        });
-      }catch(e){ console.warn("logSearchEvent_ fallo", e); }
-
-      setStatus("Listo ✅");
-      clearInputsAfterCodeSearch_();
-
-    }catch(e){
-      if (e && e.__cancelled) return;
-      console.error(e);
-      setStatus("Error: " + (e?.message || e));
-      alert("Error buscando en BD: " + (e?.message || e));
-    }finally{
-      if (window.__searchWatchdog) { clearTimeout(window.__searchWatchdog); window.__searchWatchdog = null; }
-      window.__isSearching = false;
-      try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
-      // Si por alguna razon se quedo en "Buscando...", lo llevamos a estado listo
-      try{
-        const st = document.getElementById("status")?.textContent || "";
-        if(/Buscando/i.test(st)) setStatus("Listo ✅");
-      }catch(e){}
-    }
-  };
-
+      // 3) Pintar UI principal (Producto / Vehicles / Cambios)
+      const payload = {
+        codigo: raw,
+        productUrl: buildGoogleUrl_(raw),
+        tablas: { vehicles: veh, cambios: camb, vehicles_full: veh }
+      };
       render(payload);
 
-      // ✅ Ofertas activas para este codigo
-      lastOffersError = '';
-      lastOffers = await retryWithTimeout_(()=> fetchOffersByOriginals_(originalNorms, norm), { timeoutMs: 20000, label: 'offers', retries: 1 });
-      renderOffersIntoProducto_(lastOffers);
+      // 4) Ofertas activas (si aplica)
+      try{
+        lastOffersError = '';
+        lastOffers = await retryWithTimeout_(()=> fetchOffersByOriginals_(originalNorms, norm), { timeoutMs: 20000, label: 'offers', retries: 1 });
+        renderOffersIntoProducto_(lastOffers);
+      }catch(e){
+        console.warn("Ofertas: no se pudieron cargar", e);
+      }
 
+      // 5) Similaritud: solo si no hubo resultados
       const vehCount = (veh && Array.isArray(veh.rows)) ? veh.rows.length : 0;
       const cambCount = (camb && Array.isArray(camb.rows)) ? camb.rows.length : 0;
       const totalResults = vehCount + cambCount;
       const resultStatus = totalResults > 0 ? "found" : "not_found";
 
-      // ✅ SIMILITUD: si NO hay resultados, sugerimos codigos parecidos
       if(resultStatus === "not_found"){
         try{
           const sim = await retryWithTimeout_(()=> fetchSimilitudByPrefix_(norm), { timeoutMs: 15000, label: 'similitud', retries: 0 });
@@ -2379,18 +2338,15 @@ window.limpiar = function(){
         try{ renderSimilitud_([], norm); }catch(e){}
       }
 
-
+      // 6) Log search_events (NO bloquea la UI)
       const pos = extractBestPosition_(veh);
       const catFromPos = classifyCategoryFromPosition_(pos);
       const category = catFromPos || classifyCategory_(raw);
 
-      const vehSummary = extractVehicleSummary_(veh);
-
-      const t1 = performance.now();
-      const responseMs = Math.round(t1 - t0);
+      const responseMs = Math.round(performance.now() - t0);
 
       safeLogSearchEvent_({
-        queryRaw: raw,
+        queryRaw: raw0,
         queryType: "oem",
         normalizedQuery: norm,
         category,
@@ -2398,48 +2354,27 @@ window.limpiar = function(){
         resultsCount: totalResults,
         responseTimeMs: responseMs,
         meta: {
-          original_norms_count: Array.isArray(originalNorms) ? originalNorms.length : 0,
-          vehicles_count: vehCount,
-          cambios_count: cambCount,
-          position_sample: pos || null,
-          category_source: catFromPos ? "posicion" : "query",
-          vehicle_make: vehSummary?.make || null,
-          vehicle_model: vehSummary?.model || null,
-          vehicle_year_from: vehSummary?.year_from || null,
-          vehicle_year_to: vehSummary?.year_to || null,
-          vehicle_engine: vehSummary?.engine || null,
-          vehicle_serie: vehSummary?.serie || null,
-          used_vehicle_tables: VEH_TABLES,
-          used_cambios_tables: CAMBIOS_TABLES
+          market_country: (window.__profileMarket?.country || null),
+          market_city: (window.__profileMarket?.city || null),
         }
       });
 
-      // ✅ limpiar inputs luego de buscar por codigo
+      setStatus("Listo ✅");
       clearInputsAfterCodeSearch_();
 
     }catch(e){
+      if (e && e.__cancelled) return;
       console.error(e);
-      setStatus("Error: " + (e && e.message ? e.message : e));
-      alert("Error consultando: " + (e && e.message ? e.message : e));
-
-      const t1 = performance.now();
-      safeLogSearchEvent_({
-        queryRaw: raw,
-        queryType: "oem",
-        normalizedQuery: norm,
-        category: classifyCategory_(raw),
-        resultStatus: "unknown",
-        resultsCount: 0,
-        responseTimeMs: Math.round(t1 - t0),
-        meta: { error: (e && e.message) ? e.message : String(e) }
-      });
+      setStatus("Error: " + (e?.message || e));
+      alert("Error consultando: " + (e?.message || e));
     }finally{
+      if (window.__searchWatchdog) { clearTimeout(window.__searchWatchdog); window.__searchWatchdog = null; }
       window.__isSearching = false;
       try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
-      // Si por alguna razon se quedo en "Buscando...", lo llevamos a estado listo.
+      // Si por alguna razon se quedo en "Buscando...", lo llevamos a estado listo
       try{
-        const st = (document.getElementById("status")?.textContent || "");
-        if(st.toLowerCase().includes("buscando")) setStatus("Listo ✅");
+        const st = document.getElementById("status")?.textContent || "";
+        if(/Buscando/i.test(st)) setStatus("Listo ✅");
       }catch(e){}
     }
   };
