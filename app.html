@@ -6,7 +6,6 @@
   <title>RepuestoFinder - App</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <style>
-
     :root{
       --rf-bg:#f6f7fb;
       --rf-card:#ffffff;
@@ -209,20 +208,11 @@
   
     /* ===== Microfono (busqueda por voz) ===== */
     .micBtn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  width:42px;
-  height:38px;
-  border-radius:12px;
-  border:1px solid #e6e8f0;
-  background:#fff;
-  color:#111;
-  cursor:pointer;
-  position:relative;
-  z-index:10;
-  box-shadow:0 1px 8px rgba(0,0,0,.04);
-}
+      display:inline-flex;align-items:center;justify-content:center;
+      width:42px;height:38px;border-radius:12px;border:1px solid #e6e8f0;
+      background:#fff;color:#111;cursor:pointer;position:relative;
+      box-shadow:0 1px 8px rgba(0,0,0,.04);
+    }
     .micBtn:hover{background:#f6f7fb}
     .micBtn:active{transform:translateY(1px)}
     .micBtn.listening{border-color:#2563eb}
@@ -240,25 +230,11 @@
     }
 
 /* ===== Theme (cambios de fondo) ===== */
-.themeBar{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  margin-left:6px;
-  position:relative;
-  z-index:9999;
-}
+.themeBar{display:inline-flex;align-items:center;gap:8px;margin-left:6px}
 .themeBtn{
-  width:26px;
-  height:26px;
-  border-radius:999px;
-  border:1px solid #e6e8f0;
+  width:26px;height:26px;border-radius:999px;border:1px solid #e6e8f0;
+  cursor:pointer;box-shadow:0 1px 8px rgba(0,0,0,.04);
   background:#fff;
-  box-shadow:0 1px 8px rgba(0,0,0,.04);
-  cursor:pointer;
-  pointer-events:auto;
-  position:relative;
-  z-index:10000;
 }
 .themeBtn:hover{filter:brightness(.97)}
 .themeBtn:active{transform:translateY(1px)}
@@ -267,12 +243,6 @@
 .themeBtn[data-theme="sky"]{background:#eaf3ff}
 .themeBtn[data-theme="mint"]{background:#e9fff6}
 
-/* FIX: asegurar que los botones de tema sean clickeables */
-.themeBar{position:relative;z-index:50;}
-.themeBtn{pointer-events:auto;cursor:pointer;}
-.micBtn{position:relative;z-index:10;}
-
-
     .rfToast{
       position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
       background:rgba(17,17,17,.92);color:#fff;padding:10px 12px;border-radius:12px;
@@ -280,14 +250,7 @@
       box-shadow:0 12px 40px rgba(0,0,0,.25);
     }
 
-  
-
-/* HARD OVERRIDE (click themes) */
-.topbar{position:relative;z-index:5;}
-.themeBar,.themeBtn{pointer-events:auto !important;}
-.themeBtn{touch-action:manipulation;}
-
-</style>
+  </style>
 </head>
 
 <body>
@@ -593,7 +556,7 @@ function clearInputsAfterCodeSearch_(){
 // ======================================================
 // ✅ Anti-cuelgue: control de busqueda en curso + timeout
 // ======================================================
-window.__isSearching = false;
+let __isSearching = false;
 
 function withTimeout_(promise, ms, label){
   let t;
@@ -1891,14 +1854,14 @@ function uniqueJoin_(arr, sep=" / "){
     wrap.innerHTML = `<div>${rows}</div>`;
   }
 
-  window.useSimilarCode_ = async function(code){
+  window.useSimilarCode_ = function(code){
     try{
       const ci = document.getElementById("code");
       if(ci){
         ci.value = String(code||"").toUpperCase();
         ci.focus();
       }
-      if(typeof window.buscar === 'function') { await window.buscar(); } else { try{ document.getElementById('btnBuscar')?.click(); }catch(e){} }
+      buscar();
       try{ toggleAcc('cardSimilitud', false); }catch(e){}
       try{ toggleAcc('cardProducto', true); }catch(e){}
     }catch(e){}
@@ -2201,7 +2164,7 @@ renderTableInto_("oeWrap", { headers: [], rows: [] });
       setStatus("Error: " + (e?.message || e));
       alert("Error buscando en BD: " + (e?.message || e));
     }finally{
-      window.__isSearching = false;
+      __isSearching = false;
       try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
     }
   };
@@ -2268,37 +2231,11 @@ window.limpiar = function(){
     if(isMobile_()) setMobileDefault_();
   };
 
-      // ======================================================
-  // ✅ Busqueda por codigo (anti-cuelgue + cancelacion segura)
-  // ======================================================
-  window.__isSearching = false;
-  window.__searchSeq = 0;
-  window.__searchWatchdog = null;
-
-  function cancelActiveSearch_(reason){
-    try{
-      window.__searchSeq = (window.__searchSeq || 0) + 1; // invalida respuestas viejas
-      window.__isSearching = false;
-      if (window.__searchWatchdog) { clearTimeout(window.__searchWatchdog); window.__searchWatchdog = null; }
-      const b = document.getElementById('btnBuscarCodigo');
-      if (b) b.disabled = false;
-      if (reason) setStatus(reason);
-    }catch(e){}
-  }
-
-  function ensureActive_(seq){
-    if (seq !== window.__searchSeq) {
-      const err = new Error("Search cancelled");
-      err.__cancelled = true;
-      throw err;
-    }
-  }
-
-  window.buscar = async function(){
+    window.buscar = async function(){
     const t0 = performance.now();
 
-    // Si habia una busqueda colgada, la cancelamos y seguimos (esto evita el 'no busca mas')
-    if (window.__isSearching) cancelActiveSearch_("Reiniciando busqueda...");
+    // evita doble click / doble llamada que a veces deja la pagina en 'Buscando...'
+    if (window.__isSearching) return;
 
     const raw0 = (document.getElementById("code")?.value || "").trim();
     const raw = raw0.toUpperCase();
@@ -2308,87 +2245,34 @@ window.limpiar = function(){
     // ✅ Asegura que el pais/ciudad del perfil esten cargados para guardar country en search_events
     await ensureMarketLoaded_();
 
-    const seq = (window.__searchSeq || 0) + 1;
-    window.__searchSeq = seq;
     window.__isSearching = true;
-
-    // watchdog: si algo se queda pegado (red, promise zombie, etc.), liberamos el boton
-    if (window.__searchWatchdog) { clearTimeout(window.__searchWatchdog); window.__searchWatchdog = null; }
-    window.__searchWatchdog = setTimeout(()=>{
-      if (window.__isSearching && seq === window.__searchSeq){
-        cancelActiveSearch_("Se tardo demasiado. Intenta de nuevo ✅");
-      }
-    }, 25000);
-
     try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=true; }catch(e){}
 
+    const norm = normalizeCode_(raw);
+    const candidates = unique_([ raw, raw.toUpperCase(), norm ]).filter(Boolean);
+
+    setStatus("Buscando...");
+
     try{
-      setStatus("Buscando...");
-      ensureActive_(seq);
+      const codigoMostrado = candidates[0] || raw;
 
-      const norm = normalizeCode_(raw);
-      const candidates = unique_([ raw, raw.toString().trim() ]);
+      // ✅ originals desde cambios + cambios_v2
+      const originalNorms = await retryWithTimeout_(()=> resolveOriginals_(norm), { timeoutMs: 25000, label: 'originals', retries: 1 });
 
-      // 1) Buscar coincidencias exactas en datos_vehiculares_v2 (original / original_norm / cambio)
-      const originals = await resolveOriginals_(candidates, norm);
-      ensureActive_(seq);
+      // ✅ vehicles desde datos_vehiculares + datos_vehiculares_v2
+      // ✅ cambios desde cambios + cambios_v2
+      const [veh, camb] = await retryWithTimeout_(()=> Promise.all([
+        fetchVehiclesByOriginals_(originalNorms),
+        fetchCambiosByOriginals_(originalNorms),
+      ]), { timeoutMs: 30000, label: 'vehicles/cambios', retries: 1 });
 
-      // 2) Traer vehiculos por esos originales
-      const vehicles = await fetchVehiclesByOriginals_(originals);
-      ensureActive_(seq);
-
-      // 3) Traer cambios por esos originales
-      const cambios  = await fetchCambiosByOriginals_(originals);
-      ensureActive_(seq);
-
-      // 4) UI
-      renderProducto_(raw, vehicles, cambios);
-      renderVehicles_(vehicles);
-      renderCambios_(cambios);
-
-      // 5) Similaridad (cuando NO hay match exacto)
-      if((vehicles?.length||0) === 0 && (cambios?.length||0) === 0){
-        await loadSimilaritySuggestions_(raw);
-        ensureActive_(seq);
-      }else{
-        clearSimilarity_();
-      }
-
-      // 6) Guardar evento (search_events) con country desde profile
-      try{
-        await logSearchEvent_({
-          queryRaw: raw0,
-          queryType: guessQueryType_(raw0),
-          normalizedQuery: norm,
-          resultStatus: ((vehicles?.length||0)>0 || (cambios?.length||0)>0) ? "hit" : "miss",
-          resultsCount: (vehicles?.length||0) + (cambios?.length||0),
-          responseTimeMs: Math.round(performance.now() - t0),
-          meta: {
-            market_country: (window.__profileMarket?.country || null),
-            market_city: (window.__profileMarket?.city || null),
-          }
-        });
-      }catch(e){ console.warn("logSearchEvent_ fallo", e); }
-
-      setStatus("Listo ✅");
-      clearInputsAfterCodeSearch_();
-
-    }catch(e){
-      if (e && e.__cancelled) return;
-      console.error(e);
-      setStatus("Error: " + (e?.message || e));
-      alert("Error buscando en BD: " + (e?.message || e));
-    }finally{
-      if (window.__searchWatchdog) { clearTimeout(window.__searchWatchdog); window.__searchWatchdog = null; }
-      window.__isSearching = false;
-      try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
-      // Si por alguna razon se quedo en "Buscando...", lo llevamos a estado listo
-      try{
-        const st = document.getElementById("status")?.textContent || "";
-        if(/Buscando/i.test(st)) setStatus("Listo ✅");
-      }catch(e){}
-    }
-  };
+      const payload = {
+        codigo: codigoMostrado,
+        codigo_norm: norm,
+        original_norms: originalNorms,
+        productUrl: buildGoogleUrl_(codigoMostrado),
+        tablas: { vehicles: veh, cambios: camb }
+      };
 
       render(payload);
 
