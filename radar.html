@@ -1159,7 +1159,8 @@ async function getCountryDistributionCached(iso){
   return res;
 }
 
-async function updateUIForCountry(iso, displayName){
+async function updateUIForCountry(iso, displayName, opts){
+
   const sub = document.getElementById("mapModalSub");
   const tip = document.getElementById("mapTooltip");
 
@@ -1175,9 +1176,13 @@ async function updateUIForCountry(iso, displayName){
 
   if(tip){
     const label = displayName ? `${displayName} (${iso})` : iso;
-    tip.innerHTML = tooltipHTML(`Resumen · ${label}`, top) +
-      (noCountry ? `<div class="mut" style="margin-top:8px">⚠️ Aún no hay país por búsqueda en <b>search_events</b>. Agrega la columna <b>gl</b> (ISO2) al guardar cada evento.</div>` : ``);
-    tip.style.display = "block";
+    const badge = (opts && opts.badge) ? opts.badge : null;
+const badgeCls = (opts && opts.badgeCls) ? opts.badgeCls : "rfHasData";
+const countTxt = (opts && typeof opts.count === "number") ? ` · ${opts.count} búsquedas` : "";
+
+tip.innerHTML = tooltipHTML(`Resumen · ${label}`, top, badge, badgeCls, countTxt) +
+  (noCountry ? `<div class="mut" style="margin-top:8px">⚠️ Aún no hay país por búsqueda en <b>search_events</b>. Agrega la columna <b>country</b> (ISO2) al guardar cada evento.</div>` : ``);
+tip.style.display = "block";    tip.style.display = "block";
   }
 }
 
@@ -1197,25 +1202,27 @@ async function addCountriesLayerOnce(){
 
       __rfCountryLayerByISO.set(iso, layer);
       layer.on("mousemove", ()=>{
-        // si hay un país fijado, igual mostramos hover pero no sobreescribimos el pin
+        // Hover = solo vista previa (NO cambia el filtro global del radar).
+        // Click = selecciona país y actualiza todo.
         if(__rfCountryHoverTimer) clearTimeout(__rfCountryHoverTimer);
         __rfCountryHoverTimer = setTimeout(async ()=>{
           if(__rfCountryPinnedISO && __rfCountryPinnedISO === iso){
-            // mantener estilo pinned
             setCountryLayerStyle(layer, styleCountryPinned());
           }else{
             setCountryLayerStyle(layer, styleCountryHover());
           }
-          // sincronizar filtro país del radar (dropdown) y recargar módulos
-        try{
-          const sel = document.getElementById("gl");
-          if(sel && sel.value !== iso){ sel.value = iso; }
-          try{ saveLocale(); }catch(_e){}
-          if(typeof refreshAll === "function"){ refreshAll(); }
-        }catch(_e){}
 
-        await updateUIForCountry(iso, nm);
-        }, 80);
+          // ✅ Vista previa: panel izquierdo + tooltip con "HAY DATOS / SIN DATOS"
+          try{
+            const { counts, usedCol } = await getCountryActivityCountsCached();
+            const c = (counts && counts.get(iso)) ? counts.get(iso) : 0;
+            const badge = usedCol ? (c>0 ? "HAY DATOS" : "SIN DATOS") : "SIN DATOS";
+            const badgeCls = (c>0 ? "rfHasData" : "rfNoData");
+            await updateUIForCountry(iso, nm, { badge, badgeCls, count: c });
+          }catch(_e){
+            await updateUIForCountry(iso, nm);
+          }
+        }, 60);
       });
 
       layer.on("mouseout", ()=>{
@@ -1821,20 +1828,23 @@ const RF_OFFERS_TABLE = "offers";
       });
     }
 
-    function tooltipHTML(title, lines){
-      const list = (lines||[]).slice(0,6);
-      const has = list.length > 0;
-      const items = list.map(x=>`<div class="mini">${esc(x.name)} <span>· ${esc(x.pct)}</span></div>`).join("");
-      return `
-        <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:10px;height:10px;border-radius:999px;background:${has ? "rgba(16,185,129,.95)" : "rgba(148,163,184,.8)"};box-shadow:0 0 0 6px ${has ? "rgba(16,185,129,.15)" : "rgba(148,163,184,.12)"}"></div>
-          <b style="font-size:12px">${esc(title)}</b>
-          ${has ? `<span class="badge bOk" style="margin-left:auto">HAY DATOS</span>` : `<span class="badge" style="margin-left:auto">SIN DATOS</span>`}
-        </div>
-        <div style="margin-top:8px">${items ? items : `<div class="mut">Sin datos para mostrar.</div>`}</div>
-        <div class="mut" style="margin-top:10px">Tip: “Desconocido” son búsquedas sin resultado o sin mapeo a vehículo.</div>
-      `;
-    }
+    function tooltipHTML(title, lines, badgeText, badgeCls, countTxt){
+  const list = (lines||[]).slice(0,6);
+  const has = list.length > 0;
+  const items = list.map(x=>`<div class="mini">${esc(x.name)} <span>· ${esc(x.pct)}</span></div>`).join("");
+  const badge = badgeText ? `<span class="rfBadge ${badgeCls}">${esc(badgeText)}</span>` : "";
+  const ct = countTxt ? `<span class="mut" style="margin-left:8px">${esc(countTxt)}</span>` : "";
+  return `
+    <div class="ttCard">
+      <div class="ttTop">
+        <div class="ttTitle">${esc(title)}${ct}</div>
+        ${badge}
+      </div>
+      ${has ? items : `<div class="mut">Sin datos para mostrar.</div>`}
+      <div class="mut" style="margin-top:8px">Tip: “Desconocido” son búsquedas sin resultado o sin mapeo a vehículo.</div>
+    </div>
+  `;
+}
 
     function renderBars(dist){
       const box = document.getElementById("mapBars");
