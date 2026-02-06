@@ -1854,7 +1854,7 @@ function uniqueJoin_(arr, sep=" / "){
     wrap.innerHTML = `<div>${rows}</div>`;
   }
 
-  function useSimilarCode_(code){
+  window.useSimilarCode_ = function(code){
     try{
       const ci = document.getElementById("code");
       if(ci){
