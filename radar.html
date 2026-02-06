@@ -894,7 +894,8 @@ function initLeafletMapOnce(){
   }
 }
 
-/* ===========================/* ===========================
+/* ===========================
+   ===========================
    ✅ Países interactivos (hover/click) en el mapa
    - Carga GeoJSON mundial (ISO_A2)
    - Al pasar el mouse por un país:
@@ -965,9 +966,6 @@ function styleCountryPinned(){
 function setCountryLayerStyle(layer, styleObj){
   try{ layer.setStyle(styleObj); }catch(_e){}
 }
-function setCountryLayerStyle(layer, styleObj){
-  try{ layer.setStyle(styleObj); }catch(_e){}
-}
 
 
 /* ===========================
@@ -992,7 +990,7 @@ async function getCountryActivityCountsCached(){
   // Cache por filtros (range + category + query + line + hl)
   const from = dtFromRange($("range").value);
   const cat = ($("category").value || "").trim();
-  const qf  = ($("qfilter").value || "").trim().toLowerCase();
+  const qf  = ($("q").value || "").trim().toLowerCase();
   const line = String($("category").value||"").trim(); // category ya hace de línea en tu UI
   const hl = String($("hl").value||"").trim();
 
