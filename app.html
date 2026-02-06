@@ -1290,7 +1290,88 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
     return "https://www.google.com/search?q=" + encodeURIComponent(code);
   }
 
+  
   // ======================================================
+  // ✅ COUNTRY OPTIONS (mismas siglas usadas en RADAR)
+  //  - Se usan para normalizar lo que venga guardado en profiles.country
+  //  - Ejemplos soportados: "DO", "DO República Dominicana (DO)", "República Dominicana", "GLOBAL", "Todos (GLOBAL)"
+  // ======================================================
+  const COUNTRY_OPTIONS = [
+    { code:"DO", name:"República Dominicana" },
+    { code:"US", name:"Estados Unidos" },
+    { code:"MX", name:"México" },
+    { code:"CA", name:"Canadá" },
+    { code:"ES", name:"España" },
+    { code:"PT", name:"Portugal" },
+    { code:"FR", name:"Francia" },
+    { code:"DE", name:"Alemania" },
+    { code:"IT", name:"Italia" },
+    { code:"GB", name:"Reino Unido" },
+    { code:"NL", name:"Países Bajos" },
+    { code:"BE", name:"Bélgica" },
+    { code:"CH", name:"Suiza" },
+    { code:"SE", name:"Suecia" },
+    { code:"NO", name:"Noruega" },
+    { code:"DK", name:"Dinamarca" },
+    { code:"FI", name:"Finlandia" },
+    { code:"PL", name:"Polonia" },
+    { code:"TR", name:"Turquía" },
+    { code:"RU", name:"Rusia" },
+    { code:"UA", name:"Ucrania" },
+    { code:"BR", name:"Brasil" },
+    { code:"AR", name:"Argentina" },
+    { code:"CL", name:"Chile" },
+    { code:"CO", name:"Colombia" },
+    { code:"PE", name:"Perú" },
+    { code:"EC", name:"Ecuador" },
+    { code:"PA", name:"Panamá" },
+    { code:"CR", name:"Costa Rica" },
+    { code:"GT", name:"Guatemala" },
+    { code:"SV", name:"El Salvador" },
+    { code:"HN", name:"Honduras" },
+    { code:"NI", name:"Nicaragua" },
+    { code:"PR", name:"Puerto Rico" },
+    { code:"VE", name:"Venezuela" },
+  ];
+
+  function normalizeCountryCode_(value){
+    if(value === undefined || value === null) return null;
+
+    let s = String(value).trim();
+    if(!s) return null;
+
+    const u = s.toUpperCase();
+
+    // GLOBAL/TODOS
+    if(u === "GLOBAL" || u === "TODOS" || u === "TODOS (GLOBAL)" || u === "ALL" || u === "WORLD"){
+      return null; // no guardamos country en search_events (queda NULL)
+    }
+
+    // Formato: "DO República Dominicana (DO)" o "... (DO)"
+    const m1 = s.match(/\(([A-Z]{2})\)\s*$/);
+    if(m1) return m1[1];
+
+    // Formato: "DO ..." o "DO-..."
+    const m2 = s.match(/^\s*([A-Z]{2})\b/);
+    if(m2) return m2[1];
+
+    // Si viene solo el codigo
+    if(/^[A-Z]{2}$/.test(u)) return u;
+
+    // Buscar por nombre
+    const low = s.toLowerCase();
+    for(const opt of COUNTRY_OPTIONS){
+      if(!opt) continue;
+      const code = String(opt.code||"").toUpperCase();
+      const name = String(opt.name||"").toLowerCase();
+      if(code && low.includes(code.toLowerCase())) return code;
+      if(name && low.includes(name)) return code || null;
+    }
+
+    return null;
+  }
+
+// ======================================================
   // ✅ MARKET INTEL: anon_id + session + country + logging
   // ======================================================
 
@@ -1444,7 +1525,7 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
         profileCountry = null;
         profileCity = null;
       }else{
-        profileCountry = (data?.country || null);
+        profileCountry = normalizeCountryCode_(data?.country);
         profileCity = (data?.city || null);
       }
     }catch(e){
@@ -1462,7 +1543,7 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
     const elCity = document.getElementById("pillCity");
     const wrap = document.getElementById("pillCityWrap");
 
-    if(elC) elC.textContent = profileCountry ? String(profileCountry).toUpperCase() : "—";
+    if(elC) elC.textContent = profileCountry ? String(profileCountry).toUpperCase() : "GLOBAL";
 
     if(profileCity){
       if(elCity) elCity.textContent = String(profileCity);
