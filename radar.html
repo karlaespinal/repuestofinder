@@ -1586,91 +1586,94 @@ const RF_OFFERS_TABLE = "offers";
     }
 
     async function buildModelDistributionForMap(isoFilter){
-      const from = dtFromRange($("range").value);
-      const cat = ($("category").value || "").trim();
+  const from = dtFromRange($("range").value);
+  const cat = ($("category").value || "").trim();
 
-      let q = supabase
-        .from("search_events")
-        .select("query_raw, category, result_status, searched_at")
-        .gte("searched_at", from);
-
-      if(cat) q = q.eq("category", cat);
-
-// ✅ Filtrar por país cuando exista columna en search_events (gl o country)
-let __rf_noCountryColumn = false;
-const iso = String(isoFilter||"").toUpperCase().trim();
-if(iso){
-  // Intento 1: columna "gl"
-  let { data: _test1, error: _err1 } = await q.eq("gl", iso);
-  if(!_err1){
-    // Si funcionó, ya tenemos data en _test1, úsala abajo
-    var data = _test1;
-  }else{
-    // Intento 2: columna "country"
-    let q2 = supabase
+  // Construye el query base cada vez (importante para no "ensuciar" el builder con eqs previos)
+  const baseQ = () => {
+    let qq = supabase
       .from("search_events")
       .select("query_raw, category, result_status, searched_at")
       .gte("searched_at", from);
-    if(cat) q2 = q2.eq("category", cat);
-    let { data: _test2, error: _err2 } = await q2.eq("country", iso);
-    if(!_err2){
-      var data = _test2;
-    }else{
-      // No hay columna de país; caemos al comportamiento original
-      __rf_noCountryColumn = true;
+    if(cat) qq = qq.eq("category", cat);
+    return qq;
+  };
+
+  // ✅ Filtrar por país cuando exista columna en search_events (gl o country)
+  let __rf_noCountryColumn = false;
+  const iso = String(isoFilter||"").toUpperCase().trim();
+
+  let eventsData = null;
+
+  if(iso){
+    // Intento 1: columna "gl"
+    try{
+      const { data: d1, error: e1 } = await baseQ().eq("gl", iso);
+      if(e1) throw e1;
+      eventsData = d1 || [];
+    }catch(_e1){
+      // Intento 2: columna "country"
+      try{
+        const { data: d2, error: e2 } = await baseQ().eq("country", iso);
+        if(e2) throw e2;
+        eventsData = d2 || [];
+      }catch(_e2){
+        // No hay columna de país; caemos al comportamiento original (sin filtro)
+        __rf_noCountryColumn = true;
+      }
     }
   }
-}
 
-      let data, error;
-if(typeof data === "undefined"){
-  const res = await q;
-  data = res.data; error = res.error;
-  if(error) throw error;
-}
-const events = (data||[]);
-      const codeEvents = events
-        .map(r=>({ q: normKey(r.query_raw), status: String(r.result_status||"") }))
-        .filter(x=> isCodeLike(x.q));
+  if(eventsData === null){
+    const { data: d, error } = await baseQ();
+    if(error) throw error;
+    eventsData = d || [];
+  }
 
-      if(!codeEvents.length){
-        return { dist: [], total: 0, unknown: 0, top: [] };
-      }
+  const events = eventsData || [];
 
-      const queries = codeEvents.map(x=>x.q);
-      const qToOrigNorm = await resolveToOriginalNorm(queries);
-      const origNorms = Array.from(new Set(Array.from(qToOrigNorm.values())));
-      const origNormToVeh = await resolveVehiculoForOriginalNorm(origNorms);
+  const codeEvents = events
+    .map(r=>({ q: normKey(r.query_raw), status: String(r.result_status||"") }))
+    .filter(x=> isCodeLike(x.q));
 
-      const counts = new Map(); // veh -> count
-      let unknown = 0;
+  if(!codeEvents.length){
+    return { dist: [], total: 0, unknown: 0, top: [], noCountry: __rf_noCountryColumn };
+  }
 
-      for(const ev of codeEvents){
-        // regla del usuario: lo "no encontrado" -> Desconocido
-        if(ev.status === "not_found"){
-          unknown++;
-          continue;
-        }
+  const queries = codeEvents.map(x=>x.q);
+  const qToOrigNorm = await resolveToOriginalNorm(queries);
+  const origNorms = Array.from(new Set(Array.from(qToOrigNorm.values())));
+  const origNormToVeh = await resolveVehiculoForOriginalNorm(origNorms);
 
-        const on = qToOrigNorm.get(ev.q);
-        if(!on){ unknown++; continue; }
-        const veh = origNormToVeh.get(on);
-        if(!veh){ unknown++; continue; }
-        counts.set(veh, (counts.get(veh)||0) + 1);
-      }
+  const counts = new Map(); // veh -> count
+  let unknown = 0;
 
-      const dist = Array.from(counts.entries()).map(([name,count])=>({ name, count }));
-      if(unknown>0) dist.push({ name:"DESCONOCIDO", count: unknown });
-
-      const total = dist.reduce((a,b)=>a+(b.count||0),0);
-      const top = dist
-        .slice()
-        .sort((a,b)=> (b.count||0) - (a.count||0))
-        .slice(0,5)
-        .map(x=>({ name:x.name==="DESCONOCIDO" ? "Desconocido" : x.name, pct: (total?((x.count/total)*100):0).toFixed(1)+"%" }));
-
-      return { dist, total, unknown, top, noCountry: __rf_noCountryColumn };
+  for(const ev of codeEvents){
+    // regla del usuario: lo "no encontrado" -> Desconocido
+    if(ev.status === "not_found"){
+      unknown++;
+      continue;
     }
+
+    const on = qToOrigNorm.get(ev.q);
+    if(!on){ unknown++; continue; }
+    const veh = origNormToVeh.get(on);
+    if(!veh){ unknown++; continue; }
+    counts.set(veh, (counts.get(veh)||0) + 1);
+  }
+
+  const dist = Array.from(counts.entries()).map(([name,count])=>({ name, count }));
+  if(unknown>0) dist.push({ name:"DESCONOCIDO", count: unknown });
+
+  const total = dist.reduce((a,b)=>a+(b.count||0),0);
+  const top = dist
+    .slice()
+    .sort((a,b)=> (b.count||0) - (a.count||0))
+    .slice(0,5)
+    .map(x=>({ name:x.name==="DESCONOCIDO" ? "Desconocido" : x.name, pct: (total?((x.count/total)*100):0).toFixed(1)+"%" }));
+
+  return { dist, total, unknown, top, noCountry: __rf_noCountryColumn };
+}
 
     window.openMapModal = async function(){
       const overlay = document.getElementById("mapOverlay");
