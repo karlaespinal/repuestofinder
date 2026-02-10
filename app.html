@@ -295,7 +295,7 @@
       </div>
 
       <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-        <button class="btn" id="btnBuscarCodigo" onclick="buscar()">Buscar</button>
+        <button class="btn" id="btnBuscarCodigo" onclick="window.buscar && window.buscar()">Buscar</button>
         <button class="btn2" onclick="limpiar()">Limpiar</button>
         <button class="btn3" onclick="exportar()" id="btnExport" disabled>Exportar a Excel</button>
       </div>
@@ -557,6 +557,40 @@ function clearInputsAfterCodeSearch_(){
 // ✅ Anti-cuelgue: control de busqueda en curso + timeout
 // ======================================================
 let __isSearching = false;
+  window.__isSearching = false;
+
+// ==== Anti-cuelgue PRO: cancelacion logica + watchdog ====
+// - Si una busqueda tarda demasiado, se libera el boton y el flag para permitir nuevas busquedas.
+// - Si el usuario inicia otra busqueda, ignoramos resultados viejos.
+let __searchSeq = 0;
+let __activeSearchId = 0;
+let __watchdogTimer = null;
+
+function startSearchGuard_(label){
+  __searchSeq += 1;
+  __activeSearchId = __searchSeq;
+  // watchdog de UI (no cancela la request, pero evita que se quede bloqueado)
+  try{ if(__watchdogTimer) clearTimeout(__watchdogTimer); }catch(e){}
+  __watchdogTimer = setTimeout(()=>{
+    // si aun es la misma busqueda y sigue "buscando", liberamos UI
+    if(window.__isSearching && __activeSearchId === __searchSeq){
+      try{ window.__isSearching = false; }catch(e){}
+      try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
+      try{ const st=(document.getElementById("status")?.textContent||"").toLowerCase();
+           if(st.includes("buscando")) setStatus("Listo ✅"); }catch(e){}
+    }
+  }, 35000);
+  return __activeSearchId;
+}
+
+function isSearchStale_(id){
+  return id !== __activeSearchId;
+}
+
+function endSearchGuard_(){
+  try{ if(__watchdogTimer) clearTimeout(__watchdogTimer); }catch(e){}
+  __watchdogTimer = null;
+}
 
 function withTimeout_(promise, ms, label){
   let t;
@@ -846,7 +880,7 @@ async function retryWithTimeout_(fn, opts){
         document.getElementById("code").value = codeNow;
         toast_("Encontrando codigo: " + codeNow);
         const btn = document.querySelector('#btnBuscarCodigo') || document.querySelector('button[onclick*="buscar"]');
-        if(btn){ btn.click(); } else { await window.buscar(); }
+        if(btn){ btn.click(); } else { await window.window.buscar && window.buscar(); }
         return;
       }
       if(fVeh || fAnio || fMod || fMot || fDes){
@@ -866,7 +900,7 @@ async function retryWithTimeout_(fn, opts){
         if(parsed.hasEncontrar){
           toast_("Encontrando codigo: " + code);
           const btn = document.querySelector('#btnBuscarCodigo') || document.querySelector('button[onclick*="buscar"]');
-        if(btn){ btn.click(); } else { await window.buscar(); }
+        if(btn){ btn.click(); } else { await window.window.buscar && window.buscar(); }
         }else{
           toast_("Codigo listo: " + code + ". Ahora di 'encontrar'.");
         }
@@ -1865,7 +1899,7 @@ function uniqueJoin_(arr, sep=" / "){
         ci.value = String(code||"").toUpperCase();
         ci.focus();
       }
-      if(typeof window.buscar === 'function') { await window.buscar(); } else { try{ document.getElementById('btnBuscar')?.click(); }catch(e){} }
+      if(typeof window.buscar === 'function') { await window.window.buscar && window.buscar(); } else { try{ document.getElementById('btnBuscar')?.click(); }catch(e){} }
       try{ toggleAcc('cardSimilitud', false); }catch(e){}
       try{ toggleAcc('cardProducto', true); }catch(e){}
     }catch(e){}
@@ -2203,7 +2237,7 @@ const vehCount = (lastPayload.tablas.vehicles_full?.rows||[]).length;
     try{ window.scrollTo({ top: 0, behavior: "smooth" }); }catch(e){ window.scrollTo(0,0); }
     // ejecutar busqueda OEM
     try{
-      await window.buscar();
+      await window.window.buscar && window.buscar();
     }catch(e){
       // fallback
       const btn = document.querySelector('button[onclick*="buscar"]');
@@ -2236,137 +2270,169 @@ window.limpiar = function(){
   };
 
     window.buscar = async function(){
-    const t0 = performance.now();
+  const t0 = performance.now();
 
-    // evita doble click / doble llamada que a veces deja la pagina en 'Buscando...'
-    if (window.__isSearching) return;
+  // ✅ Si por alguna razon quedo pegado, liberamos despues de 35s (watchdog).
+  // ✅ Si el usuario intenta buscar de nuevo mientras esta buscando, NO ignoramos:
+  //    reiniciamos la busqueda (cancelacion logica).
+  const searchId = startSearchGuard_("buscar");
 
-    const raw0 = (document.getElementById("code")?.value || "").trim();
-    const raw = raw0.toUpperCase();
-    try{ const ci=document.getElementById("code"); if(ci) ci.value = raw; }catch(e){}
-    if(!raw){ setStatus("Escribe un codigo."); return; }
+  const raw0 = (document.getElementById("code")?.value || "").trim();
+  const raw = raw0.toUpperCase();
+  try{ const ci=document.getElementById("code"); if(ci) ci.value = raw; }catch(e){}
+  if(!raw){
+    setStatus("Escribe un codigo.");
+    endSearchGuard_();
+    return;
+  }
 
-    // ✅ Asegura que el pais/ciudad del perfil esten cargados para guardar country en search_events
-    await ensureMarketLoaded_();
+  // ✅ Asegura que el pais/ciudad del perfil esten cargados para guardar country en search_events
+  await ensureMarketLoaded_();
 
-    window.__isSearching = true;
-    try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=true; }catch(e){}
+  // ✅ Permitir buscar muchas veces: marcamos como buscando (UI) pero si vuelve a buscar, se reinicia (nuevo searchId)
+  window.__isSearching = true;
+  try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=true; }catch(e){}
 
-    const norm = normalizeCode_(raw);
-    const candidates = unique_([ raw, raw.toUpperCase(), norm ]).filter(Boolean);
+  const norm = normalizeCode_(raw);
 
-    setStatus("Buscando...");
+  setStatus("Buscando...");
 
+  try{
+    // si ya arrancó otra busqueda, aborta esta (cancelacion logica)
+    if(isSearchStale_(searchId)) return;
+
+    const codigoMostrado = raw;
+
+    // ✅ originals desde cambios + cambios_v2
+    const originalNorms = await retryWithTimeout_(()=> resolveOriginals_(norm), { timeoutMs: 25000, label: 'originals', retries: 1 });
+
+    if(isSearchStale_(searchId)) return;
+
+    // ✅ vehicles desde datos_vehiculares + datos_vehiculares_v2
+    // ✅ cambios desde cambios + cambios_v2
+    const [veh, camb] = await retryWithTimeout_(()=> Promise.all([
+      fetchVehiclesByOriginals_(originalNorms),
+      fetchCambiosByOriginals_(originalNorms),
+    ]), { timeoutMs: 30000, label: 'vehicles/cambios', retries: 1 });
+
+    if(isSearchStale_(searchId)) return;
+
+    const payload = {
+      codigo: codigoMostrado,
+      codigo_norm: norm,
+      original_norms: originalNorms,
+      productUrl: buildGoogleUrl_(codigoMostrado),
+      tablas: { vehicles: veh, cambios: camb }
+    };
+
+    render(payload);
+
+    // ✅ Ofertas activas para este codigo (no bloquea la UI si falla)
     try{
-      const codigoMostrado = candidates[0] || raw;
-
-      // ✅ originals desde cambios + cambios_v2
-      const originalNorms = await retryWithTimeout_(()=> resolveOriginals_(norm), { timeoutMs: 25000, label: 'originals', retries: 1 });
-
-      // ✅ vehicles desde datos_vehiculares + datos_vehiculares_v2
-      // ✅ cambios desde cambios + cambios_v2
-      const [veh, camb] = await retryWithTimeout_(()=> Promise.all([
-        fetchVehiclesByOriginals_(originalNorms),
-        fetchCambiosByOriginals_(originalNorms),
-      ]), { timeoutMs: 30000, label: 'vehicles/cambios', retries: 1 });
-
-      const payload = {
-        codigo: codigoMostrado,
-        codigo_norm: norm,
-        original_norms: originalNorms,
-        productUrl: buildGoogleUrl_(codigoMostrado),
-        tablas: { vehicles: veh, cambios: camb }
-      };
-
-      render(payload);
-
-      // ✅ Ofertas activas para este codigo
       lastOffersError = '';
-      lastOffers = await retryWithTimeout_(()=> fetchOffersByOriginals_(originalNorms, norm), { timeoutMs: 20000, label: 'offers', retries: 1 });
-      renderOffersIntoProducto_(lastOffers);
+      const offers = await retryWithTimeout_(()=> fetchOffersByOriginals_(originalNorms, norm), { timeoutMs: 20000, label: 'offers', retries: 1 });
+      if(!isSearchStale_(searchId)){
+        lastOffers = offers;
+        renderOffersIntoProducto_(lastOffers);
+      }
+    }catch(e){
+      // no tumbar la busqueda
+      lastOffers = [];
+      lastOffersError = (e?.message || String(e||""));
+      if(!isSearchStale_(searchId)) renderOffersIntoProducto_([]);
+    }
 
-      const vehCount = (veh && Array.isArray(veh.rows)) ? veh.rows.length : 0;
-      const cambCount = (camb && Array.isArray(camb.rows)) ? camb.rows.length : 0;
-      const totalResults = vehCount + cambCount;
-      const resultStatus = totalResults > 0 ? "found" : "not_found";
+    const vehCount = (veh && Array.isArray(veh.rows)) ? veh.rows.length : 0;
+    const cambCount = (camb && Array.isArray(camb.rows)) ? camb.rows.length : 0;
+    const totalResults = vehCount + cambCount;
+    const resultStatus = totalResults > 0 ? "found" : "not_found";
 
-      // ✅ SIMILITUD: si NO hay resultados, sugerimos codigos parecidos
+    // ✅ SIMILITUD: si NO hay resultados, sugerimos codigos parecidos
+    if(!isSearchStale_(searchId)){
       if(resultStatus === "not_found"){
         try{
           const sim = await retryWithTimeout_(()=> fetchSimilitudByPrefix_(norm), { timeoutMs: 15000, label: 'similitud', retries: 0 });
-          renderSimilitud_(sim, norm);
-          try{ toggleAcc('cardSimilitud', true); }catch(e){}
+          if(!isSearchStale_(searchId)){
+            renderSimilitud_(sim, norm);
+            try{ toggleAcc('cardSimilitud', true); }catch(e){}
+          }
         }catch(e){
           try{ renderSimilitud_([], norm); }catch(_){}
         }
       }else{
         try{ renderSimilitud_([], norm); }catch(e){}
       }
+    }
 
+    const pos = extractBestPosition_(veh);
+    const catFromPos = classifyCategoryFromPosition_(pos);
+    const category = catFromPos || classifyCategory_(raw);
 
-      const pos = extractBestPosition_(veh);
-      const catFromPos = classifyCategoryFromPosition_(pos);
-      const category = catFromPos || classifyCategory_(raw);
+    const vehSummary = extractVehicleSummary_(veh);
 
-      const vehSummary = extractVehicleSummary_(veh);
+    const t1 = performance.now();
+    const responseMs = Math.round(t1 - t0);
 
-      const t1 = performance.now();
-      const responseMs = Math.round(t1 - t0);
+    // log en background (con timeout corto)
+    safeLogSearchEvent_({
+      queryRaw: raw,
+      queryType: "oem",
+      normalizedQuery: norm,
+      category,
+      resultStatus,
+      resultsCount: totalResults,
+      responseTimeMs: responseMs,
+      meta: {
+        original_norms_count: Array.isArray(originalNorms) ? originalNorms.length : 0,
+        vehicles_count: vehCount,
+        cambios_count: cambCount,
+        position_sample: pos || null,
+        category_source: catFromPos ? "posicion" : "query",
+        vehicle_make: vehSummary?.make || null,
+        vehicle_model: vehSummary?.model || null,
+        vehicle_year_from: vehSummary?.year_from || null,
+        vehicle_year_to: vehSummary?.year_to || null,
+        vehicle_engine: vehSummary?.engine || null,
+        vehicle_serie: vehSummary?.serie || null,
+        used_vehicle_tables: VEH_TABLES,
+        used_cambios_tables: CAMBIOS_TABLES
+      }
+    });
 
-      safeLogSearchEvent_({
-        queryRaw: raw,
-        queryType: "oem",
-        normalizedQuery: norm,
-        category,
-        resultStatus,
-        resultsCount: totalResults,
-        responseTimeMs: responseMs,
-        meta: {
-          original_norms_count: Array.isArray(originalNorms) ? originalNorms.length : 0,
-          vehicles_count: vehCount,
-          cambios_count: cambCount,
-          position_sample: pos || null,
-          category_source: catFromPos ? "posicion" : "query",
-          vehicle_make: vehSummary?.make || null,
-          vehicle_model: vehSummary?.model || null,
-          vehicle_year_from: vehSummary?.year_from || null,
-          vehicle_year_to: vehSummary?.year_to || null,
-          vehicle_engine: vehSummary?.engine || null,
-          vehicle_serie: vehSummary?.serie || null,
-          used_vehicle_tables: VEH_TABLES,
-          used_cambios_tables: CAMBIOS_TABLES
-        }
-      });
+    // ✅ limpiar inputs luego de buscar por codigo
+    clearInputsAfterCodeSearch_();
 
-      // ✅ limpiar inputs luego de buscar por codigo
-      clearInputsAfterCodeSearch_();
-
-    }catch(e){
-      console.error(e);
+  }catch(e){
+    console.error(e);
+    if(!isSearchStale_(searchId)){
       setStatus("Error: " + (e && e.message ? e.message : e));
       alert("Error consultando: " + (e && e.message ? e.message : e));
+    }
 
-      const t1 = performance.now();
-      safeLogSearchEvent_({
-        queryRaw: raw,
-        queryType: "oem",
-        normalizedQuery: norm,
-        category: classifyCategory_(raw),
-        resultStatus: "unknown",
-        resultsCount: 0,
-        responseTimeMs: Math.round(t1 - t0),
-        meta: { error: (e && e.message) ? e.message : String(e) }
-      });
-    }finally{
+    const t1 = performance.now();
+    safeLogSearchEvent_({
+      queryRaw: raw,
+      queryType: "oem",
+      normalizedQuery: norm,
+      category: classifyCategory_(raw),
+      resultStatus: "unknown",
+      resultsCount: 0,
+      responseTimeMs: Math.round(t1 - t0),
+      meta: { error: (e && e.message) ? e.message : String(e) }
+    });
+  }finally{
+    // Solo el ultimo searchId puede liberar UI
+    if(!isSearchStale_(searchId)){
       window.__isSearching = false;
       try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
-      // Si por alguna razon se quedo en "Buscando...", lo llevamos a estado listo.
       try{
         const st = (document.getElementById("status")?.textContent || "");
         if(st.toLowerCase().includes("buscando")) setStatus("Listo ✅");
       }catch(e){}
+      endSearchGuard_();
     }
-  };
+  }
+};
 
   // ======================================================
   // ✅ Ofertas: buscar y renderizar debajo de Vehicles/Cambios
