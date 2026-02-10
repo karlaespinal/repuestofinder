@@ -295,7 +295,7 @@
       </div>
 
       <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-        <button class="btn" id="btnBuscarCodigo" onclick="window.buscar && window.buscar()">Buscar</button>
+        <button class="btn" id="btnBuscarCodigo" onclick="buscar()">Buscar</button>
         <button class="btn2" onclick="limpiar()">Limpiar</button>
         <button class="btn3" onclick="exportar()" id="btnExport" disabled>Exportar a Excel</button>
       </div>
@@ -487,26 +487,11 @@
 
   const SUPABASE_URL = "https://pjkbipdjxxxzjiuyfkaq.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_G7uvRyHNLSew2HKJY_h6ag_M2NZDYx4";
-    // === Abort controller global para cancelar peticiones en vuelo ===
-  let currentAbortController = null;
-
-  // ✅ Cliente Supabase con fetch "abort-aware" (si currentAbortController existe, se aplica signal)
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: {
-      fetch: (input, init = {}) => {
-        try{
-          if(currentAbortController && !init.signal){
-            init.signal = currentAbortController.signal;
-          }
-        }catch(e){}
-        return fetch(input, init);
-      }
-    }
-  });
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // ✅ Tablas (v1 + v2)
-  const VEH_TABLES = ["datos_vehiculares_v2"];
-  const CAMBIOS_TABLES = ["cambios_v2"];
+  const VEH_TABLES = ["datos_vehiculares", "datos_vehiculares_v2"];
+  const CAMBIOS_TABLES = ["cambios", "cambios_v2"];
 
   // ✅ Logos por marca (ruta dentro del repo)
   const AUTO_LOGO_BASE = "assets/logos/autos/";
@@ -572,40 +557,6 @@ function clearInputsAfterCodeSearch_(){
 // ✅ Anti-cuelgue: control de busqueda en curso + timeout
 // ======================================================
 let __isSearching = false;
-  window.__isSearching = false;
-
-// ==== Anti-cuelgue PRO: cancelacion logica + watchdog ====
-// - Si una busqueda tarda demasiado, se libera el boton y el flag para permitir nuevas busquedas.
-// - Si el usuario inicia otra busqueda, ignoramos resultados viejos.
-let __searchSeq = 0;
-let __activeSearchId = 0;
-let __watchdogTimer = null;
-
-function startSearchGuard_(label){
-  __searchSeq += 1;
-  __activeSearchId = __searchSeq;
-  // watchdog de UI (no cancela la request, pero evita que se quede bloqueado)
-  try{ if(__watchdogTimer) clearTimeout(__watchdogTimer); }catch(e){}
-  __watchdogTimer = setTimeout(()=>{
-    // si aun es la misma busqueda y sigue "buscando", liberamos UI
-    if(window.__isSearching && __activeSearchId === __searchSeq){
-      try{ window.__isSearching = false; }catch(e){}
-      try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
-      try{ const st=(document.getElementById("status")?.textContent||"").toLowerCase();
-           if(st.includes("buscando")) setStatus("Listo ✅"); }catch(e){}
-    }
-  }, 35000);
-  return __activeSearchId;
-}
-
-function isSearchStale_(id){
-  return id !== __activeSearchId;
-}
-
-function endSearchGuard_(){
-  try{ if(__watchdogTimer) clearTimeout(__watchdogTimer); }catch(e){}
-  __watchdogTimer = null;
-}
 
 function withTimeout_(promise, ms, label){
   let t;
@@ -641,15 +592,6 @@ async function retryWithTimeout_(fn, opts){
     }
   }
   throw lastErr;
-}
-
-async function safeRetryWithTimeout_(fn, opts, fallbackValue){
-  try{
-    return await retryWithTimeout_(fn, opts);
-  }catch(e){
-    console.warn(`Fallo/timeout en ${opts?.label || "operacion"}, usando fallback:`, e);
-    return fallbackValue;
-  }
 }
 
   // ======================================================
@@ -904,7 +846,7 @@ async function safeRetryWithTimeout_(fn, opts, fallbackValue){
         document.getElementById("code").value = codeNow;
         toast_("Encontrando codigo: " + codeNow);
         const btn = document.querySelector('#btnBuscarCodigo') || document.querySelector('button[onclick*="buscar"]');
-        if(btn){ btn.click(); } else { await window.window.buscar && window.buscar(); }
+        if(btn){ btn.click(); } else { await window.buscar(); }
         return;
       }
       if(fVeh || fAnio || fMod || fMot || fDes){
@@ -924,7 +866,7 @@ async function safeRetryWithTimeout_(fn, opts, fallbackValue){
         if(parsed.hasEncontrar){
           toast_("Encontrando codigo: " + code);
           const btn = document.querySelector('#btnBuscarCodigo') || document.querySelector('button[onclick*="buscar"]');
-        if(btn){ btn.click(); } else { await window.window.buscar && window.buscar(); }
+        if(btn){ btn.click(); } else { await window.buscar(); }
         }else{
           toast_("Codigo listo: " + code + ". Ahora di 'encontrar'.");
         }
@@ -1747,99 +1689,79 @@ function uniqueJoin_(arr, sep=" / "){
 }
 
 
-    // ======================================================
-  // ✅ Optimizado: resolveOriginals_ (paralelo + cancelacion + logging)
-  // ======================================================
   async function resolveOriginals_(codeNorm){
-    console.time("resolveOriginals_");
-    console.log(`Buscando originals para: ${codeNorm}`);
-
-    // 🔴 Cancelar peticion anterior si existe
-    try{
-      if(currentAbortController) currentAbortController.abort();
-    }catch(e){}
-    currentAbortController = new AbortController();
-
-    try{
-      // Ejecutar consultas en paralelo (cambios + cambios_v2)
-      const promises = CAMBIOS_TABLES.map(async (t) => {
-        const start = Date.now();
-        console.log(`Consultando tabla: ${t}`);
-
-        try{
-          const { data, error } = await supabase
-            .from(t)
-            .select("original_norm")
-            .or(`original_norm.eq.${codeNorm},cambio_norm.eq.${codeNorm}`)
-            .limit(100);
-
-          const ms = Date.now() - start;
-          console.log(`Tabla ${t}: ${(data?.length||0)} filas en ${ms}ms`);
-
-          if(error){
-            console.error(`Error en tabla ${t}:`, error);
-            return { t, data: [], ok: false };
-          }
-          return { t, data: data || [], ok: true };
-
-        }catch(tableErr){
-          // Si fue abortado, lo propagamos para cortar todo
-          if(tableErr && (tableErr.name === "AbortError" || String(tableErr).includes("AbortError"))){
-            console.log("Consulta cancelada (AbortError).");
-            throw tableErr;
-          }
-          console.error(`Excepcion en tabla ${t}:`, tableErr);
-          return { t, data: [], ok: false };
-        }
-      });
-
-      const results = await Promise.all(promises);
-
-      let all = [];
-      let okCount = 0;
-      results.forEach(r=>{
-        if(r?.ok) okCount++;
-        if(r?.data?.length) all = all.concat(r.data);
-      });
-
-      const originals = unique_((all || []).map(x => x.original_norm).filter(Boolean));
-      console.log(`Total originals encontrados: ${originals.length}`);
-      console.timeEnd("resolveOriginals_");
-
-      // Si TODO fallo, fallback
-      if(okCount === 0){
-        console.warn("Todas las consultas fallaron, usando fallback (codeNorm).");
-        return [codeNorm];
-      }
-
-      return originals.length === 0 ? [codeNorm] : originals;
-
-    } catch (e) {
-      console.error("Error general en resolveOriginals_:", e);
-      try{ console.timeEnd("resolveOriginals_"); }catch(_){}
-      // Fallback
-      return [codeNorm];
-    } finally {
-      // No ponemos currentAbortController = null aqui porque podria abortarse desde otra busqueda.
-      // Se mantiene como referencia del ultimo controlador activo.
+    let all = [];
+    for(const t of CAMBIOS_TABLES){
+      const { data, error } = await supabase
+        .from(t)
+        .select("original_norm")
+        .or(`original_norm.eq.${codeNorm},cambio_norm.eq.${codeNorm}`)
+        .limit(5000);
+      if(error) throw error;
+      all = all.concat(data || []);
     }
+
+    const originals = unique_((all || []).map(x => x.original_norm).filter(Boolean));
+    if(originals.length === 0) return [codeNorm];
+    return originals;
   }
 
-  // ✅ Timeout especifico para resolveOriginals_
-  async function resolveOriginalsWithTimeout_(codeNorm, timeoutMs = 15000){
-  // ✅ Nunca "rompe" la busqueda: si se tarda, devolvemos fallback [codeNorm]
-  const fallback = [codeNorm];
-
-  try{
-    return await Promise.race([
-      resolveOriginals_(codeNorm),
-      new Promise((resolve)=> setTimeout(()=> resolve(fallback), timeoutMs))
-    ]);
-  }catch(e){
-    // AbortError o cualquier otro: devolvemos fallback para mantener la app viva
-    console.warn(`resolveOriginalsWithTimeout_ fallo, usando fallback:`, e);
-    return fallback;
+  async function fetchCambiosByOriginals_(originalNorms){
+  let all = [];
+  for(const t of CAMBIOS_TABLES){
+    const { data, error } = await supabase
+      .from(t)
+      .select("cambio, owner, posicion")
+      .in("original_norm", originalNorms)
+      .limit(5000);
+    if(error) throw error;
+    all = all.concat(data || []);
   }
+
+  // ✅ DEDUPE FUERTE: 1 fila por "cambio" (sin importar owner)
+  // ✅ Si hay varios owner, los unimos en un solo campo
+  const map = new Map(); // key=cambioNorm -> { cambio, owners:Set, posicion }
+  for(const r of (all || [])){
+    const cambioRaw = (r?.cambio ?? "");
+    const key = normCodeCell_(cambioRaw);
+    if(!key) continue;
+
+    if(!map.has(key)){
+      map.set(key, {
+        cambio: String(cambioRaw || "").trim(),
+        owners: new Set(),
+        posicion: String(r?.posicion || "").trim()
+      });
+    }
+    const obj = map.get(key);
+    const owner = String(r?.owner || "").trim();
+    if(owner) obj.owners.add(owner);
+
+    // si una posicion viene vacia y otra no, guarda la mejor
+    const pos = String(r?.posicion || "").trim();
+    if(!obj.posicion && pos) obj.posicion = pos;
+  }
+
+  let merged = Array.from(map.values()).map(x => ({
+    cambio: x.cambio,
+    owner: uniqueJoin_(Array.from(x.owners), " / "),
+    posicion: x.posicion
+  }));
+
+  // orden simple
+  merged.sort((a,b)=>{
+    const pa = String(a?.posicion||"");
+    const pb = String(b?.posicion||"");
+    if(pa && pb && pa !== pb) return pa.localeCompare(pb);
+    return String(a?.cambio||"").localeCompare(String(b?.cambio||""));
+  });
+
+  const rows = merged.map(r => ([
+    r.cambio || "",
+    r.owner || ""
+  ]));
+
+  return { headers: ["cambio", "owner"], rows };
 }
 
 
@@ -1943,7 +1865,7 @@ function uniqueJoin_(arr, sep=" / "){
         ci.value = String(code||"").toUpperCase();
         ci.focus();
       }
-      if(typeof window.buscar === 'function') { await window.window.buscar && window.buscar(); } else { try{ document.getElementById('btnBuscar')?.click(); }catch(e){} }
+      if(typeof window.buscar === 'function') { await window.buscar(); } else { try{ document.getElementById('btnBuscar')?.click(); }catch(e){} }
       try{ toggleAcc('cardSimilitud', false); }catch(e){}
       try{ toggleAcc('cardProducto', true); }catch(e){}
     }catch(e){}
@@ -2281,7 +2203,7 @@ const vehCount = (lastPayload.tablas.vehicles_full?.rows||[]).length;
     try{ window.scrollTo({ top: 0, behavior: "smooth" }); }catch(e){ window.scrollTo(0,0); }
     // ejecutar busqueda OEM
     try{
-      await window.window.buscar && window.buscar();
+      await window.buscar();
     }catch(e){
       // fallback
       const btn = document.querySelector('button[onclick*="buscar"]');
@@ -2314,175 +2236,137 @@ window.limpiar = function(){
   };
 
     window.buscar = async function(){
-  const t0 = performance.now();
+    const t0 = performance.now();
 
-  // ✅ Si por alguna razon quedo pegado, liberamos despues de 35s (watchdog).
-  // ✅ Si el usuario intenta buscar de nuevo mientras esta buscando, NO ignoramos:
-  //    reiniciamos la busqueda (cancelacion logica).
-  const searchId = startSearchGuard_("buscar");
+    // evita doble click / doble llamada que a veces deja la pagina en 'Buscando...'
+    if (window.__isSearching) return;
 
-  const raw0 = (document.getElementById("code")?.value || "").trim();
-  const raw = raw0.toUpperCase();
-  try{ const ci=document.getElementById("code"); if(ci) ci.value = raw; }catch(e){}
-  if(!raw){
-    setStatus("Escribe un codigo.");
-    endSearchGuard_();
-    return;
-  }
+    const raw0 = (document.getElementById("code")?.value || "").trim();
+    const raw = raw0.toUpperCase();
+    try{ const ci=document.getElementById("code"); if(ci) ci.value = raw; }catch(e){}
+    if(!raw){ setStatus("Escribe un codigo."); return; }
 
-  // ✅ Asegura que el pais/ciudad del perfil esten cargados para guardar country en search_events
-  await ensureMarketLoaded_();
+    // ✅ Asegura que el pais/ciudad del perfil esten cargados para guardar country en search_events
+    await ensureMarketLoaded_();
 
-  // ✅ Permitir buscar muchas veces: marcamos como buscando (UI) pero si vuelve a buscar, se reinicia (nuevo searchId)
-  window.__isSearching = true;
-  try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=true; }catch(e){}
+    window.__isSearching = true;
+    try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=true; }catch(e){}
 
-  const norm = normalizeCode_(raw);
+    const norm = normalizeCode_(raw);
+    const candidates = unique_([ raw, raw.toUpperCase(), norm ]).filter(Boolean);
 
-  setStatus("Buscando...");
+    setStatus("Buscando...");
 
-  try{
-    // si ya arrancó otra busqueda, aborta esta (cancelacion logica)
-    if(isSearchStale_(searchId)) return;
-
-    const codigoMostrado = raw;
-
-    // ✅ originals desde cambios + cambios_v2 (con timeout + cancelacion real)
-    let originalNorms = [norm];
     try{
-      originalNorms = await resolveOriginalsWithTimeout_(norm, 15000);
-    }catch(e){
-      console.warn("Fallo/timeout en resolveOriginals_, usando fallback:", e);
-      originalNorms = [norm];
-    }
+      const codigoMostrado = candidates[0] || raw;
 
-    if(isSearchStale_(searchId)) return;
+      // ✅ originals desde cambios + cambios_v2
+      const originalNorms = await retryWithTimeout_(()=> resolveOriginals_(norm), { timeoutMs: 25000, label: 'originals', retries: 1 });
 
-    // ✅ vehicles desde datos_vehiculares + datos_vehiculares_v2
-    // ✅ cambios desde cambios + cambios_v2
-    const [veh, camb] = await safeRetryWithTimeout_(()=> Promise.all([
-      fetchVehiclesByOriginals_(originalNorms),
-      fetchCambiosByOriginals_(originalNorms),
-    ]), { timeoutMs: 30000, label: 'vehicles/cambios', retries: 1 }, [[], []]);
+      // ✅ vehicles desde datos_vehiculares + datos_vehiculares_v2
+      // ✅ cambios desde cambios + cambios_v2
+      const [veh, camb] = await retryWithTimeout_(()=> Promise.all([
+        fetchVehiclesByOriginals_(originalNorms),
+        fetchCambiosByOriginals_(originalNorms),
+      ]), { timeoutMs: 30000, label: 'vehicles/cambios', retries: 1 });
 
-    if(isSearchStale_(searchId)) return;
+      const payload = {
+        codigo: codigoMostrado,
+        codigo_norm: norm,
+        original_norms: originalNorms,
+        productUrl: buildGoogleUrl_(codigoMostrado),
+        tablas: { vehicles: veh, cambios: camb }
+      };
 
-    const payload = {
-      codigo: codigoMostrado,
-      codigo_norm: norm,
-      original_norms: originalNorms,
-      productUrl: buildGoogleUrl_(codigoMostrado),
-      tablas: { vehicles: veh, cambios: camb }
-    };
+      render(payload);
 
-    render(payload);
-
-    // ✅ Ofertas activas para este codigo (no bloquea la UI si falla)
-    try{
+      // ✅ Ofertas activas para este codigo
       lastOffersError = '';
-      const offers = await retryWithTimeout_(()=> fetchOffersByOriginals_(originalNorms, norm), { timeoutMs: 20000, label: 'offers', retries: 1 });
-      if(!isSearchStale_(searchId)){
-        lastOffers = offers;
-        renderOffersIntoProducto_(lastOffers);
-      }
-    }catch(e){
-      // no tumbar la busqueda
-      lastOffers = [];
-      lastOffersError = (e?.message || String(e||""));
-      if(!isSearchStale_(searchId)) renderOffersIntoProducto_([]);
-    }
+      lastOffers = await retryWithTimeout_(()=> fetchOffersByOriginals_(originalNorms, norm), { timeoutMs: 20000, label: 'offers', retries: 1 });
+      renderOffersIntoProducto_(lastOffers);
 
-    const vehCount = (veh && Array.isArray(veh.rows)) ? veh.rows.length : 0;
-    const cambCount = (camb && Array.isArray(camb.rows)) ? camb.rows.length : 0;
-    const totalResults = vehCount + cambCount;
-    const resultStatus = totalResults > 0 ? "found" : "not_found";
+      const vehCount = (veh && Array.isArray(veh.rows)) ? veh.rows.length : 0;
+      const cambCount = (camb && Array.isArray(camb.rows)) ? camb.rows.length : 0;
+      const totalResults = vehCount + cambCount;
+      const resultStatus = totalResults > 0 ? "found" : "not_found";
 
-    // ✅ SIMILITUD: si NO hay resultados, sugerimos codigos parecidos
-    if(!isSearchStale_(searchId)){
+      // ✅ SIMILITUD: si NO hay resultados, sugerimos codigos parecidos
       if(resultStatus === "not_found"){
         try{
           const sim = await retryWithTimeout_(()=> fetchSimilitudByPrefix_(norm), { timeoutMs: 15000, label: 'similitud', retries: 0 });
-          if(!isSearchStale_(searchId)){
-            renderSimilitud_(sim, norm);
-            try{ toggleAcc('cardSimilitud', true); }catch(e){}
-          }
+          renderSimilitud_(sim, norm);
+          try{ toggleAcc('cardSimilitud', true); }catch(e){}
         }catch(e){
           try{ renderSimilitud_([], norm); }catch(_){}
         }
       }else{
         try{ renderSimilitud_([], norm); }catch(e){}
       }
-    }
 
-    const pos = extractBestPosition_(veh);
-    const catFromPos = classifyCategoryFromPosition_(pos);
-    const category = catFromPos || classifyCategory_(raw);
 
-    const vehSummary = extractVehicleSummary_(veh);
+      const pos = extractBestPosition_(veh);
+      const catFromPos = classifyCategoryFromPosition_(pos);
+      const category = catFromPos || classifyCategory_(raw);
 
-    const t1 = performance.now();
-    const responseMs = Math.round(t1 - t0);
+      const vehSummary = extractVehicleSummary_(veh);
 
-    // log en background (con timeout corto)
-    safeLogSearchEvent_({
-      queryRaw: raw,
-      queryType: "oem",
-      normalizedQuery: norm,
-      category,
-      resultStatus,
-      resultsCount: totalResults,
-      responseTimeMs: responseMs,
-      meta: {
-        original_norms_count: Array.isArray(originalNorms) ? originalNorms.length : 0,
-        vehicles_count: vehCount,
-        cambios_count: cambCount,
-        position_sample: pos || null,
-        category_source: catFromPos ? "posicion" : "query",
-        vehicle_make: vehSummary?.make || null,
-        vehicle_model: vehSummary?.model || null,
-        vehicle_year_from: vehSummary?.year_from || null,
-        vehicle_year_to: vehSummary?.year_to || null,
-        vehicle_engine: vehSummary?.engine || null,
-        vehicle_serie: vehSummary?.serie || null,
-        used_vehicle_tables: VEH_TABLES,
-        used_cambios_tables: CAMBIOS_TABLES
-      }
-    });
+      const t1 = performance.now();
+      const responseMs = Math.round(t1 - t0);
 
-    // ✅ limpiar inputs luego de buscar por codigo
-    clearInputsAfterCodeSearch_();
+      safeLogSearchEvent_({
+        queryRaw: raw,
+        queryType: "oem",
+        normalizedQuery: norm,
+        category,
+        resultStatus,
+        resultsCount: totalResults,
+        responseTimeMs: responseMs,
+        meta: {
+          original_norms_count: Array.isArray(originalNorms) ? originalNorms.length : 0,
+          vehicles_count: vehCount,
+          cambios_count: cambCount,
+          position_sample: pos || null,
+          category_source: catFromPos ? "posicion" : "query",
+          vehicle_make: vehSummary?.make || null,
+          vehicle_model: vehSummary?.model || null,
+          vehicle_year_from: vehSummary?.year_from || null,
+          vehicle_year_to: vehSummary?.year_to || null,
+          vehicle_engine: vehSummary?.engine || null,
+          vehicle_serie: vehSummary?.serie || null,
+          used_vehicle_tables: VEH_TABLES,
+          used_cambios_tables: CAMBIOS_TABLES
+        }
+      });
 
-  }catch(e){
-    console.error(e);
-    if(!isSearchStale_(searchId)){
+      // ✅ limpiar inputs luego de buscar por codigo
+      clearInputsAfterCodeSearch_();
+
+    }catch(e){
+      console.error(e);
       setStatus("Error: " + (e && e.message ? e.message : e));
       alert("Error consultando: " + (e && e.message ? e.message : e));
-    }
 
-    const t1 = performance.now();
-    safeLogSearchEvent_({
-      queryRaw: raw,
-      queryType: "oem",
-      normalizedQuery: norm,
-      category: classifyCategory_(raw),
-      resultStatus: "unknown",
-      resultsCount: 0,
-      responseTimeMs: Math.round(t1 - t0),
-      meta: { error: (e && e.message) ? e.message : String(e) }
-    });
-  }finally{
-    // Solo el ultimo searchId puede liberar UI
-    if(!isSearchStale_(searchId)){
+      const t1 = performance.now();
+      safeLogSearchEvent_({
+        queryRaw: raw,
+        queryType: "oem",
+        normalizedQuery: norm,
+        category: classifyCategory_(raw),
+        resultStatus: "unknown",
+        resultsCount: 0,
+        responseTimeMs: Math.round(t1 - t0),
+        meta: { error: (e && e.message) ? e.message : String(e) }
+      });
+    }finally{
       window.__isSearching = false;
       try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
+      // Si por alguna razon se quedo en "Buscando...", lo llevamos a estado listo.
       try{
         const st = (document.getElementById("status")?.textContent || "");
         if(st.toLowerCase().includes("buscando")) setStatus("Listo ✅");
       }catch(e){}
-      endSearchGuard_();
     }
-  }
-};
+  };
 
   // ======================================================
   // ✅ Ofertas: buscar y renderizar debajo de Vehicles/Cambios
