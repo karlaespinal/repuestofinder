@@ -2271,10 +2271,6 @@ window.limpiar = function(){
 
     window.buscar = async function(){
   const t0 = performance.now();
-
-  // ✅ Si por alguna razon quedo pegado, liberamos despues de 35s (watchdog).
-  // ✅ Si el usuario intenta buscar de nuevo mientras esta buscando, NO ignoramos:
-  //    reiniciamos la busqueda (cancelacion logica).
   const searchId = startSearchGuard_("buscar");
 
   const raw0 = (document.getElementById("code")?.value || "").trim();
@@ -2286,36 +2282,68 @@ window.limpiar = function(){
     return;
   }
 
-  // ✅ Asegura que el pais/ciudad del perfil esten cargados para guardar country en search_events
-  await ensureMarketLoaded_();
+  // Asegura que el pais/ciudad del perfil esten cargados (para guardar country en search_events)
+  try{ await ensureMarketLoaded_(); }catch(e){}
 
-  // ✅ Permitir buscar muchas veces: marcamos como buscando (UI) pero si vuelve a buscar, se reinicia (nuevo searchId)
+  // Marcamos como buscando solo para mostrar estado/spinner, pero NO queremos bloquear nuevas busquedas por mucho tiempo.
   window.__isSearching = true;
   try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=true; }catch(e){}
+  setStatus("Buscando...");
 
   const norm = normalizeCode_(raw);
 
-  setStatus("Buscando...");
+  let released = false;
+  const releaseUI_ = () => {
+    if(released) return;
+    released = true;
+    if(isSearchStale_(searchId)) return; // solo el ultimo puede liberar UI
+    window.__isSearching = false;
+    try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
+    try{
+      const st = (document.getElementById("status")?.textContent || "");
+      if(st.toLowerCase().includes("buscando")) setStatus("Listo ✅");
+    }catch(e){}
+    endSearchGuard_();
+  };
 
   try{
-    // si ya arrancó otra busqueda, aborta esta (cancelacion logica)
-    if(isSearchStale_(searchId)) return;
+    if(isSearchStale_(searchId)) { releaseUI_(); return; }
 
     const codigoMostrado = raw;
 
-    // ✅ originals desde cambios + cambios_v2
-    const originalNorms = await retryWithTimeout_(()=> resolveOriginals_(norm), { timeoutMs: 25000, label: 'originals', retries: 1 });
+    // 1) ORIGINALS (con fallback para evitar que se quede pegado)
+    let originalNorms = [norm];
+    try{
+      originalNorms = await retryWithTimeout_(
+        () => resolveOriginals_(norm),
+        { timeoutMs: 45000, label: 'originals', retries: 1 }
+      );
+      if(!Array.isArray(originalNorms) || originalNorms.length === 0) originalNorms = [norm];
+    }catch(e){
+      console.warn("resolveOriginals_ fallo/timeout, usando fallback:", e);
+      originalNorms = [norm];
+    }
 
-    if(isSearchStale_(searchId)) return;
+    if(isSearchStale_(searchId)) { releaseUI_(); return; }
 
-    // ✅ vehicles desde datos_vehiculares + datos_vehiculares_v2
-    // ✅ cambios desde cambios + cambios_v2
-    const [veh, camb] = await retryWithTimeout_(()=> Promise.all([
-      fetchVehiclesByOriginals_(originalNorms),
-      fetchCambiosByOriginals_(originalNorms),
-    ]), { timeoutMs: 30000, label: 'vehicles/cambios', retries: 1 });
+    // 2) VEHICLES + CAMBIOS (si falla/timeout, devolvemos vacio y seguimos; no queremos colgar la app)
+    let veh = { headers: [], rows: [] };
+    let camb = { headers: [], rows: [] };
+    try{
+      const res = await retryWithTimeout_(
+        () => Promise.all([
+          fetchVehiclesByOriginals_(originalNorms),
+          fetchCambiosByOriginals_(originalNorms),
+        ]),
+        { timeoutMs: 60000, label: 'vehicles/cambios', retries: 0 }
+      );
+      veh = res?.[0] || veh;
+      camb = res?.[1] || camb;
+    }catch(e){
+      console.warn("vehicles/cambios fallo/timeout, continuando con vacio:", e);
+    }
 
-    if(isSearchStale_(searchId)) return;
+    if(isSearchStale_(searchId)) { releaseUI_(); return; }
 
     const payload = {
       codigo: codigoMostrado,
@@ -2325,33 +2353,51 @@ window.limpiar = function(){
       tablas: { vehicles: veh, cambios: camb }
     };
 
+    // 3) Render principal (esto es lo importante). Una vez renderiza, LIBERAMOS la UI.
     render(payload);
-
-    // ✅ Ofertas activas para este codigo (no bloquea la UI si falla)
-    try{
-      lastOffersError = '';
-      const offers = await retryWithTimeout_(()=> fetchOffersByOriginals_(originalNorms, norm), { timeoutMs: 20000, label: 'offers', retries: 1 });
-      if(!isSearchStale_(searchId)){
-        lastOffers = offers;
-        renderOffersIntoProducto_(lastOffers);
-      }
-    }catch(e){
-      // no tumbar la busqueda
-      lastOffers = [];
-      lastOffersError = (e?.message || String(e||""));
-      if(!isSearchStale_(searchId)) renderOffersIntoProducto_([]);
-    }
 
     const vehCount = (veh && Array.isArray(veh.rows)) ? veh.rows.length : 0;
     const cambCount = (camb && Array.isArray(camb.rows)) ? camb.rows.length : 0;
     const totalResults = vehCount + cambCount;
     const resultStatus = totalResults > 0 ? "found" : "not_found";
 
-    // ✅ SIMILITUD: si NO hay resultados, sugerimos codigos parecidos
-    if(!isSearchStale_(searchId)){
-      if(resultStatus === "not_found"){
+    // ✅ Limpiar inputs y liberar UI INMEDIATAMENTE al terminar el render principal
+    clearInputsAfterCodeSearch_();
+    setStatus(totalResults > 0 ? "Listo ✅" : "Sin resultados (Listo ✅)");
+    releaseUI_();
+
+    // 4) Tareas secundarias en background (NO deben bloquear el proximo buscar)
+    //    - Ofertas (si no hay, simplemente no muestra nada)
+    //    - Similitud solo si no hay resultados
+    //    - Log del evento (si falla, no molesta)
+    setTimeout(async ()=>{
+      // si ya hay otra busqueda activa, no hacemos nada
+      if(isSearchStale_(searchId)) return;
+
+      // Ofertas activas
+      try{
+        lastOffersError = '';
+        const offers = await retryWithTimeout_(
+          ()=> fetchOffersByOriginals_(originalNorms, norm),
+          { timeoutMs: 20000, label: 'offers', retries: 0 }
+        );
+        if(!isSearchStale_(searchId)){
+          lastOffers = offers;
+          renderOffersIntoProducto_(lastOffers);
+        }
+      }catch(e){
+        lastOffers = [];
+        lastOffersError = (e?.message || String(e||""));
+        if(!isSearchStale_(searchId)) renderOffersIntoProducto_([]);
+      }
+
+      // Similitud (solo si no hubo resultados)
+      if(!isSearchStale_(searchId) && resultStatus === "not_found"){
         try{
-          const sim = await retryWithTimeout_(()=> fetchSimilitudByPrefix_(norm), { timeoutMs: 15000, label: 'similitud', retries: 0 });
+          const sim = await retryWithTimeout_(
+            ()=> fetchSimilitudByPrefix_(norm),
+            { timeoutMs: 15000, label: 'similitud', retries: 0 }
+          );
           if(!isSearchStale_(searchId)){
             renderSimilitud_(sim, norm);
             try{ toggleAcc('cardSimilitud', true); }catch(e){}
@@ -2360,77 +2406,69 @@ window.limpiar = function(){
           try{ renderSimilitud_([], norm); }catch(_){}
         }
       }else{
-        try{ renderSimilitud_([], norm); }catch(e){}
+        try{ if(!isSearchStale_(searchId)) renderSimilitud_([], norm); }catch(e){}
       }
-    }
 
-    const pos = extractBestPosition_(veh);
-    const catFromPos = classifyCategoryFromPosition_(pos);
-    const category = catFromPos || classifyCategory_(raw);
+      // Log (background)
+      try{
+        const pos = extractBestPosition_(veh);
+        const catFromPos = classifyCategoryFromPosition_(pos);
+        const category = catFromPos || classifyCategory_(raw);
+        const vehSummary = extractVehicleSummary_(veh);
+        const responseMs = Math.round(performance.now() - t0);
 
-    const vehSummary = extractVehicleSummary_(veh);
-
-    const t1 = performance.now();
-    const responseMs = Math.round(t1 - t0);
-
-    // log en background (con timeout corto)
-    safeLogSearchEvent_({
-      queryRaw: raw,
-      queryType: "oem",
-      normalizedQuery: norm,
-      category,
-      resultStatus,
-      resultsCount: totalResults,
-      responseTimeMs: responseMs,
-      meta: {
-        original_norms_count: Array.isArray(originalNorms) ? originalNorms.length : 0,
-        vehicles_count: vehCount,
-        cambios_count: cambCount,
-        position_sample: pos || null,
-        category_source: catFromPos ? "posicion" : "query",
-        vehicle_make: vehSummary?.make || null,
-        vehicle_model: vehSummary?.model || null,
-        vehicle_year_from: vehSummary?.year_from || null,
-        vehicle_year_to: vehSummary?.year_to || null,
-        vehicle_engine: vehSummary?.engine || null,
-        vehicle_serie: vehSummary?.serie || null,
-        used_vehicle_tables: VEH_TABLES,
-        used_cambios_tables: CAMBIOS_TABLES
+        safeLogSearchEvent_({
+          queryRaw: raw,
+          queryType: "oem",
+          normalizedQuery: norm,
+          category,
+          resultStatus,
+          resultsCount: totalResults,
+          responseTimeMs: responseMs,
+          meta: {
+            original_norms_count: Array.isArray(originalNorms) ? originalNorms.length : 0,
+            vehicles_count: vehCount,
+            cambios_count: cambCount,
+            position_sample: pos || null,
+            category_source: catFromPos ? "posicion" : "query",
+            vehicle_make: vehSummary?.make || null,
+            vehicle_model: vehSummary?.model || null,
+            vehicle_year_from: vehSummary?.year_from || null,
+            vehicle_year_to: vehSummary?.year_to || null,
+            vehicle_engine: vehSummary?.engine || null,
+            vehicle_serie: vehSummary?.serie || null,
+            used_vehicle_tables: VEH_TABLES,
+            used_cambios_tables: CAMBIOS_TABLES
+          }
+        });
+      }catch(e){
+        // no-op
       }
-    });
-
-    // ✅ limpiar inputs luego de buscar por codigo
-    clearInputsAfterCodeSearch_();
+    }, 0);
 
   }catch(e){
     console.error(e);
     if(!isSearchStale_(searchId)){
-      setStatus("Error: " + (e && e.message ? e.message : e));
-      alert("Error consultando: " + (e && e.message ? e.message : e));
+      // Evitar alertas que "bloqueen" la app. Solo status.
+      setStatus("Error consultando (se libero la app): " + (e && e.message ? e.message : e));
     }
 
-    const t1 = performance.now();
-    safeLogSearchEvent_({
-      queryRaw: raw,
-      queryType: "oem",
-      normalizedQuery: norm,
-      category: classifyCategory_(raw),
-      resultStatus: "unknown",
-      resultsCount: 0,
-      responseTimeMs: Math.round(t1 - t0),
-      meta: { error: (e && e.message) ? e.message : String(e) }
-    });
+    try{
+      safeLogSearchEvent_({
+        queryRaw: raw,
+        queryType: "oem",
+        normalizedQuery: norm,
+        category: classifyCategory_(raw),
+        resultStatus: "unknown",
+        resultsCount: 0,
+        responseTimeMs: Math.round(performance.now() - t0),
+        meta: { error: (e && e.message) ? e.message : String(e) }
+      });
+    }catch(_){}
+
   }finally{
-    // Solo el ultimo searchId puede liberar UI
-    if(!isSearchStale_(searchId)){
-      window.__isSearching = false;
-      try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
-      try{
-        const st = (document.getElementById("status")?.textContent || "");
-        if(st.toLowerCase().includes("buscando")) setStatus("Listo ✅");
-      }catch(e){}
-      endSearchGuard_();
-    }
+    // Asegura liberar aunque algo raro pase
+    releaseUI_();
   }
 };
 
