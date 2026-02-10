@@ -34,12 +34,19 @@
                   var(--bg);
       color:var(--txt);
     }
-    .wrap{max-width:1600px;width:min(1600px, 100%);margin:0 auto;padding:16px 2px 30px}
+    .wrap{max-width:1600px;width:min(1600px, 100%);margin:0 auto;padding:96px 2px 30px}
     .topbar{
       display:flex;align-items:center;justify-content:space-between;gap:12px;
       padding:12px 12px;border:1px solid var(--line);background:var(--card);
       border-radius:var(--r2);box-shadow:var(--shadow);backdrop-filter: blur(10px);
-      position:sticky;top:10px;z-index:20;
+
+      /* ✅ FIX: header siempre fijo (no se mueve al hacer scroll) */
+      position:fixed;
+      top:10px;
+      left:50%;
+      transform:translateX(-50%);
+      width:min(1600px, calc(100% - 32px));
+      z-index:100;
     }
     .brand{display:flex;align-items:center;gap:10px}
     .logo{
