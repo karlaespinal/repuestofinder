@@ -487,7 +487,22 @@
 
   const SUPABASE_URL = "https://pjkbipdjxxxzjiuyfkaq.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_G7uvRyHNLSew2HKJY_h6ag_M2NZDYx4";
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // === Abort controller global para cancelar peticiones en vuelo ===
+  let currentAbortController = null;
+
+  // ✅ Cliente Supabase con fetch "abort-aware" (si currentAbortController existe, se aplica signal)
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: {
+      fetch: (input, init = {}) => {
+        try{
+          if(currentAbortController && !init.signal){
+            init.signal = currentAbortController.signal;
+          }
+        }catch(e){}
+        return fetch(input, init);
+      }
+    }
+  });
 
   // ✅ Tablas (v1 + v2)
   const VEH_TABLES = ["datos_vehiculares", "datos_vehiculares_v2"];
@@ -1723,23 +1738,105 @@ function uniqueJoin_(arr, sep=" / "){
 }
 
 
+    // ======================================================
+  // ✅ Optimizado: resolveOriginals_ (paralelo + cancelacion + logging)
+  // ======================================================
   async function resolveOriginals_(codeNorm){
-    let all = [];
-    for(const t of CAMBIOS_TABLES){
-      const { data, error } = await supabase
-        .from(t)
-        .select("original_norm")
-        .or(`original_norm.eq.${codeNorm},cambio_norm.eq.${codeNorm}`)
-        .limit(5000);
-      if(error) throw error;
-      all = all.concat(data || []);
-    }
+    console.time("resolveOriginals_");
+    console.log(`Buscando originals para: ${codeNorm}`);
 
-    const originals = unique_((all || []).map(x => x.original_norm).filter(Boolean));
-    if(originals.length === 0) return [codeNorm];
-    return originals;
+    // 🔴 Cancelar peticion anterior si existe
+    try{
+      if(currentAbortController) currentAbortController.abort();
+    }catch(e){}
+    currentAbortController = new AbortController();
+
+    try{
+      // Ejecutar consultas en paralelo (cambios + cambios_v2)
+      const promises = CAMBIOS_TABLES.map(async (t) => {
+        const start = Date.now();
+        console.log(`Consultando tabla: ${t}`);
+
+        try{
+          const { data, error } = await supabase
+            .from(t)
+            .select("original_norm")
+            .or(`original_norm.eq.${codeNorm},cambio_norm.eq.${codeNorm}`)
+            .limit(100);
+
+          const ms = Date.now() - start;
+          console.log(`Tabla ${t}: ${(data?.length||0)} filas en ${ms}ms`);
+
+          if(error){
+            console.error(`Error en tabla ${t}:`, error);
+            return { t, data: [], ok: false };
+          }
+          return { t, data: data || [], ok: true };
+
+        }catch(tableErr){
+          // Si fue abortado, lo propagamos para cortar todo
+          if(tableErr && (tableErr.name === "AbortError" || String(tableErr).includes("AbortError"))){
+            console.log("Consulta cancelada (AbortError).");
+            throw tableErr;
+          }
+          console.error(`Excepcion en tabla ${t}:`, tableErr);
+          return { t, data: [], ok: false };
+        }
+      });
+
+      const results = await Promise.all(promises);
+
+      let all = [];
+      let okCount = 0;
+      results.forEach(r=>{
+        if(r?.ok) okCount++;
+        if(r?.data?.length) all = all.concat(r.data);
+      });
+
+      const originals = unique_((all || []).map(x => x.original_norm).filter(Boolean));
+      console.log(`Total originals encontrados: ${originals.length}`);
+      console.timeEnd("resolveOriginals_");
+
+      // Si TODO fallo, fallback
+      if(okCount === 0){
+        console.warn("Todas las consultas fallaron, usando fallback (codeNorm).");
+        return [codeNorm];
+      }
+
+      return originals.length === 0 ? [codeNorm] : originals;
+
+    } catch (e) {
+      console.error("Error general en resolveOriginals_:", e);
+      try{ console.timeEnd("resolveOriginals_"); }catch(_){}
+      // Fallback
+      return [codeNorm];
+    } finally {
+      // No ponemos currentAbortController = null aqui porque podria abortarse desde otra busqueda.
+      // Se mantiene como referencia del ultimo controlador activo.
+    }
   }
 
+  // ✅ Timeout especifico para resolveOriginals_
+  async function resolveOriginalsWithTimeout_(codeNorm, timeoutMs = 15000){
+    return new Promise(async (resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        try{
+          // si se vence el timeout, intentamos abortar la request en vuelo
+          if(currentAbortController) currentAbortController.abort();
+        }catch(e){}
+        reject(new Error(`Timeout resolveOriginals_ - ${timeoutMs}ms`));
+      }, timeoutMs);
+
+      try{
+        const result = await resolveOriginals_(codeNorm);
+        clearTimeout(timeoutId);
+        resolve(result);
+      }catch(e){
+        clearTimeout(timeoutId);
+        reject(e);
+      }
+    });
+  }
   async function fetchCambiosByOriginals_(originalNorms){
   let all = [];
   for(const t of CAMBIOS_TABLES){
@@ -2303,8 +2400,14 @@ window.limpiar = function(){
 
     const codigoMostrado = raw;
 
-    // ✅ originals desde cambios + cambios_v2
-    const originalNorms = await retryWithTimeout_(()=> resolveOriginals_(norm), { timeoutMs: 25000, label: 'originals', retries: 1 });
+    // ✅ originals desde cambios + cambios_v2 (con timeout + cancelacion real)
+    let originalNorms = [norm];
+    try{
+      originalNorms = await resolveOriginalsWithTimeout_(norm, 15000);
+    }catch(e){
+      console.warn("Fallo/timeout en resolveOriginals_, usando fallback:", e);
+      originalNorms = [norm];
+    }
 
     if(isSearchStale_(searchId)) return;
 
