@@ -488,10 +488,6 @@
   const SUPABASE_URL = "https://pjkbipdjxxxzjiuyfkaq.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_G7uvRyHNLSew2HKJY_h6ag_M2NZDYx4";
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  // Cliente separado para lecturas (evita sesiones/estado pegado y mejora búsquedas consecutivas)
-  const supabaseData = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
-  });
 
   // ✅ Tablas (v1 + v2)
   const VEH_TABLES = ["datos_vehiculares", "datos_vehiculares_v2"];
@@ -1572,7 +1568,7 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
     }
 
     try{
-      const { data, error } = await supabaseData
+      const { data, error } = await supabase
         .from("profiles")
         .select("country, city")
         .eq("id", userId)
@@ -1617,7 +1613,7 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
     const anonId = getOrCreateAnonId_();
     const userId = await getCurrentUserId_();
 
-    const { data, error } = await supabaseData
+    const { data, error } = await supabase
       .from("search_sessions")
       .insert([{
         user_id: userId,
@@ -1728,20 +1724,13 @@ function uniqueJoin_(arr, sep=" / "){
 
 
   async function resolveOriginals_(codeNorm){
-    // Optimizado: evitar .or() (a veces no usa índices) y consultar en paralelo por columna.
-    // Esto reduce mucho los timeouts y permite búsquedas consecutivas sin refrescar.
-    const tasks = [];
-    for(const t of CAMBIOS_TABLES){
-      tasks.push(
-        supabaseData.from(t).select("original_norm").eq("original_norm", codeNorm).limit(2000),
-        supabaseData.from(t).select("original_norm").eq("cambio_norm",   codeNorm).limit(2000)
-      );
-    }
-
-    const results = await Promise.all(tasks);
     let all = [];
-    for(const r of results){
-      const { data, error } = r || {};
+    for(const t of CAMBIOS_TABLES){
+      const { data, error } = await supabase
+        .from(t)
+        .select("original_norm")
+        .or(`original_norm.eq.${codeNorm},cambio_norm.eq.${codeNorm}`)
+        .limit(5000);
       if(error) throw error;
       all = all.concat(data || []);
     }
@@ -1751,12 +1740,10 @@ function uniqueJoin_(arr, sep=" / "){
     return originals;
   }
 
-}
-
   async function fetchCambiosByOriginals_(originalNorms){
   let all = [];
   for(const t of CAMBIOS_TABLES){
-    const { data, error } = await supabaseData
+    const { data, error } = await supabase
       .from(t)
       .select("cambio, owner, posicion")
       .in("original_norm", originalNorms)
@@ -1832,7 +1819,7 @@ function uniqueJoin_(arr, sep=" / "){
     let all = [];
 
     for(const t of VEH_TABLES){
-      const { data, error } = await supabaseData
+      const { data, error } = await supabase
         .from(t)
         .select(selectCols)
         .ilike("original_norm", prefix + "%")
@@ -1931,7 +1918,7 @@ async function fetchVehiclesByOriginals_(originalNorms){
 
   let all = [];
   for(const t of VEH_TABLES){
-    const { data, error } = await supabaseData
+    const { data, error } = await supabase
       .from(t)
       .select(selectCols)
       .in("original_norm", originalNorms)
@@ -2317,7 +2304,7 @@ window.limpiar = function(){
     const codigoMostrado = raw;
 
     // ✅ originals desde cambios + cambios_v2
-    const originalNorms = await retryWithTimeout_(()=> resolveOriginals_(norm), { timeoutMs: 45000, label: 'originals', retries: 2 });
+    const originalNorms = await retryWithTimeout_(()=> resolveOriginals_(norm), { timeoutMs: 25000, label: 'originals', retries: 1 });
 
     if(isSearchStale_(searchId)) return;
 
@@ -2326,7 +2313,7 @@ window.limpiar = function(){
     const [veh, camb] = await retryWithTimeout_(()=> Promise.all([
       fetchVehiclesByOriginals_(originalNorms),
       fetchCambiosByOriginals_(originalNorms),
-    ]), { timeoutMs: 45000, label: 'vehicles/cambios', retries: 2 });
+    ]), { timeoutMs: 30000, label: 'vehicles/cambios', retries: 1 });
 
     if(isSearchStale_(searchId)) return;
 
@@ -2485,7 +2472,7 @@ function isOfferActive_(o){
     const { data, error } = await q;
     if(error){
       // fallback si la tabla no tiene created_at u order falla
-      const { data: d2, error: e2 } = await supabaseData
+      const { data: d2, error: e2 } = await supabase
         .from(OFFERS_TABLE)
         .select(selectCols)
         .in("original_norm", norms)
@@ -2759,7 +2746,7 @@ function isOfferActive_(o){
 
       // 3) Insertar mensaje
       if(status) status.textContent = "Enviando mensaje...";
-      const { error: e3 } = await supabaseData
+      const { error: e3 } = await supabase
         .from(OFFERS_MESSAGES_TABLE)
         .insert([{ chat_id: chatId, sender_id: user.id, body: msg }]);
 
