@@ -1751,93 +1751,70 @@ function uniqueJoin_(arr, sep=" / "){
   // ✅ Optimizado: resolveOriginals_ (paralelo + cancelacion + logging)
   // ======================================================
   async function resolveOriginals_(codeNorm){
-    console.time("resolveOriginals_");
-    console.log(`Buscando originals para: ${codeNorm}`);
+  console.time("resolveOriginals_");
 
-    // 🔴 Cancelar peticion anterior si existe
-    try{
-      if(currentAbortController) currentAbortController.abort();
-    }catch(e){}
-    currentAbortController = new AbortController();
+  // 🔴 Cancelar petición anterior (si el cliente de Supabase soporta AbortController)
+  try{
+    if(currentAbortController) currentAbortController.abort();
+  }catch(e){}
+  currentAbortController = new AbortController();
 
-    try{
-      // Ejecutar consultas en paralelo (cambios + cambios_v2)
-      const promises = CAMBIOS_TABLES.map(async (t) => {
-        const start = Date.now();
-        console.log(`Consultando tabla: ${t}`);
+  try{
+    // Estrategia: buscar primero en cambios_v2 (más probable)
+    const { data: dataV2, error: errorV2 } = await supabase
+      .from("cambios_v2")
+      .select("original_norm")
+      .or(`original_norm.eq.${codeNorm},cambio_norm.eq.${codeNorm}`)
+      .limit(50);
 
-        try{
-          const { data, error } = await supabase
-            .from(t)
-            .select("original_norm")
-            .or(`original_norm.eq.${codeNorm},cambio_norm.eq.${codeNorm}`)
-            .limit(100);
+    if(errorV2){
+      console.warn("Error en cambios_v2, intentando cambios:", errorV2);
 
-          const ms = Date.now() - start;
-          console.log(`Tabla ${t}: ${(data?.length||0)} filas en ${ms}ms`);
+      // Fallback a cambios (opcional)
+      const { data: dataV1, error: errorV1 } = await supabase
+        .from("cambios")
+        .select("original_norm")
+        .or(`original_norm.eq.${codeNorm},cambio_norm.eq.${codeNorm}`)
+        .limit(50);
 
-          if(error){
-            console.error(`Error en tabla ${t}:`, error);
-            return { t, data: [], ok: false };
-          }
-          return { t, data: data || [], ok: true };
-
-        }catch(tableErr){
-          // Si fue abortado, lo propagamos para cortar todo
-          if(tableErr && (tableErr.name === "AbortError" || String(tableErr).includes("AbortError"))){
-            console.log("Consulta cancelada (AbortError).");
-            throw tableErr;
-          }
-          console.error(`Excepcion en tabla ${t}:`, tableErr);
-          return { t, data: [], ok: false };
-        }
-      });
-
-      const results = await Promise.all(promises);
-
-      let all = [];
-      let okCount = 0;
-      results.forEach(r=>{
-        if(r?.ok) okCount++;
-        if(r?.data?.length) all = all.concat(r.data);
-      });
-
-      const originals = unique_((all || []).map(x => x.original_norm).filter(Boolean));
-      console.log(`Total originals encontrados: ${originals.length}`);
-      console.timeEnd("resolveOriginals_");
-
-      // Si TODO fallo, fallback
-      if(okCount === 0){
-        console.warn("Todas las consultas fallaron, usando fallback (codeNorm).");
+      if(errorV1){
+        console.warn("Error tambien en cambios:", errorV1);
+        console.timeEnd("resolveOriginals_");
         return [codeNorm];
       }
 
-      return originals.length === 0 ? [codeNorm] : originals;
-
-    } catch (e) {
-      console.error("Error general en resolveOriginals_:", e);
-      try{ console.timeEnd("resolveOriginals_"); }catch(_){}
-      // Fallback
-      return [codeNorm];
-    } finally {
-      // No ponemos currentAbortController = null aqui porque podria abortarse desde otra busqueda.
-      // Se mantiene como referencia del ultimo controlador activo.
+      const originals1 = unique_((dataV1 || []).map(x => x.original_norm).filter(Boolean));
+      console.timeEnd("resolveOriginals_");
+      return originals1.length === 0 ? [codeNorm] : originals1;
     }
+
+    const originals2 = unique_((dataV2 || []).map(x => x.original_norm).filter(Boolean));
+    console.timeEnd("resolveOriginals_");
+    return originals2.length === 0 ? [codeNorm] : originals2;
+
+  }catch(e){
+    console.error("Error en resolveOriginals_:", e);
+    console.timeEnd("resolveOriginals_");
+    return [codeNorm];
+  }finally{
+    try{ currentAbortController = null; }catch(e){}
   }
+}
 
   // ✅ Timeout especifico para resolveOriginals_
-  async function resolveOriginalsWithTimeout_(codeNorm, timeoutMs = 15000){
-  // ✅ Nunca "rompe" la busqueda: si se tarda, devolvemos fallback [codeNorm]
+  async function resolveOriginalsWithTimeout_(codeNorm, timeoutMs = 45000){ // 45 segundos
   const fallback = [codeNorm];
 
   try{
     return await Promise.race([
       resolveOriginals_(codeNorm),
-      new Promise((resolve)=> setTimeout(()=> resolve(fallback), timeoutMs))
+      new Promise(resolve => setTimeout(() => {
+        console.warn("resolveOriginals_ timeout despues de", timeoutMs, "ms, usando fallback");
+        resolve(fallback);
+      }, timeoutMs))
     ]);
   }catch(e){
-    // AbortError o cualquier otro: devolvemos fallback para mantener la app viva
-    console.warn(`resolveOriginalsWithTimeout_ fallo, usando fallback:`, e);
+    console.warn("resolveOriginalsWithTimeout_ fallo, usando fallback:", e);
     return fallback;
   }
 }
@@ -1961,20 +1938,39 @@ async function fetchVehiclesByOriginals_(originalNorms){
   const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion, original_norm";
 
   let all = [];
-  for(const t of VEH_TABLES){
-    const { data, error } = await supabase
-      .from(t)
+
+  // Intentar primero datos_vehiculares_v2 (principal)
+  try{
+    const { data: dataV2, error: errorV2 } = await supabase
+      .from("datos_vehiculares_v2")
       .select(selectCols)
       .in("original_norm", originalNorms)
-      .limit(5000);
+      .limit(3000);
 
-    if(error) throw error;
-    all = all.concat(data || []);
+    if(!errorV2 && dataV2) all = all.concat(dataV2);
+    if(errorV2) console.warn("Error en datos_vehiculares_v2:", errorV2);
+  }catch(e){
+    console.warn("Excepcion en datos_vehiculares_v2:", e);
+  }
+
+  // Si no hay resultados, intentar datos_vehiculares (fallback - opcional)
+  if(all.length === 0){
+    try{
+      const { data: dataV1, error: errorV1 } = await supabase
+        .from("datos_vehiculares")
+        .select(selectCols)
+        .in("original_norm", originalNorms)
+        .limit(3000);
+
+      if(!errorV1 && dataV1) all = all.concat(dataV1);
+      if(errorV1) console.warn("Error en datos_vehiculares:", errorV1);
+    }catch(e){
+      console.warn("Excepcion en datos_vehiculares:", e);
+    }
   }
 
   if(all.length === 0) return { headers: [], rows: [] };
-
-  // ✅ 1) Sacar una descripcion "canon" del grupo (si existe al menos 1)
+// ✅ 1) Sacar una descripcion "canon" del grupo (si existe al menos 1)
   const canonDesc = (all.find(r => String(r?.descripcion ?? "").trim() !== "")?.descripcion ?? "").toString().trim();
 
   // ✅ 2) Dedupe para no repetir la misma fila si existe en v1 y v2
@@ -2037,6 +2033,92 @@ async function fetchVehiclesByOriginals_(originalNorms){
 
   return { headers, rows };
 }
+
+
+/* ======================================================
+ * ✅ Cambios por originals (tolerante + fallback v1)
+ * ====================================================== */
+async function fetchCambiosByOriginals_(originalNorms){
+  const selectCols = "original, cambio, descripcion, notas";
+  let all = [];
+
+  // Intentar cambios_v2 primero
+  try{
+    const { data: dataV2, error: errorV2 } = await supabase
+      .from("cambios_v2")
+      .select(selectCols)
+      .in("original_norm", originalNorms)
+      .limit(1000);
+
+    if(!errorV2 && dataV2) all = all.concat(dataV2);
+    if(errorV2) console.warn("Error en cambios_v2:", errorV2);
+  }catch(e){
+    console.warn("Excepcion en cambios_v2:", e);
+  }
+
+  // Si no hay resultados, intentar cambios (fallback)
+  if(all.length === 0){
+    try{
+      const { data: dataV1, error: errorV1 } = await supabase
+        .from("cambios")
+        .select(selectCols)
+        .in("original_norm", originalNorms)
+        .limit(1000);
+
+      if(!errorV1 && dataV1) all = all.concat(dataV1);
+      if(errorV1) console.warn("Error en cambios:", errorV1);
+    }catch(e){
+      console.warn("Excepcion en cambios:", e);
+    }
+  }
+
+  if(all.length === 0){
+    return { headers: [], rows: [] };
+  }
+
+  // Dedupe
+  all = dedupeByKey_(all, r => [
+    r.original,
+    r.cambio,
+    r.descripcion,
+    r.notas
+  ].map(normCell_).join("|"));
+
+  // Ordenar por original
+  all.sort((a,b) => {
+    const va = String(a?.original || "");
+    const vb = String(b?.original || "");
+    return va.localeCompare(vb);
+  });
+
+  const headers = ["Original", "Cambio", "Descripcion", "Notas"];
+  const rows = all.map(obj => [
+    obj?.original || "",
+    obj?.cambio || "",
+    obj?.descripcion || "",
+    obj?.notas || ""
+  ]);
+
+  return { headers, rows };
+}
+
+/* ======================================================
+ * ✅ Búsqueda de emergencia: nunca se queda colgada
+ * ====================================================== */
+async function emergencySearch_(codeNorm){
+  return {
+    codigo: codeNorm,
+    codigo_norm: codeNorm,
+    original_norms: [codeNorm],
+    productUrl: buildGoogleUrl_(codeNorm),
+    tablas: {
+      vehicles: { headers: [], rows: [] },
+      cambios: { headers: [], rows: [] },
+      vehicles_full: { headers: [], rows: [] }
+    }
+  };
+}
+
 
 
   // ======================================================
@@ -2316,7 +2398,6 @@ window.limpiar = function(){
     window.buscar = async function(){
   const t0 = performance.now();
 
-  // ✅ Si por alguna razon quedo pegado, liberamos despues de 35s (watchdog).
   // ✅ Si el usuario intenta buscar de nuevo mientras esta buscando, NO ignoramos:
   //    reiniciamos la busqueda (cancelacion logica).
   const searchId = startSearchGuard_("buscar");
@@ -2333,40 +2414,63 @@ window.limpiar = function(){
   // ✅ Asegura que el pais/ciudad del perfil esten cargados para guardar country en search_events
   await ensureMarketLoaded_();
 
-  // ✅ Permitir buscar muchas veces: marcamos como buscando (UI) pero si vuelve a buscar, se reinicia (nuevo searchId)
+  // ✅ UI
   window.__isSearching = true;
   try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=true; }catch(e){}
 
   const norm = normalizeCode_(raw);
-
   setStatus("Buscando...");
 
+  // ✅ Indicador visual de busqueda larga
+  let longSearchTimer = setTimeout(() => {
+    if(!isSearchStale_(searchId)){
+      setStatus("Buscando... (puede tardar unos momentos)");
+      toast_("La busqueda esta tomando mas tiempo de lo habitual. Por favor espera...");
+    }
+  }, 8000);
+
   try{
-    // si ya arrancó otra busqueda, aborta esta (cancelacion logica)
     if(isSearchStale_(searchId)) return;
 
     const codigoMostrado = raw;
 
-    // ✅ originals desde cambios + cambios_v2 (con timeout + cancelacion real)
+    // ✅ Originals con timeout MUY generoso y multiples intentos
     let originalNorms = [norm];
-    try{
-      originalNorms = await resolveOriginalsWithTimeout_(norm, 15000);
-    }catch(e){
-      console.warn("Fallo/timeout en resolveOriginals_, usando fallback:", e);
-      originalNorms = [norm];
+    const maxAttempts = 3;
+
+    for(let attempt = 1; attempt <= maxAttempts; attempt++){
+      try{
+        originalNorms = await Promise.race([
+          resolveOriginalsWithTimeout_(norm, 45000), // 45s
+          new Promise(resolve => setTimeout(() => resolve([norm]), 45000))
+        ]);
+        break;
+      }catch(retryError){
+        if(attempt === maxAttempts){
+          console.warn("Todos los intentos fallaron, usando fallback:", retryError);
+          originalNorms = [norm];
+        }else{
+          console.warn(`Intento ${attempt} fallo, reintentando...`, retryError);
+          await new Promise(r => setTimeout(r, 2000 * attempt));
+        }
+      }
     }
 
     if(isSearchStale_(searchId)) return;
 
-    // ✅ vehicles desde datos_vehiculares + datos_vehiculares_v2
-    // ✅ cambios desde cambios + cambios_v2
-    const [veh, camb] = await safeRetryWithTimeout_(()=> Promise.all([
-      fetchVehiclesByOriginals_(originalNorms),
-      fetchCambiosByOriginals_(originalNorms),
-    ]), { timeoutMs: 30000, label: 'vehicles/cambios', retries: 1 }, [[], []]);
+    // ✅ Vehicles y cambios con timeouts separados (no tumban toda la busqueda)
+    const [veh, camb] = await Promise.all([
+      Promise.race([
+        fetchVehiclesByOriginals_(originalNorms),
+        new Promise(resolve => setTimeout(() => resolve({ headers: [], rows: [] }), 60000))
+      ]),
+      Promise.race([
+        fetchCambiosByOriginals_(originalNorms),
+        new Promise(resolve => setTimeout(() => resolve({ headers: [], rows: [] }), 45000))
+      ])
+    ]);
 
     if(isSearchStale_(searchId)) return;
-
     const payload = {
       codigo: codigoMostrado,
       codigo_norm: norm,
@@ -2471,6 +2575,44 @@ window.limpiar = function(){
       meta: { error: (e && e.message) ? e.message : String(e) }
     });
   }finally{
+    // Solo el ultimo searchId puede liberar UI
+    if(!isSearchStale_(searchId)){
+      window.__isSearching = false;
+      try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
+      try{
+        const st = (document.getElementById("status")?.textContent || "");
+        if(st.toLowerCase().includes("buscando")) setStatus("Listo ✅");
+      
+  }catch(e){
+    console.error(e);
+
+    if(!isSearchStale_(searchId)){
+      // Mostrar datos aunque sean parciales
+      const payload = await emergencySearch_(norm);
+      payload.codigo = raw;
+      payload.productUrl = buildGoogleUrl_(raw);
+      render(payload);
+
+      setStatus("Busqueda completada (resultados limitados)");
+      if(!(String(e?.message||"").toLowerCase().includes("timeout") || String(e?.name||"").includes("AbortError"))){
+        toast_("La busqueda encontro resultados limitados. Intenta con otro codigo.");
+      }
+    }
+
+    const t1 = performance.now();
+    safeLogSearchEvent_({
+      queryRaw: raw,
+      queryType: "oem",
+      normalizedQuery: norm,
+      category: classifyCategory_(raw),
+      resultStatus: "unknown",
+      resultsCount: 0,
+      responseTimeMs: Math.round(t1 - t0),
+      meta: { error: (e && e.message) ? e.message : String(e) }
+    });
+  }finally{
+    clearTimeout(longSearchTimer);
+
     // Solo el ultimo searchId puede liberar UI
     if(!isSearchStale_(searchId)){
       window.__isSearching = false;
