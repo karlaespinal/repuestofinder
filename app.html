@@ -295,7 +295,7 @@
       </div>
 
       <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-        <button class="btn" id="btnBuscarCodigo" onclick="buscar()">Buscar</button>
+        <button class="btn" id="btnBuscarCodigo" onclick="window.buscar && window.buscar()">Buscar</button>
         <button class="btn2" onclick="limpiar()">Limpiar</button>
         <button class="btn3" onclick="exportar()" id="btnExport" disabled>Exportar a Excel</button>
       </div>
@@ -880,7 +880,7 @@ async function retryWithTimeout_(fn, opts){
         document.getElementById("code").value = codeNow;
         toast_("Encontrando codigo: " + codeNow);
         const btn = document.querySelector('#btnBuscarCodigo') || document.querySelector('button[onclick*="buscar"]');
-        if(btn){ btn.click(); } else { await window.buscar(); }
+        if(btn){ btn.click(); } else { await window.window.buscar && window.buscar(); }
         return;
       }
       if(fVeh || fAnio || fMod || fMot || fDes){
@@ -900,7 +900,7 @@ async function retryWithTimeout_(fn, opts){
         if(parsed.hasEncontrar){
           toast_("Encontrando codigo: " + code);
           const btn = document.querySelector('#btnBuscarCodigo') || document.querySelector('button[onclick*="buscar"]');
-        if(btn){ btn.click(); } else { await window.buscar(); }
+        if(btn){ btn.click(); } else { await window.window.buscar && window.buscar(); }
         }else{
           toast_("Codigo listo: " + code + ". Ahora di 'encontrar'.");
         }
@@ -1899,7 +1899,7 @@ function uniqueJoin_(arr, sep=" / "){
         ci.value = String(code||"").toUpperCase();
         ci.focus();
       }
-      if(typeof window.buscar === 'function') { await window.buscar(); } else { try{ document.getElementById('btnBuscar')?.click(); }catch(e){} }
+      if(typeof window.buscar === 'function') { await window.window.buscar && window.buscar(); } else { try{ document.getElementById('btnBuscar')?.click(); }catch(e){} }
       try{ toggleAcc('cardSimilitud', false); }catch(e){}
       try{ toggleAcc('cardProducto', true); }catch(e){}
     }catch(e){}
@@ -2237,7 +2237,7 @@ const vehCount = (lastPayload.tablas.vehicles_full?.rows||[]).length;
     try{ window.scrollTo({ top: 0, behavior: "smooth" }); }catch(e){ window.scrollTo(0,0); }
     // ejecutar busqueda OEM
     try{
-      await window.buscar();
+      await window.window.buscar && window.buscar();
     }catch(e){
       // fallback
       const btn = document.querySelector('button[onclick*="buscar"]');
