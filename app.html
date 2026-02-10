@@ -643,6 +643,15 @@ async function retryWithTimeout_(fn, opts){
   throw lastErr;
 }
 
+async function safeRetryWithTimeout_(fn, opts, fallbackValue){
+  try{
+    return await retryWithTimeout_(fn, opts);
+  }catch(e){
+    console.warn(`Fallo/timeout en ${opts?.label || "operacion"}, usando fallback:`, e);
+    return fallbackValue;
+  }
+}
+
   // ======================================================
   // ✅ VOZ (busqueda por microfono) - APP
   //  - 1 vez por periodo del dia (mañana/tarde/noche) muestra ayuda (toast)
@@ -1818,81 +1827,19 @@ function uniqueJoin_(arr, sep=" / "){
 
   // ✅ Timeout especifico para resolveOriginals_
   async function resolveOriginalsWithTimeout_(codeNorm, timeoutMs = 15000){
-    return new Promise(async (resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        try{
-          // si se vence el timeout, intentamos abortar la request en vuelo
-          if(currentAbortController) currentAbortController.abort();
-        }catch(e){}
-        reject(new Error(`Timeout resolveOriginals_ - ${timeoutMs}ms`));
-      }, timeoutMs);
+  // ✅ Nunca "rompe" la busqueda: si se tarda, devolvemos fallback [codeNorm]
+  const fallback = [codeNorm];
 
-      try{
-        const result = await resolveOriginals_(codeNorm);
-        clearTimeout(timeoutId);
-        resolve(result);
-      }catch(e){
-        clearTimeout(timeoutId);
-        reject(e);
-      }
-    });
+  try{
+    return await Promise.race([
+      resolveOriginals_(codeNorm),
+      new Promise((resolve)=> setTimeout(()=> resolve(fallback), timeoutMs))
+    ]);
+  }catch(e){
+    // AbortError o cualquier otro: devolvemos fallback para mantener la app viva
+    console.warn(`resolveOriginalsWithTimeout_ fallo, usando fallback:`, e);
+    return fallback;
   }
-  async function fetchCambiosByOriginals_(originalNorms){
-  let all = [];
-  for(const t of CAMBIOS_TABLES){
-    const { data, error } = await supabase
-      .from(t)
-      .select("cambio, owner, posicion")
-      .in("original_norm", originalNorms)
-      .limit(5000);
-    if(error) throw error;
-    all = all.concat(data || []);
-  }
-
-  // ✅ DEDUPE FUERTE: 1 fila por "cambio" (sin importar owner)
-  // ✅ Si hay varios owner, los unimos en un solo campo
-  const map = new Map(); // key=cambioNorm -> { cambio, owners:Set, posicion }
-  for(const r of (all || [])){
-    const cambioRaw = (r?.cambio ?? "");
-    const key = normCodeCell_(cambioRaw);
-    if(!key) continue;
-
-    if(!map.has(key)){
-      map.set(key, {
-        cambio: String(cambioRaw || "").trim(),
-        owners: new Set(),
-        posicion: String(r?.posicion || "").trim()
-      });
-    }
-    const obj = map.get(key);
-    const owner = String(r?.owner || "").trim();
-    if(owner) obj.owners.add(owner);
-
-    // si una posicion viene vacia y otra no, guarda la mejor
-    const pos = String(r?.posicion || "").trim();
-    if(!obj.posicion && pos) obj.posicion = pos;
-  }
-
-  let merged = Array.from(map.values()).map(x => ({
-    cambio: x.cambio,
-    owner: uniqueJoin_(Array.from(x.owners), " / "),
-    posicion: x.posicion
-  }));
-
-  // orden simple
-  merged.sort((a,b)=>{
-    const pa = String(a?.posicion||"");
-    const pb = String(b?.posicion||"");
-    if(pa && pb && pa !== pb) return pa.localeCompare(pb);
-    return String(a?.cambio||"").localeCompare(String(b?.cambio||""));
-  });
-
-  const rows = merged.map(r => ([
-    r.cambio || "",
-    r.owner || ""
-  ]));
-
-  return { headers: ["cambio", "owner"], rows };
 }
 
 
@@ -2413,10 +2360,10 @@ window.limpiar = function(){
 
     // ✅ vehicles desde datos_vehiculares + datos_vehiculares_v2
     // ✅ cambios desde cambios + cambios_v2
-    const [veh, camb] = await retryWithTimeout_(()=> Promise.all([
+    const [veh, camb] = await safeRetryWithTimeout_(()=> Promise.all([
       fetchVehiclesByOriginals_(originalNorms),
       fetchCambiosByOriginals_(originalNorms),
-    ]), { timeoutMs: 30000, label: 'vehicles/cambios', retries: 1 });
+    ]), { timeoutMs: 30000, label: 'vehicles/cambios', retries: 1 }, [[], []]);
 
     if(isSearchStale_(searchId)) return;
 
@@ -3025,4 +2972,3 @@ function isOfferActive_(o){
 </script>
 </body>
 </html>
-
