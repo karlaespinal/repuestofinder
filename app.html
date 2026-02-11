@@ -487,50 +487,9 @@
 
   const SUPABASE_URL = "https://pjkbipdjxxxzjiuyfkaq.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_G7uvRyHNLSew2HKJY_h6ag_M2NZDYx4";
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // ✅ Cliente base (fallback)
-  window.__sbClientStatic = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  // ✅ Cliente por-busqueda (se re-crea en cada buscar() para evitar conexiones/requests colgadas tras inactividad)
-  function combineSignals_(signals){
-    try{
-      signals = (signals || []).filter(Boolean);
-      if(signals.length === 0) return undefined;
-      if(signals.length === 1) return signals[0];
-      // AbortSignal.any es soportado en navegadores modernos
-      if(typeof AbortSignal !== "undefined" && typeof AbortSignal.any === "function"){
-        return AbortSignal.any(signals);
-      }
-      // fallback: si no existe AbortSignal.any, usamos el primero
-      return signals[0];
-    }catch(e){
-      return signals?.[0];
-    }
-  }
-
-  function createSearchClient_(activeSignal){
-    try{
-      return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        global: {
-          fetch: (url, options={})=>{
-            const combined = combineSignals_([options?.signal, activeSignal]);
-            const opts = Object.assign({}, options, {
-              signal: combined,
-              cache: "no-store"
-            });
-            return fetch(url, opts);
-          }
-        }
-      });
-    }catch(e){
-      return window.__sbClientStatic;
-    }
-  }
-
-  function SB_(){
-    return window.__sbClient || window.__sbClientStatic;
-  }
-// ✅ Tablas (v1 + v2)
+  // ✅ Tablas (v1 + v2)
   const VEH_TABLES = ["datos_vehiculares", "datos_vehiculares_v2"];
   const CAMBIOS_TABLES = ["cambios", "cambios_v2"];
 
@@ -610,38 +569,19 @@ let __watchdogTimer = null;
 function startSearchGuard_(label){
   __searchSeq += 1;
   __activeSearchId = __searchSeq;
-
-  // Abortar cualquier busqueda anterior que aun este en vuelo (evita que se acumulen fetch colgados)
-  try{
-    if(window.__activeAbortController){
-      window.__activeAbortController.abort();
-    }
-  }catch(e){}
-  window.__activeAbortController = new AbortController();
-
-  
-  // Re-crear cliente Supabase para esta busqueda (reduce fallos tras inactividad)
-  try{ window.__sbClient = createSearchClient_(window.__activeAbortController.signal); }catch(e){ window.__sbClient = window.__sbClientStatic; }
-// watchdog de UI (no cancela la request por si sola, pero evita que se quede bloqueado)
+  // watchdog de UI (no cancela la request, pero evita que se quede bloqueado)
   try{ if(__watchdogTimer) clearTimeout(__watchdogTimer); }catch(e){}
   __watchdogTimer = setTimeout(()=>{
+    // si aun es la misma busqueda y sigue "buscando", liberamos UI
     if(window.__isSearching && __activeSearchId === __searchSeq){
-      console.warn("Watchdog: liberando UI por posible bloqueo/timeout", label);
-      try{ releaseUI_(); }catch(e){}
-      try{
-        const st=(document.getElementById("status")?.textContent||"").toLowerCase();
-        if(st.includes("buscando")) setStatus("Listo ✅");
-      }catch(e){}
+      try{ window.__isSearching = false; }catch(e){}
+      try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
+      try{ const st=(document.getElementById("status")?.textContent||"").toLowerCase();
+           if(st.includes("buscando")) setStatus("Listo ✅"); }catch(e){}
     }
   }, 35000);
-
   return __activeSearchId;
 }
-
-function getActiveSignal_(){
-  try{ return window.__activeAbortController?.signal; }catch(e){ return undefined; }
-}
-
 
 function isSearchStale_(id){
   return id !== __activeSearchId;
@@ -652,23 +592,15 @@ function endSearchGuard_(){
   __watchdogTimer = null;
 }
 
-function withTimeout_(promise, ms, label, abortController){
+function withTimeout_(promise, ms, label){
   let t;
   const timeoutP = new Promise((_, reject)=> {
-    t = setTimeout(()=> {
-      try{
-        if(abortController && !abortController.signal.aborted){
-          abortController.abort();
-        }
-      }catch(e){}
-      reject(new Error(`Timeout (${label||"operacion"}) - ${ms}ms`));
-    }, ms);
+    t = setTimeout(()=> reject(new Error(`Timeout (${label||"operacion"}) - ${ms}ms`)), ms);
   });
   return Promise.race([promise, timeoutP]).finally(()=> {
     try{ clearTimeout(t); }catch(e){}
   });
 }
-
 
 // Reintentos simples (solo en timeouts / fallos temporales)
 async function retryWithTimeout_(fn, opts){
@@ -680,11 +612,9 @@ async function retryWithTimeout_(fn, opts){
   let lastErr = null;
   for(let attempt=0; attempt<=retries; attempt++){
     try{
-      return await withTimeout_(Promise.resolve().then(fn), timeoutMs, label, opts?.abortController);
+      return await withTimeout_(Promise.resolve().then(fn), timeoutMs, label);
     }catch(e){
       lastErr = e;
-      // Si se aborto por una nueva busqueda, salir inmediatamente
-      try{ if(opts?.abortController?.signal?.aborted) throw lastErr; }catch(_e){ throw lastErr; }
       const msg = String(e?.message || e || "");
       const isTimeout = msg.toLowerCase().includes("timeout");
       if(attempt >= retries || !isTimeout){
@@ -1133,7 +1063,7 @@ async function retryWithTimeout_(fn, opts){
       const isDemo = params.get("demo") === "1";
       if(isDemo){ alert("En modo DEMO no se puede abrir el chat."); return; }
 
-      const { data } = await SB_().auth.getSession();
+      const { data } = await supabase.auth.getSession();
       const user = data?.session?.user;
       if(!user){
         alert("Debes iniciar sesion para abrir el chat.");
@@ -1207,7 +1137,7 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
 });
 
   window.cerrarSesion = async function(){
-    try{ await SB_().auth.signOut(); }catch(e){}
+    try{ await supabase.auth.signOut(); }catch(e){}
     window.location.href = "/?stay=1";
   };
 
@@ -1217,7 +1147,7 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
 
     const params = new URLSearchParams(window.location.search);
     const isDemo = params.get("demo") === "1";
-    const { data } = await SB_().auth.getSession();
+    const { data } = await supabase.auth.getSession();
 
     const hasSession = !!(data && data.session);
 
@@ -1611,7 +1541,7 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
 
   async function getCurrentUserId_(){
     try{
-      const { data } = await SB_().auth.getSession();
+      const { data } = await supabase.auth.getSession();
       return data?.session?.user?.id || null;
     }catch(e){
       return null;
@@ -1638,7 +1568,7 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
     }
 
     try{
-      const { data, error } = await SB_()
+      const { data, error } = await supabase
         .from("profiles")
         .select("country, city")
         .eq("id", userId)
@@ -1683,7 +1613,7 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
     const anonId = getOrCreateAnonId_();
     const userId = await getCurrentUserId_();
 
-    const { data, error } = await SB_()
+    const { data, error } = await supabase
       .from("search_sessions")
       .insert([{
         user_id: userId,
@@ -1728,7 +1658,7 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
         }
       };
 
-      const { error } = await SB_().from("search_events").insert([payload]);
+      const { error } = await supabase.from("search_events").insert([payload]);
       if(error) console.warn("No pude insertar search_event:", error.message);
     }catch(e){
       console.warn("Error logSearchEvent_:", e?.message || e);
@@ -1793,14 +1723,13 @@ function uniqueJoin_(arr, sep=" / "){
 }
 
 
-  async function resolveOriginals_(codeNorm, signal){
+  async function resolveOriginals_(codeNorm){
     let all = [];
     for(const t of CAMBIOS_TABLES){
-      const { data, error } = await SB_()
+      const { data, error } = await supabase
         .from(t)
         .select("original_norm")
         .or(`original_norm.eq.${codeNorm},cambio_norm.eq.${codeNorm}`)
-        .abortSignal(signal)
         .limit(5000);
       if(error) throw error;
       all = all.concat(data || []);
@@ -1811,14 +1740,13 @@ function uniqueJoin_(arr, sep=" / "){
     return originals;
   }
 
-  async function fetchCambiosByOriginals_(originalNorms, signal){
+  async function fetchCambiosByOriginals_(originalNorms){
   let all = [];
   for(const t of CAMBIOS_TABLES){
-    const { data, error } = await SB_()
+    const { data, error } = await supabase
       .from(t)
       .select("cambio, owner, posicion")
       .in("original_norm", originalNorms)
-      .abortSignal(signal)
       .limit(5000);
     if(error) throw error;
     all = all.concat(data || []);
@@ -1891,7 +1819,7 @@ function uniqueJoin_(arr, sep=" / "){
     let all = [];
 
     for(const t of VEH_TABLES){
-      const { data, error } = await SB_()
+      const { data, error } = await supabase
         .from(t)
         .select(selectCols)
         .ilike("original_norm", prefix + "%")
@@ -1984,17 +1912,16 @@ function uniqueJoin_(arr, sep=" / "){
 
 
 
-async function fetchVehiclesByOriginals_(originalNorms, signal){
+async function fetchVehiclesByOriginals_(originalNorms){
   // Solo traemos columnas necesarias (y descripcion)
   const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion, original_norm";
 
   let all = [];
   for(const t of VEH_TABLES){
-    const { data, error } = await SB_()
+    const { data, error } = await supabase
       .from(t)
       .select(selectCols)
       .in("original_norm", originalNorms)
-      .abortSignal(signal)
       .limit(5000);
 
     if(error) throw error;
@@ -2109,12 +2036,12 @@ async function fetchVehiclesByOriginals_(originalNorms, signal){
     }
   }
 
-  async function fetchVehiclesByFilters_(f, signal){
+  async function fetchVehiclesByFilters_(f){
     const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion, original_norm";
 
     let all = [];
     for(const t of VEH_TABLES){
-      let q = SB_().from(t).select(selectCols).abortSignal(signal).limit(5000);
+      let q = supabase.from(t).select(selectCols).limit(5000);
 
       if(f.vehiculo) q = q.ilike("vehiculo", "%" + f.vehiculo + "%");
       if(f.modelo)   q = q.ilike("modelo",   "%" + f.modelo   + "%");
@@ -2345,8 +2272,6 @@ window.limpiar = function(){
     window.buscar = async function(){
   const t0 = performance.now();
   const searchId = startSearchGuard_("buscar");
-  const abortController = window.__activeAbortController;
-  const signal = getActiveSignal_();
 
   const raw0 = (document.getElementById("code")?.value || "").trim();
   const raw = raw0.toUpperCase();
@@ -2390,8 +2315,8 @@ window.limpiar = function(){
     let originalNorms = [norm];
     try{
       originalNorms = await retryWithTimeout_(
-        () => resolveOriginals_(norm, signal),
-        { timeoutMs: 45000, label: 'originals', retries: 1, abortController }
+        () => resolveOriginals_(norm),
+        { timeoutMs: 45000, label: 'originals', retries: 1 }
       );
       if(!Array.isArray(originalNorms) || originalNorms.length === 0) originalNorms = [norm];
     }catch(e){
@@ -2407,10 +2332,10 @@ window.limpiar = function(){
     try{
       const res = await retryWithTimeout_(
         () => Promise.all([
-          fetchVehiclesByOriginals_(originalNorms, signal),
-          fetchCambiosByOriginals_(originalNorms, signal),
+          fetchVehiclesByOriginals_(originalNorms),
+          fetchCambiosByOriginals_(originalNorms),
         ]),
-        { timeoutMs: 60000, label: 'vehicles/cambios', retries: 0, abortController }
+        { timeoutMs: 60000, label: 'vehicles/cambios', retries: 0 }
       );
       veh = res?.[0] || veh;
       camb = res?.[1] || camb;
@@ -2449,37 +2374,29 @@ window.limpiar = function(){
       // si ya hay otra busqueda activa, no hacemos nada
       if(isSearchStale_(searchId)) return;
 
-      // Ofertas (solo si NO hubo resultados; si no hay ofertas, no insistimos)
-      if(!isSearchStale_(searchId) && totalResults === 0){
-        try{
-          lastOffersError = '';
-          const offers = await retryWithTimeout_(
-            ()=> fetchOffersByOriginals_(originalNorms, norm, signal),
-            { timeoutMs: 8000, label: 'offers', retries: 0, abortController }
-          );
-          if(!isSearchStale_(searchId)){
-            lastOffers = offers || [];
-            // Si no hay ofertas, simplemente ocultar (no mostrar warning, no seguir buscando nada)
-            if(lastOffers.length === 0){
-              lastOffersError = '';
-              renderOffersIntoProducto_([]);
-            }else{
-              renderOffersIntoProducto_(lastOffers);
-            }
-          }
-        }catch(e){
-          // No bloquear: si falla, ocultar ofertas y listo
-          lastOffers = [];
-          lastOffersError = '';
-          if(!isSearchStale_(searchId)) renderOffersIntoProducto_([]);
+      // Ofertas activas
+      try{
+        lastOffersError = '';
+        const offers = await retryWithTimeout_(
+          ()=> fetchOffersByOriginals_(originalNorms, norm),
+          { timeoutMs: 20000, label: 'offers', retries: 0 }
+        );
+        if(!isSearchStale_(searchId)){
+          lastOffers = offers;
+          renderOffersIntoProducto_(lastOffers);
         }
+      }catch(e){
+        lastOffers = [];
+        lastOffersError = (e?.message || String(e||""));
+        if(!isSearchStale_(searchId)) renderOffersIntoProducto_([]);
       }
-// Similitud (solo si no hubo resultados)
+
+      // Similitud (solo si no hubo resultados)
       if(!isSearchStale_(searchId) && resultStatus === "not_found"){
         try{
           const sim = await retryWithTimeout_(
             ()=> fetchSimilitudByPrefix_(norm),
-            { timeoutMs: 15000, label: 'similitud', retries: 0, abortController }
+            { timeoutMs: 15000, label: 'similitud', retries: 0 }
           );
           if(!isSearchStale_(searchId)){
             renderSimilitud_(sim, norm);
@@ -2573,7 +2490,7 @@ function isOfferActive_(o){
 }
 
 
-  async function fetchOffersByOriginals_(originalNorms, codeNorm, signal){
+  async function fetchOffersByOriginals_(originalNorms, codeNorm){
   // ✅ NO mostrar ofertas vencidas:
   //    - Activa si expires_at es NULL, o expires_at > ahora
   const norms = unique_([...(originalNorms||[]), codeNorm].filter(Boolean));
@@ -2582,19 +2499,18 @@ function isOfferActive_(o){
   const nowIso = new Date().toISOString();
 
   try{
-    let q = SB_()
+    let q = supabase
       .from(OFFERS_TABLE)
       .select(selectCols)
       .in("original_norm", norms)
       .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
-      .abortSignal(signal)
       .order("created_at", { ascending: false })
       .limit(25);
 
     const { data, error } = await q;
     if(error){
       // fallback si la tabla no tiene created_at u order falla
-      const { data: d2, error: e2 } = await SB_()
+      const { data: d2, error: e2 } = await supabase
         .from(OFFERS_TABLE)
         .select(selectCols)
         .in("original_norm", norms)
@@ -2722,7 +2638,7 @@ function isOfferActive_(o){
 
   async function notifyOfferInterest_(offerId, note){
     try{
-      const { data } = await SB_().auth.getSession();
+      const { data } = await supabase.auth.getSession();
       const token = data?.session?.access_token;
       if(!token) return;
 
@@ -2748,7 +2664,7 @@ function isOfferActive_(o){
 
   async function getSessionUser_(){
     try{
-      const { data } = await SB_().auth.getSession();
+      const { data } = await supabase.auth.getSession();
       return data?.session?.user || null;
     }catch(e){
       return null;
@@ -2805,7 +2721,7 @@ function isOfferActive_(o){
     }
 
     // Sesion
-    const { data } = await SB_().auth.getSession();
+    const { data } = await supabase.auth.getSession();
     const user = data?.session?.user;
     if(!user){
       alert("Debes iniciar sesion para enviar mensajes.");
@@ -2829,7 +2745,7 @@ function isOfferActive_(o){
       // 1) Buscar chat existente (offer_id + buyer_id)
       let chatId = null;
       {
-        const { data: rows, error } = await SB_()
+        const { data: rows, error } = await supabase
           .from(OFFERS_CHATS_TABLE)
           .select("id")
           .eq("offer_id", offerId)
@@ -2854,7 +2770,7 @@ function isOfferActive_(o){
           return;
         }
 
-        const { data: created, error: eIns } = await SB_()
+        const { data: created, error: eIns } = await supabase
           .from(OFFERS_CHATS_TABLE)
           .insert([{ offer_id: offerId, buyer_id: user.id, seller_id: sellerIdFromOffer }])
           .select("id")
@@ -2868,7 +2784,7 @@ function isOfferActive_(o){
 
       // 3) Insertar mensaje
       if(status) status.textContent = "Enviando mensaje...";
-      const { error: e3 } = await SB_()
+      const { error: e3 } = await supabase
         .from(OFFERS_MESSAGES_TABLE)
         .insert([{ chat_id: chatId, sender_id: user.id, body: msg }]);
 
@@ -3012,13 +2928,13 @@ function isOfferActive_(o){
 
 
   // ===== PRESENCIA ONLINE (APP) =====
-  const { data: ses } = await SB_().auth.getSession();
+  const { data: ses } = await supabase.auth.getSession();
   const user = ses?.session?.user;
 
   if (user) {
     const PRESENCE_CHANNEL = "rf-online-users";
 
-    const presenceChannel = SB_().channel(PRESENCE_CHANNEL, {
+    const presenceChannel = supabase.channel(PRESENCE_CHANNEL, {
       config: { presence: { key: user.id } }
     });
 
@@ -3034,7 +2950,7 @@ function isOfferActive_(o){
 
   await loadProfileMarket_();
 
-  SB_().auth.onAuthStateChange(async (event, session) => {
+  supabase.auth.onAuthStateChange(async (event, session) => {
     // ✅ No cerramos la App: solo ajustamos UI y bloqueamos mensajeria si no hay sesion
     await initAuth_();
     await updateOfferModalAuthUI_();
