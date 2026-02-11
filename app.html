@@ -632,55 +632,67 @@ async function withAbortTimeout_(promiseFn, timeoutMs, label, signal) {
     throw error;
   }
 }
+
 async function retryWithAbort_(fn, opts) {
   const retries = Number(opts?.retries ?? 1);
   const timeoutMs = Number(opts?.timeoutMs ?? 15000);
   const label = String(opts?.label ?? "operacion");
   const baseDelay = Number(opts?.baseDelay ?? 350);
-  const signal = opts?.signal;
+  const externalSignal = opts?.signal;
 
   let lastErr = null;
   
   for (let attempt = 0; attempt <= retries; attempt++) {
+    // Crear controller específico para este intento
+    const attemptController = new AbortController();
+    
+    // Combinar señal externa + señal de reintento
+    const attemptSignal = externalSignal ?
+      AbortSignal.any([externalSignal, attemptController.signal]) :
+      attemptController.signal;
+
     try {
-      // Verificar abort antes de cada intento
-      if (signal?.aborted) {
-        throw new Error(`Abortado durante reintentos: ${label}`);
+      if (externalSignal?.aborted) {
+        throw new Error(`Abortado por usuario: ${label}`);
       }
-      
-      return await withAbortTimeout_(
-        (s) => fn(s), 
-        timeoutMs, 
-        `${label} (intento ${attempt + 1})`, 
-        signal
+
+      const result = await withAbortTimeout_(
+        (s) => fn(s),
+        timeoutMs,
+        `${label} (intento ${attempt + 1}/${retries + 1})`,
+        attemptSignal
       );
+
+      attemptController.abort(); // Limpieza
+      return result;
+      
     } catch (e) {
+      attemptController.abort(); // Asegurar cancelación
       lastErr = e;
       
-      // Si fue abortado, no reintentamos
-      if (e?.message?.includes('Abortado') || signal?.aborted) {
+      // Si fue abortado por usuario, no reintentamos
+      if (e?.message?.includes('Abortado por usuario') || 
+          externalSignal?.aborted || 
+          e?.name === 'AbortError') {
         throw e;
       }
       
       const msg = String(e?.message || e || "");
       const isTimeout = msg.toLowerCase().includes("timeout");
       
+      // Si no es timeout o ya no hay reintentos, lanzar error
       if (attempt >= retries || !isTimeout) {
         throw lastErr;
       }
       
-      // backoff
+      // Backoff
       const wait = baseDelay * (attempt + 1);
       await new Promise(r => setTimeout(r, wait));
-      
-      // Verificar abort después del backoff
-      if (signal?.aborted) {
-        throw new Error(`Abortado después de backoff: ${label}`);
-      }
     }
   }
   throw lastErr;
 }
+
 
   // ======================================================
   // ✅ VOZ (busqueda por microfono) - APP
@@ -2253,6 +2265,67 @@ window.limpiar = function(){
     if(isMobile_()) setMobileDefault_();
   };
 
+  async function fetchCambiosByOriginals_(originalNorms, signal) {
+    let all = [];
+    for (const t of CAMBIOS_TABLES) {
+      const { data, error } = await supabase
+        .from(t)
+        .select("cambio, owner, posicion")
+        .in("original_norm", originalNorms)
+        .abortSignal(signal)
+        .limit(5000);
+  
+      if (error) {
+        if (error.name === 'AbortError' || error.message?.includes('abort')) throw error;
+        console.warn(`Error en ${t}:`, error.message);
+      }
+      all = all.concat(data || []);
+    }
+  
+    const map = new Map();
+    for (const r of (all || [])) {
+      const cambioRaw = (r?.cambio ?? "");
+      const key = normCodeCell_(cambioRaw);
+      if (!key) continue;
+  
+      if (!map.has(key)) {
+        map.set(key, {
+          cambio: String(cambioRaw || "").trim(),
+          owners: new Set(),
+          posicion: String(r?.posicion || "").trim()
+        });
+      }
+      const obj = map.get(key);
+      const owner = String(r?.owner || "").trim();
+      if (owner) obj.owners.add(owner);
+  
+      const pos = String(r?.posicion || "").trim();
+      if (!obj.posicion && pos) obj.posicion = pos;
+    }
+  
+    let merged = Array.from(map.values()).map(x => ({
+      cambio: x.cambio,
+      owner: uniqueJoin_(Array.from(x.owners), " / "),
+      posicion: x.posicion
+    }));
+  
+    merged.sort((a, b) => {
+      const pa = String(a?.posicion || "");
+      const pb = String(b?.posicion || "");
+      if (pa && pb && pa !== pb) return pa.localeCompare(pb);
+      return String(a?.cambio || "").localeCompare(String(b?.cambio || ""));
+    });
+  
+    const rows = merged.map(r => ([
+      r.cambio || "",
+      r.owner || ""
+    ]));
+  
+    return { headers: ["cambio", "owner"], rows };
+  }
+
+
+
     window.buscar = async function() {
   const t0 = performance.now();
   const guard = createSearchGuard();
@@ -2935,7 +3008,3 @@ function isOfferActive_(o){
 </script>
 </body>
 </html>
-
-
-
-
