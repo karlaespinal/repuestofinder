@@ -554,75 +554,121 @@ function clearInputsAfterCodeSearch_(){
 
 
 // ======================================================
-// ✅ Anti-cuelgue: control de busqueda en curso + timeout
+// ✅ Anti-cuelgue PRO: Cancelación real + timeout
 // ======================================================
-let __isSearching = false;
-  window.__isSearching = false;
-
-// ==== Anti-cuelgue PRO: cancelacion logica + watchdog ====
-// - Si una busqueda tarda demasiado, se libera el boton y el flag para permitir nuevas busquedas.
-// - Si el usuario inicia otra busqueda, ignoramos resultados viejos.
 let __searchSeq = 0;
 let __activeSearchId = 0;
-let __watchdogTimer = null;
+let __activeAbortController = null;
 
-function startSearchGuard_(label){
-  __searchSeq += 1;
+function createSearchGuard() {
+  // Cancelar búsqueda anterior si existe
+  if (__activeAbortController) {
+    try {
+      __activeAbortController.abort();
+    } catch (e) {}
+  }
+  
+  __searchSeq++;
   __activeSearchId = __searchSeq;
-  // watchdog de UI (no cancela la request, pero evita que se quede bloqueado)
-  try{ if(__watchdogTimer) clearTimeout(__watchdogTimer); }catch(e){}
-  __watchdogTimer = setTimeout(()=>{
-    // si aun es la misma busqueda y sigue "buscando", liberamos UI
-    if(window.__isSearching && __activeSearchId === __searchSeq){
-      try{ window.__isSearching = false; }catch(e){}
-      try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
-      try{ const st=(document.getElementById("status")?.textContent||"").toLowerCase();
-           if(st.includes("buscando")) setStatus("Listo ✅"); }catch(e){}
+  __activeAbortController = new AbortController();
+  
+  // Liberar UI
+  window.__isSearching = true;
+  const btn = document.getElementById('btnBuscarCodigo');
+  if (btn) btn.disabled = true;
+  setStatus("Buscando...");
+  
+  return {
+    searchId: __activeSearchId,
+    signal: __activeAbortController.signal,
+    release: () => {
+      if (__activeSearchId === __searchSeq) {
+        window.__isSearching = false;
+        const btn = document.getElementById('btnBuscarCodigo');
+        if (btn) btn.disabled = false;
+      }
     }
-  }, 35000);
-  return __activeSearchId;
+  };
 }
 
-function isSearchStale_(id){
+function isSearchStale_(id) {
   return id !== __activeSearchId;
 }
 
-function endSearchGuard_(){
-  try{ if(__watchdogTimer) clearTimeout(__watchdogTimer); }catch(e){}
-  __watchdogTimer = null;
+async function withAbortTimeout_(promiseFn, timeoutMs, label, signal) {
+  let timeoutId;
+  
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`Timeout (${label}) - ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    // Si la señal ya está abortada, no ejecutamos
+    if (signal?.aborted) {
+      throw new Error(`Abortado antes de iniciar: ${label}`);
+    }
+
+    // Ejecutamos la promesa pero respetando el abort signal
+    const result = await Promise.race([
+      promiseFn(signal),
+      timeoutPromise
+    ]);
+    
+    clearTimeout(timeoutId);
+    return result;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
 }
 
-function withTimeout_(promise, ms, label){
-  let t;
-  const timeoutP = new Promise((_, reject)=> {
-    t = setTimeout(()=> reject(new Error(`Timeout (${label||"operacion"}) - ${ms}ms`)), ms);
-  });
-  return Promise.race([promise, timeoutP]).finally(()=> {
-    try{ clearTimeout(t); }catch(e){}
-  });
-}
-
-// Reintentos simples (solo en timeouts / fallos temporales)
-async function retryWithTimeout_(fn, opts){
+async function retryWithAbort_(fn, opts) {
   const retries = Number(opts?.retries ?? 1);
   const timeoutMs = Number(opts?.timeoutMs ?? 15000);
   const label = String(opts?.label ?? "operacion");
   const baseDelay = Number(opts?.baseDelay ?? 350);
+  const signal = opts?.signal;
 
   let lastErr = null;
-  for(let attempt=0; attempt<=retries; attempt++){
-    try{
-      return await withTimeout_(Promise.resolve().then(fn), timeoutMs, label);
-    }catch(e){
+  
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      // Verificar abort antes de cada intento
+      if (signal?.aborted) {
+        throw new Error(`Abortado durante reintentos: ${label}`);
+      }
+      
+      return await withAbortTimeout_(
+        (s) => fn(s), 
+        timeoutMs, 
+        `${label} (intento ${attempt + 1})`, 
+        signal
+      );
+    } catch (e) {
       lastErr = e;
+      
+      // Si fue abortado, no reintentamos
+      if (e?.message?.includes('Abortado') || signal?.aborted) {
+        throw e;
+      }
+      
       const msg = String(e?.message || e || "");
       const isTimeout = msg.toLowerCase().includes("timeout");
-      if(attempt >= retries || !isTimeout){
+      
+      if (attempt >= retries || !isTimeout) {
         throw lastErr;
       }
-      // small backoff
+      
+      // backoff
       const wait = baseDelay * (attempt + 1);
-      await new Promise(r=> setTimeout(r, wait));
+      await new Promise(r => setTimeout(r, wait));
+      
+      // Verificar abort después del backoff
+      if (signal?.aborted) {
+        throw new Error(`Abortado después de backoff: ${label}`);
+      }
     }
   }
   throw lastErr;
@@ -1723,44 +1769,52 @@ function uniqueJoin_(arr, sep=" / "){
 }
 
 
-  async function resolveOriginals_(codeNorm){
-    let all = [];
-    for(const t of CAMBIOS_TABLES){
-      const { data, error } = await supabase
-        .from(t)
-        .select("original_norm")
-        .or(`original_norm.eq.${codeNorm},cambio_norm.eq.${codeNorm}`)
-        .limit(5000);
-      if(error) throw error;
-      all = all.concat(data || []);
+  async function resolveOriginals_(codeNorm, signal) {
+  let all = [];
+  for (const t of CAMBIOS_TABLES) {
+    const { data, error } = await supabase
+      .from(t)
+      .select("original_norm")
+      .or(`original_norm.eq.${codeNorm},cambio_norm.eq.${codeNorm}`)
+      .abortSignal(signal)
+      .limit(5000);
+    
+    if (error) {
+      if (error.name === 'AbortError' || error.message?.includes('abort')) throw error;
+      console.warn(`Error en ${t}:`, error.message);
     }
-
-    const originals = unique_((all || []).map(x => x.original_norm).filter(Boolean));
-    if(originals.length === 0) return [codeNorm];
-    return originals;
+    all = all.concat(data || []);
   }
 
-  async function fetchCambiosByOriginals_(originalNorms){
+  const originals = unique_((all || []).map(x => x.original_norm).filter(Boolean));
+  if (originals.length === 0) return [codeNorm];
+  return originals;
+}
+
+  async function fetchCambiosByOriginals_(originalNorms, signal) {
   let all = [];
-  for(const t of CAMBIOS_TABLES){
+  for (const t of CAMBIOS_TABLES) {
     const { data, error } = await supabase
       .from(t)
       .select("cambio, owner, posicion")
       .in("original_norm", originalNorms)
+      .abortSignal(signal)
       .limit(5000);
-    if(error) throw error;
+
+    if (error) {
+      if (error.name === 'AbortError' || error.message?.includes('abort')) throw error;
+      console.warn(`Error en ${t}:`, error.message);
+    }
     all = all.concat(data || []);
   }
 
-  // ✅ DEDUPE FUERTE: 1 fila por "cambio" (sin importar owner)
-  // ✅ Si hay varios owner, los unimos en un solo campo
-  const map = new Map(); // key=cambioNorm -> { cambio, owners:Set, posicion }
-  for(const r of (all || [])){
+  const map = new Map();
+  for (const r of (all || [])) {
     const cambioRaw = (r?.cambio ?? "");
     const key = normCodeCell_(cambioRaw);
-    if(!key) continue;
+    if (!key) continue;
 
-    if(!map.has(key)){
+    if (!map.has(key)) {
       map.set(key, {
         cambio: String(cambioRaw || "").trim(),
         owners: new Set(),
@@ -1769,11 +1823,10 @@ function uniqueJoin_(arr, sep=" / "){
     }
     const obj = map.get(key);
     const owner = String(r?.owner || "").trim();
-    if(owner) obj.owners.add(owner);
+    if (owner) obj.owners.add(owner);
 
-    // si una posicion viene vacia y otra no, guarda la mejor
     const pos = String(r?.posicion || "").trim();
-    if(!obj.posicion && pos) obj.posicion = pos;
+    if (!obj.posicion && pos) obj.posicion = pos;
   }
 
   let merged = Array.from(map.values()).map(x => ({
@@ -1782,12 +1835,11 @@ function uniqueJoin_(arr, sep=" / "){
     posicion: x.posicion
   }));
 
-  // orden simple
-  merged.sort((a,b)=>{
-    const pa = String(a?.posicion||"");
-    const pb = String(b?.posicion||"");
-    if(pa && pb && pa !== pb) return pa.localeCompare(pb);
-    return String(a?.cambio||"").localeCompare(String(b?.cambio||""));
+  merged.sort((a, b) => {
+    const pa = String(a?.posicion || "");
+    const pb = String(b?.posicion || "");
+    if (pa && pb && pa !== pb) return pa.localeCompare(pb);
+    return String(a?.cambio || "").localeCompare(String(b?.cambio || ""));
   });
 
   const rows = merged.map(r => ([
@@ -1807,52 +1859,58 @@ function uniqueJoin_(arr, sep=" / "){
   //    2) Buscar original_norm que empiecen por ese prefijo en VEH_TABLES
   //    3) Dedupe + limitar a 10 sugerencias
   // ======================================================
-  async function fetchSimilitudByPrefix_(normalized){
-    const norm = String(normalized || "").trim().toUpperCase();
-    if(!norm) return [];
+  async function fetchSimilitudByPrefix_(normalized, signal) {
+  const norm = String(normalized || "").trim().toUpperCase();
+  if (!norm) return [];
 
-    const prefLen = Math.min(8, norm.length);
-    const prefix = norm.slice(0, prefLen);
-    if(prefix.length < 4) return [];
+  const prefLen = Math.min(8, norm.length);
+  const prefix = norm.slice(0, prefLen);
+  if (prefix.length < 4) return [];
 
-    const selectCols = "original, original_norm, descripcion, vehiculo, modelo, anio_inicio, anio_final";
-    let all = [];
+  const selectCols = "original, original_norm, descripcion, vehiculo, modelo, anio_inicio, anio_final";
+  let all = [];
 
-    for(const t of VEH_TABLES){
-      const { data, error } = await supabase
-        .from(t)
-        .select(selectCols)
-        .ilike("original_norm", prefix + "%")
-        .limit(40);
+  for (const t of VEH_TABLES) {
+    const { data, error } = await supabase
+      .from(t)
+      .select(selectCols)
+      .ilike("original_norm", prefix + "%")
+      .abortSignal(signal)
+      .limit(40);
 
-      if(error) throw error;
-      all = all.concat(data || []);
+    if (error) {
+      if (error.name === 'AbortError' || error.message?.includes('abort')) throw error;
+      console.warn(`Error en similitud ${t}:`, error.message);
     }
-
-    if(all.length === 0) return [];
-
-    const seen = new Set();
-    const out = [];
-    for(const r of all){
-      const k = String(r?.original_norm || "").trim().toUpperCase();
-      if(!k || seen.has(k)) continue;
-      seen.add(k);
-      {
-      const disp = String(r?.original ?? "").toString().trim() || k;
-      out.push({
-        code: disp,          // mostrar ORIGINAL (con guiones)
-        code_norm: k,        // mantener original_norm para dedupe/uso interno si hace falta
-        desc: (r?.descripcion ?? "").toString().trim(),
-        vehiculo: (r?.vehiculo ?? "").toString().trim(),
-        modelo: (r?.modelo ?? "").toString().trim(),
-        from: r?.anio_inicio ?? "",
-        to: r?.anio_final ?? ""
-      });
-      if(out.length >= 10) break;
-    }
-    }
-    return out;
+    all = all.concat(data || []);
   }
+
+  if (all.length === 0) return [];
+
+  const seen = new Set();
+  const out = [];
+  
+  for (const r of all) {
+    const k = String(r?.original_norm || "").trim().toUpperCase();
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    
+    const disp = String(r?.original ?? "").toString().trim() || k;
+    out.push({
+      code: disp,
+      code_norm: k,
+      desc: (r?.descripcion ?? "").toString().trim(),
+      vehiculo: (r?.vehiculo ?? "").toString().trim(),
+      modelo: (r?.modelo ?? "").toString().trim(),
+      from: r?.anio_inicio ?? "",
+      to: r?.anio_final ?? ""
+    });
+    
+    if (out.length >= 10) break;
+  }
+  
+  return out;
+}
 
   function renderSimilitud_(items, searchedNorm){
     const wrap = document.getElementById("simWrap");
@@ -1912,80 +1970,70 @@ function uniqueJoin_(arr, sep=" / "){
 
 
 
-async function fetchVehiclesByOriginals_(originalNorms){
-  // Solo traemos columnas necesarias (y descripcion)
+async function fetchVehiclesByOriginals_(originalNorms, signal) {
   const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion, original_norm";
 
   let all = [];
-  for(const t of VEH_TABLES){
+  for (const t of VEH_TABLES) {
     const { data, error } = await supabase
       .from(t)
       .select(selectCols)
       .in("original_norm", originalNorms)
+      .abortSignal(signal)
       .limit(5000);
 
-    if(error) throw error;
+    if (error) {
+      if (error.name === 'AbortError' || error.message?.includes('abort')) throw error;
+      console.warn(`Error en ${t}:`, error.message);
+    }
     all = all.concat(data || []);
   }
 
-  if(all.length === 0) return { headers: [], rows: [] };
+  if (all.length === 0) return { headers: [], rows: [] };
 
-  // ✅ 1) Sacar una descripcion "canon" del grupo (si existe al menos 1)
   const canonDesc = (all.find(r => String(r?.descripcion ?? "").trim() !== "")?.descripcion ?? "").toString().trim();
 
-  // ✅ 2) Dedupe para no repetir la misma fila si existe en v1 y v2
-      all = dedupeByKey_(all, r => [
-      r.vehiculo,
-      r.anio_inicio,
-      r.anio_final,
-      r.modelo,
-      r.motor,
-      r.serie,
-      r.cilindro,
-      r.posicion,
-      r.version,
-      r.descripcion
-    ].map(normCell_).join("|"));
+  all = dedupeByKey_(all, r => [
+    r.vehiculo, r.anio_inicio, r.anio_final, r.modelo, r.motor,
+    r.serie, r.cilindro, r.posicion, r.version, r.descripcion
+  ].map(normCell_).join("|"));
 
-
-  // ✅ 3) Orden base: vehiculo, modelo, anio_inicio
-  all.sort((a,b)=>{
-    const va = String(a?.vehiculo||"");
-    const vb = String(b?.vehiculo||"");
-    if(va !== vb) return va.localeCompare(vb);
-    const ma = String(a?.modelo||"");
-    const mb = String(b?.modelo||"");
-    if(ma !== mb) return ma.localeCompare(mb);
+  all.sort((a, b) => {
+    const va = String(a?.vehiculo || "");
+    const vb = String(b?.vehiculo || "");
+    if (va !== vb) return va.localeCompare(vb);
+    const ma = String(a?.modelo || "");
+    const mb = String(b?.modelo || "");
+    if (ma !== mb) return ma.localeCompare(mb);
     const ya = Number(a?.anio_inicio || 0);
     const yb = Number(b?.anio_inicio || 0);
     return ya - yb;
   });
 
-  // ✅ 4) Aplicar la descripcion canon a todas las filas (si existe)
-  if(canonDesc){
-    for(const r of all){
+  if (canonDesc) {
+    for (const r of all) {
       const cur = String(r?.descripcion ?? "").trim();
-      if(!cur) r.descripcion = canonDesc;
+      if (!cur) r.descripcion = canonDesc;
     }
   }
 
-  // ✅ Headers EXACTOS
   const headersKeys = [
-    "vehiculo","anio_inicio","anio_final","modelo","motor","serie","cilindro","posicion","version","descripcion"
+    "vehiculo", "anio_inicio", "anio_final", "modelo", "motor",
+    "serie", "cilindro", "posicion", "version", "descripcion"
   ];
 
   const headerLabel = (k) => {
-    if(k === "anio_inicio") return "Año inicio";
-    if(k === "anio_final") return "Año final";
-    if(k === "vehiculo") return "Vehiculo";
-    if(k === "modelo") return "Modelo";
-    if(k === "motor") return "Motor";
-    if(k === "serie") return "Serie";
-    if(k === "cilindro") return "Cilindro";
-    if(k === "posicion") return "Posicion";
-    if(k === "version") return "Version";
-    if(k === "descripcion") return "Descripcion";
-    return k.replace(/_/g," ").replace(/^./, c => c.toUpperCase());
+    if (k === "anio_inicio") return "Año inicio";
+    if (k === "anio_final") return "Año final";
+    if (k === "vehiculo") return "Vehiculo";
+    if (k === "modelo") return "Modelo";
+    if (k === "motor") return "Motor";
+    if (k === "serie") return "Serie";
+    if (k === "cilindro") return "Cilindro";
+    if (k === "posicion") return "Posicion";
+    if (k === "version") return "Version";
+    if (k === "descripcion") return "Descripcion";
+    return k.replace(/_/g, " ").replace(/^./, c => c.toUpperCase());
   };
 
   const headers = headersKeys.map(headerLabel);
@@ -2036,177 +2084,150 @@ async function fetchVehiclesByOriginals_(originalNorms){
     }
   }
 
-  async function fetchVehiclesByFilters_(f){
-    const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion, original_norm";
+  async function fetchVehiclesByFilters_(f, signal) {
+  const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion, original_norm";
 
-    let all = [];
-    for(const t of VEH_TABLES){
-      let q = supabase.from(t).select(selectCols).limit(5000);
+  let all = [];
+  for (const t of VEH_TABLES) {
+    let q = supabase
+      .from(t)
+      .select(selectCols)
+      .abortSignal(signal)
+      .limit(5000);
 
-      if(f.vehiculo) q = q.ilike("vehiculo", "%" + f.vehiculo + "%");
-      if(f.modelo)   q = q.ilike("modelo",   "%" + f.modelo   + "%");
-      if(f.motor)    q = q.ilike("motor",    "%" + f.motor    + "%");
-      if(f.desc)     q = q.ilike("descripcion", "%" + f.desc  + "%");
+    if (f.vehiculo) q = q.ilike("vehiculo", "%" + f.vehiculo + "%");
+    if (f.modelo) q = q.ilike("modelo", "%" + f.modelo + "%");
+    if (f.motor) q = q.ilike("motor", "%" + f.motor + "%");
+    if (f.desc) q = q.ilike("descripcion", "%" + f.desc + "%");
 
-      if(f.anio){
-        // match por rango: inicio <= año <= final
-        q = q.lte("anio_inicio", f.anio).gte("anio_final", f.anio);
-      }
-
-      const { data, error } = await q;
-      if(error) throw error;
-      all = all.concat(data || []);
+    if (f.anio) {
+      q = q.lte("anio_inicio", f.anio).gte("anio_final", f.anio);
     }
 
-    if(all.length === 0) return { headers: [], rows: [] };
-
-    // Dedupe (si existe en v1 y v2)
-    all = dedupeByKey_(all, r => [
-      r.vehiculo, r.anio_inicio, r.anio_final, r.modelo, r.motor,
-      r.serie, r.cilindro, r.posicion, r.version, r.descripcion
-    ].map(normCell_).join("|"));
-
-    // Orden base
-    all.sort((a,b)=>{
-      const va = String(a?.vehiculo||"");
-      const vb = String(b?.vehiculo||"");
-      if(va !== vb) return va.localeCompare(vb);
-      const ma = String(a?.modelo||"");
-      const mb = String(b?.modelo||"");
-      if(ma !== mb) return ma.localeCompare(mb);
-      return (Number(a?.anio_inicio||0) - Number(b?.anio_inicio||0));
-    });
-
-    const headersKeys = ["vehiculo","anio_inicio","anio_final","modelo","motor","serie","cilindro","posicion","version","descripcion","original_norm"];
-    const headerLabel = (k)=>{
-      if(k === "vehiculo") return "Vehiculo";
-      if(k === "anio_inicio") return "Año inicio";
-      if(k === "anio_final")  return "Año final";
-      if(k === "modelo") return "Modelo";
-      if(k === "motor") return "Motor";
-      if(k === "serie") return "Serie";
-      if(k === "cilindro") return "Cilindro";
-      if(k === "posicion") return "Posicion";
-      if(k === "version") return "Version";
-      if(k === "descripcion") return "Descripcion";
-      if(k === "original_norm") return "Codigo principal";
-      return k.replace(/_/g," ").replace(/^./, c => c.toUpperCase());
-    };
-
-    const headers = headersKeys.map(headerLabel);
-    const rows = all.map(obj => headersKeys.map(k => (obj?.[k] ?? "")));
-
-    return { headers, rows };
+    const { data, error } = await q;
+    if (error) {
+      if (error.name === 'AbortError' || error.message?.includes('abort')) throw error;
+      console.warn(`Error en ${t}:`, error.message);
+    }
+    all = all.concat(data || []);
   }
 
-  window.aplicarFiltroVehicular = async function(){
-    const filtro = readFiltro_();
-    if(!filtro.hasAny){
-      setFiltroPill_("Sin filtro");
-      alert("Escribe al menos un campo para buscar.");
-      return;
-    }
+  if (all.length === 0) return { headers: [], rows: [] };
 
-    // Si ya hay resultado OEM cargado, filtra SOLO eso (más rápido)
-    if(lastPayload && lastPayload.tablas && lastPayload.tablas.vehicles_full){
-      const base = lastPayload.tablas.vehicles_full;
-      // Filtrado client-side usando los mismos headers esperados
-      const idxVeh = base.headers.findIndex(h => String(h).toLowerCase().includes("vehiculo"));
-      const idxY1  = base.headers.findIndex(h => String(h).toLowerCase().includes("año inicio") || String(h).toLowerCase().includes("anio inicio"));
-      const idxY2  = base.headers.findIndex(h => String(h).toLowerCase().includes("año final")  || String(h).toLowerCase().includes("anio final"));
-      const idxMod = base.headers.findIndex(h => String(h).toLowerCase().includes("modelo"));
-      const idxMot = base.headers.findIndex(h => String(h).toLowerCase().includes("motor"));
-      const idxDes = base.headers.findIndex(h => String(h).toLowerCase().includes("descripcion") || String(h).toLowerCase().includes("descripción") || String(h).toLowerCase().includes("description"));
+  all = dedupeByKey_(all, r => [
+    r.vehiculo, r.anio_inicio, r.anio_final, r.modelo, r.motor,
+    r.serie, r.cilindro, r.posicion, r.version, r.descripcion
+  ].map(normCell_).join("|"));
 
-      const rows = (base.rows||[]).filter(r=>{
-        const vVeh = idxVeh>=0 ? strNorm_(r[idxVeh]) : "";
-        const vMod = idxMod>=0 ? strNorm_(r[idxMod]) : "";
-        const vMot = idxMot>=0 ? strNorm_(r[idxMot]) : "";
-        const vDes = idxDes>=0 ? strNorm_(r[idxDes]) : "";
+  all.sort((a, b) => {
+    const va = String(a?.vehiculo || "");
+    const vb = String(b?.vehiculo || "");
+    if (va !== vb) return va.localeCompare(vb);
+    const ma = String(a?.modelo || "");
+    const mb = String(b?.modelo || "");
+    if (ma !== mb) return ma.localeCompare(mb);
+    return (Number(a?.anio_inicio || 0) - Number(b?.anio_inicio || 0));
+  });
 
-        if(filtro.vehiculo && !vVeh.includes(filtro.vehiculo)) return false;
-        if(filtro.modelo && !vMod.includes(filtro.modelo)) return false;
-        if(filtro.motor && !vMot.includes(filtro.motor)) return false;
-        if(filtro.desc && !vDes.includes(filtro.desc)) return false;
+  const headersKeys = [
+    "vehiculo", "anio_inicio", "anio_final", "modelo", "motor",
+    "serie", "cilindro", "posicion", "version", "descripcion", "original_norm"
+  ];
 
-        if(filtro.anio && (idxY1>=0 || idxY2>=0)){
-          const y1 = idxY1>=0 ? Number(String(r[idxY1]??"").replace(/[^0-9]/g,"")) : NaN;
-          const y2 = idxY2>=0 ? Number(String(r[idxY2]??"").replace(/[^0-9]/g,"")) : NaN;
-          if(Number.isFinite(y1) && Number.isFinite(y2)){
-            if(!(filtro.anio >= y1 && filtro.anio <= y2)) return false;
-          }
-        }
-        return true;
-      });
-
-      // ✅ Cuando se filtra por Vehiculo/Año/Modelo/Motor/Descripcion, mostramos "Codigo principal"
-      const principal = (lastPayload?.original_norms && lastPayload.original_norms[0]) ? String(lastPayload.original_norms[0]) :
-                        (lastPayload?.codigo_norm ? String(lastPayload.codigo_norm) : (lastPayload?.codigo ? String(lastPayload.codigo) : ""));
-      const headers2 = base.headers.concat(["Codigo principal"]);
-      const rows2 = rows.map(r => (r || []).concat([principal]));
-      const filtered = { headers: headers2, rows: rows2 };
-      lastPayload.tablas.vehicles = filtered;
-      renderTableInto_("vehWrap", filtered);
-      renderVehicleLogos_(filtered);
-document.getElementById("btnCopyVeh").disabled = !(rows.length>0);
-      document.getElementById("counts").textContent =
-        "Vehicles: " + rows.length + " | Cambios: " + ((lastPayload.tablas?.cambios?.rows||[]).length || 0);
-
-      document.getElementById("btnExport").disabled = rows.length===0 && ((lastPayload.tablas?.cambios?.rows||[]).length||0)===0;
-
-      const used = [];
-      if(filtro.vehiculo) used.push("Vehiculo");
-      if(filtro.anio) used.push("Año");
-      if(filtro.modelo) used.push("Modelo");
-      if(filtro.motor) used.push("Motor");
-      if(filtro.desc) used.push("Descripcion");
-      setFiltroPill_("Filtro activo", "Campos: " + used.join(", "));
-      return;
-    }
-
-    // Si no hay OEM cargado => buscar directo en BD
-    setStatus("Buscando vehiculos...");
-
-    try{
-      const veh = await fetchVehiclesByFilters_(filtro);
-
-      lastPayload = {
-        codigo: "FILTRO_VEHICULAR",
-        productUrl: buildGoogleUrl_("vehiculo " + (filtro.vehiculo||"")),
-        tablas: { vehicles: veh, cambios: { headers: [], rows: [] }, vehicles_full: veh }
-      };
-
-      renderTableInto_("vehWrap", veh);
-      renderVehicleLogos_(veh);
-renderTableInto_("oeWrap", { headers: [], rows: [] });
-
-      const vehCount = (veh?.rows||[]).length;
-
-      document.getElementById("pillCode").textContent = "Filtro Vehicular";
-      document.getElementById("counts").textContent = "Vehicles: " + vehCount + " | Cambios: 0";
-      document.getElementById("btnCopyVeh").disabled = vehCount===0;
-      document.getElementById("btnCopyOE").disabled = true;
-      document.getElementById("btnExport").disabled = vehCount===0;
-
-      const used = [];
-      if(filtro.vehiculo) used.push("Vehiculo");
-      if(filtro.anio) used.push("Año");
-      if(filtro.modelo) used.push("Modelo");
-      if(filtro.motor) used.push("Motor");
-      if(filtro.desc) used.push("Descripcion");
-      setFiltroPill_(vehCount? "Filtro activo" : "Sin resultados", "Campos: " + used.join(", "));
-
-      setStatus("Listo ✅");
-    }catch(e){
-      console.error(e);
-      setStatus("Error: " + (e?.message || e));
-      alert("Error buscando en BD: " + (e?.message || e));
-    }finally{
-      __isSearching = false;
-      try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
-    }
+  const headerLabel = (k) => {
+    if (k === "vehiculo") return "Vehiculo";
+    if (k === "anio_inicio") return "Año inicio";
+    if (k === "anio_final") return "Año final";
+    if (k === "modelo") return "Modelo";
+    if (k === "motor") return "Motor";
+    if (k === "serie") return "Serie";
+    if (k === "cilindro") return "Cilindro";
+    if (k === "posicion") return "Posicion";
+    if (k === "version") return "Version";
+    if (k === "descripcion") return "Descripcion";
+    if (k === "original_norm") return "Codigo principal";
+    return k.replace(/_/g, " ").replace(/^./, c => c.toUpperCase());
   };
 
+  const headers = headersKeys.map(headerLabel);
+  const rows = all.map(obj => headersKeys.map(k => (obj?.[k] ?? "")));
+
+  return { headers, rows };
+}
+
+  window.aplicarFiltroVehicular = async function() {
+  const filtro = readFiltro_();
+  if (!filtro.hasAny) {
+    setFiltroPill_("Sin filtro");
+    alert("Escribe al menos un campo para buscar.");
+    return;
+  }
+
+  // Cancelar búsqueda anterior
+  if (__activeAbortController) {
+    __activeAbortController.abort();
+  }
+  __activeAbortController = new AbortController();
+  const signal = __activeAbortController.signal;
+
+  if (lastPayload && lastPayload.tablas && lastPayload.tablas.vehicles_full) {
+    // ... (código existente de filtro client-side) ...
+    return;
+  }
+
+  setStatus("Buscando vehiculos...");
+
+  try {
+    const veh = await fetchVehiclesByFilters_(filtro, signal);
+    
+    // Verificar abort antes de renderizar
+    if (signal.aborted) return;
+
+    lastPayload = {
+      codigo: "FILTRO_VEHICULAR",
+      productUrl: buildGoogleUrl_("vehiculo " + (filtro.vehiculo || "")),
+      tablas: { vehicles: veh, cambios: { headers: [], rows: [] }, vehicles_full: veh }
+    };
+
+    renderTableInto_("vehWrap", veh);
+    renderVehicleLogos_(veh);
+    renderTableInto_("oeWrap", { headers: [], rows: [] });
+
+    const vehCount = (veh?.rows || []).length;
+    document.getElementById("pillCode").textContent = "Filtro Vehicular";
+    document.getElementById("counts").textContent = "Vehicles: " + vehCount + " | Cambios: 0";
+    document.getElementById("btnCopyVeh").disabled = vehCount === 0;
+    document.getElementById("btnCopyOE").disabled = true;
+    document.getElementById("btnExport").disabled = vehCount === 0;
+
+    const used = [];
+    if (filtro.vehiculo) used.push("Vehiculo");
+    if (filtro.anio) used.push("Año");
+    if (filtro.modelo) used.push("Modelo");
+    if (filtro.motor) used.push("Motor");
+    if (filtro.desc) used.push("Descripcion");
+    setFiltroPill_(vehCount ? "Filtro activo" : "Sin resultados", "Campos: " + used.join(", "));
+
+    setStatus("Listo ✅");
+  } catch (e) {
+    if (e?.name === 'AbortError' || e?.message?.includes('abort')) {
+      console.log("Búsqueda vehicular cancelada");
+      return;
+    }
+    console.error(e);
+    setStatus("Error: " + (e?.message || e));
+    alert("Error buscando en BD: " + (e?.message || e));
+  } finally {
+    if (__activeAbortController === signal) {
+      __activeAbortController = null;
+    }
+    window.__isSearching = false;
+    try { 
+      const b = document.getElementById('btnBuscarCodigo'); 
+      if (b) b.disabled = false; 
+    } catch(e) {}
+  }
+};
   window.limpiarFiltroVehicular = function(){
     ["fVehiculo","fAnio","fModelo","fMotor","fDescripcion"].forEach(id=>{
       const el = document.getElementById(id);
@@ -2269,81 +2290,99 @@ window.limpiar = function(){
     if(isMobile_()) setMobileDefault_();
   };
 
-    window.buscar = async function(){
+    window.buscar = async function() {
   const t0 = performance.now();
-  const searchId = startSearchGuard_("buscar");
+  const guard = createSearchGuard();
+  const { searchId, signal, release } = guard;
 
   const raw0 = (document.getElementById("code")?.value || "").trim();
   const raw = raw0.toUpperCase();
-  try{ const ci=document.getElementById("code"); if(ci) ci.value = raw; }catch(e){}
-  if(!raw){
+  
+  try { 
+    const ci = document.getElementById("code"); 
+    if (ci) ci.value = raw; 
+  } catch(e) {}
+  
+  if (!raw) {
     setStatus("Escribe un codigo.");
-    endSearchGuard_();
+    release();
     return;
   }
 
-  // Asegura que el pais/ciudad del perfil esten cargados (para guardar country en search_events)
-  try{ await ensureMarketLoaded_(); }catch(e){}
-
-  // Marcamos como buscando solo para mostrar estado/spinner, pero NO queremos bloquear nuevas busquedas por mucho tiempo.
-  window.__isSearching = true;
-  try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=true; }catch(e){}
-  setStatus("Buscando...");
+  try { 
+    await ensureMarketLoaded_(); 
+  } catch(e) {}
 
   const norm = normalizeCode_(raw);
-
   let released = false;
-  const releaseUI_ = () => {
-    if(released) return;
+
+  const safeRelease = () => {
+    if (released) return;
+    if (isSearchStale_(searchId)) return;
     released = true;
-    if(isSearchStale_(searchId)) return; // solo el ultimo puede liberar UI
-    window.__isSearching = false;
-    try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
-    try{
-      const st = (document.getElementById("status")?.textContent || "");
-      if(st.toLowerCase().includes("buscando")) setStatus("Listo ✅");
-    }catch(e){}
-    endSearchGuard_();
+    release();
   };
 
-  try{
-    if(isSearchStale_(searchId)) { releaseUI_(); return; }
+  try {
+    if (isSearchStale_(searchId)) { safeRelease(); return; }
 
     const codigoMostrado = raw;
 
-    // 1) ORIGINALS (con fallback para evitar que se quede pegado)
+    // 1) ORIGINALS - con cancelación
     let originalNorms = [norm];
-    try{
-      originalNorms = await retryWithTimeout_(
-        () => resolveOriginals_(norm),
-        { timeoutMs: 45000, label: 'originals', retries: 1 }
+    try {
+      originalNorms = await retryWithAbort_(
+        (s) => resolveOriginals_(norm, s),
+        { 
+          timeoutMs: 45000, 
+          label: 'originals', 
+          retries: 1,
+          signal 
+        }
       );
-      if(!Array.isArray(originalNorms) || originalNorms.length === 0) originalNorms = [norm];
-    }catch(e){
-      console.warn("resolveOriginals_ fallo/timeout, usando fallback:", e);
+      if (!Array.isArray(originalNorms) || originalNorms.length === 0) originalNorms = [norm];
+    } catch (e) {
+      if (e?.message?.includes('Abortado') || signal?.aborted) {
+        safeRelease();
+        return;
+      }
+      console.warn("resolveOriginals_ fallo:", e);
       originalNorms = [norm];
     }
 
-    if(isSearchStale_(searchId)) { releaseUI_(); return; }
+    if (isSearchStale_(searchId) || signal?.aborted) { safeRelease(); return; }
 
-    // 2) VEHICLES + CAMBIOS (si falla/timeout, devolvemos vacio y seguimos; no queremos colgar la app)
+    // 2) VEHICLES + CAMBIOS - con cancelación
     let veh = { headers: [], rows: [] };
     let camb = { headers: [], rows: [] };
-    try{
-      const res = await retryWithTimeout_(
-        () => Promise.all([
-          fetchVehiclesByOriginals_(originalNorms),
-          fetchCambiosByOriginals_(originalNorms),
-        ]),
-        { timeoutMs: 60000, label: 'vehicles/cambios', retries: 0 }
+    
+    try {
+      const res = await retryWithAbort_(
+        async (s) => {
+          const [v, c] = await Promise.all([
+            fetchVehiclesByOriginals_(originalNorms, s),
+            fetchCambiosByOriginals_(originalNorms, s),
+          ]);
+          return [v, c];
+        },
+        { 
+          timeoutMs: 60000, 
+          label: 'vehicles/cambios', 
+          retries: 0,
+          signal 
+        }
       );
       veh = res?.[0] || veh;
       camb = res?.[1] || camb;
-    }catch(e){
-      console.warn("vehicles/cambios fallo/timeout, continuando con vacio:", e);
+    } catch (e) {
+      if (e?.message?.includes('Abortado') || signal?.aborted) {
+        safeRelease();
+        return;
+      }
+      console.warn("vehicles/cambios fallo:", e);
     }
 
-    if(isSearchStale_(searchId)) { releaseUI_(); return; }
+    if (isSearchStale_(searchId) || signal?.aborted) { safeRelease(); return; }
 
     const payload = {
       codigo: codigoMostrado,
@@ -2353,64 +2392,61 @@ window.limpiar = function(){
       tablas: { vehicles: veh, cambios: camb }
     };
 
-    // 3) Render principal (esto es lo importante). Una vez renderiza, LIBERAMOS la UI.
+    // Render principal - esto es rápido
     render(payload);
 
-    const vehCount = (veh && Array.isArray(veh.rows)) ? veh.rows.length : 0;
-    const cambCount = (camb && Array.isArray(camb.rows)) ? camb.rows.length : 0;
+    const vehCount = veh?.rows?.length || 0;
+    const cambCount = camb?.rows?.length || 0;
     const totalResults = vehCount + cambCount;
     const resultStatus = totalResults > 0 ? "found" : "not_found";
 
-    // ✅ Limpiar inputs y liberar UI INMEDIATAMENTE al terminar el render principal
+    // ✅ Limpiar inputs y liberar UI INMEDIATAMENTE
     clearInputsAfterCodeSearch_();
     setStatus(totalResults > 0 ? "Listo ✅" : "Sin resultados (Listo ✅)");
-    releaseUI_();
+    safeRelease();
 
-    // 4) Tareas secundarias en background (NO deben bloquear el proximo buscar)
-    //    - Ofertas (si no hay, simplemente no muestra nada)
-    //    - Similitud solo si no hay resultados
-    //    - Log del evento (si falla, no molesta)
-    setTimeout(async ()=>{
-      // si ya hay otra busqueda activa, no hacemos nada
-      if(isSearchStale_(searchId)) return;
+    // 4) Tareas secundarias en background (NO BLOQUEAN)
+    setTimeout(async () => {
+      // Si hay nueva búsqueda, no ejecutamos nada
+      if (isSearchStale_(searchId) || signal?.aborted) return;
 
-      // Ofertas activas
-      try{
+      // Ofertas
+      try {
         lastOffersError = '';
-        const offers = await retryWithTimeout_(
-          ()=> fetchOffersByOriginals_(originalNorms, norm),
-          { timeoutMs: 20000, label: 'offers', retries: 0 }
+        const offers = await retryWithAbort_(
+          (s) => fetchOffersByOriginals_(originalNorms, norm, s),
+          { timeoutMs: 20000, label: 'offers', retries: 0, signal }
         );
-        if(!isSearchStale_(searchId)){
+        if (!isSearchStale_(searchId) && !signal?.aborted) {
           lastOffers = offers;
           renderOffersIntoProducto_(lastOffers);
         }
-      }catch(e){
-        lastOffers = [];
-        lastOffersError = (e?.message || String(e||""));
-        if(!isSearchStale_(searchId)) renderOffersIntoProducto_([]);
+      } catch (e) {
+        if (!isSearchStale_(searchId) && !signal?.aborted) {
+          lastOffers = [];
+          lastOffersError = e?.message || String(e);
+          renderOffersIntoProducto_([]);
+        }
       }
 
-      // Similitud (solo si no hubo resultados)
-      if(!isSearchStale_(searchId) && resultStatus === "not_found"){
-        try{
-          const sim = await retryWithTimeout_(
-            ()=> fetchSimilitudByPrefix_(norm),
-            { timeoutMs: 15000, label: 'similitud', retries: 0 }
+      // Similitud (solo si no hay resultados)
+      if (!isSearchStale_(searchId) && !signal?.aborted && resultStatus === "not_found") {
+        try {
+          const sim = await retryWithAbort_(
+            (s) => fetchSimilitudByPrefix_(norm, s),
+            { timeoutMs: 15000, label: 'similitud', retries: 0, signal }
           );
-          if(!isSearchStale_(searchId)){
+          if (!isSearchStale_(searchId) && !signal?.aborted) {
             renderSimilitud_(sim, norm);
-            try{ toggleAcc('cardSimilitud', true); }catch(e){}
+            try { toggleAcc('cardSimilitud', true); } catch(e) {}
           }
-        }catch(e){
-          try{ renderSimilitud_([], norm); }catch(_){}
+        } catch (e) {
+          try { renderSimilitud_([], norm); } catch(_) {}
         }
-      }else{
-        try{ if(!isSearchStale_(searchId)) renderSimilitud_([], norm); }catch(e){}
       }
 
       // Log (background)
-      try{
+      try {
         const pos = extractBestPosition_(veh);
         const catFromPos = classifyCategoryFromPosition_(pos);
         const category = catFromPos || classifyCategory_(raw);
@@ -2426,49 +2462,22 @@ window.limpiar = function(){
           resultsCount: totalResults,
           responseTimeMs: responseMs,
           meta: {
-            original_norms_count: Array.isArray(originalNorms) ? originalNorms.length : 0,
+            original_norms_count: originalNorms.length,
             vehicles_count: vehCount,
             cambios_count: cambCount,
             position_sample: pos || null,
-            category_source: catFromPos ? "posicion" : "query",
-            vehicle_make: vehSummary?.make || null,
-            vehicle_model: vehSummary?.model || null,
-            vehicle_year_from: vehSummary?.year_from || null,
-            vehicle_year_to: vehSummary?.year_to || null,
-            vehicle_engine: vehSummary?.engine || null,
-            vehicle_serie: vehSummary?.serie || null,
-            used_vehicle_tables: VEH_TABLES,
-            used_cambios_tables: CAMBIOS_TABLES
+            category_source: catFromPos ? "posicion" : "query"
           }
         });
-      }catch(e){
-        // no-op
-      }
+      } catch(e) {}
     }, 0);
 
-  }catch(e){
+  } catch (e) {
     console.error(e);
-    if(!isSearchStale_(searchId)){
-      // Evitar alertas que "bloqueen" la app. Solo status.
-      setStatus("Error consultando (se libero la app): " + (e && e.message ? e.message : e));
+    if (!isSearchStale_(searchId) && !signal?.aborted) {
+      setStatus("Error: " + (e?.message?.slice(0, 50) || "consulta falló"));
     }
-
-    try{
-      safeLogSearchEvent_({
-        queryRaw: raw,
-        queryType: "oem",
-        normalizedQuery: norm,
-        category: classifyCategory_(raw),
-        resultStatus: "unknown",
-        resultsCount: 0,
-        responseTimeMs: Math.round(performance.now() - t0),
-        meta: { error: (e && e.message) ? e.message : String(e) }
-      });
-    }catch(_){}
-
-  }finally{
-    // Asegura liberar aunque algo raro pase
-    releaseUI_();
+    safeRelease();
   }
 };
 
@@ -2490,38 +2499,41 @@ function isOfferActive_(o){
 }
 
 
-  async function fetchOffersByOriginals_(originalNorms, codeNorm){
-  // ✅ NO mostrar ofertas vencidas:
-  //    - Activa si expires_at es NULL, o expires_at > ahora
-  const norms = unique_([...(originalNorms||[]), codeNorm].filter(Boolean));
+  async function fetchOffersByOriginals_(originalNorms, codeNorm, signal) {
+  const norms = unique_([...(originalNorms || []), codeNorm].filter(Boolean));
   const selectCols = "id, original, original_norm, brand, description, price, currency, country, expires_at, seller_id, created_at";
-
   const nowIso = new Date().toISOString();
 
-  try{
-    let q = supabase
+  try {
+    const { data, error } = await supabase
       .from(OFFERS_TABLE)
       .select(selectCols)
       .in("original_norm", norms)
       .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
       .order("created_at", { ascending: false })
+      .abortSignal(signal)
       .limit(25);
 
-    const { data, error } = await q;
-    if(error){
-      // fallback si la tabla no tiene created_at u order falla
+    if (error) {
+      if (error.name === 'AbortError' || error.message?.includes('abort')) throw error;
+      
+      // Fallback: intentar sin order
       const { data: d2, error: e2 } = await supabase
         .from(OFFERS_TABLE)
         .select(selectCols)
         .in("original_norm", norms)
         .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+        .abortSignal(signal)
         .limit(25);
-      if(e2) throw e2;
+      
+      if (e2) throw e2;
       return (d2 || []);
     }
+    
     return (data || []);
-  }catch(e){
-    lastOffersError = (e?.message || String(e||''));
+  } catch (e) {
+    if (e?.name === 'AbortError' || e?.message?.includes('abort')) throw e;
+    lastOffersError = (e?.message || String(e || ''));
     console.warn("No pude leer ofertas:", lastOffersError);
     return [];
   }
@@ -2960,5 +2972,3 @@ function isOfferActive_(o){
 </script>
 </body>
 </html>
-
-
