@@ -596,32 +596,101 @@ function isSearchStale_(id) {
 }
 
 async function withAbortTimeout_(promiseFn, timeoutMs, label, signal) {
+  // Crear un AbortController específico para este timeout
+  const timeoutController = new AbortController();
+  
+  // Combinar señales: la externa + la de timeout
+  const combinedSignal = signal ? 
+    (signal.aborted ? signal : AbortSignal.any([signal, timeoutController.signal])) : 
+    timeoutController.signal;
+
   let timeoutId;
   
   const timeoutPromise = new Promise((_, reject) => {
     timeoutId = setTimeout(() => {
+      timeoutController.abort(); // ← ¡CANCELAR la petición!
       reject(new Error(`Timeout (${label}) - ${timeoutMs}ms`));
     }, timeoutMs);
   });
 
   try {
-    // Si la señal ya está abortada, no ejecutamos
-    if (signal?.aborted) {
+    if (combinedSignal.aborted) {
       throw new Error(`Abortado antes de iniciar: ${label}`);
     }
 
-    // Ejecutamos la promesa pero respetando el abort signal
     const result = await Promise.race([
-      promiseFn(signal),
+      promiseFn(combinedSignal),
       timeoutPromise
     ]);
     
     clearTimeout(timeoutId);
+    timeoutController.abort(); // Limpieza
     return result;
   } catch (error) {
     clearTimeout(timeoutId);
+    timeoutController.abort(); // Asegurar cancelación
     throw error;
   }
+}
+
+async function retryWithAbort_(fn, opts) {
+  const retries = Number(opts?.retries ?? 1);
+  const timeoutMs = Number(opts?.timeoutMs ?? 15000);
+  const label = String(opts?.label ?? "operacion");
+  const baseDelay = Number(opts?.baseDelay ?? 350);
+  const externalSignal = opts?.signal;
+
+  let lastErr = null;
+  
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    // Crear controller específico para este intento
+    const attemptController = new AbortController();
+    
+    // Combinar señal externa + señal de reintento
+    const attemptSignal = externalSignal ?
+      AbortSignal.any([externalSignal, attemptController.signal]) :
+      attemptController.signal;
+
+    try {
+      if (externalSignal?.aborted) {
+        throw new Error(`Abortado por usuario: ${label}`);
+      }
+
+      const result = await withAbortTimeout_(
+        (s) => fn(s),
+        timeoutMs,
+        `${label} (intento ${attempt + 1}/${retries + 1})`,
+        attemptSignal
+      );
+
+      attemptController.abort(); // Limpieza
+      return result;
+      
+    } catch (e) {
+      attemptController.abort(); // Asegurar cancelación
+      lastErr = e;
+      
+      // Si fue abortado por usuario, no reintentamos
+      if (e?.message?.includes('Abortado por usuario') || 
+          externalSignal?.aborted || 
+          e?.name === 'AbortError') {
+        throw e;
+      }
+      
+      const msg = String(e?.message || e || "");
+      const isTimeout = msg.toLowerCase().includes("timeout");
+      
+      // Si no es timeout o ya no hay reintentos, lanzar error
+      if (attempt >= retries || !isTimeout) {
+        throw lastErr;
+      }
+      
+      // Backoff
+      const wait = baseDelay * (attempt + 1);
+      await new Promise(r => setTimeout(r, wait));
+    }
+  }
+  throw lastErr;
 }
 
 async function retryWithAbort_(fn, opts) {
@@ -1771,7 +1840,13 @@ function uniqueJoin_(arr, sep=" / "){
 
   async function resolveOriginals_(codeNorm, signal) {
   let all = [];
+  
   for (const t of CAMBIOS_TABLES) {
+    // Verificar abort antes de cada consulta
+    if (signal?.aborted) {
+      throw new Error('Abortado por usuario');
+    }
+    
     const { data, error } = await supabase
       .from(t)
       .select("original_norm")
@@ -1780,74 +1855,23 @@ function uniqueJoin_(arr, sep=" / "){
       .limit(5000);
     
     if (error) {
-      if (error.name === 'AbortError' || error.message?.includes('abort')) throw error;
+      // Si es AbortError, propagarlo inmediatamente
+      if (error.name === 'AbortError' || error.message?.includes('abort')) {
+        throw error;
+      }
       console.warn(`Error en ${t}:`, error.message);
     }
     all = all.concat(data || []);
+    
+    // Verificar abort después de cada consulta
+    if (signal?.aborted) {
+      throw new Error('Abortado por usuario');
+    }
   }
 
   const originals = unique_((all || []).map(x => x.original_norm).filter(Boolean));
   if (originals.length === 0) return [codeNorm];
   return originals;
-}
-
-  async function fetchCambiosByOriginals_(originalNorms, signal) {
-  let all = [];
-  for (const t of CAMBIOS_TABLES) {
-    const { data, error } = await supabase
-      .from(t)
-      .select("cambio, owner, posicion")
-      .in("original_norm", originalNorms)
-      .abortSignal(signal)
-      .limit(5000);
-
-    if (error) {
-      if (error.name === 'AbortError' || error.message?.includes('abort')) throw error;
-      console.warn(`Error en ${t}:`, error.message);
-    }
-    all = all.concat(data || []);
-  }
-
-  const map = new Map();
-  for (const r of (all || [])) {
-    const cambioRaw = (r?.cambio ?? "");
-    const key = normCodeCell_(cambioRaw);
-    if (!key) continue;
-
-    if (!map.has(key)) {
-      map.set(key, {
-        cambio: String(cambioRaw || "").trim(),
-        owners: new Set(),
-        posicion: String(r?.posicion || "").trim()
-      });
-    }
-    const obj = map.get(key);
-    const owner = String(r?.owner || "").trim();
-    if (owner) obj.owners.add(owner);
-
-    const pos = String(r?.posicion || "").trim();
-    if (!obj.posicion && pos) obj.posicion = pos;
-  }
-
-  let merged = Array.from(map.values()).map(x => ({
-    cambio: x.cambio,
-    owner: uniqueJoin_(Array.from(x.owners), " / "),
-    posicion: x.posicion
-  }));
-
-  merged.sort((a, b) => {
-    const pa = String(a?.posicion || "");
-    const pb = String(b?.posicion || "");
-    if (pa && pb && pa !== pb) return pa.localeCompare(pb);
-    return String(a?.cambio || "").localeCompare(String(b?.cambio || ""));
-  });
-
-  const rows = merged.map(r => ([
-    r.cambio || "",
-    r.owner || ""
-  ]));
-
-  return { headers: ["cambio", "owner"], rows };
 }
 
 
@@ -2334,7 +2358,7 @@ window.limpiar = function(){
       originalNorms = await retryWithAbort_(
         (s) => resolveOriginals_(norm, s),
         { 
-          timeoutMs: 45000, 
+          timeoutMs: 15000, 
           label: 'originals', 
           retries: 1,
           signal 
@@ -2366,7 +2390,7 @@ window.limpiar = function(){
           return [v, c];
         },
         { 
-          timeoutMs: 60000, 
+          timeoutMs: 20000, 
           label: 'vehicles/cambios', 
           retries: 0,
           signal 
@@ -2972,3 +2996,6 @@ function isOfferActive_(o){
 </script>
 </body>
 </html>
+
+
+
