@@ -632,67 +632,6 @@ async function withAbortTimeout_(promiseFn, timeoutMs, label, signal) {
     throw error;
   }
 }
-
-async function retryWithAbort_(fn, opts) {
-  const retries = Number(opts?.retries ?? 1);
-  const timeoutMs = Number(opts?.timeoutMs ?? 15000);
-  const label = String(opts?.label ?? "operacion");
-  const baseDelay = Number(opts?.baseDelay ?? 350);
-  const externalSignal = opts?.signal;
-
-  let lastErr = null;
-  
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    // Crear controller específico para este intento
-    const attemptController = new AbortController();
-    
-    // Combinar señal externa + señal de reintento
-    const attemptSignal = externalSignal ?
-      AbortSignal.any([externalSignal, attemptController.signal]) :
-      attemptController.signal;
-
-    try {
-      if (externalSignal?.aborted) {
-        throw new Error(`Abortado por usuario: ${label}`);
-      }
-
-      const result = await withAbortTimeout_(
-        (s) => fn(s),
-        timeoutMs,
-        `${label} (intento ${attempt + 1}/${retries + 1})`,
-        attemptSignal
-      );
-
-      attemptController.abort(); // Limpieza
-      return result;
-      
-    } catch (e) {
-      attemptController.abort(); // Asegurar cancelación
-      lastErr = e;
-      
-      // Si fue abortado por usuario, no reintentamos
-      if (e?.message?.includes('Abortado por usuario') || 
-          externalSignal?.aborted || 
-          e?.name === 'AbortError') {
-        throw e;
-      }
-      
-      const msg = String(e?.message || e || "");
-      const isTimeout = msg.toLowerCase().includes("timeout");
-      
-      // Si no es timeout o ya no hay reintentos, lanzar error
-      if (attempt >= retries || !isTimeout) {
-        throw lastErr;
-      }
-      
-      // Backoff
-      const wait = baseDelay * (attempt + 1);
-      await new Promise(r => setTimeout(r, wait));
-    }
-  }
-  throw lastErr;
-}
-
 async function retryWithAbort_(fn, opts) {
   const retries = Number(opts?.retries ?? 1);
   const timeoutMs = Number(opts?.timeoutMs ?? 15000);
@@ -2996,6 +2935,7 @@ function isOfferActive_(o){
 </script>
 </body>
 </html>
+
 
 
 
