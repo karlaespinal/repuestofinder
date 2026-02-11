@@ -554,7 +554,7 @@ function clearInputsAfterCodeSearch_(){
 
 
 // ======================================================
-// ✅ Anti-cuelgue PRO: Cancelación real + timeout
+// ✅ Anti-cuelgue PRO: Cancelación real + timeout (SIMPLE)
 // ======================================================
 let __searchSeq = 0;
 let __activeSearchId = 0;
@@ -567,17 +567,17 @@ function createSearchGuard() {
       __activeAbortController.abort();
     } catch (e) {}
   }
-  
+
   __searchSeq++;
   __activeSearchId = __searchSeq;
   __activeAbortController = new AbortController();
-  
+
   // Liberar UI
   window.__isSearching = true;
   const btn = document.getElementById('btnBuscarCodigo');
   if (btn) btn.disabled = true;
   setStatus("Buscando...");
-  
+
   return {
     searchId: __activeSearchId,
     signal: __activeAbortController.signal,
@@ -595,91 +595,61 @@ function isSearchStale_(id) {
   return id !== __activeSearchId;
 }
 
-async function withAbortTimeout_(promiseFn, timeoutMs, label, signal) {
-  // Crear un AbortController específico para este timeout
-  const timeoutController = new AbortController();
-  
-  // Combinar señales: la externa + la de timeout
-  const combinedSignal = signal ? 
-    (signal.aborted ? signal : AbortSignal.any([signal, timeoutController.signal])) : 
-    timeoutController.signal;
-
-  let timeoutId;
-  
-  const timeoutPromise = new Promise((_, reject) => {
-    timeoutId = setTimeout(() => {
-      timeoutController.abort(); // ← ¡CANCELAR la petición!
-      reject(new Error(`Timeout (${label}) - ${timeoutMs}ms`));
-    }, timeoutMs);
-  });
-
-  try {
-    if (combinedSignal.aborted) {
-      throw new Error(`Abortado antes de iniciar: ${label}`);
-    }
-
-    const result = await Promise.race([
-      promiseFn(combinedSignal),
-      timeoutPromise
-    ]);
-    
-    clearTimeout(timeoutId);
-    timeoutController.abort(); // Limpieza
-    return result;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    timeoutController.abort(); // Asegurar cancelación
-    throw error;
-  }
-}
-
 async function retryWithAbort_(fn, opts) {
   const retries = Number(opts?.retries ?? 1);
-  const timeoutMs = Number(opts?.timeoutMs ?? 30000); // ← 30s
+  const timeoutMs = Number(opts?.timeoutMs ?? 30000);
   const label = String(opts?.label ?? "operacion");
   const baseDelay = Number(opts?.baseDelay ?? 350);
   const externalSignal = opts?.signal;
 
   let lastErr = null;
-  
+
   for (let attempt = 0; attempt <= retries; attempt++) {
+    // ÚNICO AbortController para este intento
     const attemptController = new AbortController();
+
+    // Timeout que ABORTA el controller
     const timeoutId = setTimeout(() => {
       attemptController.abort();
     }, timeoutMs);
-    
+
+    // Combinar con señal externa si existe
     const attemptSignal = externalSignal ?
       AbortSignal.any([externalSignal, attemptController.signal]) :
       attemptController.signal;
 
     try {
+      // Verificar abort antes de ejecutar
       if (externalSignal?.aborted) {
         throw new Error(`Abortado por usuario: ${label}`);
       }
 
+      // ✅ LLAMAR DIRECTAMENTE a fn, SIN withAbortTimeout_
       const result = await fn(attemptSignal);
-      
+
       clearTimeout(timeoutId);
       attemptController.abort();
       return result;
-      
+
     } catch (e) {
       clearTimeout(timeoutId);
       attemptController.abort();
       lastErr = e;
-      
+
+      // Si fue abortado, no reintentar
       if (externalSignal?.aborted || e?.name === 'AbortError') {
         throw e;
       }
-      
+
       const msg = String(e?.message || e || "");
       const isTimeout = msg.toLowerCase().includes("timeout") || 
                         msg.toLowerCase().includes("abort");
-      
+
       if (attempt >= retries || !isTimeout) {
         throw lastErr;
       }
-      
+
+      // Backoff
       const wait = baseDelay * (attempt + 1);
       await new Promise(r => setTimeout(r, wait));
     }
@@ -1728,12 +1698,12 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
 
   // Log no-bloqueante (evita que la UI se quede colgada si Supabase tarda)
   async function safeLogSearchEvent_(payload){
-    try{
-      await withTimeout_(logSearchEvent_(payload), 5000, "log");
-    }catch(e){
-      // silencioso
-    }
+  try{
+    await logSearchEvent_(payload);
+  }catch(e){
+    // silencioso
   }
+}
 
 
   // ======================================================
@@ -2364,7 +2334,7 @@ window.limpiar = function(){
       originalNorms = await retryWithAbort_(
         (s) => resolveOriginals_(norm, s),
         { 
-          timeoutMs: 15000, 
+          timeoutMs: 45000, 
           label: 'originals', 
           retries: 1,
           signal 
@@ -2396,9 +2366,9 @@ window.limpiar = function(){
           return [v, c];
         },
         { 
-          timeoutMs: 20000, 
+          timeoutMs: 45000, 
           label: 'vehicles/cambios', 
-          retries: 0,
+          retries: 1,
           signal 
         }
       );
@@ -2445,7 +2415,7 @@ window.limpiar = function(){
         lastOffersError = '';
         const offers = await retryWithAbort_(
           (s) => fetchOffersByOriginals_(originalNorms, norm, s),
-          { timeoutMs: 20000, label: 'offers', retries: 0, signal }
+          { timeoutMs: 45000, label: 'offers', retries: 1, signal }
         );
         if (!isSearchStale_(searchId) && !signal?.aborted) {
           lastOffers = offers;
@@ -2464,7 +2434,7 @@ window.limpiar = function(){
         try {
           const sim = await retryWithAbort_(
             (s) => fetchSimilitudByPrefix_(norm, s),
-            { timeoutMs: 15000, label: 'similitud', retries: 0, signal }
+            { timeoutMs: 45000, label: 'similitud', retries: 1, signal }
           );
           if (!isSearchStale_(searchId) && !signal?.aborted) {
             renderSimilitud_(sim, norm);
