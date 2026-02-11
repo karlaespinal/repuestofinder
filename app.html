@@ -2399,6 +2399,23 @@ window.limpiar = function(){
     const codigoMostrado = raw;
 
     // ======================================================
+    // ✅ A) OFERTAS PRIMERO (no bloquea / no cuelga)
+    // ======================================================
+    let offers = [];
+    try {
+      offers = await retryWithAbort_(
+        (s) => fetchOffersByOriginals_([], norm, s),
+        { timeoutMs: 12000, retries: 0, label: "ofertas", signal }
+      );
+      if (!isSearchStale_(searchId) && !signal?.aborted) {
+        renderOffersIntoProducto_(offers || []);
+      }
+    } catch (e) {
+      // silencioso: si falla/timeout, NO bloquea la busqueda
+    }
+
+
+    // ======================================================
     // ✅ 0) INTENTO RPC (1 sola consulta) - evita cuelgues
     // ======================================================
     let originalNorms = [norm];
@@ -2474,10 +2491,38 @@ window.limpiar = function(){
       codigo_norm: norm,
       original_norms: originalNorms,
       productUrl: buildGoogleUrl_(codigoMostrado),
+      offers: offers,
       tablas: { vehicles: veh, cambios: camb }
     };
 
     render(payload);
+
+    // ======================================================
+    // ✅ B) REFRESCO DE OFERTAS (best-effort) con original_norms
+    //     NO bloquea la UI. Si no hay, se detiene.
+    // ======================================================
+    try {
+      setTimeout(() => {
+        if (isSearchStale_(searchId) || signal?.aborted) return;
+        const ctl = new AbortController();
+        const to = setTimeout(() => { try { ctl.abort(); } catch(e) {} }, 12000);
+        const sig = AbortSignal.any([signal, ctl.signal]);
+
+        fetchOffersByOriginals_(originalNorms, norm, sig)
+          .then(list => {
+            clearTimeout(to);
+            if (isSearchStale_(searchId) || signal?.aborted) return;
+            renderOffersIntoProducto_(list || []);
+          })
+          .catch(() => {
+            clearTimeout(to);
+          })
+          .finally(() => {
+            try { ctl.abort(); } catch(e) {}
+          });
+      }, 0);
+    } catch(e) {}
+
 
     const vehCount = veh?.rows?.length || 0;
     const cambCount = camb?.rows?.length || 0;
