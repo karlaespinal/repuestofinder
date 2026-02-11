@@ -569,19 +569,35 @@ let __watchdogTimer = null;
 function startSearchGuard_(label){
   __searchSeq += 1;
   __activeSearchId = __searchSeq;
-  // watchdog de UI (no cancela la request, pero evita que se quede bloqueado)
+
+  // Abortar cualquier busqueda anterior que aun este en vuelo (evita que se acumulen fetch colgados)
+  try{
+    if(window.__activeAbortController){
+      window.__activeAbortController.abort();
+    }
+  }catch(e){}
+  window.__activeAbortController = new AbortController();
+
+  // watchdog de UI (no cancela la request por si sola, pero evita que se quede bloqueado)
   try{ if(__watchdogTimer) clearTimeout(__watchdogTimer); }catch(e){}
   __watchdogTimer = setTimeout(()=>{
-    // si aun es la misma busqueda y sigue "buscando", liberamos UI
     if(window.__isSearching && __activeSearchId === __searchSeq){
-      try{ window.__isSearching = false; }catch(e){}
-      try{ const b=document.getElementById('btnBuscarCodigo'); if(b) b.disabled=false; }catch(e){}
-      try{ const st=(document.getElementById("status")?.textContent||"").toLowerCase();
-           if(st.includes("buscando")) setStatus("Listo ✅"); }catch(e){}
+      console.warn("Watchdog: liberando UI por posible bloqueo/timeout", label);
+      try{ releaseUI_(); }catch(e){}
+      try{
+        const st=(document.getElementById("status")?.textContent||"").toLowerCase();
+        if(st.includes("buscando")) setStatus("Listo ✅");
+      }catch(e){}
     }
   }, 35000);
+
   return __activeSearchId;
 }
+
+function getActiveSignal_(){
+  try{ return window.__activeAbortController?.signal; }catch(e){ return undefined; }
+}
+
 
 function isSearchStale_(id){
   return id !== __activeSearchId;
@@ -592,15 +608,23 @@ function endSearchGuard_(){
   __watchdogTimer = null;
 }
 
-function withTimeout_(promise, ms, label){
+function withTimeout_(promise, ms, label, abortController){
   let t;
   const timeoutP = new Promise((_, reject)=> {
-    t = setTimeout(()=> reject(new Error(`Timeout (${label||"operacion"}) - ${ms}ms`)), ms);
+    t = setTimeout(()=> {
+      try{
+        if(abortController && !abortController.signal.aborted){
+          abortController.abort();
+        }
+      }catch(e){}
+      reject(new Error(`Timeout (${label||"operacion"}) - ${ms}ms`));
+    }, ms);
   });
   return Promise.race([promise, timeoutP]).finally(()=> {
     try{ clearTimeout(t); }catch(e){}
   });
 }
+
 
 // Reintentos simples (solo en timeouts / fallos temporales)
 async function retryWithTimeout_(fn, opts){
@@ -612,9 +636,11 @@ async function retryWithTimeout_(fn, opts){
   let lastErr = null;
   for(let attempt=0; attempt<=retries; attempt++){
     try{
-      return await withTimeout_(Promise.resolve().then(fn), timeoutMs, label);
+      return await withTimeout_(Promise.resolve().then(fn), timeoutMs, label, opts?.abortController);
     }catch(e){
       lastErr = e;
+      // Si se aborto por una nueva busqueda, salir inmediatamente
+      try{ if(opts?.abortController?.signal?.aborted) throw lastErr; }catch(_e){ throw lastErr; }
       const msg = String(e?.message || e || "");
       const isTimeout = msg.toLowerCase().includes("timeout");
       if(attempt >= retries || !isTimeout){
@@ -1723,13 +1749,14 @@ function uniqueJoin_(arr, sep=" / "){
 }
 
 
-  async function resolveOriginals_(codeNorm){
+  async function resolveOriginals_(codeNorm, signal){
     let all = [];
     for(const t of CAMBIOS_TABLES){
       const { data, error } = await supabase
         .from(t)
         .select("original_norm")
         .or(`original_norm.eq.${codeNorm},cambio_norm.eq.${codeNorm}`)
+        .abortSignal(signal)
         .limit(5000);
       if(error) throw error;
       all = all.concat(data || []);
@@ -1740,13 +1767,14 @@ function uniqueJoin_(arr, sep=" / "){
     return originals;
   }
 
-  async function fetchCambiosByOriginals_(originalNorms){
+  async function fetchCambiosByOriginals_(originalNorms, signal){
   let all = [];
   for(const t of CAMBIOS_TABLES){
     const { data, error } = await supabase
       .from(t)
       .select("cambio, owner, posicion")
       .in("original_norm", originalNorms)
+      .abortSignal(signal)
       .limit(5000);
     if(error) throw error;
     all = all.concat(data || []);
@@ -1912,7 +1940,7 @@ function uniqueJoin_(arr, sep=" / "){
 
 
 
-async function fetchVehiclesByOriginals_(originalNorms){
+async function fetchVehiclesByOriginals_(originalNorms, signal){
   // Solo traemos columnas necesarias (y descripcion)
   const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion, original_norm";
 
@@ -1922,6 +1950,7 @@ async function fetchVehiclesByOriginals_(originalNorms){
       .from(t)
       .select(selectCols)
       .in("original_norm", originalNorms)
+      .abortSignal(signal)
       .limit(5000);
 
     if(error) throw error;
@@ -2036,12 +2065,12 @@ async function fetchVehiclesByOriginals_(originalNorms){
     }
   }
 
-  async function fetchVehiclesByFilters_(f){
+  async function fetchVehiclesByFilters_(f, signal){
     const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion, original_norm";
 
     let all = [];
     for(const t of VEH_TABLES){
-      let q = supabase.from(t).select(selectCols).limit(5000);
+      let q = supabase.from(t).select(selectCols).abortSignal(signal).limit(5000);
 
       if(f.vehiculo) q = q.ilike("vehiculo", "%" + f.vehiculo + "%");
       if(f.modelo)   q = q.ilike("modelo",   "%" + f.modelo   + "%");
@@ -2272,6 +2301,8 @@ window.limpiar = function(){
     window.buscar = async function(){
   const t0 = performance.now();
   const searchId = startSearchGuard_("buscar");
+  const abortController = window.__activeAbortController;
+  const signal = getActiveSignal_();
 
   const raw0 = (document.getElementById("code")?.value || "").trim();
   const raw = raw0.toUpperCase();
@@ -2315,8 +2346,8 @@ window.limpiar = function(){
     let originalNorms = [norm];
     try{
       originalNorms = await retryWithTimeout_(
-        () => resolveOriginals_(norm),
-        { timeoutMs: 45000, label: 'originals', retries: 1 }
+        () => resolveOriginals_(norm, signal),
+        { timeoutMs: 45000, label: 'originals', retries: 1, abortController }
       );
       if(!Array.isArray(originalNorms) || originalNorms.length === 0) originalNorms = [norm];
     }catch(e){
@@ -2332,10 +2363,10 @@ window.limpiar = function(){
     try{
       const res = await retryWithTimeout_(
         () => Promise.all([
-          fetchVehiclesByOriginals_(originalNorms),
-          fetchCambiosByOriginals_(originalNorms),
+          fetchVehiclesByOriginals_(originalNorms, signal),
+          fetchCambiosByOriginals_(originalNorms, signal),
         ]),
-        { timeoutMs: 60000, label: 'vehicles/cambios', retries: 0 }
+        { timeoutMs: 60000, label: 'vehicles/cambios', retries: 0, abortController }
       );
       veh = res?.[0] || veh;
       camb = res?.[1] || camb;
@@ -2378,8 +2409,8 @@ window.limpiar = function(){
       try{
         lastOffersError = '';
         const offers = await retryWithTimeout_(
-          ()=> fetchOffersByOriginals_(originalNorms, norm),
-          { timeoutMs: 20000, label: 'offers', retries: 0 }
+          ()=> fetchOffersByOriginals_(originalNorms, norm, signal),
+          { timeoutMs: 20000, label: 'offers', retries: 0, abortController }
         );
         if(!isSearchStale_(searchId)){
           lastOffers = offers;
@@ -2396,7 +2427,7 @@ window.limpiar = function(){
         try{
           const sim = await retryWithTimeout_(
             ()=> fetchSimilitudByPrefix_(norm),
-            { timeoutMs: 15000, label: 'similitud', retries: 0 }
+            { timeoutMs: 15000, label: 'similitud', retries: 0, abortController }
           );
           if(!isSearchStale_(searchId)){
             renderSimilitud_(sim, norm);
@@ -2490,7 +2521,7 @@ function isOfferActive_(o){
 }
 
 
-  async function fetchOffersByOriginals_(originalNorms, codeNorm){
+  async function fetchOffersByOriginals_(originalNorms, codeNorm, signal){
   // ✅ NO mostrar ofertas vencidas:
   //    - Activa si expires_at es NULL, o expires_at > ahora
   const norms = unique_([...(originalNorms||[]), codeNorm].filter(Boolean));
@@ -2504,6 +2535,7 @@ function isOfferActive_(o){
       .select(selectCols)
       .in("original_norm", norms)
       .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
+      .abortSignal(signal)
       .order("created_at", { ascending: false })
       .limit(25);
 
