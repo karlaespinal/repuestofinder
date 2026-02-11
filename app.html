@@ -595,6 +595,22 @@ function isSearchStale_(id) {
   return id !== __activeSearchId;
 }
 
+// Compat: AbortSignal.any no esta en todos los navegadores
+function anySignal_(signals){
+  if (typeof AbortSignal !== "undefined" && typeof AbortSignal.any === "function") {
+    return AbortSignal.any(signals.filter(Boolean));
+  }
+  const ctrl = new AbortController();
+  for (const s of signals) {
+    if (!s) continue;
+    if (s.aborted) { try{ ctrl.abort(); }catch(e){}; break; }
+    try{
+      s.addEventListener("abort", () => { try{ ctrl.abort(); }catch(e){}; }, { once: true });
+    }catch(e){}
+  }
+  return ctrl.signal;
+}
+
 async function retryWithAbort_(fn, opts) {
   const retries = Number(opts?.retries ?? 1);
   const timeoutMs = Number(opts?.timeoutMs ?? 30000);
@@ -615,7 +631,7 @@ async function retryWithAbort_(fn, opts) {
 
     // Combinar con señal externa si existe
     const attemptSignal = externalSignal ?
-      AbortSignal.any([externalSignal, attemptController.signal]) :
+      anySignal_([externalSignal, attemptController.signal]) :
       attemptController.signal;
 
     try {
@@ -1909,6 +1925,60 @@ function uniqueJoin_(arr, sep=" / "){
 
 
 
+
+// ======================================================
+// ✅ RPC (1 sola consulta) para evitar cuelgues por multiples queries
+// Requiere funcion en Supabase: buscar_repuesto(codigo_norm text) returns json
+// ======================================================
+async function buscarEnSupabaseRPC_(codigoNorm, signal){
+  const { data, error } = await supabase
+    .rpc("buscar_repuesto", { codigo_norm: codigoNorm })
+    .abortSignal(signal);
+
+  if (error) {
+    // Si el fetch fue abortado, propagar para que retryWithAbort_ lo maneje
+    if (error.name === "AbortError" || String(error.message||"").toLowerCase().includes("abort")) throw error;
+    throw new Error(error.message || "RPC buscar_repuesto fallo");
+  }
+  return data;
+}
+
+function vehiclesTableFromRPC_(vehicles){
+  const all = Array.isArray(vehicles) ? vehicles : [];
+  if (!all.length) return { headers: [], rows: [] };
+
+  const headersKeys = [
+    "vehiculo", "anio_inicio", "anio_final", "modelo", "motor",
+    "serie", "cilindro", "posicion", "version", "descripcion"
+  ];
+
+  const headerLabel = (k) => {
+    if (k === "anio_inicio") return "Año inicio";
+    if (k === "anio_final") return "Año final";
+    if (k === "vehiculo") return "Vehiculo";
+    if (k === "modelo") return "Modelo";
+    if (k === "motor") return "Motor";
+    if (k === "serie") return "Serie";
+    if (k === "cilindro") return "Cilindro";
+    if (k === "posicion") return "Posicion";
+    if (k === "version") return "Version";
+    if (k === "descripcion") return "Descripcion";
+    return k.replace(/_/g, " ").replace(/^./, c => c.toUpperCase());
+  };
+
+  const headers = headersKeys.map(headerLabel);
+  const rows = all.map(obj => headersKeys.map(k => (obj?.[k] ?? "")));
+  return { headers, rows };
+}
+
+function cambiosTableFromRPC_(cambios){
+  const all = Array.isArray(cambios) ? cambios : [];
+  if (!all.length) return { headers: [], rows: [] };
+  // La RPC devuelve { cambio, owners, posicion } - mantenemos formato actual { headers: ["cambio","owner"] }
+  const rows = all.map(r => ([ r?.cambio || "", r?.owners || r?.owner || "" ]));
+  return { headers: ["cambio", "owner"], rows };
+}
+
 async function fetchVehiclesByOriginals_(originalNorms, signal) {
   const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion, original_norm";
 
@@ -2297,20 +2367,20 @@ window.limpiar = function(){
 
   const raw0 = (document.getElementById("code")?.value || "").trim();
   const raw = raw0.toUpperCase();
-  
-  try { 
-    const ci = document.getElementById("code"); 
-    if (ci) ci.value = raw; 
+
+  try {
+    const ci = document.getElementById("code");
+    if (ci) ci.value = raw;
   } catch(e) {}
-  
+
   if (!raw) {
     setStatus("Escribe un codigo.");
     release();
     return;
   }
 
-  try { 
-    await ensureMarketLoaded_(); 
+  try {
+    await ensureMarketLoaded_();
   } catch(e) {}
 
   const norm = normalizeCode_(raw);
@@ -2320,66 +2390,81 @@ window.limpiar = function(){
     if (released) return;
     if (isSearchStale_(searchId)) return;
     released = true;
-    release();
+    try { release(); } catch(e) {}
   };
 
   try {
-    if (isSearchStale_(searchId)) { safeRelease(); return; }
+    if (isSearchStale_(searchId) || signal?.aborted) { safeRelease(); return; }
 
     const codigoMostrado = raw;
 
-    // 1) ORIGINALS - con cancelación
+    // ======================================================
+    // ✅ 0) INTENTO RPC (1 sola consulta) - evita cuelgues
+    // ======================================================
     let originalNorms = [norm];
-    try {
-      originalNorms = await retryWithAbort_(
-        (s) => resolveOriginals_(norm, s),
-        { 
-          timeoutMs: 45000, 
-          label: 'originals', 
-          retries: 1,
-          signal 
-        }
-      );
-      if (!Array.isArray(originalNorms) || originalNorms.length === 0) originalNorms = [norm];
-    } catch (e) {
-      if (e?.message?.includes('Abortado') || signal?.aborted) {
-        safeRelease();
-        return;
-      }
-      console.warn("resolveOriginals_ fallo:", e);
-      originalNorms = [norm];
-    }
-
-    if (isSearchStale_(searchId) || signal?.aborted) { safeRelease(); return; }
-
-    // 2) VEHICLES + CAMBIOS - con cancelación
     let veh = { headers: [], rows: [] };
     let camb = { headers: [], rows: [] };
-    
+    let usedRpc = false;
+
     try {
-      const res = await retryWithAbort_(
-        async (s) => {
-          const [v, c] = await Promise.all([
-            fetchVehiclesByOriginals_(originalNorms, s),
-            fetchCambiosByOriginals_(originalNorms, s),
-          ]);
-          return [v, c];
-        },
-        { 
-          timeoutMs: 45000, 
-          label: 'vehicles/cambios', 
-          retries: 1,
-          signal 
-        }
+      const rpc = await retryWithAbort_(
+        (s) => buscarEnSupabaseRPC_(norm, s),
+        { timeoutMs: 45000, label: "rpc buscar_repuesto", retries: 1, signal }
       );
-      veh = res?.[0] || veh;
-      camb = res?.[1] || camb;
+
+      if (rpc && (rpc.vehicles || rpc.cambios || rpc.original_norms)) {
+        usedRpc = true;
+        originalNorms = Array.isArray(rpc.original_norms) && rpc.original_norms.length ? rpc.original_norms : [norm];
+        veh = vehiclesTableFromRPC_(rpc.vehicles);
+        camb = cambiosTableFromRPC_(rpc.cambios);
+      }
     } catch (e) {
-      if (e?.message?.includes('Abortado') || signal?.aborted) {
+      // Si fue abortado, salir silencioso
+      if (signal?.aborted || e?.name === "AbortError" || String(e?.message||"").toLowerCase().includes("abort")) {
         safeRelease();
         return;
       }
-      console.warn("vehicles/cambios fallo:", e);
+      console.warn("RPC fallo, usando fallback multi-consulta:", e);
+    }
+
+    if (!usedRpc) {
+      // ======================================================
+      // ✅ Fallback: flujo viejo (multi-consulta)
+      // ======================================================
+
+      // 1) ORIGINALS
+      try {
+        originalNorms = await retryWithAbort_(
+          (s) => resolveOriginals_(norm, s),
+          { timeoutMs: 45000, label: "originals", retries: 1, signal }
+        );
+        if (!Array.isArray(originalNorms) || originalNorms.length === 0) originalNorms = [norm];
+      } catch (e) {
+        if (signal?.aborted || e?.name === "AbortError") { safeRelease(); return; }
+        console.warn("resolveOriginals_ fallo:", e);
+        originalNorms = [norm];
+      }
+
+      if (isSearchStale_(searchId) || signal?.aborted) { safeRelease(); return; }
+
+      // 2) VEHICLES + CAMBIOS
+      try {
+        const res = await retryWithAbort_(
+          async (s) => {
+            const [v, c] = await Promise.all([
+              fetchVehiclesByOriginals_(originalNorms, s),
+              fetchCambiosByOriginals_(originalNorms, s),
+            ]);
+            return [v, c];
+          },
+          { timeoutMs: 45000, label: "vehicles/cambios", retries: 1, signal }
+        );
+        veh = res?.[0] || veh;
+        camb = res?.[1] || camb;
+      } catch (e) {
+        if (signal?.aborted || e?.name === "AbortError") { safeRelease(); return; }
+        console.warn("vehicles/cambios fallo:", e);
+      }
     }
 
     if (isSearchStale_(searchId) || signal?.aborted) { safeRelease(); return; }
@@ -2392,82 +2477,34 @@ window.limpiar = function(){
       tablas: { vehicles: veh, cambios: camb }
     };
 
-    // Render principal - esto es rápido
     render(payload);
 
     const vehCount = veh?.rows?.length || 0;
     const cambCount = camb?.rows?.length || 0;
     const totalResults = vehCount + cambCount;
-    const resultStatus = totalResults > 0 ? "found" : "not_found";
 
-    // ✅ Limpiar inputs y liberar UI INMEDIATAMENTE
+    // ✅ SIEMPRE liberar UI y permitir nueva busqueda
     clearInputsAfterCodeSearch_();
     setStatus(totalResults > 0 ? "Listo ✅" : "Sin resultados (Listo ✅)");
     safeRelease();
 
-    // 4) Tareas secundarias en background (NO BLOQUEAN)
+    // Background NO bloqueante
     setTimeout(async () => {
-      // Si hay nueva búsqueda, no ejecutamos nada
-      if (isSearchStale_(searchId) || signal?.aborted) return;
+      if (isSearchStale_(searchId)) return;
 
-      // Ofertas
       try {
-        lastOffersError = '';
-        const offers = await retryWithAbort_(
-          (s) => fetchOffersByOriginals_(originalNorms, norm, s),
-          { timeoutMs: 45000, label: 'offers', retries: 1, signal }
-        );
-        if (!isSearchStale_(searchId) && !signal?.aborted) {
-          lastOffers = offers;
-          renderOffersIntoProducto_(lastOffers);
-        }
-      } catch (e) {
-        if (!isSearchStale_(searchId) && !signal?.aborted) {
-          lastOffers = [];
-          lastOffersError = e?.message || String(e);
-          renderOffersIntoProducto_([]);
-        }
-      }
-
-      // Similitud (solo si no hay resultados)
-      if (!isSearchStale_(searchId) && !signal?.aborted && resultStatus === "not_found") {
-        try {
-          const sim = await retryWithAbort_(
-            (s) => fetchSimilitudByPrefix_(norm, s),
-            { timeoutMs: 45000, label: 'similitud', retries: 1, signal }
-          );
-          if (!isSearchStale_(searchId) && !signal?.aborted) {
-            renderSimilitud_(sim, norm);
-            try { toggleAcc('cardSimilitud', true); } catch(e) {}
-          }
-        } catch (e) {
-          try { renderSimilitud_([], norm); } catch(_) {}
-        }
-      }
-
-      // Log (background)
-      try {
-        const pos = extractBestPosition_(veh);
-        const catFromPos = classifyCategoryFromPosition_(pos);
-        const category = catFromPos || classifyCategory_(raw);
-        const vehSummary = extractVehicleSummary_(veh);
-        const responseMs = Math.round(performance.now() - t0);
-
-        safeLogSearchEvent_({
-          queryRaw: raw,
-          queryType: "oem",
-          normalizedQuery: norm,
-          category,
-          resultStatus,
-          resultsCount: totalResults,
-          responseTimeMs: responseMs,
-          meta: {
-            original_norms_count: originalNorms.length,
+        await safeLogSearchEvent_({
+          t: Date.now(),
+          codigo: codigoMostrado,
+          codigo_norm: norm,
+          original_norms: originalNorms,
+          results: {
             vehicles_count: vehCount,
-            cambios_count: cambCount,
-            position_sample: pos || null,
-            category_source: catFromPos ? "posicion" : "query"
-          }
+            cambios_count: cambCount
+          },
+          timing_ms: Math.round(performance.now() - t0),
+          path: "app",
+          source: usedRpc ? "rpc" : "multi"
         });
       } catch(e) {}
     }, 0);
@@ -2475,8 +2512,11 @@ window.limpiar = function(){
   } catch (e) {
     console.error(e);
     if (!isSearchStale_(searchId) && !signal?.aborted) {
-      setStatus("Error: " + (e?.message?.slice(0, 50) || "consulta falló"));
+      setStatus("Error: " + (e?.message?.slice(0, 80) || "consulta falló"));
+      try { clearInputsAfterCodeSearch_(); } catch(err) {}
     }
+  } finally {
+    // ✅ Garantia: nunca quedarse en "Buscando..."
     safeRelease();
   }
 };
