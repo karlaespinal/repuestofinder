@@ -700,7 +700,7 @@ async function retryWithTimeout_(fn, opts){
     s = s.replace(/\s*-\s*/g, "-");
 
     // unir numeros separados por espacios (sin limite)
-    // ej: "11 12 42" => "111242"
+    // ej: "11 12 42" => ""
     s = s.replace(/(?<=\d)\s+(?=\d)/g, "");
 
     // unir letra+numero con espacios SOLO en ese sentido (ej: "m 276" => "m276")
@@ -2960,4 +2960,5 @@ function isOfferActive_(o){
 </script>
 </body>
 </html>
+
 
