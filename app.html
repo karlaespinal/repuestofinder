@@ -6,30 +6,14 @@
   <title>RepuestoFinder - App</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <style>
-    :root{
-      --rf-bg:#f6f7fb;
-      --rf-card:#ffffff;
-      --rf-surface:#fafbff;
-    }
-    body.theme-sky{
-      --rf-bg:#eaf3ff;
-      --rf-card:#ffffff;
-      --rf-surface:#f3f8ff;
-    }
-    body.theme-mint{
-      --rf-bg:#e9fff6;
-      --rf-card:#ffffff;
-      --rf-surface:#f2fffb;
-    }
-
-    body{font-family:Arial,Helvetica,sans-serif;background:var(--rf-bg);margin:0;padding:22px;color:#111}
+    body{font-family:Arial,Helvetica,sans-serif;background:#f6f7fb;margin:0;padding:22px;color:#111}
     .topbar{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0 0 14px 0;}
     h1{margin:0;font-size:26px}
     .watermark{font-size:12px;color:#9ca3af;font-weight:800;letter-spacing:.4px;user-select:none;white-space:nowrap;opacity:.65;text-transform:uppercase;}
     .nav{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
     a.navlink{color:#2563eb;text-decoration:none;font-weight:900}
     a.navlink:hover{text-decoration:underline}
-    .card{background:var(--rf-card);border:1px solid #e6e8f0;border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 1px 8px rgba(0,0,0,.04)}
+    .card{background:#fff;border:1px solid #e6e8f0;border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 1px 8px rgba(0,0,0,.04)}
     .row{display:flex;gap:12px;flex-wrap:wrap}
     .grow{flex:1}
     input{width:100%;padding:12px 12px;border-radius:10px;border:1px solid #d7dbe7;font-size:15px}
@@ -42,7 +26,7 @@
     .dot{width:10px;height:10px;border-radius:50%;background:#10b981;display:inline-block}
     table{width:100%;border-collapse:collapse;margin-top:10px}
     th,td{border-bottom:1px solid #eef0f6;padding:10px;text-align:left;font-size:13px;vertical-align:top;white-space:nowrap}
-    th{background:var(--rf-surface);position:sticky;top:0;z-index:1}
+    th{background:#fafbff;position:sticky;top:0;z-index:1}
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     @media(max-width:900px){.grid2{grid-template-columns:1fr}}
     .searchBox{max-width:420px}
@@ -137,119 +121,6 @@
     }
 
 
-  
-    /* ===== OFERTAS (Obsolescencia) dentro de APP ===== */
-    .offerBox{margin-top:12px;border:1px solid #eef0f6;border-radius:12px;padding:12px;background:var(--rf-surface)}
-    .offerRow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-    .offerTitle{font-weight:900}
-    .offerMeta{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .offerTag{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;border:1px solid #e6e8f0;background:#fff;font-weight:900;font-size:12px}
-    .offerBtn{padding:8px 10px;border-radius:10px;border:1px solid #e6e8f0;background:#fff;font-weight:900;cursor:pointer}
-    .offerBtn:hover{background:#f6f7fb}
-    .offerBtnPrimary{background:#2563eb;color:#fff;border:0}
-    .offerBtnPrimary:hover{filter:brightness(.95)}
-    .offerEmpty{color:#6b7280;font-size:13px}
-
-    
-    /* ===== Logos de Vehiculos (por marca) ===== */
-    .vehLogos{
-      margin-top:10px;
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      align-items:center;
-    }
-    .vehLogoItem{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 10px;
-      border:1px solid #eef0f6;
-      border-radius:12px;
-      background:#fff;
-      box-shadow:0 1px 8px rgba(0,0,0,.03);
-      max-width: 220px;
-    }
-    .vehLogoImg{
-      width:34px;
-      height:22px;
-      object-fit:contain;
-      display:block;
-      filter: grayscale(0%);
-      opacity:.95;
-    }
-    .vehLogoText{
-      font-size:12px;
-      font-weight:900;
-      color:#111;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      max-width:150px;
-    }
-
-  /* Codigo principal (link) */
-    .codeLink{color:#2563eb;text-decoration:underline;font-weight:900;cursor:pointer;}
-    .codeLink:hover{filter:brightness(.9)}
-
-    /* Modal */
-    .rfModalBack{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:18px;z-index:9999}
-    .rfModal{width:min(720px,100%);background:#fff;border-radius:16px;border:1px solid #e6e8f0;box-shadow:0 12px 40px rgba(0,0,0,.25);overflow:hidden}
-    .rfModalHead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:1px solid #eef0f6;background:#fafbff}
-    .rfModalHead h3{margin:0;font-size:16px}
-    .rfModalClose{border:0;background:transparent;font-size:22px;line-height:1;cursor:pointer;font-weight:900;color:#111}
-    .rfModalBody{padding:16px}
-    .rfModalGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media(max-width:700px){.rfModalGrid{grid-template-columns:1fr}}
-    .rfModalActions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px}
-    textarea.rfMsg{width:100%;min-height:96px;resize:vertical;padding:10px 12px;border-radius:12px;border:1px solid #d7dbe7;font-size:14px;box-sizing:border-box}
-    .rfSmall{font-size:12px;color:#6b7280}
-
-  
-    /* ===== Microfono (busqueda por voz) ===== */
-    .micBtn{
-      display:inline-flex;align-items:center;justify-content:center;
-      width:42px;height:38px;border-radius:12px;border:1px solid #e6e8f0;
-      background:#fff;color:#111;cursor:pointer;position:relative;
-      box-shadow:0 1px 8px rgba(0,0,0,.04);
-    }
-    .micBtn:hover{background:#f6f7fb}
-    .micBtn:active{transform:translateY(1px)}
-    .micBtn.listening{border-color:#2563eb}
-    .micIcon{width:18px;height:18px}
-    .micDot{
-      position:absolute;right:8px;top:9px;width:8px;height:8px;border-radius:50%;
-      background:#ef4444;display:none;
-      box-shadow:0 0 0 3px rgba(239,68,68,.15);
-    }
-    .micBtn.listening .micDot{display:block; animation: rfPulse 1.1s infinite;}
-    @keyframes rfPulse{
-      0%{transform:scale(1);opacity:1}
-      70%{transform:scale(1.25);opacity:.55}
-      100%{transform:scale(1);opacity:1}
-    }
-
-/* ===== Theme (cambios de fondo) ===== */
-.themeBar{display:inline-flex;align-items:center;gap:8px;margin-left:6px}
-.themeBtn{
-  width:26px;height:26px;border-radius:999px;border:1px solid #e6e8f0;
-  cursor:pointer;box-shadow:0 1px 8px rgba(0,0,0,.04);
-  background:#fff;
-}
-.themeBtn:hover{filter:brightness(.97)}
-.themeBtn:active{transform:translateY(1px)}
-.themeBtn.active{outline:3px solid rgba(37,99,235,.22);border-color:#2563eb}
-.themeBtn[data-theme="default"]{background:#f6f7fb}
-.themeBtn[data-theme="sky"]{background:#eaf3ff}
-.themeBtn[data-theme="mint"]{background:#e9fff6}
-
-    .rfToast{
-      position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
-      background:rgba(17,17,17,.92);color:#fff;padding:10px 12px;border-radius:12px;
-      font-size:13px;font-weight:800;z-index:10000;max-width:min(520px, 92vw);
-      box-shadow:0 12px 40px rgba(0,0,0,.25);
-    }
-
   </style>
 </head>
 
@@ -261,26 +132,7 @@
     </div>
 
     <div class="nav">
-      
-      <button class="micBtn" id="micBtn" title="Buscar con microfono" aria-label="Buscar con microfono">
-        <svg class="micIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z"></path>
-          <path d="M19 11a7 7 0 0 1-14 0"></path>
-          <path d="M12 19v3"></path>
-          <path d="M8 22h8"></path>
-        </svg>
-        <span class="micDot" id="micDot" aria-hidden="true"></span>
-      </button>
-
-
-<div class="themeBar" aria-label="Cambiar fondo">
-  <button class="themeBtn" data-theme="default" title="Fondo por defecto" aria-label="Fondo por defecto"></button>
-  <button class="themeBtn" data-theme="sky" title="Fondo azul" aria-label="Fondo azul"></button>
-  <button class="themeBtn" data-theme="mint" title="Fondo verde" aria-label="Fondo verde"></button>
-  </div>
-
       <a class="navlink" href="/?stay=1">Volver al sitio</a>
-      <a class="navlink" href="#" id="loginLink" style="display:none">Iniciar sesion</a>
       <a class="navlink" href="#" onclick="cerrarSesion();return false;" id="logoutLink" style="display:none">Cerrar sesion</a>
     </div>
   </div>
@@ -290,12 +142,12 @@
       <div class="grow">
         <div class="muted">Buscar por codigo OEM o equivalente:</div>
         <div style="margin-top:10px" class="searchBox">
-          <input id="code" placeholder="Ej: 55300-3X100" value=""/>
+          <input id="code" placeholder="Ej: 55300-3X100" value="111242"/>
         </div>
       </div>
 
       <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-        <button class="btn" id="btnBuscarCodigo" onclick="window.buscar && window.buscar()">Buscar</button>
+        <button class="btn" onclick="buscar()">Buscar</button>
         <button class="btn2" onclick="limpiar()">Limpiar</button>
         <button class="btn3" onclick="exportar()" id="btnExport" disabled>Exportar a Excel</button>
       </div>
@@ -343,7 +195,7 @@
       </div>
 
       <div class="filterActions">
-        <button class="btn" id="btnBuscarFiltro" onclick="aplicarFiltroVehicular()">Buscar</button>
+        <button class="btn" onclick="aplicarFiltroVehicular()">Buscar</button>
         <button class="btn2" onclick="limpiarFiltroVehicular()">Limpiar</button>
       </div>
     </div>
@@ -370,33 +222,11 @@
       <div class="accBody">
         <div class="muted">URL: <a id="productUrl" href="#" target="_blank">-</a></div>
         <div style="margin-top:8px" class="muted" id="counts">Vehicles: 0 | Cambios: 0</div>
-        <div id="vehLogos" class="vehLogos" style="display:none"></div>
-        <div id="offersWrap" class="offerBox" style="display:none"></div>
         <div style="margin-top:8px" class="muted" id="notes"></div>
       </div>
     </div>
 
-    
-
-    <div class="card menuCard" id="cardSimilitud">
-      <div class="accHeader" onclick="toggleAcc('cardSimilitud')">
-        <div class="accTitle">Similitud</div>
-        <div class="accRight" onclick="event.stopPropagation()">
-          <span class="pill" id="pillSimCount">0</span>
-          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M6 9l6 6 6-6"></path>
-          </svg>
-        </div>
-      </div>
-
-      <div class="accBody">
-        <div class="muted" id="simHint">Si no encontramos coincidencia exacta, te mostraremos codigos similares aqui.</div>
-        <div id="simWrap" style="margin-top:10px"></div>
-      </div>
-    </div>
-
-
-<div class="card menuCard" id="cardOE">
+    <div class="card menuCard" id="cardOE">
       <div class="accHeader" onclick="toggleAcc('cardOE')">
         <div class="accTitle">Cambios</div>
         <div class="accRight" onclick="event.stopPropagation()">
@@ -441,47 +271,6 @@
     </div>
   </div>
 
-
-  <!-- ===== Modal Oferta (ver + chat) ===== -->
-  <div class="rfModalBack" id="offerModalBack" aria-hidden="true">
-    <div class="rfModal" role="dialog" aria-modal="true" aria-labelledby="offerModalTitle">
-      <div class="rfModalHead">
-        <div>
-          <h3 id="offerModalTitle">Oferta</h3>
-          <div class="rfSmall" id="offerModalSub">—</div>
-        </div>
-        <button class="rfModalClose" id="btnCloseOfferModal" title="Cerrar">×</button>
-      </div>
-      <div class="rfModalBody">
-        <div class="rfModalGrid">
-          <div class="offerTag">OEM: <span id="mOfferOEM">—</span></div>
-          <div class="offerTag">Marca: <span id="mOfferBrand">—</span></div>
-          <div class="offerTag">Precio: <span id="mOfferPrice">—</span></div>
-          <div class="offerTag">Moneda: <span id="mOfferCurrency">—</span></div>
-          <div class="offerTag">Pais: <span id="mOfferCountry">—</span></div>
-          <div class="offerTag">Expira: <span id="mOfferExpires">—</span></div>
-        </div>
-
-        <div style="margin-top:12px">
-          <div class="muted" style="font-weight:900">Mensaje al vendedor</div>
-          <textarea class="rfMsg" id="mOfferMsg" placeholder="Escribe tu mensaje..."></textarea>
-          <div class="rfSmall" style="margin-top:6px">
-            Nota: la descripcion interna no se muestra al cliente, solo al vendedor.
-          </div>
-        </div>
-
-        <div class="rfModalActions">
-          <button class="btn2" id="btnOpenOfferChat">Abrir chat de ofertas</button>
-          <button class="btn offerBtnPrimary" id="btnSendOfferMsg">Enviar mensaje</button>
-          <button class="btn" id="btnLoginToSend" style="display:none">Iniciar sesion para enviar</button>
-        </div>
-
-        <div class="rfSmall" style="margin-top:10px" id="offerModalStatus"></div>
-      </div>
-    </div>
-  </div>
-
-
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
@@ -493,596 +282,14 @@
   const VEH_TABLES = ["datos_vehiculares", "datos_vehiculares_v2"];
   const CAMBIOS_TABLES = ["cambios", "cambios_v2"];
 
-  // ✅ Logos por marca (ruta dentro del repo)
-  const AUTO_LOGO_BASE = "assets/logos/autos/";
-
-  // Placeholder (SVG) para cuando no exista un logo
-  const DEFAULT_CAR_SVG_DATAURI =
-    "data:image/svg+xml;charset=utf-8," +
-    encodeURIComponent(`
-      <svg xmlns="http://www.w3.org/2000/svg" width="120" height="80" viewBox="0 0 120 80">
-        <rect x="0" y="0" width="120" height="80" rx="14" fill="#f3f4f6"/>
-        <path d="M30 48l8-16c2-4 6-6 10-6h24c4 0 8 2 10 6l8 16" fill="none" stroke="#9ca3af" stroke-width="4" stroke-linecap="round"/>
-        <path d="M26 48h68c6 0 10 4 10 10v6H16v-6c0-6 4-10 10-10z" fill="none" stroke="#9ca3af" stroke-width="4" stroke-linejoin="round"/>
-        <circle cx="34" cy="64" r="7" fill="#9ca3af"/>
-        <circle cx="86" cy="64" r="7" fill="#9ca3af"/>
-      </svg>
-    `);
-
-
-  // ✅ Ofertas (Obsolescencia) en la App
-  // Ajusta estos nombres si en tu BD difieren:
-  const OFFERS_TABLE = "offers";               // tabla de ofertas
-  const OFFERS_CHATS_TABLE = "offer_chats";      // chats por oferta
-  const OFFERS_MESSAGES_TABLE = "offer_messages"; // mensajes por chat
-  const OFFERS_CHAT_PAGE = "/obsolescencia.html"; // fallback: pagina de obsolescencia
-
-  let lastOffers = [];
-  let lastOffersError = "";     // ofertas encontradas para el codigo actual
-  let modalOffer = null;   // oferta seleccionada en modal
-
   let lastPayload = null;
   let currentSearchSessionId = null;
 
   // ✅ Perfil (country/city)
   let profileCountry = null;
   let profileCity = null;
-  let __marketLoaded = false;
-
-  async function ensureMarketLoaded_(){
-    // Garantiza que profileCountry/profileCity ya fueron leidos antes de loggear.
-    if(__marketLoaded) return;
-    try{ await loadProfileMarket_(); }catch(e){}
-    __marketLoaded = true;
-  }
-
 
   function setStatus(txt){ document.getElementById("status").textContent = txt; }
-
-function clearInputsAfterCodeSearch_(){
-  // limpia casillas para que el usuario pueda buscar otro codigo de inmediato
-  const codeEl = document.getElementById("code");
-  if(codeEl){ codeEl.value = ""; codeEl.focus(); }
-
-  // opcional: limpiar filtro vehicular tambien
-  ["fVehiculo","fAnio","fModelo","fMotor","fDescripcion"].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el) el.value = "";
-  });
-  setFiltroPill_("Sin filtro");
-}
-
-
-// ======================================================
-// ✅ Anti-cuelgue PRO: Cancelación real + timeout
-// ======================================================
-let __searchSeq = 0;
-let __activeSearchId = 0;
-let __activeAbortController = null;
-
-function createSearchGuard() {
-  // Cancelar búsqueda anterior si existe
-  if (__activeAbortController) {
-    try {
-      __activeAbortController.abort();
-    } catch (e) {}
-  }
-  
-  __searchSeq++;
-  __activeSearchId = __searchSeq;
-  __activeAbortController = new AbortController();
-  
-  // Liberar UI
-  window.__isSearching = true;
-  const btn = document.getElementById('btnBuscarCodigo');
-  if (btn) btn.disabled = true;
-  setStatus("Buscando...");
-  
-  return {
-    searchId: __activeSearchId,
-    signal: __activeAbortController.signal,
-    release: () => {
-      if (__activeSearchId === __searchSeq) {
-        window.__isSearching = false;
-        const btn = document.getElementById('btnBuscarCodigo');
-        if (btn) btn.disabled = false;
-      }
-    }
-  };
-}
-
-function isSearchStale_(id) {
-  return id !== __activeSearchId;
-}
-
-async function withAbortTimeout_(promiseFn, timeoutMs, label, signal) {
-  // Crear un AbortController específico para este timeout
-  const timeoutController = new AbortController();
-  
-  // Combinar señales: la externa + la de timeout
-  const combinedSignal = signal ? 
-    (signal.aborted ? signal : AbortSignal.any([signal, timeoutController.signal])) : 
-    timeoutController.signal;
-
-  let timeoutId;
-  
-  const timeoutPromise = new Promise((_, reject) => {
-    timeoutId = setTimeout(() => {
-      timeoutController.abort(); // ← ¡CANCELAR la petición!
-      reject(new Error(`Timeout (${label}) - ${timeoutMs}ms`));
-    }, timeoutMs);
-  });
-
-  try {
-    if (combinedSignal.aborted) {
-      throw new Error(`Abortado antes de iniciar: ${label}`);
-    }
-
-    const result = await Promise.race([
-      promiseFn(combinedSignal),
-      timeoutPromise
-    ]);
-    
-    clearTimeout(timeoutId);
-    timeoutController.abort(); // Limpieza
-    return result;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    timeoutController.abort(); // Asegurar cancelación
-    throw error;
-  }
-}
-
-async function retryWithAbort_(fn, opts) {
-  const retries = Number(opts?.retries ?? 1);
-  const timeoutMs = Number(opts?.timeoutMs ?? 30000); // ← 30s
-  const label = String(opts?.label ?? "operacion");
-  const baseDelay = Number(opts?.baseDelay ?? 350);
-  const externalSignal = opts?.signal;
-
-  let lastErr = null;
-  
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    const attemptController = new AbortController();
-    const timeoutId = setTimeout(() => {
-      attemptController.abort();
-    }, timeoutMs);
-    
-    const attemptSignal = externalSignal ?
-      AbortSignal.any([externalSignal, attemptController.signal]) :
-      attemptController.signal;
-
-    try {
-      if (externalSignal?.aborted) {
-        throw new Error(`Abortado por usuario: ${label}`);
-      }
-
-      const result = await fn(attemptSignal);
-      
-      clearTimeout(timeoutId);
-      attemptController.abort();
-      return result;
-      
-    } catch (e) {
-      clearTimeout(timeoutId);
-      attemptController.abort();
-      lastErr = e;
-      
-      if (externalSignal?.aborted || e?.name === 'AbortError') {
-        throw e;
-      }
-      
-      const msg = String(e?.message || e || "");
-      const isTimeout = msg.toLowerCase().includes("timeout") || 
-                        msg.toLowerCase().includes("abort");
-      
-      if (attempt >= retries || !isTimeout) {
-        throw lastErr;
-      }
-      
-      const wait = baseDelay * (attempt + 1);
-      await new Promise(r => setTimeout(r, wait));
-    }
-  }
-  throw lastErr;
-}
-
-
-  // ======================================================
-  // ✅ VOZ (busqueda por microfono) - APP
-  //  - 1 vez por periodo del dia (mañana/tarde/noche) muestra ayuda (toast)
-  //  - escucha hasta 25s sin resultados y se apaga solo
-  //  - entiende:
-  //      "11 12 42 buscar" / "11 12 guion 42 buscar" => busca por codigo
-  //      "honda 2005 civic buscar" => llena filtros vehiculares y busca
-  // ======================================================
-
-  function toast_(msg, ms=2600){
-    try{
-      const t = document.createElement("div");
-      t.className = "rfToast";
-      t.textContent = msg;
-      document.body.appendChild(t);
-      setTimeout(()=>{ t.remove(); }, ms);
-    }catch(e){}
-  }
-
-  function periodKey_(){
-    const now = new Date();
-    const h = now.getHours();
-    // mañana: 05-11, tarde: 12-18, noche: 19-04
-    if(h >= 5 && h <= 11) return "manana";
-    if(h >= 12 && h <= 18) return "tarde";
-    return "noche";
-  }
-
-  function todayKey_(){
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth()+1).padStart(2,"0");
-    const da = String(d.getDate()).padStart(2,"0");
-    return `${y}-${m}-${da}`;
-  }
-
-  function helpOncePerPeriod_(){
-    const k = `rf_voice_help_app_${todayKey_()}_${periodKey_()}`;
-    if(localStorage.getItem(k) === "1") return;
-    localStorage.setItem(k, "1");
-    toast_("Voz: di un codigo y luego 'buscar' (ej: 11 12 42 buscar) o di 'Honda 2005 Civic buscar'.");
-  }
-
-  function isSpeechAvailable_(){
-    return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-  }
-
-  
-  function normalizeSpoken_(t){
-    let s = String(t || "").toLowerCase();
-
-    // limpiar puntuacion / relleno
-    s = s.replace(/[，,.;:!?]/g, " ");
-    s = s.replace(/\s+/g, " ").trim();
-
-    // convertir "guion" -> "-"
-    s = s.replace(/\b(gui[oó]n|guion|dash)\b/g, "-");
-
-    // numeros en palabras (basico)
-    const map = {
-      "cero":"0","uno":"1","un":"1","una":"1","dos":"2","tres":"3","cuatro":"4","cinco":"5",
-      "seis":"6","siete":"7","ocho":"8","nueve":"9","diez":"10","once":"11","doce":"12",
-      "trece":"13","catorce":"14","quince":"15","dieciseis":"16","dieciséis":"16","diecisiete":"17",
-      "dieciocho":"18","diecinueve":"19","veinte":"20",
-      "treinta":"30","cuarenta":"40","cincuenta":"50","sesenta":"60","setenta":"70","ochenta":"80","noventa":"90"
-    };
-    s = s.split(" ").map(w => map[w] ?? w).join(" ");
-
-    // normalizar espacios alrededor de guiones
-    s = s.replace(/\s*-\s*/g, "-");
-
-    // unir numeros separados por espacios (sin limite)
-    // ej: "11 12 42" => ""
-    s = s.replace(/(?<=\d)\s+(?=\d)/g, "");
-
-    // unir letra+numero con espacios SOLO en ese sentido (ej: "m 276" => "m276")
-    // OJO: no unir numero+letra porque pegaria "111242 encontrar"
-    s = s.replace(/(?<=[a-z])\s+(?=\d)/g, "");
-
-    return s.trim();
-  }
-
-
-
-  function parseVoiceCommand_(raw){
-    const text0 = normalizeSpoken_(raw);
-
-    // palabra reservada para ejecutar: "encontrar"
-    const hasEncontrar = /\b(encontrar|encuentra|encontralo|encuéntralo)\b/.test(text0);
-
-    // quitar palabra reservada antes de escribir en inputs
-    const text = text0
-      .replace(/\b(encontrar|encuentra|encontralo|encuéntralo)\b/g, " ")
-      .replace(/\s+/g," ")
-      .trim();
-
-    const hasYear = /\b(19[5-9]\d|20[0-4]\d|2050)\b/.test(text);
-
-    const brands = ["honda","hyundai","mercedes","toyota","kia","bmw","nissan","mazda","ford","chevrolet","vw","volkswagen","audi","jeep","lexus","acura","mitsubishi","suzuki"];
-    const brandHit = brands.find(b => text.includes(b)) || "";
-    const hasBrand = !!brandHit;
-
-    const hasVehicularHints = /\b(vehiculo|vehículo|modelo|motor|descripcion|descripci[oó]n)\b/.test(text);
-
-    const digitCount = (text.match(/\d/g) || []).length;
-    const wordCount = text.split(/\s+/).filter(Boolean).length;
-
-    // -------------------------
-    // VEHICULAR (buscador de abajo)
-    // -------------------------
-    if(hasYear || hasBrand || hasVehicularHints){
-      const tokens = text
-        .replace(/[，,.;:!?]/g," ")
-        .replace(/\s+/g," ")
-        .trim()
-        .split(" ")
-        .filter(Boolean);
-
-      // año
-      let anio = "";
-      let idxYear = -1;
-      for(let i=0;i<tokens.length;i++){
-        if(/^(19[5-9]\d|20[0-4]\d|2050)$/.test(tokens[i])){
-          anio = tokens[i];
-          idxYear = i;
-          break;
-        }
-      }
-
-      // vehiculo = marca (si la detectamos)
-      let vehiculo = "";
-      let idxBrand = -1;
-      for(let i=0;i<tokens.length;i++){
-        const t = tokens[i].toLowerCase();
-        if(brands.includes(t)){
-          vehiculo = t;
-          idxBrand = i;
-          break;
-        }
-      }
-
-      // motor por keyword o por patron
-      let motor = "";
-      const lower = text.toLowerCase();
-      const motorMatch = lower.match(/\bmotor\s+([a-z0-9.]+)/i);
-      if(motorMatch) motor = motorMatch[1];
-
-      // descripcion (keyword simple)
-      let desc = "";
-      const descKeywords = ["alternador","filtro","bomba","radiador","pastilla","disco","amortiguador","sensor","bobina","bujia","terminal","rotula","empaque","junta","cadena","termostato"];
-      for(const kw of descKeywords){
-        if(lower.includes(kw)){ desc = kw; break; }
-      }
-
-      // modelo: mas estricto
-      const stopWords = new Set(["motor","vehiculo","vehículo","descripcion","descripción","modelo","por","favor"]);
-      function cleanModelTokens(arr){
-        return arr.filter(t => !stopWords.has(t.toLowerCase()) && !/^(19[5-9]\d|20[0-4]\d|2050)$/.test(t));
-      }
-
-      let modeloToks = [];
-      if(idxYear >= 0){
-        modeloToks = tokens.slice(idxYear+1);
-      }else if(idxBrand >= 0){
-        modeloToks = tokens.slice(idxBrand+1);
-      }else{
-        modeloToks = tokens.slice(1);
-      }
-      modeloToks = cleanModelTokens(modeloToks);
-
-      if(!motor && modeloToks[0] && /(\d\.\d|^[a-z]+\d+)/i.test(modeloToks[0])){
-        motor = modeloToks[0];
-        modeloToks = modeloToks.slice(1);
-      }
-
-      const modelo = (modeloToks.slice(0,2).join(" ")).trim();
-
-      return {
-        type: "vehicular",
-        hasEncontrar,
-        fields: { vehiculo, anio, modelo, motor, desc }
-      };
-    }
-
-    // -------------------------
-    // CODIGO (buscador de arriba)
-    // -------------------------
-    const m = text.match(/([a-z0-9]+(?:-[a-z0-9]+)*)/i);
-    const codeCandidate = m ? m[1] : "";
-
-    const looksLikeCode =
-      (digitCount >= 4) &&
-      (
-        /^[a-z0-9]+(-[a-z0-9]+)*$/i.test(codeCandidate)
-      ) &&
-      !(wordCount >= 3 && digitCount < 5);
-
-    if(looksLikeCode && codeCandidate){
-      return { type:"codigo", hasEncontrar, code: codeCandidate };
-    }
-
-    // -------------------------
-    // DESCRIPCION (default si no hay marca/año y son palabras)
-    // -------------------------
-    const lettersOnly = /^[a-záéíóúñ\s-]+$/i.test(text) && digitCount === 0;
-    if(lettersOnly && text.length >= 2){
-      return { type:"descripcion", hasEncontrar, desc: text };
-    }
-
-    return { type:"unknown", hasEncontrar, text };
-  }
-
-
-  let recog_ = null;
-  let isListening_ = false;
-  let silenceTimer_ = null;
-
-  function stopListening_(reason){
-    try{ if(silenceTimer_) clearTimeout(silenceTimer_); }catch(e){}
-    silenceTimer_ = null;
-
-    if(recog_){
-      try{ recog_.stop(); }catch(e){}
-    }
-    isListening_ = false;
-
-    const btn = document.getElementById("micBtn");
-    if(btn) btn.classList.remove("listening");
-
-    if(reason === "timeout") toast_("Microfono apagado (sin respuesta).");
-  }
-
-  async function handleVoiceText_(t){
-    const parsed = parseVoiceCommand_(t);
-
-    // Si solo dicen "encontrar" sin data, usar lo que ya esta escrito
-    const onlyEncontrar = /^\s*(encontrar|encuentra|encontralo|encuéntralo)\s*$/i.test(String(t||"").trim());
-
-    if(onlyEncontrar){
-      const codeNowRaw = String(document.getElementById("code")?.value || "").trim();
-      const codeNow = codeNowRaw.replace(/\b(encontrar|buscar)\b/ig,"").trim();
-
-      const fVeh = String(document.getElementById("fVehiculo")?.value || "").trim();
-      const fAnio = String(document.getElementById("fAnio")?.value || "").trim();
-      const fMod = String(document.getElementById("fModelo")?.value || "").trim();
-      const fMot = String(document.getElementById("fMotor")?.value || "").trim();
-      const fDes = String(document.getElementById("fDescripcion")?.value || "").trim();
-
-      if(codeNow){
-        document.getElementById("code").value = codeNow;
-        toast_("Encontrando codigo: " + codeNow);
-        const btn = document.querySelector('#btnBuscarCodigo') || document.querySelector('button[onclick*="buscar"]');
-        if(btn){ btn.click(); } else { await window.window.buscar && window.buscar(); }
-        return;
-      }
-      if(fVeh || fAnio || fMod || fMot || fDes){
-        toast_("Encontrando por filtros…");
-        const btn2 = document.querySelector('#btnBuscarFiltro') || document.querySelector('button[onclick*="aplicarFiltroVehicular"]');
-        if(btn2){ btn2.click(); } else { await window.aplicarFiltroVehicular(); }
-        return;
-      }
-      toast_("Di un codigo o un filtro primero, luego di 'encontrar'.");
-      return;
-    }
-
-    if(parsed.type === "codigo"){
-      const code = String(parsed.code || "").replace(/\b(encontrar|buscar)\b/ig,"").toUpperCase().trim();
-      if(code){
-        document.getElementById("code").value = code;
-        if(parsed.hasEncontrar){
-          toast_("Encontrando codigo: " + code);
-          const btn = document.querySelector('#btnBuscarCodigo') || document.querySelector('button[onclick*="buscar"]');
-        if(btn){ btn.click(); } else { await window.window.buscar && window.buscar(); }
-        }else{
-          toast_("Codigo listo: " + code + ". Ahora di 'encontrar'.");
-        }
-      }
-      return;
-    }
-
-    if(parsed.type === "vehicular"){
-      const f = parsed.fields || {};
-      if(f.vehiculo) document.getElementById("fVehiculo").value = (f.vehiculo || "").replace(/^./,c=>c.toUpperCase());
-      if(f.anio)     document.getElementById("fAnio").value = f.anio;
-      if(f.modelo)   document.getElementById("fModelo").value = (f.modelo || "").replace(/^./,c=>c.toUpperCase());
-      if(f.motor)    document.getElementById("fMotor").value = String(f.motor || "").toUpperCase();
-      if(f.desc)     document.getElementById("fDescripcion").value = (f.desc || "").toLowerCase();
-
-      const resumen = [f.vehiculo, f.anio, f.modelo].filter(Boolean).join(" ");
-      if(parsed.hasEncontrar){
-        toast_("Encontrando por filtros: " + resumen);
-        const btn2 = document.querySelector('#btnBuscarFiltro') || document.querySelector('button[onclick*="aplicarFiltroVehicular"]');
-        if(btn2){ btn2.click(); } else { await window.aplicarFiltroVehicular(); }
-      }else{
-        toast_("Filtros listos: " + resumen + ". Ahora di 'encontrar'.");
-      }
-      return;
-    }
-
-    if(parsed.type === "descripcion"){
-      const desc = String(parsed.desc || "").replace(/\b(encontrar|buscar)\b/ig,"").trim();
-      if(desc){
-        document.getElementById("fDescripcion").value = desc;
-        if(parsed.hasEncontrar){
-          toast_("Encontrando por descripcion: " + desc);
-          const btn2 = document.querySelector('#btnBuscarFiltro') || document.querySelector('button[onclick*="aplicarFiltroVehicular"]');
-        if(btn2){ btn2.click(); } else { await window.aplicarFiltroVehicular(); }
-        }else{
-          toast_("Descripcion lista: " + desc + ". Ahora di 'encontrar'.");
-        }
-      }
-      return;
-    }
-
-    toast_("No entendi. Di un codigo, o 'Marca Año Modelo', o una descripcion; y di 'encontrar'.");
-  }
-
-  function startListening_(){
-    if(!isSpeechAvailable_()){
-      alert("Tu navegador no soporta reconocimiento de voz. Prueba Chrome o Edge.");
-      return;
-    }
-
-    helpOncePerPeriod_();
-
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recog_ = new SR();
-    recog_.lang = "es-ES";
-    recog_.interimResults = true;
-    recog_.continuous = true;
-
-    let lastFinal = "";
-    let lastInterimAt = Date.now();
-
-    recog_.onresult = async (ev)=>{
-      lastInterimAt = Date.now();
-      try{
-        let interim = "";
-        let finalText = "";
-
-        for(let i=ev.resultIndex; i<ev.results.length; i++){
-          const r = ev.results[i];
-          const txt = r[0]?.transcript || "";
-          if(r.isFinal) finalText += " " + txt;
-          else interim += " " + txt;
-        }
-
-        const mergedFinal = (lastFinal + " " + finalText).trim();
-        const mergedInterim = interim.trim();
-
-        // feedback leve
-        if(mergedInterim){
-          const cleanInterim = mergedInterim.replace(/\b(encontrar|encuentra|encontralo|encuéntralo)\b/ig,"").replace(/\s+/g," ").trim();
-          if(cleanInterim) setStatus("🎙️ " + cleanInterim);
-        }
-
-        // Si tenemos final y contiene "encontrar", ejecutamos
-        if(mergedFinal && /(encontrar|encuentra|encontralo|encuéntralo)/i.test(mergedFinal)){
-          lastFinal = mergedFinal;
-          setStatus("Procesando voz...");
-          stopListening_();
-          await handleVoiceText_(mergedFinal);
-          setStatus("Listo ✅");
-        }else{
-          lastFinal = mergedFinal || lastFinal;
-        }
-      }catch(e){
-        console.warn("voz onresult error:", e);
-      }
-    };
-
-    recog_.onerror = (ev)=>{
-      console.warn("voz error:", ev?.error || ev);
-      stopListening_();
-    };
-
-    recog_.onend = ()=>{
-      // si se corto por permisos, aseguramos UI
-      stopListening_();
-    };
-
-    isListening_ = true;
-    const btn = document.getElementById("micBtn");
-    if(btn) btn.classList.add("listening");
-
-    // auto off si 25s sin reconocer nada
-    silenceTimer_ = setTimeout(()=> stopListening_("timeout"), 25000);
-
-    try{ recog_.start(); }catch(e){ console.warn("no pude iniciar voz", e); stopListening_(); }
-  }
-
-  function toggleListening_(){
-    if(isListening_) stopListening_();
-    else startListening_();
-  }
 
   function isMobile_(){
     const w = Math.min(window.innerWidth || 9999, screen.width || 9999);
@@ -1108,43 +315,6 @@ async function retryWithAbort_(fn, opts) {
   window.addEventListener("resize", ()=>{ if(isMobile_()) setMobileDefault_(); else setDesktopDefault_(); });
   document.addEventListener("DOMContentLoaded", ()=>{ if(isMobile_()) setMobileDefault_(); else setDesktopDefault_();
 
-    // ===== Modal oferta handlers =====
-    const back = document.getElementById("offerModalBack");
-    const btnClose = document.getElementById("btnCloseOfferModal");
-    const btnOpenChat = document.getElementById("btnOpenOfferChat");
-    const btnSend = document.getElementById("btnSendOfferMsg");
-
-    if(btnClose) btnClose.addEventListener("click", closeOfferModal_);
-    if(back) back.addEventListener("click", (ev)=>{ if(ev.target === back) closeOfferModal_(); });
-    document.addEventListener("keydown", (ev)=>{ if(ev.key === "Escape") closeOfferModal_(); });
-
-    if(btnOpenChat) btnOpenChat.addEventListener("click", async ()=>{
-      const params = new URLSearchParams(window.location.search);
-      const isDemo = params.get("demo") === "1";
-      if(isDemo){ alert("En modo DEMO no se puede abrir el chat."); return; }
-
-      const { data } = await supabase.auth.getSession();
-      const user = data?.session?.user;
-      if(!user){
-        alert("Debes iniciar sesion para abrir el chat.");
-        const next = encodeURIComponent(window.location.pathname + window.location.search);
-        window.location.href = "/?stay=1&next=" + next;
-        return;
-      }
-
-      const msg = String(document.getElementById("mOfferMsg")?.value || "").trim();
-      const q = new URLSearchParams();
-      if(modalOffer?.id) q.set("offer", modalOffer.id);
-      if(modalOffer?.original_norm) q.set("code", modalOffer.original_norm);
-      if(msg) q.set("msg", msg);
-      window.open(OFFERS_CHAT_PAGE + "?" + q.toString(), "_blank");
-    });
-
-    if(btnSend) btnSend.addEventListener("click", async ()=>{
-      const msg = document.getElementById("mOfferMsg")?.value || "";
-      await sendOfferMessage_(msg);
-    });
-
     // Enter en filtros => aplicar
   ["fVehiculo","fAnio","fModelo","fMotor","fDescripcion"].forEach(id=>{
     const el = document.getElementById(id);
@@ -1154,46 +324,6 @@ async function retryWithAbort_(fn, opts) {
       });
     }
   });
-
-  // Estado inicial de botones de mensajeria (si alguien abre modal)
-  updateOfferModalAuthUI_();
-
-
-// ===== Theme (fondos) =====
-function applyTheme_(name){
-  const b = document.body;
-  b.classList.remove("theme-sky","theme-mint");
-  if(name === "sky") b.classList.add("theme-sky");
-  else if(name === "mint") b.classList.add("theme-mint");
-  
-  // default = sin clase
-  try{ localStorage.setItem("rf_app_theme", name || "default"); }catch(e){}
-  // UI active state
-  document.querySelectorAll(".themeBtn").forEach(btn=>{
-    const t = btn.getAttribute("data-theme") || "default";
-    btn.classList.toggle("active", t === (name || "default"));
-  });
-}
-
-// iniciar theme guardado
-try{
-  const saved = localStorage.getItem("rf_app_theme") || "default";
-  applyTheme_(saved);
-}catch(e){}
-
-// clicks
-document.querySelectorAll(".themeBtn").forEach(btn=>{
-  btn.addEventListener("click", ()=>{
-    const t = btn.getAttribute("data-theme") || "default";
-    applyTheme_(t);
-  });
-});
-
-  // Microfono (voz)
-  const micBtn = document.getElementById("micBtn");
-  if(micBtn){
-    micBtn.addEventListener("click", (ev)=>{ ev.preventDefault(); toggleListening_(); });
-  }
 });
 
   window.cerrarSesion = async function(){
@@ -1203,29 +333,18 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
 
   async function initAuth_(){
     const logoutLink = document.getElementById("logoutLink");
-    const loginLink  = document.getElementById("loginLink");
-
     const params = new URLSearchParams(window.location.search);
     const isDemo = params.get("demo") === "1";
     const { data } = await supabase.auth.getSession();
 
-    const hasSession = !!(data && data.session);
-
-    // ✅ Si NO hay sesion: la App se puede usar, pero Mensajeria de Ofertas queda bloqueada
-    if(!hasSession){
-      if(logoutLink) logoutLink.style.display = "none";
-
-      if(loginLink){
-        loginLink.style.display = "inline-flex";
-        // Redirige a la pagina principal (login) y vuelve a esta pagina con ?next=
-        const next = encodeURIComponent(window.location.pathname + window.location.search);
-        loginLink.href = "/?stay=1&next=" + next;
+    if(!data || !data.session){
+      if(isDemo){
+        if(logoutLink) logoutLink.style.display = "none";
+        return;
       }
+      window.location.href = "/?stay=1";
       return;
     }
-
-    // ✅ Si hay sesion: mostrar cerrar sesion y ocultar login
-    if(loginLink) loginLink.style.display = "none";
     if(logoutLink) logoutLink.style.display = "inline-flex";
   }
 
@@ -1234,98 +353,6 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
       .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
       .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
   }
-
-  function slugifyMake_(make){
-    return String(make||"")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "_")
-      .replace(/[^a-z0-9_]/g, "");
-  }
-
-  function titleCase_(s){
-    const t = String(s||"").trim().toLowerCase();
-    if(!t) return "";
-    return t.charAt(0).toUpperCase() + t.slice(1);
-  }
-
-  function getLogoCandidates_(make){
-    const slug = slugifyMake_(make);
-    const tcase = titleCase_(make).replace(/\s+/g, "");
-    // Intentamos varias combinaciones (por si el repo tiene mayusculas/extension distinta)
-    const list = [];
-    if(slug)  list.push(AUTO_LOGO_BASE + slug + ".png", AUTO_LOGO_BASE + slug + ".jpg", AUTO_LOGO_BASE + slug + ".jpeg");
-    if(tcase) list.push(AUTO_LOGO_BASE + tcase + ".png", AUTO_LOGO_BASE + tcase + ".jpg", AUTO_LOGO_BASE + tcase + ".jpeg");
-    return list;
-  }
-
-  function renderVehicleLogos_(vehiclesTable){
-    const wrap = document.getElementById("vehLogos");
-    if(!wrap) return;
-
-    // limpiar por defecto
-    wrap.innerHTML = "";
-    wrap.style.display = "none";
-
-    if(!vehiclesTable || !Array.isArray(vehiclesTable.headers) || !Array.isArray(vehiclesTable.rows)) return;
-    if(!vehiclesTable.rows.length) return;
-
-    const headers = vehiclesTable.headers.map(h => String(h||"").toLowerCase());
-    const idxMake = headers.findIndex(h => h === "vehiculo" || h.includes("vehiculo") || h === "vehicle" || h.includes("vehicle"));
-    if(idxMake < 0) return;
-
-    const makes = [];
-    const seen = new Set();
-    for(const r of vehiclesTable.rows){
-      const mk = (r && r[idxMake] !== undefined) ? String(r[idxMake]||"").trim() : "";
-      if(!mk) continue;
-      const key = mk.toLowerCase();
-      if(seen.has(key)) continue;
-      seen.add(key);
-      makes.push(mk);
-      if(makes.length >= 10) break; // max 10 logos (2 filas de 5 aprox)
-    }
-
-    if(makes.length === 0) return;
-
-    // Construir HTML
-    let html = "";
-    for(const mk of makes){
-      const candidates = getLogoCandidates_(mk);
-      const firstSrc = candidates[0] || DEFAULT_CAR_SVG_DATAURI;
-
-      // onerror: intenta siguiente candidato, y si no, placeholder
-      const escMk = escapeHtml_(mk);
-      const candJson = escapeHtml_(JSON.stringify(candidates));
-      html += `
-        <div class="vehLogoItem" title="${escMk}">
-          <img class="vehLogoImg"
-               src="${firstSrc}"
-               alt="${escMk}"
-               data-candidates='${candJson}'
-               onerror="(function(img){
-                 try{
-                   const c = JSON.parse(img.getAttribute('data-candidates')||'[]');
-                   const i = Number(img.getAttribute('data-idx')||'0');
-                   const next = c[i+1];
-                   if(next){
-                     img.setAttribute('data-idx', String(i+1));
-                     img.src = next;
-                     return;
-                   }
-                 }catch(e){}
-                 img.onerror=null;
-                 img.src='${DEFAULT_CAR_SVG_DATAURI}';
-               })(this)">
-          <div class="vehLogoText">${escMk}</div>
-        </div>
-      `;
-    }
-
-    wrap.innerHTML = html;
-    wrap.style.display = "flex";
-  }
-
 
   function renderTableInto_(wrapId, tableObj){
     const wrap = document.getElementById(wrapId);
@@ -1347,20 +374,7 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
       html += '<tr>';
       for(let i=0;i<headers.length;i++){
         const v = (r && r[i] !== undefined) ? r[i] : "";
-        // ✅ Si es columna "Codigo principal", render como link que dispara busqueda por codigo
-        const hName = String(headers[i] || "").toLowerCase();
-        const cell = (v !== undefined && v !== null) ? String(v) : "";
-        if(hName.includes("codigo principal") || hName.includes("código principal") || hName.includes("principal code")){
-          const clean = cell.trim();
-          if(clean){
-            const esc = escapeHtml_(clean);
-            html += '<td><a class="codeLink" href="#" onclick="buscarCodigoPrincipal(\'' + esc + '\');return false;">' + esc + '</a></td>';
-          }else{
-            html += '<td></td>';
-          }
-        }else{
-          html += '<td>' + escapeHtml_(cell) + '</td>';
-        }
+        html += '<td>' + escapeHtml_(v) + '</td>';
       }
       html += '</tr>';
     }
@@ -1404,88 +418,7 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
     return "https://www.google.com/search?q=" + encodeURIComponent(code);
   }
 
-  
   // ======================================================
-  // ✅ COUNTRY OPTIONS (mismas siglas usadas en RADAR)
-  //  - Se usan para normalizar lo que venga guardado en profiles.country
-  //  - Ejemplos soportados: "DO", "DO República Dominicana (DO)", "República Dominicana", "GLOBAL", "Todos (GLOBAL)"
-  // ======================================================
-  const COUNTRY_OPTIONS = [
-    { code:"DO", name:"República Dominicana" },
-    { code:"US", name:"Estados Unidos" },
-    { code:"MX", name:"México" },
-    { code:"CA", name:"Canadá" },
-    { code:"ES", name:"España" },
-    { code:"PT", name:"Portugal" },
-    { code:"FR", name:"Francia" },
-    { code:"DE", name:"Alemania" },
-    { code:"IT", name:"Italia" },
-    { code:"GB", name:"Reino Unido" },
-    { code:"NL", name:"Países Bajos" },
-    { code:"BE", name:"Bélgica" },
-    { code:"CH", name:"Suiza" },
-    { code:"SE", name:"Suecia" },
-    { code:"NO", name:"Noruega" },
-    { code:"DK", name:"Dinamarca" },
-    { code:"FI", name:"Finlandia" },
-    { code:"PL", name:"Polonia" },
-    { code:"TR", name:"Turquía" },
-    { code:"RU", name:"Rusia" },
-    { code:"UA", name:"Ucrania" },
-    { code:"BR", name:"Brasil" },
-    { code:"AR", name:"Argentina" },
-    { code:"CL", name:"Chile" },
-    { code:"CO", name:"Colombia" },
-    { code:"PE", name:"Perú" },
-    { code:"EC", name:"Ecuador" },
-    { code:"PA", name:"Panamá" },
-    { code:"CR", name:"Costa Rica" },
-    { code:"GT", name:"Guatemala" },
-    { code:"SV", name:"El Salvador" },
-    { code:"HN", name:"Honduras" },
-    { code:"NI", name:"Nicaragua" },
-    { code:"PR", name:"Puerto Rico" },
-    { code:"VE", name:"Venezuela" },
-  ];
-
-  function normalizeCountryCode_(value){
-    if(value === undefined || value === null) return null;
-
-    let s = String(value).trim();
-    if(!s) return null;
-
-    const u = s.toUpperCase();
-
-    // GLOBAL/TODOS
-    if(u === "GLOBAL" || u === "TODOS" || u === "TODOS (GLOBAL)" || u === "ALL" || u === "WORLD"){
-      return null; // no guardamos country en search_events (queda NULL)
-    }
-
-    // Formato: "DO República Dominicana (DO)" o "... (DO)"
-    const m1 = s.match(/\(([A-Z]{2})\)\s*$/);
-    if(m1) return m1[1];
-
-    // Formato: "DO ..." o "DO-..."
-    const m2 = s.match(/^\s*([A-Z]{2})\b/);
-    if(m2) return m2[1];
-
-    // Si viene solo el codigo
-    if(/^[A-Z]{2}$/.test(u)) return u;
-
-    // Buscar por nombre
-    const low = s.toLowerCase();
-    for(const opt of COUNTRY_OPTIONS){
-      if(!opt) continue;
-      const code = String(opt.code||"").toUpperCase();
-      const name = String(opt.name||"").toLowerCase();
-      if(code && low.includes(code.toLowerCase())) return code;
-      if(name && low.includes(name)) return code || null;
-    }
-
-    return null;
-  }
-
-// ======================================================
   // ✅ MARKET INTEL: anon_id + session + country + logging
   // ======================================================
 
@@ -1639,7 +572,7 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
         profileCountry = null;
         profileCity = null;
       }else{
-        profileCountry = normalizeCountryCode_(data?.country);
+        profileCountry = (data?.country || null);
         profileCity = (data?.city || null);
       }
     }catch(e){
@@ -1649,7 +582,6 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
     }
 
     paintMarketPills_();
-    __marketLoaded = true;
   }
 
   function paintMarketPills_(){
@@ -1657,7 +589,7 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
     const elCity = document.getElementById("pillCity");
     const wrap = document.getElementById("pillCityWrap");
 
-    if(elC) elC.textContent = profileCountry ? String(profileCountry).toUpperCase() : "GLOBAL";
+    if(elC) elC.textContent = profileCountry ? String(profileCountry).toUpperCase() : "—";
 
     if(profileCity){
       if(elCity) elCity.textContent = String(profileCity);
@@ -1707,7 +639,6 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
         query_type: queryType || "mixed",
         normalized_query: normalizedQuery || null,
         category: category || null,
-        country: profileCountry ? String(profileCountry).toUpperCase() : null,
         result_status: resultStatus || "unknown",
         results_count: Number.isFinite(resultsCount) ? resultsCount : 0,
         response_time_ms: Number.isFinite(responseTimeMs) ? responseTimeMs : null,
@@ -1724,17 +655,6 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
       console.warn("Error logSearchEvent_:", e?.message || e);
     }
   }
-
-
-  // Log no-bloqueante (evita que la UI se quede colgada si Supabase tarda)
-  async function safeLogSearchEvent_(payload){
-    try{
-      await withTimeout_(logSearchEvent_(payload), 5000, "log");
-    }catch(e){
-      // silencioso
-    }
-  }
-
 
   // ======================================================
   // ✅ Helpers multi-tabla (v1 + v2)
@@ -1783,226 +703,156 @@ function uniqueJoin_(arr, sep=" / "){
 }
 
 
-  async function resolveOriginals_(codeNorm, signal) {
-  let all = [];
-  
-  for (const t of CAMBIOS_TABLES) {
-    // Verificar abort antes de cada consulta
-    if (signal?.aborted) {
-      throw new Error('Abortado por usuario');
+  async function resolveOriginals_(codeNorm){
+    let all = [];
+    for(const t of CAMBIOS_TABLES){
+      const { data, error } = await supabase
+        .from(t)
+        .select("original_norm")
+        .or(`original_norm.eq.${codeNorm},cambio_norm.eq.${codeNorm}`)
+        .limit(5000);
+      if(error) throw error;
+      all = all.concat(data || []);
     }
-    
+
+    const originals = unique_((all || []).map(x => x.original_norm).filter(Boolean));
+    if(originals.length === 0) return [codeNorm];
+    return originals;
+  }
+
+  async function fetchCambiosByOriginals_(originalNorms){
+  let all = [];
+  for(const t of CAMBIOS_TABLES){
     const { data, error } = await supabase
       .from(t)
-      .select("original_norm")
-      .or(`original_norm.eq.${codeNorm},cambio_norm.eq.${codeNorm}`)
-      .abortSignal(signal)
+      .select("cambio, owner, posicion")
+      .in("original_norm", originalNorms)
       .limit(5000);
-    
-    if (error) {
-      // Si es AbortError, propagarlo inmediatamente
-      if (error.name === 'AbortError' || error.message?.includes('abort')) {
-        throw error;
-      }
-      console.warn(`Error en ${t}:`, error.message);
-    }
-    all = all.concat(data || []);
-    
-    // Verificar abort después de cada consulta
-    if (signal?.aborted) {
-      throw new Error('Abortado por usuario');
-    }
-  }
-
-  const originals = unique_((all || []).map(x => x.original_norm).filter(Boolean));
-  if (originals.length === 0) return [codeNorm];
-  return originals;
-}
-
-
-  
-  // ======================================================
-  // ✅ SIMILITUD: sugerir codigos parecidos cuando no hay match
-  //  - Estrategia simple:
-  //    1) Tomar prefijo (ej: A2761800) del codigo normalizado
-  //    2) Buscar original_norm que empiecen por ese prefijo en VEH_TABLES
-  //    3) Dedupe + limitar a 10 sugerencias
-  // ======================================================
-  async function fetchSimilitudByPrefix_(normalized, signal) {
-  const norm = String(normalized || "").trim().toUpperCase();
-  if (!norm) return [];
-
-  const prefLen = Math.min(8, norm.length);
-  const prefix = norm.slice(0, prefLen);
-  if (prefix.length < 4) return [];
-
-  const selectCols = "original, original_norm, descripcion, vehiculo, modelo, anio_inicio, anio_final";
-  let all = [];
-
-  for (const t of VEH_TABLES) {
-    const { data, error } = await supabase
-      .from(t)
-      .select(selectCols)
-      .ilike("original_norm", prefix + "%")
-      .abortSignal(signal)
-      .limit(40);
-
-    if (error) {
-      if (error.name === 'AbortError' || error.message?.includes('abort')) throw error;
-      console.warn(`Error en similitud ${t}:`, error.message);
-    }
+    if(error) throw error;
     all = all.concat(data || []);
   }
 
-  if (all.length === 0) return [];
+  // ✅ DEDUPE FUERTE: 1 fila por "cambio" (sin importar owner)
+  // ✅ Si hay varios owner, los unimos en un solo campo
+  const map = new Map(); // key=cambioNorm -> { cambio, owners:Set, posicion }
+  for(const r of (all || [])){
+    const cambioRaw = (r?.cambio ?? "");
+    const key = normCodeCell_(cambioRaw);
+    if(!key) continue;
 
-  const seen = new Set();
-  const out = [];
-  
-  for (const r of all) {
-    const k = String(r?.original_norm || "").trim().toUpperCase();
-    if (!k || seen.has(k)) continue;
-    seen.add(k);
-    
-    const disp = String(r?.original ?? "").toString().trim() || k;
-    out.push({
-      code: disp,
-      code_norm: k,
-      desc: (r?.descripcion ?? "").toString().trim(),
-      vehiculo: (r?.vehiculo ?? "").toString().trim(),
-      modelo: (r?.modelo ?? "").toString().trim(),
-      from: r?.anio_inicio ?? "",
-      to: r?.anio_final ?? ""
-    });
-    
-    if (out.length >= 10) break;
+    if(!map.has(key)){
+      map.set(key, {
+        cambio: String(cambioRaw || "").trim(),
+        owners: new Set(),
+        posicion: String(r?.posicion || "").trim()
+      });
+    }
+    const obj = map.get(key);
+    const owner = String(r?.owner || "").trim();
+    if(owner) obj.owners.add(owner);
+
+    // si una posicion viene vacia y otra no, guarda la mejor
+    const pos = String(r?.posicion || "").trim();
+    if(!obj.posicion && pos) obj.posicion = pos;
   }
-  
-  return out;
+
+  let merged = Array.from(map.values()).map(x => ({
+    cambio: x.cambio,
+    owner: uniqueJoin_(Array.from(x.owners), " / "),
+    posicion: x.posicion
+  }));
+
+  // orden simple
+  merged.sort((a,b)=>{
+    const pa = String(a?.posicion||"");
+    const pb = String(b?.posicion||"");
+    if(pa && pb && pa !== pb) return pa.localeCompare(pb);
+    return String(a?.cambio||"").localeCompare(String(b?.cambio||""));
+  });
+
+  const rows = merged.map(r => ([
+    r.cambio || "",
+    r.owner || ""
+  ]));
+
+  return { headers: ["cambio", "owner"], rows };
 }
 
-  function renderSimilitud_(items, searchedNorm){
-    const wrap = document.getElementById("simWrap");
-    const pill = document.getElementById("pillSimCount");
-    const hint = document.getElementById("simHint");
-    if(pill) pill.textContent = String((items||[]).length);
 
-    if(!wrap) return;
-
-    if(!items || items.length === 0){
-      wrap.innerHTML = '<div class="muted">No hay sugerencias.</div>';
-      if(hint) hint.textContent = "No encontramos coincidencia exacta. Si existen codigos parecidos, apareceran aqui.";
-      return;
-    }
-
-    if(hint) hint.textContent = `No encontramos "${String(searchedNorm||"").toUpperCase()}". Te sugerimos estos codigos similares:`;
-
-    const rows = items.map(it=>{
-      const title = escapeHtml_(it.code);
-      const sub = [it.vehiculo, it.modelo, (it.from||it.to) ? `${it.from||""}-${it.to||""}` : ""].filter(Boolean).join(" · ");
-      const desc = it.desc ? `<div class="muted" style="margin-top:4px">${escapeHtml_(it.desc)}</div>` : "";
-      const subHtml = sub ? `<div class="muted" style="margin-top:4px">${escapeHtml_(sub)}</div>` : "";
-      return `
-        <div class="row" style="justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid rgba(20,28,45,.08)">
-          <div style="min-width:0">
-            <div style="font-weight:900">${title}</div>
-            ${subHtml}
-            ${desc}
-          </div>
-          <div style="flex:0 0 auto">
-            <button class="btn2" onclick="useSimilarCode_('${escapeJs_(it.code)}')">Usar</button>
-          </div>
-        </div>
-      `;
-    }).join("");
-
-    wrap.innerHTML = `<div>${rows}</div>`;
-  }
-
-  window.useSimilarCode_ = async function(code){
-    try{
-      const ci = document.getElementById("code");
-      if(ci){
-        ci.value = String(code||"").toUpperCase();
-        ci.focus();
-      }
-      if(typeof window.buscar === 'function') { await window.window.buscar && window.buscar(); } else { try{ document.getElementById('btnBuscar')?.click(); }catch(e){} }
-      try{ toggleAcc('cardSimilitud', false); }catch(e){}
-      try{ toggleAcc('cardProducto', true); }catch(e){}
-    }catch(e){}
-  }
-
-
-  function escapeJs_(s){
-    return String(s ?? "").replace(/\\/g,"\\\\").replace(/'/g,"\\'");
-  }
-
-
-
-async function fetchVehiclesByOriginals_(originalNorms, signal) {
-  const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion, original_norm";
+  async function fetchVehiclesByOriginals_(originalNorms){
+  // Solo traemos columnas necesarias (y descripcion)
+  const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion";
 
   let all = [];
-  for (const t of VEH_TABLES) {
+  for(const t of VEH_TABLES){
     const { data, error } = await supabase
       .from(t)
       .select(selectCols)
       .in("original_norm", originalNorms)
-      .abortSignal(signal)
       .limit(5000);
 
-    if (error) {
-      if (error.name === 'AbortError' || error.message?.includes('abort')) throw error;
-      console.warn(`Error en ${t}:`, error.message);
-    }
+    if(error) throw error;
     all = all.concat(data || []);
   }
 
-  if (all.length === 0) return { headers: [], rows: [] };
+  if(all.length === 0) return { headers: [], rows: [] };
 
+  // ✅ 1) Sacar una descripcion "canon" del grupo (si existe al menos 1)
   const canonDesc = (all.find(r => String(r?.descripcion ?? "").trim() !== "")?.descripcion ?? "").toString().trim();
 
-  all = dedupeByKey_(all, r => [
-    r.vehiculo, r.anio_inicio, r.anio_final, r.modelo, r.motor,
-    r.serie, r.cilindro, r.posicion, r.version, r.descripcion
-  ].map(normCell_).join("|"));
+  // ✅ 2) Dedupe para no repetir la misma fila si existe en v1 y v2
+      all = dedupeByKey_(all, r => [
+      r.vehiculo,
+      r.anio_inicio,
+      r.anio_final,
+      r.modelo,
+      r.motor,
+      r.serie,
+      r.cilindro,
+      r.posicion,
+      r.version,
+      r.descripcion
+    ].map(normCell_).join("|"));
 
-  all.sort((a, b) => {
-    const va = String(a?.vehiculo || "");
-    const vb = String(b?.vehiculo || "");
-    if (va !== vb) return va.localeCompare(vb);
-    const ma = String(a?.modelo || "");
-    const mb = String(b?.modelo || "");
-    if (ma !== mb) return ma.localeCompare(mb);
+
+  // ✅ 3) Orden base: vehiculo, modelo, anio_inicio
+  all.sort((a,b)=>{
+    const va = String(a?.vehiculo||"");
+    const vb = String(b?.vehiculo||"");
+    if(va !== vb) return va.localeCompare(vb);
+    const ma = String(a?.modelo||"");
+    const mb = String(b?.modelo||"");
+    if(ma !== mb) return ma.localeCompare(mb);
     const ya = Number(a?.anio_inicio || 0);
     const yb = Number(b?.anio_inicio || 0);
     return ya - yb;
   });
 
-  if (canonDesc) {
-    for (const r of all) {
+  // ✅ 4) Aplicar la descripcion canon a todas las filas (si existe)
+  if(canonDesc){
+    for(const r of all){
       const cur = String(r?.descripcion ?? "").trim();
-      if (!cur) r.descripcion = canonDesc;
+      if(!cur) r.descripcion = canonDesc;
     }
   }
 
+  // ✅ Headers EXACTOS
   const headersKeys = [
-    "vehiculo", "anio_inicio", "anio_final", "modelo", "motor",
-    "serie", "cilindro", "posicion", "version", "descripcion"
+    "vehiculo","anio_inicio","anio_final","modelo","motor","serie","cilindro","posicion","version","descripcion"
   ];
 
   const headerLabel = (k) => {
-    if (k === "anio_inicio") return "Año inicio";
-    if (k === "anio_final") return "Año final";
-    if (k === "vehiculo") return "Vehiculo";
-    if (k === "modelo") return "Modelo";
-    if (k === "motor") return "Motor";
-    if (k === "serie") return "Serie";
-    if (k === "cilindro") return "Cilindro";
-    if (k === "posicion") return "Posicion";
-    if (k === "version") return "Version";
-    if (k === "descripcion") return "Descripcion";
-    return k.replace(/_/g, " ").replace(/^./, c => c.toUpperCase());
+    if(k === "anio_inicio") return "Año inicio";
+    if(k === "anio_final") return "Año final";
+    if(k === "vehiculo") return "Vehiculo";
+    if(k === "modelo") return "Modelo";
+    if(k === "motor") return "Motor";
+    if(k === "serie") return "Serie";
+    if(k === "cilindro") return "Cilindro";
+    if(k === "posicion") return "Posicion";
+    if(k === "version") return "Version";
+    if(k === "descripcion") return "Descripcion";
+    return k.replace(/_/g," ").replace(/^./, c => c.toUpperCase());
   };
 
   const headers = headersKeys.map(headerLabel);
@@ -2053,150 +903,171 @@ async function fetchVehiclesByOriginals_(originalNorms, signal) {
     }
   }
 
-  async function fetchVehiclesByFilters_(f, signal) {
-  const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion, original_norm";
+  async function fetchVehiclesByFilters_(f){
+    const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion";
 
-  let all = [];
-  for (const t of VEH_TABLES) {
-    let q = supabase
-      .from(t)
-      .select(selectCols)
-      .abortSignal(signal)
-      .limit(5000);
+    let all = [];
+    for(const t of VEH_TABLES){
+      let q = supabase.from(t).select(selectCols).limit(5000);
 
-    if (f.vehiculo) q = q.ilike("vehiculo", "%" + f.vehiculo + "%");
-    if (f.modelo) q = q.ilike("modelo", "%" + f.modelo + "%");
-    if (f.motor) q = q.ilike("motor", "%" + f.motor + "%");
-    if (f.desc) q = q.ilike("descripcion", "%" + f.desc + "%");
+      if(f.vehiculo) q = q.ilike("vehiculo", "%" + f.vehiculo + "%");
+      if(f.modelo)   q = q.ilike("modelo",   "%" + f.modelo   + "%");
+      if(f.motor)    q = q.ilike("motor",    "%" + f.motor    + "%");
+      if(f.desc)     q = q.ilike("descripcion", "%" + f.desc  + "%");
 
-    if (f.anio) {
-      q = q.lte("anio_inicio", f.anio).gte("anio_final", f.anio);
+      if(f.anio){
+        // match por rango: inicio <= año <= final
+        q = q.lte("anio_inicio", f.anio).gte("anio_final", f.anio);
+      }
+
+      const { data, error } = await q;
+      if(error) throw error;
+      all = all.concat(data || []);
     }
 
-    const { data, error } = await q;
-    if (error) {
-      if (error.name === 'AbortError' || error.message?.includes('abort')) throw error;
-      console.warn(`Error en ${t}:`, error.message);
-    }
-    all = all.concat(data || []);
-  }
+    if(all.length === 0) return { headers: [], rows: [] };
 
-  if (all.length === 0) return { headers: [], rows: [] };
+    // Dedupe (si existe en v1 y v2)
+    all = dedupeByKey_(all, r => [
+      r.vehiculo, r.anio_inicio, r.anio_final, r.modelo, r.motor,
+      r.serie, r.cilindro, r.posicion, r.version, r.descripcion
+    ].map(normCell_).join("|"));
 
-  all = dedupeByKey_(all, r => [
-    r.vehiculo, r.anio_inicio, r.anio_final, r.modelo, r.motor,
-    r.serie, r.cilindro, r.posicion, r.version, r.descripcion
-  ].map(normCell_).join("|"));
+    // Orden base
+    all.sort((a,b)=>{
+      const va = String(a?.vehiculo||"");
+      const vb = String(b?.vehiculo||"");
+      if(va !== vb) return va.localeCompare(vb);
+      const ma = String(a?.modelo||"");
+      const mb = String(b?.modelo||"");
+      if(ma !== mb) return ma.localeCompare(mb);
+      return (Number(a?.anio_inicio||0) - Number(b?.anio_inicio||0));
+    });
 
-  all.sort((a, b) => {
-    const va = String(a?.vehiculo || "");
-    const vb = String(b?.vehiculo || "");
-    if (va !== vb) return va.localeCompare(vb);
-    const ma = String(a?.modelo || "");
-    const mb = String(b?.modelo || "");
-    if (ma !== mb) return ma.localeCompare(mb);
-    return (Number(a?.anio_inicio || 0) - Number(b?.anio_inicio || 0));
-  });
-
-  const headersKeys = [
-    "vehiculo", "anio_inicio", "anio_final", "modelo", "motor",
-    "serie", "cilindro", "posicion", "version", "descripcion", "original_norm"
-  ];
-
-  const headerLabel = (k) => {
-    if (k === "vehiculo") return "Vehiculo";
-    if (k === "anio_inicio") return "Año inicio";
-    if (k === "anio_final") return "Año final";
-    if (k === "modelo") return "Modelo";
-    if (k === "motor") return "Motor";
-    if (k === "serie") return "Serie";
-    if (k === "cilindro") return "Cilindro";
-    if (k === "posicion") return "Posicion";
-    if (k === "version") return "Version";
-    if (k === "descripcion") return "Descripcion";
-    if (k === "original_norm") return "Codigo principal";
-    return k.replace(/_/g, " ").replace(/^./, c => c.toUpperCase());
-  };
-
-  const headers = headersKeys.map(headerLabel);
-  const rows = all.map(obj => headersKeys.map(k => (obj?.[k] ?? "")));
-
-  return { headers, rows };
-}
-
-  window.aplicarFiltroVehicular = async function() {
-  const filtro = readFiltro_();
-  if (!filtro.hasAny) {
-    setFiltroPill_("Sin filtro");
-    alert("Escribe al menos un campo para buscar.");
-    return;
-  }
-
-  // Cancelar búsqueda anterior
-  if (__activeAbortController) {
-    __activeAbortController.abort();
-  }
-  __activeAbortController = new AbortController();
-  const signal = __activeAbortController.signal;
-
-  if (lastPayload && lastPayload.tablas && lastPayload.tablas.vehicles_full) {
-    // ... (código existente de filtro client-side) ...
-    return;
-  }
-
-  setStatus("Buscando vehiculos...");
-
-  try {
-    const veh = await fetchVehiclesByFilters_(filtro, signal);
-    
-    // Verificar abort antes de renderizar
-    if (signal.aborted) return;
-
-    lastPayload = {
-      codigo: "FILTRO_VEHICULAR",
-      productUrl: buildGoogleUrl_("vehiculo " + (filtro.vehiculo || "")),
-      tablas: { vehicles: veh, cambios: { headers: [], rows: [] }, vehicles_full: veh }
+    const headersKeys = ["vehiculo","anio_inicio","anio_final","modelo","motor","serie","cilindro","posicion","version","descripcion"];
+    const headerLabel = (k)=>{
+      if(k === "vehiculo") return "Vehiculo";
+      if(k === "anio_inicio") return "Año inicio";
+      if(k === "anio_final")  return "Año final";
+      if(k === "modelo") return "Modelo";
+      if(k === "motor") return "Motor";
+      if(k === "serie") return "Serie";
+      if(k === "cilindro") return "Cilindro";
+      if(k === "posicion") return "Posicion";
+      if(k === "version") return "Version";
+      if(k === "descripcion") return "Descripcion";
+      return k.replace(/_/g," ").replace(/^./, c => c.toUpperCase());
     };
 
-    renderTableInto_("vehWrap", veh);
-    renderVehicleLogos_(veh);
-    renderTableInto_("oeWrap", { headers: [], rows: [] });
+    const headers = headersKeys.map(headerLabel);
+    const rows = all.map(obj => headersKeys.map(k => (obj?.[k] ?? "")));
 
-    const vehCount = (veh?.rows || []).length;
-    document.getElementById("pillCode").textContent = "Filtro Vehicular";
-    document.getElementById("counts").textContent = "Vehicles: " + vehCount + " | Cambios: 0";
-    document.getElementById("btnCopyVeh").disabled = vehCount === 0;
-    document.getElementById("btnCopyOE").disabled = true;
-    document.getElementById("btnExport").disabled = vehCount === 0;
+    return { headers, rows };
+  }
 
-    const used = [];
-    if (filtro.vehiculo) used.push("Vehiculo");
-    if (filtro.anio) used.push("Año");
-    if (filtro.modelo) used.push("Modelo");
-    if (filtro.motor) used.push("Motor");
-    if (filtro.desc) used.push("Descripcion");
-    setFiltroPill_(vehCount ? "Filtro activo" : "Sin resultados", "Campos: " + used.join(", "));
-
-    setStatus("Listo ✅");
-  } catch (e) {
-    if (e?.name === 'AbortError' || e?.message?.includes('abort')) {
-      console.log("Búsqueda vehicular cancelada");
+  window.aplicarFiltroVehicular = async function(){
+    const filtro = readFiltro_();
+    if(!filtro.hasAny){
+      setFiltroPill_("Sin filtro");
+      alert("Escribe al menos un campo para buscar.");
       return;
     }
-    console.error(e);
-    setStatus("Error: " + (e?.message || e));
-    alert("Error buscando en BD: " + (e?.message || e));
-  } finally {
-    if (__activeAbortController === signal) {
-      __activeAbortController = null;
+
+    // Si ya hay resultado OEM cargado, filtra SOLO eso (más rápido)
+    if(lastPayload && lastPayload.tablas && lastPayload.tablas.vehicles_full){
+      const base = lastPayload.tablas.vehicles_full;
+      // Filtrado client-side usando los mismos headers esperados
+      const idxVeh = base.headers.findIndex(h => String(h).toLowerCase().includes("vehiculo"));
+      const idxY1  = base.headers.findIndex(h => String(h).toLowerCase().includes("año inicio") || String(h).toLowerCase().includes("anio inicio"));
+      const idxY2  = base.headers.findIndex(h => String(h).toLowerCase().includes("año final")  || String(h).toLowerCase().includes("anio final"));
+      const idxMod = base.headers.findIndex(h => String(h).toLowerCase().includes("modelo"));
+      const idxMot = base.headers.findIndex(h => String(h).toLowerCase().includes("motor"));
+      const idxDes = base.headers.findIndex(h => String(h).toLowerCase().includes("descripcion") || String(h).toLowerCase().includes("descripción") || String(h).toLowerCase().includes("description"));
+
+      const rows = (base.rows||[]).filter(r=>{
+        const vVeh = idxVeh>=0 ? strNorm_(r[idxVeh]) : "";
+        const vMod = idxMod>=0 ? strNorm_(r[idxMod]) : "";
+        const vMot = idxMot>=0 ? strNorm_(r[idxMot]) : "";
+        const vDes = idxDes>=0 ? strNorm_(r[idxDes]) : "";
+
+        if(filtro.vehiculo && !vVeh.includes(filtro.vehiculo)) return false;
+        if(filtro.modelo && !vMod.includes(filtro.modelo)) return false;
+        if(filtro.motor && !vMot.includes(filtro.motor)) return false;
+        if(filtro.desc && !vDes.includes(filtro.desc)) return false;
+
+        if(filtro.anio && (idxY1>=0 || idxY2>=0)){
+          const y1 = idxY1>=0 ? Number(String(r[idxY1]??"").replace(/[^0-9]/g,"")) : NaN;
+          const y2 = idxY2>=0 ? Number(String(r[idxY2]??"").replace(/[^0-9]/g,"")) : NaN;
+          if(Number.isFinite(y1) && Number.isFinite(y2)){
+            if(!(filtro.anio >= y1 && filtro.anio <= y2)) return false;
+          }
+        }
+        return true;
+      });
+
+      const filtered = { headers: base.headers, rows };
+      const withOem = appendOemToDescription_(filtered);
+    lastPayload.tablas.vehicles = withOem;
+      // ✅ Agregar OEM al final de la descripcion SOLO en filtro
+    filtered = decorateDescWithOriginal_(filtered);
+
+    renderTableInto_("vehWrap", filtered);
+
+      document.getElementById("btnCopyVeh").disabled = !(rows.length>0);
+      document.getElementById("counts").textContent =
+        "Vehicles: " + rows.length + " | Cambios: " + ((lastPayload.tablas?.cambios?.rows||[]).length || 0);
+
+      document.getElementById("btnExport").disabled = rows.length===0 && ((lastPayload.tablas?.cambios?.rows||[]).length||0)===0;
+
+      const used = [];
+      if(filtro.vehiculo) used.push("Vehiculo");
+      if(filtro.anio) used.push("Año");
+      if(filtro.modelo) used.push("Modelo");
+      if(filtro.motor) used.push("Motor");
+      if(filtro.desc) used.push("Descripcion");
+      setFiltroPill_("Filtro activo", "Campos: " + used.join(", "));
+      return;
     }
-    window.__isSearching = false;
-    try { 
-      const b = document.getElementById('btnBuscarCodigo'); 
-      if (b) b.disabled = false; 
-    } catch(e) {}
-  }
-};
+
+    // Si no hay OEM cargado => buscar directo en BD
+    setStatus("Buscando vehiculos...");
+
+    try{
+      const veh = await fetchVehiclesByFilters_(filtro);
+
+      lastPayload = {
+        codigo: "FILTRO_VEHICULAR",
+        productUrl: buildGoogleUrl_("vehiculo " + (filtro.vehiculo||"")),
+        tablas: { vehicles: veh, cambios: { headers: [], rows: [] }, vehicles_full: veh }
+      };
+
+      renderTableInto_("vehWrap", veh);
+      renderTableInto_("oeWrap", { headers: [], rows: [] });
+
+      const vehCount = (veh?.rows||[]).length;
+
+      document.getElementById("pillCode").textContent = "Filtro Vehicular";
+      document.getElementById("counts").textContent = "Vehicles: " + vehCount + " | Cambios: 0";
+      document.getElementById("btnCopyVeh").disabled = vehCount===0;
+      document.getElementById("btnCopyOE").disabled = true;
+      document.getElementById("btnExport").disabled = vehCount===0;
+
+      const used = [];
+      if(filtro.vehiculo) used.push("Vehiculo");
+      if(filtro.anio) used.push("Año");
+      if(filtro.modelo) used.push("Modelo");
+      if(filtro.motor) used.push("Motor");
+      if(filtro.desc) used.push("Descripcion");
+      setFiltroPill_(vehCount? "Filtro activo" : "Sin resultados", "Campos: " + used.join(", "));
+
+      setStatus("Listo ✅");
+    }catch(e){
+      console.error(e);
+      setStatus("Error: " + (e?.message || e));
+      alert("Error buscando en BD: " + (e?.message || e));
+    }
+  };
+
   window.limpiarFiltroVehicular = function(){
     ["fVehiculo","fAnio","fModelo","fMotor","fDescripcion"].forEach(id=>{
       const el = document.getElementById(id);
@@ -2207,8 +1078,8 @@ async function fetchVehiclesByOriginals_(originalNorms, signal) {
     if(lastPayload && lastPayload.tablas && lastPayload.tablas.vehicles_full){
       lastPayload.tablas.vehicles = lastPayload.tablas.vehicles_full;
       renderTableInto_("vehWrap", lastPayload.tablas.vehicles_full);
-      renderVehicleLogos_(lastPayload.tablas.vehicles_full);
-const vehCount = (lastPayload.tablas.vehicles_full?.rows||[]).length;
+
+      const vehCount = (lastPayload.tablas.vehicles_full?.rows||[]).length;
       const cambCount = (lastPayload.tablas?.cambios?.rows||[]).length;
 
       document.getElementById("btnCopyVeh").disabled = vehCount===0;
@@ -2216,25 +1087,6 @@ const vehCount = (lastPayload.tablas.vehicles_full?.rows||[]).length;
       document.getElementById("btnExport").disabled = (vehCount===0 && cambCount===0);
     }
   };
-
-  // ✅ Click en "Codigo principal" (desde tabla Vehicles por filtros)
-  window.buscarCodigoPrincipal = async function(code){
-    const c = String(code || "").trim();
-    if(!c) return;
-    const input = document.getElementById("code");
-    if(input) input.value = c;
-    // lleva al buscador de codigo arriba
-    try{ window.scrollTo({ top: 0, behavior: "smooth" }); }catch(e){ window.scrollTo(0,0); }
-    // ejecutar busqueda OEM
-    try{
-      await window.window.buscar && window.buscar();
-    }catch(e){
-      // fallback
-      const btn = document.querySelector('button[onclick*="buscar"]');
-      if(btn) btn.click();
-    }
-  };
-
 
 
 window.limpiar = function(){
@@ -2247,9 +1099,6 @@ window.limpiar = function(){
     document.getElementById("productUrl").textContent = "-";
     document.getElementById("productUrl").href = "#";
     document.getElementById("counts").textContent = "Vehicles: 0 | Cambios: 0";
-    const ow = document.getElementById("offersWrap");
-    if(ow){ ow.style.display="none"; ow.innerHTML=""; }
-    lastOffers = [];
     document.getElementById("notes").textContent = "";
 
     document.getElementById("oeWrap").innerHTML = "No hay filas detectadas.";
@@ -2259,592 +1108,101 @@ window.limpiar = function(){
     if(isMobile_()) setMobileDefault_();
   };
 
-  async function fetchCambiosByOriginals_(originalNorms, signal) {
-    let all = [];
-    for (const t of CAMBIOS_TABLES) {
-      const { data, error } = await supabase
-        .from(t)
-        .select("cambio, owner, posicion")
-        .in("original_norm", originalNorms)
-        .abortSignal(signal)
-        .limit(5000);
-  
-      if (error) {
-        if (error.name === 'AbortError' || error.message?.includes('abort')) throw error;
-        console.warn(`Error en ${t}:`, error.message);
-      }
-      all = all.concat(data || []);
-    }
-  
-    const map = new Map();
-    for (const r of (all || [])) {
-      const cambioRaw = (r?.cambio ?? "");
-      const key = normCodeCell_(cambioRaw);
-      if (!key) continue;
-  
-      if (!map.has(key)) {
-        map.set(key, {
-          cambio: String(cambioRaw || "").trim(),
-          owners: new Set(),
-          posicion: String(r?.posicion || "").trim()
-        });
-      }
-      const obj = map.get(key);
-      const owner = String(r?.owner || "").trim();
-      if (owner) obj.owners.add(owner);
-  
-      const pos = String(r?.posicion || "").trim();
-      if (!obj.posicion && pos) obj.posicion = pos;
-    }
-  
-    let merged = Array.from(map.values()).map(x => ({
-      cambio: x.cambio,
-      owner: uniqueJoin_(Array.from(x.owners), " / "),
-      posicion: x.posicion
-    }));
-  
-    merged.sort((a, b) => {
-      const pa = String(a?.posicion || "");
-      const pb = String(b?.posicion || "");
-      if (pa && pb && pa !== pb) return pa.localeCompare(pb);
-      return String(a?.cambio || "").localeCompare(String(b?.cambio || ""));
-    });
-  
-    const rows = merged.map(r => ([
-      r.cambio || "",
-      r.owner || ""
-    ]));
-  
-    return { headers: ["cambio", "owner"], rows };
-  }
+  window.buscar = async function(){
+    const t0 = performance.now();
 
+    const raw = (document.getElementById("code").value || "").trim();
+    if(!raw){ setStatus("Escribe un codigo."); return; }
 
+    const norm = normalizeCode_(raw);
+    const candidates = unique_([ raw, raw.toUpperCase(), norm ]).filter(Boolean);
 
-    window.buscar = async function() {
-  const t0 = performance.now();
-  const guard = createSearchGuard();
-  const { searchId, signal, release } = guard;
-
-  const raw0 = (document.getElementById("code")?.value || "").trim();
-  const raw = raw0.toUpperCase();
-  
-  try { 
-    const ci = document.getElementById("code"); 
-    if (ci) ci.value = raw; 
-  } catch(e) {}
-  
-  if (!raw) {
-    setStatus("Escribe un codigo.");
-    release();
-    return;
-  }
-
-  try { 
-    await ensureMarketLoaded_(); 
-  } catch(e) {}
-
-  const norm = normalizeCode_(raw);
-  let released = false;
-
-  const safeRelease = () => {
-    if (released) return;
-    if (isSearchStale_(searchId)) return;
-    released = true;
-    release();
-  };
-
-  try {
-    if (isSearchStale_(searchId)) { safeRelease(); return; }
-
-    const codigoMostrado = raw;
-
-    // 1) ORIGINALS - con cancelación
-    let originalNorms = [norm];
-    try {
-      originalNorms = await retryWithAbort_(
-        (s) => resolveOriginals_(norm, s),
-        { 
-          timeoutMs: 15000, 
-          label: 'originals', 
-          retries: 1,
-          signal 
-        }
-      );
-      if (!Array.isArray(originalNorms) || originalNorms.length === 0) originalNorms = [norm];
-    } catch (e) {
-      if (e?.message?.includes('Abortado') || signal?.aborted) {
-        safeRelease();
-        return;
-      }
-      console.warn("resolveOriginals_ fallo:", e);
-      originalNorms = [norm];
-    }
-
-    if (isSearchStale_(searchId) || signal?.aborted) { safeRelease(); return; }
-
-    // 2) VEHICLES + CAMBIOS - con cancelación
-    let veh = { headers: [], rows: [] };
-    let camb = { headers: [], rows: [] };
-    
-    try {
-      const res = await retryWithAbort_(
-        async (s) => {
-          const [v, c] = await Promise.all([
-            fetchVehiclesByOriginals_(originalNorms, s),
-            fetchCambiosByOriginals_(originalNorms, s),
-          ]);
-          return [v, c];
-        },
-        { 
-          timeoutMs: 20000, 
-          label: 'vehicles/cambios', 
-          retries: 0,
-          signal 
-        }
-      );
-      veh = res?.[0] || veh;
-      camb = res?.[1] || camb;
-    } catch (e) {
-      if (e?.message?.includes('Abortado') || signal?.aborted) {
-        safeRelease();
-        return;
-      }
-      console.warn("vehicles/cambios fallo:", e);
-    }
-
-    if (isSearchStale_(searchId) || signal?.aborted) { safeRelease(); return; }
-
-    const payload = {
-      codigo: codigoMostrado,
-      codigo_norm: norm,
-      original_norms: originalNorms,
-      productUrl: buildGoogleUrl_(codigoMostrado),
-      tablas: { vehicles: veh, cambios: camb }
-    };
-
-    // Render principal - esto es rápido
-    render(payload);
-
-    const vehCount = veh?.rows?.length || 0;
-    const cambCount = camb?.rows?.length || 0;
-    const totalResults = vehCount + cambCount;
-    const resultStatus = totalResults > 0 ? "found" : "not_found";
-
-    // ✅ Limpiar inputs y liberar UI INMEDIATAMENTE
-    clearInputsAfterCodeSearch_();
-    setStatus(totalResults > 0 ? "Listo ✅" : "Sin resultados (Listo ✅)");
-    safeRelease();
-
-    // 4) Tareas secundarias en background (NO BLOQUEAN)
-    setTimeout(async () => {
-      // Si hay nueva búsqueda, no ejecutamos nada
-      if (isSearchStale_(searchId) || signal?.aborted) return;
-
-      // Ofertas
-      try {
-        lastOffersError = '';
-        const offers = await retryWithAbort_(
-          (s) => fetchOffersByOriginals_(originalNorms, norm, s),
-          { timeoutMs: 20000, label: 'offers', retries: 0, signal }
-        );
-        if (!isSearchStale_(searchId) && !signal?.aborted) {
-          lastOffers = offers;
-          renderOffersIntoProducto_(lastOffers);
-        }
-      } catch (e) {
-        if (!isSearchStale_(searchId) && !signal?.aborted) {
-          lastOffers = [];
-          lastOffersError = e?.message || String(e);
-          renderOffersIntoProducto_([]);
-        }
-      }
-
-      // Similitud (solo si no hay resultados)
-      if (!isSearchStale_(searchId) && !signal?.aborted && resultStatus === "not_found") {
-        try {
-          const sim = await retryWithAbort_(
-            (s) => fetchSimilitudByPrefix_(norm, s),
-            { timeoutMs: 15000, label: 'similitud', retries: 0, signal }
-          );
-          if (!isSearchStale_(searchId) && !signal?.aborted) {
-            renderSimilitud_(sim, norm);
-            try { toggleAcc('cardSimilitud', true); } catch(e) {}
-          }
-        } catch (e) {
-          try { renderSimilitud_([], norm); } catch(_) {}
-        }
-      }
-
-      // Log (background)
-      try {
-        const pos = extractBestPosition_(veh);
-        const catFromPos = classifyCategoryFromPosition_(pos);
-        const category = catFromPos || classifyCategory_(raw);
-        const vehSummary = extractVehicleSummary_(veh);
-        const responseMs = Math.round(performance.now() - t0);
-
-        safeLogSearchEvent_({
-          queryRaw: raw,
-          queryType: "oem",
-          normalizedQuery: norm,
-          category,
-          resultStatus,
-          resultsCount: totalResults,
-          responseTimeMs: responseMs,
-          meta: {
-            original_norms_count: originalNorms.length,
-            vehicles_count: vehCount,
-            cambios_count: cambCount,
-            position_sample: pos || null,
-            category_source: catFromPos ? "posicion" : "query"
-          }
-        });
-      } catch(e) {}
-    }, 0);
-
-  } catch (e) {
-    console.error(e);
-    if (!isSearchStale_(searchId) && !signal?.aborted) {
-      setStatus("Error: " + (e?.message?.slice(0, 50) || "consulta falló"));
-    }
-    safeRelease();
-  }
-};
-
-  // ======================================================
-  // ✅ Ofertas: buscar y renderizar debajo de Vehicles/Cambios
-  // ======================================================
-
-  function fmtMoney_(n){
-    const v = Number(n);
-    return Number.isFinite(v) ? v.toFixed(2) : String(n ?? "—");
-  }
-
-function isOfferActive_(o){
-  const exp = o?.expires_at;
-  if(!exp) return true; // si no tiene expiracion, la tratamos como activa
-  const t = new Date(exp).getTime();
-  if(!Number.isFinite(t)) return true;
-  return t > Date.now();
-}
-
-
-  async function fetchOffersByOriginals_(originalNorms, codeNorm, signal) {
-  const norms = unique_([...(originalNorms || []), codeNorm].filter(Boolean));
-  const selectCols = "id, original, original_norm, brand, description, price, currency, country, expires_at, seller_id, created_at";
-  const nowIso = new Date().toISOString();
-
-  try {
-    const { data, error } = await supabase
-      .from(OFFERS_TABLE)
-      .select(selectCols)
-      .in("original_norm", norms)
-      .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
-      .order("created_at", { ascending: false })
-      .abortSignal(signal)
-      .limit(25);
-
-    if (error) {
-      if (error.name === 'AbortError' || error.message?.includes('abort')) throw error;
-      
-      // Fallback: intentar sin order
-      const { data: d2, error: e2 } = await supabase
-        .from(OFFERS_TABLE)
-        .select(selectCols)
-        .in("original_norm", norms)
-        .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
-        .abortSignal(signal)
-        .limit(25);
-      
-      if (e2) throw e2;
-      return (d2 || []);
-    }
-    
-    return (data || []);
-  } catch (e) {
-    if (e?.name === 'AbortError' || e?.message?.includes('abort')) throw e;
-    lastOffersError = (e?.message || String(e || ''));
-    console.warn("No pude leer ofertas:", lastOffersError);
-    return [];
-  }
-}
-
-  function renderOffersIntoProducto_(offers){
-    const wrap = document.getElementById("offersWrap");
-    if(!wrap) return;
-
-    // ✅ Seguridad extra: filtrar vencidas en el cliente tambien
-    offers = (offers || []).filter(isOfferActive_);
-
-    if(!offers || offers.length === 0){
-      // Si hubo error (ej: RLS bloqueando), mostramos pista
-      if(lastOffersError){
-        wrap.style.display = "block";
-        wrap.innerHTML = '<div class="offerRow"><div class="offerTitle">Ofertas</div></div>'
-          + '<div style="margin-top:8px;background:#fff3cd;border:1px solid #ffeeba;border-radius:12px;padding:10px">'
-          + '<b>No pude leer ofertas.</b> Posible RLS (policies) o permisos.<br/>'
-          + '<span style="font-size:12px;opacity:.9">Detalle: ' + escapeHtml_(lastOffersError) + '</span>'
-          + '</div>';
-        return;
-      }
-      wrap.style.display = "none";
-      wrap.innerHTML = "";
-      return;
-    }
-
-    wrap.style.display = "block";
-
-    let html = '';
-    html += '<div class="offerRow">';
-    html += '  <div class="offerTitle">Ofertas activas (' + offers.length + ')</div>';
-    html += '  <div class="offerMeta"><span class="offerTag">Solo ves: Marca + Precio + Pais</span></div>';
-    html += '</div>';
-
-    html += '<div style="margin-top:10px;display:flex;flex-direction:column;gap:10px">';
-    for(const o of offers){
-      const id = o?.id || "";
-      const brand = escapeHtml_(o?.brand || "—");
-      const price = escapeHtml_(fmtMoney_(o?.price));
-      const currency = escapeHtml_(o?.currency || "—");
-      const country = escapeHtml_(o?.country || "—");
-      const exp = o?.expires_at ? escapeHtml_(String(o.expires_at).replace("T"," ").slice(0,19)) : "—";
-
-      html += '<div style="background:#fff;border:1px solid #eef0f6;border-radius:12px;padding:10px">';
-      html += '  <div class="offerRow">';
-      html += '    <div class="offerMeta">';
-      html += '      <span class="offerTag">Marca: ' + brand + '</span>';
-      html += '      <span class="offerTag">Precio: ' + price + ' ' + currency + '</span>';
-      html += '      <span class="offerTag">Pais: ' + country + '</span>';
-      html += '      <span class="offerTag">Expira: ' + exp + '</span>';
-      html += '    </div>';
-      html += '    <div style="display:flex;gap:8px;flex-wrap:wrap">';
-      html += '      <button class="offerBtn offerBtnPrimary" data-offer-id="' + escapeHtml_(id) + '" onclick="openOfferModalById(\'' + escapeHtml_(id) + '\')">Ver / Chat</button>';
-      html += '    </div>';
-      html += '  </div>';
-      html += '</div>';
-    }
-    html += '</div>';
-
-    wrap.innerHTML = html;
-  }
-
-  function openOfferModal_(offer){
-    modalOffer = offer || null;
-    const back = document.getElementById("offerModalBack");
-    const status = document.getElementById("offerModalStatus");
-    const msg = document.getElementById("mOfferMsg");
-
-    if(status) status.textContent = "";
-    if(msg) msg.value = "";
-
-    const oem = offer?.original || offer?.original_norm || "-";
-    const brand = offer?.brand || "—";
-    const price = fmtMoney_(offer?.price);
-    const currency = offer?.currency || "—";
-    const country = offer?.country || "—";
-    const exp = offer?.expires_at ? String(offer.expires_at).replace("T"," ").slice(0,19) : "—";
-
-    document.getElementById("offerModalTitle").textContent = "Oferta disponible";
-    document.getElementById("offerModalSub").textContent = "Consulta al vendedor por esta oferta.";
-    document.getElementById("mOfferOEM").textContent = oem;
-    document.getElementById("mOfferBrand").textContent = brand;
-    document.getElementById("mOfferPrice").textContent = price;
-    document.getElementById("mOfferCurrency").textContent = currency;
-    document.getElementById("mOfferCountry").textContent = country;
-    document.getElementById("mOfferExpires").textContent = exp;
-
-    if(back){
-      back.style.display = "flex";
-      back.setAttribute("aria-hidden","false");
-    }
-
-    // ✅ Bloquear/permitir mensajeria segun sesion
-    updateOfferModalAuthUI_();
-  }
-
-  function closeOfferModal_(){
-    const back = document.getElementById("offerModalBack");
-    if(back){
-      back.style.display = "none";
-      back.setAttribute("aria-hidden","true");
-    }
-    modalOffer = null;
-  }
-
-  // Exponer para onclick en HTML (script type=module)
-  window.openOfferModalById = function(offerId){
-    const o = (lastOffers || []).find(x => String(x?.id||"") === String(offerId||""));
-    if(!o){ alert("No pude abrir la oferta. (id no encontrado)"); return; }
-    openOfferModal_(o);
-  };
-
-  async function notifyOfferInterest_(offerId, note){
+    setStatus("Buscando...");
     try{
-      const { data } = await supabase.auth.getSession();
-      const token = data?.session?.access_token;
-      if(!token) return;
+      const codigoMostrado = candidates[0] || raw;
 
-      // Endpoint oficial de Supabase Functions
-      const url = `${SUPABASE_URL}/functions/v1/notify-offer-interest`;
+      // ✅ originals desde cambios + cambios_v2
+      const originalNorms = await resolveOriginals_(norm);
 
-      await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          offer_id: offerId,
-          note: note ? String(note).slice(0, 400) : "" // opcional
-        })
+      // ✅ vehicles desde datos_vehiculares + datos_vehiculares_v2
+      // ✅ cambios desde cambios + cambios_v2
+      const [veh, camb] = await Promise.all([
+        fetchVehiclesByOriginals_(originalNorms),
+        fetchCambiosByOriginals_(originalNorms),
+      ]);
+
+      const payload = {
+        codigo: codigoMostrado,
+        codigo_norm: norm,
+        original_norms: originalNorms,
+        productUrl: buildGoogleUrl_(codigoMostrado),
+        tablas: { vehicles: veh, cambios: camb }
+      };
+
+      render(payload);
+
+      const vehCount = (veh && Array.isArray(veh.rows)) ? veh.rows.length : 0;
+      const cambCount = (camb && Array.isArray(camb.rows)) ? camb.rows.length : 0;
+      const totalResults = vehCount + cambCount;
+      const resultStatus = totalResults > 0 ? "found" : "not_found";
+
+      const pos = extractBestPosition_(veh);
+      const catFromPos = classifyCategoryFromPosition_(pos);
+      const category = catFromPos || classifyCategory_(raw);
+
+      const vehSummary = extractVehicleSummary_(veh);
+
+      const t1 = performance.now();
+      const responseMs = Math.round(t1 - t0);
+
+      await logSearchEvent_({
+        queryRaw: raw,
+        queryType: "oem",
+        normalizedQuery: norm,
+        category,
+        resultStatus,
+        resultsCount: totalResults,
+        responseTimeMs: responseMs,
+        meta: {
+          original_norms_count: Array.isArray(originalNorms) ? originalNorms.length : 0,
+          vehicles_count: vehCount,
+          cambios_count: cambCount,
+          position_sample: pos || null,
+          category_source: catFromPos ? "posicion" : "query",
+          vehicle_make: vehSummary?.make || null,
+          vehicle_model: vehSummary?.model || null,
+          vehicle_year_from: vehSummary?.year_from || null,
+          vehicle_year_to: vehSummary?.year_to || null,
+          vehicle_engine: vehSummary?.engine || null,
+          vehicle_serie: vehSummary?.serie || null,
+
+          // ✅ meta para saber que buscamos en v1+v2
+          used_vehicle_tables: VEH_TABLES,
+          used_cambios_tables: CAMBIOS_TABLES
+        }
       });
-    }catch(err){
-      console.warn("notifyOfferInterest_ fail:", err?.message || err);
-    }
-  }
 
-
-  async function getSessionUser_(){
-    try{
-      const { data } = await supabase.auth.getSession();
-      return data?.session?.user || null;
     }catch(e){
-      return null;
-    }
-  }
+      console.error(e);
+      setStatus("Error: " + (e && e.message ? e.message : e));
+      alert("Error consultando: " + (e && e.message ? e.message : e));
 
-  async function updateOfferModalAuthUI_(){
-    const params = new URLSearchParams(window.location.search);
-    const isDemo = params.get("demo") === "1";
+      const t1 = performance.now();
 
-    const btnSend  = document.getElementById("btnSendOfferMsg");
-    const btnOpen  = document.getElementById("btnOpenOfferChat");
-    const btnLogin = document.getElementById("btnLoginToSend");
-    const st       = document.getElementById("offerModalStatus");
-
-    if(isDemo){
-      if(btnSend) btnSend.disabled = true;
-      if(btnOpen) btnOpen.disabled = true;
-      if(btnLogin) btnLogin.style.display = "none";
-      if(st && !st.textContent) st.textContent = "Modo DEMO: no se pueden enviar mensajes.";
-      return;
-    }
-
-    const user = await getSessionUser_();
-    const isLogged = !!user;
-
-    if(btnSend) btnSend.disabled = !isLogged;
-    if(btnOpen) btnOpen.disabled = !isLogged;
-
-    if(btnLogin){
-      btnLogin.style.display = isLogged ? "none" : "inline-flex";
-      const next = encodeURIComponent(window.location.pathname + window.location.search);
-      btnLogin.onclick = () => { window.location.href = "/?stay=1&next=" + next; };
-    }
-
-    if(!isLogged){
-      if(st && !st.textContent){
-        st.textContent = "Para enviar mensajes debes iniciar sesion.";
-      }
-    }
-  }
-
-  async function sendOfferMessage_(text){
-    const status = document.getElementById("offerModalStatus");
-    const msg = String(text || "").trim();
-    if(!msg){ alert("Escribe un mensaje."); return; }
-
-    // DEMO: no permitir
-    const params = new URLSearchParams(window.location.search);
-    const isDemo = params.get("demo") === "1";
-    if(isDemo){
-      alert("En modo DEMO no se pueden enviar mensajes.");
-      return;
-    }
-
-    // Sesion
-    const { data } = await supabase.auth.getSession();
-    const user = data?.session?.user;
-    if(!user){
-      alert("Debes iniciar sesion para enviar mensajes.");
-      const next = encodeURIComponent(window.location.pathname + window.location.search);
-      window.location.href = "/?stay=1&next=" + next;
-      return;
-    }
-
-    const offerId = modalOffer?.id || null;
-    const sellerIdFromOffer = modalOffer?.seller_id || null;
-
-    if(!offerId){
-      if(status) status.textContent = "No se encontro la oferta.";
-      alert("No se encontro la oferta.");
-      return;
-    }
-
-    try{
-      if(status) status.textContent = "Preparando chat...";
-
-      // 1) Buscar chat existente (offer_id + buyer_id)
-      let chatId = null;
-      {
-        const { data: rows, error } = await supabase
-          .from(OFFERS_CHATS_TABLE)
-          .select("id")
-          .eq("offer_id", offerId)
-          .eq("buyer_id", user.id)
-          .limit(1);
-
-        if(error) throw error;
-        if(rows && rows[0]) chatId = rows[0].id;
-      }
-
-      // 2) Si no existe chat, lo creamos usando seller_id guardado en la oferta
-      if(!chatId){
-        if(!sellerIdFromOffer){
-          // Si por alguna razon la oferta no trae seller_id, fallback (opcional)
-          if(status) status.textContent = "No pude identificar el vendedor. Abriendo chat de ofertas...";
-          const q = new URLSearchParams();
-          q.set("offer", offerId);
-          if(modalOffer?.original_norm) q.set("code", modalOffer.original_norm);
-          q.set("msg", msg);
-          window.open(OFFERS_CHAT_PAGE + "?" + q.toString(), "_blank");
-          alert("No pude identificar el vendedor desde la oferta. Abrimos Obsolescencia en otra pestaña.");
-          return;
+      await logSearchEvent_({
+        queryRaw: raw,
+        queryType: "oem",
+        normalizedQuery: norm,
+        category: classifyCategory_(raw),
+        resultStatus: "unknown",
+        resultsCount: 0,
+        responseTimeMs: Math.round(t1 - t0),
+        meta: {
+          error: (e && e.message) ? e.message : String(e)
         }
-
-        const { data: created, error: eIns } = await supabase
-          .from(OFFERS_CHATS_TABLE)
-          .insert([{ offer_id: offerId, buyer_id: user.id, seller_id: sellerIdFromOffer }])
-          .select("id")
-          .single();
-
-        if(eIns) throw eIns;
-        chatId = created?.id || null;
-      }
-
-      if(!chatId) throw new Error("No pude crear/encontrar el chat.");
-
-      // 3) Insertar mensaje
-      if(status) status.textContent = "Enviando mensaje...";
-      const { error: e3 } = await supabase
-        .from(OFFERS_MESSAGES_TABLE)
-        .insert([{ chat_id: chatId, sender_id: user.id, body: msg }]);
-
-      if(e3) throw e3;
-
-      // 4) Notificar interes al vendedor (email + lead realtime)
-      await notifyOfferInterest_(offerId, msg);
-
-      if(status) status.textContent = "Mensaje enviado ✅";
-      alert("Mensaje enviado ✅");
-      return;
-
-    }catch(e){
-      console.warn("No pude enviar mensaje:", e?.message || e);
-      if(status) status.textContent = "No pude enviar: " + (e?.message || "error");
-      alert("No pude enviar el mensaje. Revisa RLS/policies de offer_chats y offer_messages.\n\nDetalle: " + (e?.message || e));
+      });
     }
-  }
+  };
 
   function render(payload){
     lastPayload = payload;
@@ -2868,9 +1226,6 @@ function isOfferActive_(o){
     renderTableInto_("vehWrap", vehicles);
     renderTableInto_("oeWrap", cambios);
 
-    // Logos de marcas (si existen en assets/logos/autos/)
-    renderVehicleLogos_(vehicles);
-
     const hasVeh = vehicles && Array.isArray(vehicles.rows) && vehicles.rows.length > 0;
     const hasCamb = cambios && Array.isArray(cambios.rows) && cambios.rows.length > 0;
 
@@ -2880,11 +1235,6 @@ function isOfferActive_(o){
     document.getElementById("counts").textContent =
       "Vehicles: " + (hasVeh ? vehicles.rows.length : 0) +
       " | Cambios: " + (hasCamb ? cambios.rows.length : 0);
-
-    // reset ofertas (se pintan despues en buscar())
-    const ow = document.getElementById("offersWrap");
-    if(ow){ ow.style.display="none"; ow.innerHTML=""; }
-    lastOffers = [];
 
     document.getElementById("notes").textContent = "";
     document.getElementById("btnExport").disabled = !(hasVeh || hasCamb);
@@ -2946,29 +1296,6 @@ function isOfferActive_(o){
   // ✅ init
   await initAuth_();
 
-  // ✅ Forzar MAYUSCULA en el input de codigo (a276... => A276...)
-  try{
-    const codeInput = document.getElementById("code");
-    if(codeInput){
-      const up = ()=>{
-        const s = String(codeInput.value || "");
-        const u = s.toUpperCase();
-        if(s !== u){
-          const p = codeInput.selectionStart;
-          const q = codeInput.selectionEnd;
-          codeInput.value = u;
-          if(typeof p === "number" && typeof q === "number"){
-            codeInput.setSelectionRange(p, q);
-          }
-        }
-      };
-      codeInput.addEventListener("input", up);
-      codeInput.addEventListener("paste", ()=> setTimeout(up, 0));
-    }
-  }catch(e){}
-
-
-
   // ===== PRESENCIA ONLINE (APP) =====
   const { data: ses } = await supabase.auth.getSession();
   const user = ses?.session?.user;
@@ -2992,12 +1319,52 @@ function isOfferActive_(o){
 
   await loadProfileMarket_();
 
-  supabase.auth.onAuthStateChange(async (event, session) => {
-    // ✅ No cerramos la App: solo ajustamos UI y bloqueamos mensajeria si no hay sesion
-    await initAuth_();
-    await updateOfferModalAuthUI_();
-    await loadProfileMarket_();
+  supabase.auth.onAuthStateChange((event, session) => {
+    const params = new URLSearchParams(window.location.search);
+    const isDemo = params.get("demo") === "1";
+    if (!session && !isDemo) window.location.href = "/?stay=1";
   });
+
+
+  // ======================================================
+  // ✅ Decorar Descripcion con Codigo Original (solo en busqueda por filtros)
+  //   - Si la tabla trae una columna "original" (o similar), la agrega al final de "Descripcion"
+  //   - Luego oculta esa columna para que no salga como columna aparte
+  // ======================================================
+  function decorateDescWithOriginal_(tableObj){
+    if(!tableObj || !Array.isArray(tableObj.headers) || !Array.isArray(tableObj.rows)) return tableObj;
+
+    const hs = tableObj.headers.map(h => String(h||"").trim().toLowerCase());
+    const iDesc = hs.findIndex(h => h === "descripcion" || h === "descripción" || h.includes("descripcion") || h.includes("description"));
+
+    // prioriza "original" exacto
+    let iOri = hs.findIndex(h => h === "original");
+    if(iOri < 0){
+      iOri = hs.findIndex(h => h.includes("codigo original") || h.includes("código original") || h.includes("oem") || h.includes("itemcode") || (h.includes("codigo") && !h.includes("descripcion")));
+    }
+
+    if(iDesc < 0 || iOri < 0) return tableObj;
+
+    const out = { headers: [...tableObj.headers], rows: tableObj.rows.map(r => [...r]) };
+
+    for(let k=0;k<out.rows.length;k++){
+      const r = out.rows[k];
+      const desc = String(r[iDesc] ?? "").trim();
+      const ori  = String(r[iOri]  ?? "").trim();
+      if(!ori) continue;
+
+      const already = desc.toLowerCase().includes(ori.toLowerCase()) || desc.toLowerCase().includes("oem:");
+      if(!already){
+        r[iDesc] = (desc ? desc + "  —  " : "") + "OEM: " + ori;
+      }
+    }
+
+    // Quitar la columna original para que no se vea como columna aparte
+    out.headers.splice(iOri, 1);
+    out.rows = out.rows.map(r => { r.splice(iOri, 1); return r; });
+
+    return out;
+  }
 
 </script>
 </body>
