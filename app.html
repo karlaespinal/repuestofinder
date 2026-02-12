@@ -76,16 +76,16 @@
       .card.open .chev{transform:rotate(180deg);}
     }
   
-    /* ===== FILTRO VEHICULAR (barra entre buscador OEM y Producto) ===== */
+    /* ===== FILTRO VEHICULAR ===== */
     .filterBar{
       display:grid;
       grid-template-columns:
-        minmax(180px, 1.1fr)  /* Vehiculo */
-        minmax(110px, 0.6fr)  /* Año */
-        minmax(160px, 0.9fr)  /* Modelo */
-        minmax(160px, 0.9fr)  /* Motor */
-        minmax(240px, 1.5fr)  /* Descripcion */
-        auto;                 /* Botones */
+        minmax(180px, 1.1fr)
+        minmax(110px, 0.6fr)
+        minmax(160px, 0.9fr)
+        minmax(160px, 0.9fr)
+        minmax(240px, 1.5fr)
+        auto;
       gap:14px;
       align-items:end;
       margin-top:14px;
@@ -94,8 +94,6 @@
 
     .filterItem{display:flex;flex-direction:column;min-width:0}
     .filterLabel{font-size:12px;color:#6b7280;margin:0 0 6px 2px;font-weight:800}
-
-    /* inputs del filtro (más compactos que el input principal) */
     .filterBar input{
       width:100%;
       padding:10px 12px;
@@ -105,11 +103,8 @@
       height:40px;
       box-sizing:border-box;
     }
-
     .filterActions{display:flex;gap:10px;align-items:end}
     .filterActions button{height:40px;padding:0 16px;white-space:nowrap}
-
-    /* Responsive */
     @media (max-width:1100px){
       .filterBar{grid-template-columns:repeat(2, minmax(0,1fr));}
       .filterActions{justify-content:flex-end}
@@ -120,7 +115,7 @@
       .filterActions button{flex:1}
     }
 
-    /* ===== Logos de Vehiculos (por marca) ===== */
+    /* ===== Logos de Vehiculos ===== */
     .vehLogos{
       margin-top:10px;
       display:flex;
@@ -137,14 +132,14 @@
       border-radius:12px;
       background:#fff;
       box-shadow:0 1px 8px rgba(0,0,0,.03);
-      max-width: 220px;
+      max-width:220px;
     }
     .vehLogoImg{
       width:34px;
       height:22px;
       object-fit:contain;
       display:block;
-      filter: grayscale(0%);
+      filter:grayscale(0%);
       opacity:.95;
     }
     .vehLogoText{
@@ -156,21 +151,35 @@
       text-overflow:ellipsis;
       max-width:150px;
     }
-
-    /* Codigo principal (link) */
     .codeLink{color:#2563eb;text-decoration:underline;font-weight:900;cursor:pointer;}
     .codeLink:hover{filter:brightness(.9)}
-
+    
+    /* Estilo para el selector de país */
+    .country-selector {
+      margin-left:12px;
+      display:inline-block;
+    }
+    .country-selector select {
+      font-weight:800;
+      background:white;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid #e6e8f0;
+      font-size:12px;
+      cursor:pointer;
+      outline:none;
+    }
+    .country-selector select:hover {
+      background:#f6f7fb;
+    }
   </style>
 </head>
-
 <body>
   <div class="topbar">
     <div>
       <h1>RepuestoFinder</h1>
       <div class="watermark">App</div>
     </div>
-
     <div class="nav">
       <a class="navlink" href="/?stay=1">Volver al sitio</a>
       <a class="navlink" href="#" onclick="cerrarSesion();return false;" id="logoutLink" style="display:none">Cerrar sesion</a>
@@ -185,67 +194,128 @@
           <input id="code" placeholder="Ej: 55300-3X100" value="111242"/>
         </div>
       </div>
-
       <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
         <button class="btn" onclick="buscar()">Buscar</button>
         <button class="btn2" onclick="limpiar()">Limpiar</button>
         <button class="btn3" onclick="exportar()" id="btnExport" disabled>Exportar a Excel</button>
       </div>
     </div>
-
     <div style="margin-top:10px" class="ok">
       <span class="dot"></span><span id="status">Listo</span>
     </div>
-
     <div style="margin-top:8px" class="muted">
       Mercado (pais): <span class="pill" id="pillCountry">—</span>
       <span id="pillCityWrap" style="display:none"> · ciudad: <span class="pill" id="pillCity">—</span></span>
+      
+      <!-- SELECTOR DE PAÍS COMPLETO -->
+      <span class="country-selector">
+        · <span style="margin-left:4px">🌍</span>
+        <select id="countrySelector" title="País para búsquedas">
+          <option value="DO">🇩🇴 DO - Rep. Dominicana</option>
+          <option value="US">🇺🇸 US - Estados Unidos</option>
+          <option value="MX">🇲🇽 MX - México</option>
+          <option value="CA">🇨🇦 CA - Canadá</option>
+          <option value="ES">🇪🇸 ES - España</option>
+          <option value="PT">🇵🇹 PT - Portugal</option>
+          <option value="FR">🇫🇷 FR - Francia</option>
+          <option value="DE">🇩🇪 DE - Alemania</option>
+          <option value="IT">🇮🇹 IT - Italia</option>
+          <option value="GB">🇬🇧 GB - Reino Unido</option>
+          <option value="NL">🇳🇱 NL - Países Bajos</option>
+          <option value="BE">🇧🇪 BE - Bélgica</option>
+          <option value="CH">🇨🇭 CH - Suiza</option>
+          <option value="SE">🇸🇪 SE - Suecia</option>
+          <option value="NO">🇳🇴 NO - Noruega</option>
+          <option value="DK">🇩🇰 DK - Dinamarca</option>
+          <option value="FI">🇫🇮 FI - Finlandia</option>
+          <option value="PL">🇵🇱 PL - Polonia</option>
+          <option value="TR">🇹🇷 TR - Turquía</option>
+          <option value="RU">🇷🇺 RU - Rusia</option>
+          <option value="UA">🇺🇦 UA - Ucrania</option>
+          <option value="SA">🇸🇦 SA - Arabia Saudita</option>
+          <option value="AE">🇦🇪 AE - Emiratos Árabes</option>
+          <option value="EG">🇪🇬 EG - Egipto</option>
+          <option value="MA">🇲🇦 MA - Marruecos</option>
+          <option value="ZA">🇿🇦 ZA - Sudáfrica</option>
+          <option value="NG">🇳🇬 NG - Nigeria</option>
+          <option value="KE">🇰🇪 KE - Kenia</option>
+          <option value="IN">🇮🇳 IN - India</option>
+          <option value="TH">🇹🇭 TH - Tailandia</option>
+          <option value="VN">🇻🇳 VN - Vietnam</option>
+          <option value="MY">🇲🇾 MY - Malasia</option>
+          <option value="SG">🇸🇬 SG - Singapur</option>
+          <option value="ID">🇮🇩 ID - Indonesia</option>
+          <option value="PH">🇵🇭 PH - Filipinas</option>
+          <option value="CN">🇨🇳 CN - China</option>
+          <option value="JP">🇯🇵 JP - Japón</option>
+          <option value="KR">🇰🇷 KR - Corea del Sur</option>
+          <option value="AU">🇦🇺 AU - Australia</option>
+          <option value="NZ">🇳🇿 NZ - Nueva Zelanda</option>
+          <option value="CO">🇨🇴 CO - Colombia</option>
+          <option value="CL">🇨🇱 CL - Chile</option>
+          <option value="PE">🇵🇪 PE - Perú</option>
+          <option value="AR">🇦🇷 AR - Argentina</option>
+          <option value="BR">🇧🇷 BR - Brasil</option>
+          <option value="EC">🇪🇨 EC - Ecuador</option>
+          <option value="VE">🇻🇪 VE - Venezuela</option>
+          <option value="BO">🇧🇴 BO - Bolivia</option>
+          <option value="PY">🇵🇾 PY - Paraguay</option>
+          <option value="UY">🇺🇾 UY - Uruguay</option>
+          <option value="PA">🇵🇦 PA - Panamá</option>
+          <option value="CR">🇨🇷 CR - Costa Rica</option>
+          <option value="GT">🇬🇹 GT - Guatemala</option>
+          <option value="SV">🇸🇻 SV - El Salvador</option>
+          <option value="HN">🇭🇳 HN - Honduras</option>
+          <option value="NI">🇳🇮 NI - Nicaragua</option>
+          <option value="CU">🇨🇺 CU - Cuba</option>
+          <option value="PR">🇵🇷 PR - Puerto Rico</option>
+          <option value="JM">🇯🇲 JM - Jamaica</option>
+          <option value="HT">🇭🇹 HT - Haití</option>
+          <option value="TT">🇹🇹 TT - Trinidad y Tobago</option>
+          <option value="BS">🇧🇸 BS - Bahamas</option>
+          <option value="BZ">🇧🇿 BZ - Belice</option>
+          <option value="GY">🇬🇾 GY - Guyana</option>
+          <option value="SR">🇸🇷 SR - Surinam</option>
+          <option value="ALL">🌎 GLOBAL - Todos</option>
+        </select>
+      </span>
     </div>
   </div>
 
-
-  <!-- ===== Filtro vehicular (client-side) ===== -->
+  <!-- ===== Filtro vehicular ===== -->
   <div class="card" id="cardFiltroVehicular">
     <div class="muted" style="font-weight:900">Buscador por Vehiculo / Año / Modelo / Motor / Descripcion</div>
-
     <div class="filterBar">
       <div class="filterItem medium">
         <div class="filterLabel">Vehiculo</div>
         <input id="fVehiculo" placeholder="Ej: Honda, Hyundai, Mercedes..." autocomplete="off"/>
       </div>
-
       <div class="filterItem small">
         <div class="filterLabel">Año</div>
         <input id="fAnio" placeholder="Ej: 1989" inputmode="numeric" autocomplete="off"/>
       </div>
-
       <div class="filterItem medium">
         <div class="filterLabel">Modelo</div>
         <input id="fModelo" placeholder="Ej: Civic, H100..." autocomplete="off"/>
       </div>
-
       <div class="filterItem medium">
         <div class="filterLabel">Motor</div>
         <input id="fMotor" placeholder="Ej: 1.6, D4BB, M276..." autocomplete="off"/>
       </div>
-
       <div class="filterItem">
         <div class="filterLabel">Descripcion</div>
         <input id="fDescripcion" placeholder="Ej: alternador, filtro, bomba..." autocomplete="off"/>
       </div>
-
       <div class="filterActions">
         <button class="btn" onclick="aplicarFiltroVehicular()">Buscar</button>
         <button class="btn2" onclick="limpiarFiltroVehicular()">Limpiar</button>
       </div>
     </div>
-
     <div class="muted" style="margin-top:10px">
       <span class="pill" id="pillFiltroEstado">Sin filtro</span>
       <span class="muted" id="filtroHint" style="margin-left:8px;display:none"></span>
     </div>
   </div>
-
 
   <div class="grid2">
     <div class="card menuCard open" id="cardProducto">
@@ -258,7 +328,6 @@
           </svg>
         </div>
       </div>
-
       <div class="accBody">
         <div class="muted">URL: <a id="productUrl" href="#" target="_blank">-</a></div>
         <div style="margin-top:8px" class="muted" id="counts">Vehicles: 0 | Cambios: 0</div>
@@ -267,7 +336,6 @@
       </div>
     </div>
 
-    <!-- ===== TARJETA DE SIMILITUD (copiada de app14) ===== -->
     <div class="card menuCard" id="cardSimilitud">
       <div class="accHeader" onclick="toggleAcc('cardSimilitud')">
         <div class="accTitle">Similitud</div>
@@ -278,7 +346,6 @@
           </svg>
         </div>
       </div>
-
       <div class="accBody">
         <div class="muted" id="simHint">Si no encontramos coincidencia exacta, te mostraremos codigos similares aqui.</div>
         <div id="simWrap" style="margin-top:10px"></div>
@@ -301,7 +368,6 @@
           </svg>
         </div>
       </div>
-
       <div class="accBody">
         <div id="oeWrap" class="muted">No hay filas detectadas.</div>
       </div>
@@ -324,7 +390,6 @@
         </svg>
       </div>
     </div>
-
     <div class="accBody">
       <div id="vehWrap" class="muted">No hay filas detectadas.</div>
     </div>
@@ -341,10 +406,8 @@
   const VEH_TABLES = ["datos_vehiculares", "datos_vehiculares_v2"];
   const CAMBIOS_TABLES = ["cambios", "cambios_v2"];
 
-  // ✅ Logos por marca (ruta dentro del repo)
+  // ✅ Logos por marca
   const AUTO_LOGO_BASE = "assets/logos/autos/";
-
-  // Placeholder (SVG) para cuando no exista un logo
   const DEFAULT_CAR_SVG_DATAURI =
     "data:image/svg+xml;charset=utf-8," +
     encodeURIComponent(`
@@ -360,9 +423,51 @@
   let lastPayload = null;
   let currentSearchSessionId = null;
 
-  // ✅ Perfil (country/city)
+  // ✅ Perfil y país seleccionado
   let profileCountry = null;
   let profileCity = null;
+
+  // ========== FUNCIONES PARA EL SELECTOR DE PAÍS ==========
+  function getSelectedCountry() {
+    const selector = document.getElementById("countrySelector");
+    return selector ? selector.value : (profileCountry || "DO");
+  }
+
+  function saveCountryPreference(country) {
+    try {
+      localStorage.setItem("rf_preferred_country", country);
+    } catch(e) {}
+  }
+
+  function loadCountryPreference() {
+    try {
+      return localStorage.getItem("rf_preferred_country");
+    } catch(e) {
+      return null;
+    }
+  }
+
+  function syncCountrySelector() {
+    const selector = document.getElementById("countrySelector");
+    if (!selector) return;
+    
+    // Prioridad: 1. Preferencia guardada, 2. Perfil, 3. Default "DO"
+    const saved = loadCountryPreference();
+    if (saved && selector.querySelector(`option[value="${saved}"]`)) {
+      selector.value = saved;
+      profileCountry = saved;
+    } else if (profileCountry && selector.querySelector(`option[value="${profileCountry}"]`)) {
+      selector.value = profileCountry;
+    } else {
+      selector.value = "DO";
+      profileCountry = "DO";
+    }
+    
+    // Actualizar pill
+    const pillCountry = document.getElementById("pillCountry");
+    if (pillCountry) pillCountry.textContent = profileCountry || "—";
+  }
+  // ========================================================
 
   function setStatus(txt){ document.getElementById("status").textContent = txt; }
 
@@ -372,13 +477,16 @@
                     (navigator.maxTouchPoints && navigator.maxTouchPoints > 0);
     return (w <= 1024) || isTouch;
   }
+
   function setMobileDefault_(){
     ["cardProducto","cardOE","cardVeh","cardSimilitud"].forEach(id => { const c=document.getElementById(id); if(c) c.classList.remove("open"); });
     const p = document.getElementById("cardProducto"); if(p) p.classList.add("open");
   }
+
   function setDesktopDefault_(){
     ["cardProducto","cardOE","cardVeh","cardSimilitud"].forEach(id => { const c=document.getElementById(id); if(c) c.classList.add("open"); });
   }
+
   window.toggleAcc = function(cardId){
     if(!isMobile_()) return;
     const el = document.getElementById(cardId);
@@ -387,19 +495,8 @@
     ["cardProducto","cardOE","cardVeh","cardSimilitud"].forEach(id => { const c=document.getElementById(id); if(c) c.classList.remove("open"); });
     if(willOpen) el.classList.add("open");
   };
-  window.addEventListener("resize", ()=>{ if(isMobile_()) setMobileDefault_(); else setDesktopDefault_(); });
-  document.addEventListener("DOMContentLoaded", ()=>{ if(isMobile_()) setMobileDefault_(); else setDesktopDefault_();
 
-    // Enter en filtros => aplicar
-  ["fVehiculo","fAnio","fModelo","fMotor","fDescripcion"].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el){
-      el.addEventListener("keydown", (ev)=>{
-        if(ev.key === "Enter"){ ev.preventDefault(); window.aplicarFiltroVehicular(); }
-      });
-    }
-  });
-});
+  window.addEventListener("resize", ()=>{ if(isMobile_()) setMobileDefault_(); else setDesktopDefault_(); });
 
   window.cerrarSesion = async function(){
     try{ await supabase.auth.signOut(); }catch(e){}
@@ -430,11 +527,7 @@
   }
 
   function slugifyMake_(make){
-    return String(make||"")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "_")
-      .replace(/[^a-z0-9_]/g, "");
+    return String(make||"").trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
   }
 
   function titleCase_(s){
@@ -455,17 +548,13 @@
   function renderVehicleLogos_(vehiclesTable){
     const wrap = document.getElementById("vehLogos");
     if(!wrap) return;
-
     wrap.innerHTML = "";
     wrap.style.display = "none";
-
     if(!vehiclesTable || !Array.isArray(vehiclesTable.headers) || !Array.isArray(vehiclesTable.rows)) return;
     if(!vehiclesTable.rows.length) return;
-
     const headers = vehiclesTable.headers.map(h => String(h||"").toLowerCase());
     const idxMake = headers.findIndex(h => h === "vehiculo" || h.includes("vehiculo") || h === "vehicle" || h.includes("vehicle"));
     if(idxMake < 0) return;
-
     const makes = [];
     const seen = new Set();
     for(const r of vehiclesTable.rows){
@@ -477,14 +566,11 @@
       makes.push(mk);
       if(makes.length >= 10) break;
     }
-
     if(makes.length === 0) return;
-
     let html = "";
     for(const mk of makes){
       const candidates = getLogoCandidates_(mk);
       const firstSrc = candidates[0] || DEFAULT_CAR_SVG_DATAURI;
-
       const escMk = escapeHtml_(mk);
       const candJson = escapeHtml_(JSON.stringify(candidates));
       html += `
@@ -511,7 +597,6 @@
         </div>
       `;
     }
-
     wrap.innerHTML = html;
     wrap.style.display = "flex";
   }
@@ -519,19 +604,15 @@
   function renderTableInto_(wrapId, tableObj){
     const wrap = document.getElementById(wrapId);
     if(!wrap) return;
-
     if(!tableObj || !Array.isArray(tableObj.headers) || !Array.isArray(tableObj.rows) || tableObj.rows.length === 0){
       wrap.innerHTML = "No hay filas detectadas.";
       return;
     }
-
     const headers = tableObj.headers;
     const rows = tableObj.rows;
-
     let html = '<div class="tableWrap"><table><thead><tr>';
     for(const h of headers) html += '<th>' + escapeHtml_(h) + '</th>';
     html += '</tr></thead><tbody>';
-
     for(const r of rows){
       html += '<tr>';
       for(let i=0;i<headers.length;i++){
@@ -552,7 +633,6 @@
       }
       html += '</tr>';
     }
-
     html += '</tbody></table></div>';
     wrap.innerHTML = html;
   }
@@ -569,11 +649,7 @@
   }
 
   function normalizeCode_(s){
-    return String(s||"")
-      .trim()
-      .toUpperCase()
-      .replace(/\s+/g,"")
-      .replace(/[^A-Z0-9]/g,"");
+    return String(s||"").trim().toUpperCase().replace(/\s+/g,"").replace(/[^A-Z0-9]/g,"");
   }
 
   function unique_(arr){
@@ -619,60 +695,32 @@
   function classifyCategory_(q){
     const s = String(q||"").toLowerCase();
     const has = (...words) => words.some(w => s.includes(w));
-
-    if(has("amortigu", "shock", "rotula", "buje", "bushing", "stabil", "terminal", "cremallera", "rack", "biela", "suspension")){
-      return "suspension";
-    }
-    if(has("pastilla", "disco", "caliper", "zapata", "freno", "brake", "cilindro maestro", "master cylinder")){
-      return "frenos";
-    }
-    if(has("piston", "anillo", "ring", "junta", "empaque", "culata", "head gasket", "bomba aceite", "oil pump", "cadena tiempo", "timing")){
-      return "motor";
-    }
-    if(has("filtro", "filter", "mann", "mahle", "aceite", "oil filter", "air filter", "cabina")){
-      return "filtros";
-    }
-    if(has("alternador", "arranque", "starter", "sensor", "bobina", "coil", "bujia", "spark", "relay", "rele", "fusible")){
-      return "electrico";
-    }
-    if(has("radiador", "bomba agua", "water pump", "termostato", "coolant", "manguera", "fan", "abanico")){
-      return "cooling";
-    }
+    if(has("amortigu", "shock", "rotula", "buje", "bushing", "stabil", "terminal", "cremallera", "rack", "biela", "suspension")) return "suspension";
+    if(has("pastilla", "disco", "caliper", "zapata", "freno", "brake", "cilindro maestro", "master cylinder")) return "frenos";
+    if(has("piston", "anillo", "ring", "junta", "empaque", "culata", "head gasket", "bomba aceite", "oil pump", "cadena tiempo", "timing")) return "motor";
+    if(has("filtro", "filter", "mann", "mahle", "aceite", "oil filter", "air filter", "cabina")) return "filtros";
+    if(has("alternador", "arranque", "starter", "sensor", "bobina", "coil", "bujia", "spark", "relay", "rele", "fusible")) return "electrico";
+    if(has("radiador", "bomba agua", "water pump", "termostato", "coolant", "manguera", "fan", "abanico")) return "cooling";
     return "otros";
   }
 
   function classifyCategoryFromPosition_(posText){
     const s = String(posText || "").toLowerCase();
     const has = (...words) => words.some(w => s.includes(w));
-
-    if (has("brake","freno","rear axle brake","front brake","disc","pad","caliper","zapata","drum","rotor","master cylinder","abs")) {
-      return "frenos";
-    }
-    if (has("suspension","shock","strut","control arm","arm","ball joint","rotula","bushing","buje","stabilizer","stabilizer link","tie rod","rack","steering","terminal")) {
-      return "suspension";
-    }
-    if (has("engine","timing","gasket","head","piston","ring","bearing","oil pump","camshaft","crankshaft","valve","culata","empaque","anillo")) {
-      return "motor";
-    }
-    if (has("transmission","gear","clutch","cv joint","driveshaft","axle shaft","differential")) {
-      return "transmision";
-    }
-    if (has("sensor","ignition","coil","spark","alternator","starter","relay","fuse","wiring")) {
-      return "electrico";
-    }
-    if (has("radiator","water pump","thermostat","coolant","fan","hose")) {
-      return "cooling";
-    }
+    if (has("brake","freno","rear axle brake","front brake","disc","pad","caliper","zapata","drum","rotor","master cylinder","abs")) return "frenos";
+    if (has("suspension","shock","strut","control arm","arm","ball joint","rotula","bushing","buje","stabilizer","stabilizer link","tie rod","rack","steering","terminal")) return "suspension";
+    if (has("engine","timing","gasket","head","piston","ring","bearing","oil pump","camshaft","crankshaft","valve","culata","empaque","anillo")) return "motor";
+    if (has("transmission","gear","clutch","cv joint","driveshaft","axle shaft","differential")) return "transmision";
+    if (has("sensor","ignition","coil","spark","alternator","starter","relay","fuse","wiring")) return "electrico";
+    if (has("radiator","water pump","thermostat","coolant","fan","hose")) return "cooling";
     return null;
   }
 
   function extractBestPosition_(vehiclesTable){
     if(!vehiclesTable || !Array.isArray(vehiclesTable.headers) || !Array.isArray(vehiclesTable.rows)) return null;
-
     const headers = vehiclesTable.headers.map(h => String(h||"").toLowerCase());
     let idx = headers.findIndex(h => h === "posicion" || h.includes("posicion") || h === "position" || h.includes("position"));
     if(idx < 0) return null;
-
     for(const r of vehiclesTable.rows){
       const v = r && r[idx] !== undefined ? String(r[idx] || "").trim() : "";
       if(v) return v;
@@ -682,17 +730,14 @@
 
   function extractVehicleSummary_(vehiclesTable){
     if(!vehiclesTable || !Array.isArray(vehiclesTable.headers) || !Array.isArray(vehiclesTable.rows)) return null;
-
     const headers = vehiclesTable.headers.map(h => String(h||"").toLowerCase());
     const idx = (name) => headers.findIndex(h => h === name || h.includes(name));
-
     const iMake   = idx("vehiculo");
     const iModel  = idx("modelo");
     const iYFrom  = idx("año inicio");
     const iYTo    = idx("año final");
     const iEngine = idx("motor");
     const iSerie  = idx("serie");
-
     for(const r of vehiclesTable.rows){
       return {
         make:   iMake  >=0 ? r[iMake]  : null,
@@ -718,19 +763,22 @@
   async function loadProfileMarket_(){
     const params = new URLSearchParams(window.location.search);
     const isDemo = params.get("demo") === "1";
+    const savedCountry = loadCountryPreference();
 
     if(isDemo){
-      profileCountry = "DO";
+      profileCountry = savedCountry || "DO";
       profileCity = null;
       paintMarketPills_();
+      syncCountrySelector();
       return;
     }
 
     const userId = await getCurrentUserId_();
     if(!userId){
-      profileCountry = null;
+      profileCountry = savedCountry || null;
       profileCity = null;
       paintMarketPills_();
+      syncCountrySelector();
       return;
     }
 
@@ -743,19 +791,20 @@
 
       if(error){
         console.warn("No pude leer profiles.country:", error.message);
-        profileCountry = null;
+        profileCountry = savedCountry || null;
         profileCity = null;
       }else{
-        profileCountry = (data?.country || null);
+        profileCountry = savedCountry || (data?.country || null);
         profileCity = (data?.city || null);
       }
     }catch(e){
       console.warn("No pude leer profiles:", e?.message || e);
-      profileCountry = null;
+      profileCountry = savedCountry || null;
       profileCity = null;
     }
 
     paintMarketPills_();
+    syncCountrySelector();
   }
 
   function paintMarketPills_(){
@@ -764,7 +813,6 @@
     const wrap = document.getElementById("pillCityWrap");
 
     if(elC) elC.textContent = profileCountry ? String(profileCountry).toUpperCase() : "—";
-
     if(profileCity){
       if(elCity) elCity.textContent = String(profileCity);
       if(wrap) wrap.style.display = "inline";
@@ -775,10 +823,8 @@
 
   async function ensureSearchSession_(){
     if(currentSearchSessionId) return currentSearchSessionId;
-
     const anonId = getOrCreateAnonId_();
     const userId = await getCurrentUserId_();
-
     const { data, error } = await supabase
       .from("search_sessions")
       .insert([{
@@ -786,7 +832,7 @@
         anon_id: anonId,
         source: "web",
         device: detectDevice_(),
-        country: profileCountry,
+        country: profileCountry,  // Guardamos también en sesión
         city: profileCity
       }])
       .select("id")
@@ -796,7 +842,6 @@
       console.warn("No pude crear search_session:", error.message);
       return null;
     }
-
     currentSearchSessionId = data?.id || null;
     return currentSearchSessionId;
   }
@@ -805,6 +850,9 @@
     try{
       const sessionId = await ensureSearchSession_();
       const userId = await getCurrentUserId_();
+      
+      // ✅ Usamos el país del selector SIEMPRE
+      const selectedCountry = getSelectedCountry();
 
       const payload = {
         session_id: sessionId,
@@ -818,7 +866,7 @@
         response_time_ms: Number.isFinite(responseTimeMs) ? responseTimeMs : null,
         meta: {
           ...(meta || {}),
-          market_country: profileCountry || null,
+          market_country: selectedCountry,  // ✅ PAÍS DEL SELECTOR
           market_city: profileCity || null
         }
       };
@@ -847,33 +895,26 @@
   }
 
   function normCell_(v){
-  return String(v ?? "")
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, " ");
-}
-
-function normCodeCell_(v){
-  return String(v ?? "")
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g,"")
-    .replace(/[^A-Z0-9]/g,"");
-}
-
-function uniqueJoin_(arr, sep=" / "){
-  const out = [];
-  const seen = new Set();
-  for(const x of (arr||[])){
-    const v = String(x ?? "").trim();
-    if(!v) continue;
-    const k = v.toUpperCase();
-    if(seen.has(k)) continue;
-    seen.add(k);
-    out.push(v);
+    return String(v ?? "").trim().toUpperCase().replace(/\s+/g, " ");
   }
-  return out.join(sep);
-}
+
+  function normCodeCell_(v){
+    return String(v ?? "").trim().toUpperCase().replace(/\s+/g,"").replace(/[^A-Z0-9]/g,"");
+  }
+
+  function uniqueJoin_(arr, sep=" / "){
+    const out = [];
+    const seen = new Set();
+    for(const x of (arr||[])){
+      const v = String(x ?? "").trim();
+      if(!v) continue;
+      const k = v.toUpperCase();
+      if(seen.has(k)) continue;
+      seen.add(k);
+      out.push(v);
+    }
+    return out.join(sep);
+  }
 
   async function resolveOriginals_(codeNorm){
     let all = [];
@@ -886,7 +927,6 @@ function uniqueJoin_(arr, sep=" / "){
       if(error) throw error;
       all = all.concat(data || []);
     }
-
     const originals = unique_((all || []).map(x => x.original_norm).filter(Boolean));
     if(originals.length === 0) return [codeNorm];
     return originals;
@@ -903,13 +943,11 @@ function uniqueJoin_(arr, sep=" / "){
       if(error) throw error;
       all = all.concat(data || []);
     }
-
     const map = new Map();
     for(const r of (all || [])){
       const cambioRaw = (r?.cambio ?? "");
       const key = normCodeCell_(cambioRaw);
       if(!key) continue;
-
       if(!map.has(key)){
         map.set(key, {
           cambio: String(cambioRaw || "").trim(),
@@ -920,35 +958,26 @@ function uniqueJoin_(arr, sep=" / "){
       const obj = map.get(key);
       const owner = String(r?.owner || "").trim();
       if(owner) obj.owners.add(owner);
-
       const pos = String(r?.posicion || "").trim();
       if(!obj.posicion && pos) obj.posicion = pos;
     }
-
     let merged = Array.from(map.values()).map(x => ({
       cambio: x.cambio,
       owner: uniqueJoin_(Array.from(x.owners), " / "),
       posicion: x.posicion
     }));
-
     merged.sort((a,b)=>{
       const pa = String(a?.posicion||"");
       const pb = String(b?.posicion||"");
       if(pa && pb && pa !== pb) return pa.localeCompare(pb);
       return String(a?.cambio||"").localeCompare(String(b?.cambio||""));
     });
-
-    const rows = merged.map(r => ([
-      r.cambio || "",
-      r.owner || ""
-    ]));
-
+    const rows = merged.map(r => ([ r.cambio || "", r.owner || "" ]));
     return { headers: ["cambio", "owner"], rows };
   }
 
   async function fetchVehiclesByOriginals_(originalNorms){
     const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion, original_norm";
-
     let all = [];
     for(const t of VEH_TABLES){
       const { data, error } = await supabase
@@ -956,28 +985,15 @@ function uniqueJoin_(arr, sep=" / "){
         .select(selectCols)
         .in("original_norm", originalNorms)
         .limit(5000);
-
       if(error) throw error;
       all = all.concat(data || []);
     }
-
     if(all.length === 0) return { headers: [], rows: [] };
-
     const canonDesc = (all.find(r => String(r?.descripcion ?? "").trim() !== "")?.descripcion ?? "").toString().trim();
-
     all = dedupeByKey_(all, r => [
-      r.vehiculo,
-      r.anio_inicio,
-      r.anio_final,
-      r.modelo,
-      r.motor,
-      r.serie,
-      r.cilindro,
-      r.posicion,
-      r.version,
-      r.descripcion
+      r.vehiculo, r.anio_inicio, r.anio_final, r.modelo, r.motor,
+      r.serie, r.cilindro, r.posicion, r.version, r.descripcion
     ].map(normCell_).join("|"));
-
     all.sort((a,b)=>{
       const va = String(a?.vehiculo||"");
       const vb = String(b?.vehiculo||"");
@@ -989,18 +1005,15 @@ function uniqueJoin_(arr, sep=" / "){
       const yb = Number(b?.anio_inicio || 0);
       return ya - yb;
     });
-
     if(canonDesc){
       for(const r of all){
         const cur = String(r?.descripcion ?? "").trim();
         if(!cur) r.descripcion = canonDesc;
       }
     }
-
     const headersKeys = [
       "vehiculo","anio_inicio","anio_final","modelo","motor","serie","cilindro","posicion","version","descripcion"
     ];
-
     const headerLabel = (k) => {
       if(k === "anio_inicio") return "Año inicio";
       if(k === "anio_final") return "Año final";
@@ -1014,27 +1027,22 @@ function uniqueJoin_(arr, sep=" / "){
       if(k === "descripcion") return "Descripcion";
       return k.replace(/_/g," ").replace(/^./, c => c.toUpperCase());
     };
-
     const headers = headersKeys.map(headerLabel);
     const rows = all.map(obj => headersKeys.map(k => (obj?.[k] ?? "")));
-
     return { headers, rows };
   }
 
   // ======================================================
-  // ✅ SIMILITUD: sugerir codigos parecidos cuando no hay match
+  // ✅ SIMILITUD
   // ======================================================
   async function fetchSimilitudByPrefix_(normalized, signal) {
     const norm = String(normalized || "").trim().toUpperCase();
     if (!norm) return [];
-
     const prefLen = Math.min(8, norm.length);
     const prefix = norm.slice(0, prefLen);
     if (prefix.length < 4) return [];
-
     const selectCols = "original, original_norm, descripcion, vehiculo, modelo, anio_inicio, anio_final";
     let all = [];
-
     for (const t of VEH_TABLES) {
       const { data, error } = await supabase
         .from(t)
@@ -1042,24 +1050,19 @@ function uniqueJoin_(arr, sep=" / "){
         .ilike("original_norm", prefix + "%")
         .abortSignal(signal)
         .limit(40);
-
       if (error) {
         if (error.name === 'AbortError' || error.message?.includes('abort')) throw error;
         console.warn(`Error en similitud ${t}:`, error.message);
       }
       all = all.concat(data || []);
     }
-
     if (all.length === 0) return [];
-
     const seen = new Set();
     const out = [];
-    
     for (const r of all) {
       const k = String(r?.original_norm || "").trim().toUpperCase();
       if (!k || seen.has(k)) continue;
       seen.add(k);
-      
       const disp = String(r?.original ?? "").toString().trim() || k;
       out.push({
         code: disp,
@@ -1070,10 +1073,8 @@ function uniqueJoin_(arr, sep=" / "){
         from: r?.anio_inicio ?? "",
         to: r?.anio_final ?? ""
       });
-      
       if (out.length >= 10) break;
     }
-    
     return out;
   }
 
@@ -1082,17 +1083,13 @@ function uniqueJoin_(arr, sep=" / "){
     const pill = document.getElementById("pillSimCount");
     const hint = document.getElementById("simHint");
     if(pill) pill.textContent = String((items||[]).length);
-
     if(!wrap) return;
-
     if(!items || items.length === 0){
       wrap.innerHTML = '<div class="muted">No hay sugerencias.</div>';
       if(hint) hint.textContent = "No encontramos coincidencia exacta. Si existen codigos parecidos, apareceran aqui.";
       return;
     }
-
     if(hint) hint.textContent = `No encontramos "${String(searchedNorm||"").toUpperCase()}". Te sugerimos estos codigos similares:`;
-
     const rows = items.map(it=>{
       const title = escapeHtml_(it.code);
       const sub = [it.vehiculo, it.modelo, (it.from||it.to) ? `${it.from||""}-${it.to||""}` : ""].filter(Boolean).join(" · ");
@@ -1111,7 +1108,6 @@ function uniqueJoin_(arr, sep=" / "){
         </div>
       `;
     }).join("");
-
     wrap.innerHTML = `<div>${rows}</div>`;
   }
 
@@ -1133,11 +1129,8 @@ function uniqueJoin_(arr, sep=" / "){
   }
 
   // ======================================================
-
+  // ✅ Buscador Vehicular
   // ======================================================
-  // ✅ Buscador Vehicular (consulta real a Supabase)
-  // ======================================================
-
   function strNorm_(v){ return String(v ?? "").trim().toLowerCase(); }
 
   function readFiltro_(){
@@ -1145,10 +1138,8 @@ function uniqueJoin_(arr, sep=" / "){
     const modelo   = strNorm_(document.getElementById("fModelo")?.value);
     const motor    = strNorm_(document.getElementById("fMotor")?.value);
     const desc     = strNorm_(document.getElementById("fDescripcion")?.value);
-
     const anioRaw  = strNorm_(document.getElementById("fAnio")?.value);
     const anioNum  = anioRaw ? Number(anioRaw.replace(/[^0-9]/g,"")) : null;
-
     const anio = (anioNum && Number.isFinite(anioNum)) ? anioNum : null;
     const hasAny = !!(vehiculo || modelo || motor || desc || anio);
     return { vehiculo, modelo, motor, desc, anio, hasAny };
@@ -1171,32 +1162,23 @@ function uniqueJoin_(arr, sep=" / "){
 
   async function fetchVehiclesByFilters_(f){
     const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion";
-
     let all = [];
     for(const t of VEH_TABLES){
       let q = supabase.from(t).select(selectCols).limit(5000);
-
       if(f.vehiculo) q = q.ilike("vehiculo", "%" + f.vehiculo + "%");
       if(f.modelo)   q = q.ilike("modelo",   "%" + f.modelo   + "%");
       if(f.motor)    q = q.ilike("motor",    "%" + f.motor    + "%");
       if(f.desc)     q = q.ilike("descripcion", "%" + f.desc  + "%");
-
-      if(f.anio){
-        q = q.lte("anio_inicio", f.anio).gte("anio_final", f.anio);
-      }
-
+      if(f.anio)     q = q.lte("anio_inicio", f.anio).gte("anio_final", f.anio);
       const { data, error } = await q;
       if(error) throw error;
       all = all.concat(data || []);
     }
-
     if(all.length === 0) return { headers: [], rows: [] };
-
     all = dedupeByKey_(all, r => [
       r.vehiculo, r.anio_inicio, r.anio_final, r.modelo, r.motor,
       r.serie, r.cilindro, r.posicion, r.version, r.descripcion
     ].map(normCell_).join("|"));
-
     all.sort((a,b)=>{
       const va = String(a?.vehiculo||"");
       const vb = String(b?.vehiculo||"");
@@ -1206,7 +1188,6 @@ function uniqueJoin_(arr, sep=" / "){
       if(ma !== mb) return ma.localeCompare(mb);
       return (Number(a?.anio_inicio||0) - Number(b?.anio_inicio||0));
     });
-
     const headersKeys = ["vehiculo","anio_inicio","anio_final","modelo","motor","serie","cilindro","posicion","version","descripcion"];
     const headerLabel = (k)=>{
       if(k === "vehiculo") return "Vehiculo";
@@ -1221,10 +1202,8 @@ function uniqueJoin_(arr, sep=" / "){
       if(k === "descripcion") return "Descripcion";
       return k.replace(/_/g," ").replace(/^./, c => c.toUpperCase());
     };
-
     const headers = headersKeys.map(headerLabel);
     const rows = all.map(obj => headersKeys.map(k => (obj?.[k] ?? "")));
-
     return { headers, rows };
   }
 
@@ -1235,7 +1214,6 @@ function uniqueJoin_(arr, sep=" / "){
       alert("Escribe al menos un campo para buscar.");
       return;
     }
-
     if(lastPayload && lastPayload.tablas && lastPayload.tablas.vehicles_full){
       const base = lastPayload.tablas.vehicles_full;
       const idxVeh = base.headers.findIndex(h => String(h).toLowerCase().includes("vehiculo"));
@@ -1244,18 +1222,15 @@ function uniqueJoin_(arr, sep=" / "){
       const idxMod = base.headers.findIndex(h => String(h).toLowerCase().includes("modelo"));
       const idxMot = base.headers.findIndex(h => String(h).toLowerCase().includes("motor"));
       const idxDes = base.headers.findIndex(h => String(h).toLowerCase().includes("descripcion") || String(h).toLowerCase().includes("descripción") || String(h).toLowerCase().includes("description"));
-
       const rows = (base.rows||[]).filter(r=>{
         const vVeh = idxVeh>=0 ? strNorm_(r[idxVeh]) : "";
         const vMod = idxMod>=0 ? strNorm_(r[idxMod]) : "";
         const vMot = idxMot>=0 ? strNorm_(r[idxMot]) : "";
         const vDes = idxDes>=0 ? strNorm_(r[idxDes]) : "";
-
         if(filtro.vehiculo && !vVeh.includes(filtro.vehiculo)) return false;
         if(filtro.modelo && !vMod.includes(filtro.modelo)) return false;
         if(filtro.motor && !vMot.includes(filtro.motor)) return false;
         if(filtro.desc && !vDes.includes(filtro.desc)) return false;
-
         if(filtro.anio && (idxY1>=0 || idxY2>=0)){
           const y1 = idxY1>=0 ? Number(String(r[idxY1]??"").replace(/[^0-9]/g,"")) : NaN;
           const y2 = idxY2>=0 ? Number(String(r[idxY2]??"").replace(/[^0-9]/g,"")) : NaN;
@@ -1265,20 +1240,14 @@ function uniqueJoin_(arr, sep=" / "){
         }
         return true;
       });
-
       let filtered = { headers: base.headers, rows };
       filtered = decorateDescWithOriginal_(filtered);
       lastPayload.tablas.vehicles = filtered;
-
       renderTableInto_("vehWrap", filtered);
       renderVehicleLogos_(filtered);
-
       document.getElementById("btnCopyVeh").disabled = !(rows.length>0);
-      document.getElementById("counts").textContent =
-        "Vehicles: " + rows.length + " | Cambios: " + ((lastPayload.tablas?.cambios?.rows||[]).length || 0);
-
+      document.getElementById("counts").textContent = "Vehicles: " + rows.length + " | Cambios: " + ((lastPayload.tablas?.cambios?.rows||[]).length || 0);
       document.getElementById("btnExport").disabled = rows.length===0 && ((lastPayload.tablas?.cambios?.rows||[]).length||0)===0;
-
       const used = [];
       if(filtro.vehiculo) used.push("Vehiculo");
       if(filtro.anio) used.push("Año");
@@ -1288,30 +1257,23 @@ function uniqueJoin_(arr, sep=" / "){
       setFiltroPill_("Filtro activo", "Campos: " + used.join(", "));
       return;
     }
-
     setStatus("Buscando vehiculos...");
-
     try{
       const veh = await fetchVehiclesByFilters_(filtro);
-
       lastPayload = {
         codigo: "FILTRO_VEHICULAR",
         productUrl: buildGoogleUrl_("vehiculo " + (filtro.vehiculo||"")),
         tablas: { vehicles: veh, cambios: { headers: [], rows: [] }, vehicles_full: veh }
       };
-
       renderTableInto_("vehWrap", veh);
       renderVehicleLogos_(veh);
       renderTableInto_("oeWrap", { headers: [], rows: [] });
-
       const vehCount = (veh?.rows||[]).length;
-
       document.getElementById("pillCode").textContent = "Filtro Vehicular";
       document.getElementById("counts").textContent = "Vehicles: " + vehCount + " | Cambios: 0";
       document.getElementById("btnCopyVeh").disabled = vehCount===0;
       document.getElementById("btnCopyOE").disabled = true;
       document.getElementById("btnExport").disabled = vehCount===0;
-
       const used = [];
       if(filtro.vehiculo) used.push("Vehiculo");
       if(filtro.anio) used.push("Año");
@@ -1319,7 +1281,6 @@ function uniqueJoin_(arr, sep=" / "){
       if(filtro.motor) used.push("Motor");
       if(filtro.desc) used.push("Descripcion");
       setFiltroPill_(vehCount? "Filtro activo" : "Sin resultados", "Campos: " + used.join(", "));
-
       setStatus("Listo ✅");
     }catch(e){
       console.error(e);
@@ -1334,15 +1295,12 @@ function uniqueJoin_(arr, sep=" / "){
       if(el) el.value = "";
     });
     setFiltroPill_("Sin filtro");
-
     if(lastPayload && lastPayload.tablas && lastPayload.tablas.vehicles_full){
       lastPayload.tablas.vehicles = lastPayload.tablas.vehicles_full;
       renderTableInto_("vehWrap", lastPayload.tablas.vehicles_full);
       renderVehicleLogos_(lastPayload.tablas.vehicles_full);
-
       const vehCount = (lastPayload.tablas.vehicles_full?.rows||[]).length;
       const cambCount = (lastPayload.tablas?.cambios?.rows||[]).length;
-
       document.getElementById("btnCopyVeh").disabled = vehCount===0;
       document.getElementById("counts").textContent = "Vehicles: " + vehCount + " | Cambios: " + cambCount;
       document.getElementById("btnExport").disabled = (vehCount===0 && cambCount===0);
@@ -1368,50 +1326,39 @@ function uniqueJoin_(arr, sep=" / "){
     document.getElementById("btnExport").disabled = true;
     document.getElementById("btnCopyOE").disabled = true;
     document.getElementById("btnCopyVeh").disabled = true;
-
     document.getElementById("pillCode").textContent = "-";
     document.getElementById("productUrl").textContent = "-";
     document.getElementById("productUrl").href = "#";
     document.getElementById("counts").textContent = "Vehicles: 0 | Cambios: 0";
     document.getElementById("notes").textContent = "";
-
     document.getElementById("oeWrap").innerHTML = "No hay filas detectadas.";
     document.getElementById("vehWrap").innerHTML = "No hay filas detectadas.";
     document.getElementById("vehLogos").innerHTML = "";
     document.getElementById("vehLogos").style.display = "none";
-
-    // Limpiar similitud
     const simWrap = document.getElementById("simWrap");
     if(simWrap) simWrap.innerHTML = "";
     const pillSim = document.getElementById("pillSimCount");
     if(pillSim) pillSim.textContent = "0";
     const simHint = document.getElementById("simHint");
     if(simHint) simHint.textContent = "Si no encontramos coincidencia exacta, te mostraremos codigos similares aqui.";
-
     setStatus("Listo");
     if(isMobile_()) setMobileDefault_();
   };
 
   window.buscar = async function(){
     const t0 = performance.now();
-
     const raw = (document.getElementById("code").value || "").trim();
     if(!raw){ setStatus("Escribe un codigo."); return; }
-
     const norm = normalizeCode_(raw);
     const candidates = unique_([ raw, raw.toUpperCase(), norm ]).filter(Boolean);
-
     setStatus("Buscando...");
     try{
       const codigoMostrado = candidates[0] || raw;
-
       const originalNorms = await resolveOriginals_(norm);
-
       const [veh, camb] = await Promise.all([
         fetchVehiclesByOriginals_(originalNorms),
         fetchCambiosByOriginals_(originalNorms),
       ]);
-
       const payload = {
         codigo: codigoMostrado,
         codigo_norm: norm,
@@ -1419,23 +1366,17 @@ function uniqueJoin_(arr, sep=" / "){
         productUrl: buildGoogleUrl_(codigoMostrado),
         tablas: { vehicles: veh, cambios: camb }
       };
-
       render(payload);
-
       const vehCount = (veh && Array.isArray(veh.rows)) ? veh.rows.length : 0;
       const cambCount = (camb && Array.isArray(camb.rows)) ? camb.rows.length : 0;
       const totalResults = vehCount + cambCount;
       const resultStatus = totalResults > 0 ? "found" : "not_found";
-
       const pos = extractBestPosition_(veh);
       const catFromPos = classifyCategoryFromPosition_(pos);
       const category = catFromPos || classifyCategory_(raw);
-
       const vehSummary = extractVehicleSummary_(veh);
-
       const t1 = performance.now();
       const responseMs = Math.round(t1 - t0);
-
       await logSearchEvent_({
         queryRaw: raw,
         queryType: "oem",
@@ -1460,8 +1401,6 @@ function uniqueJoin_(arr, sep=" / "){
           used_cambios_tables: CAMBIOS_TABLES
         }
       });
-
-      // Si no hay resultados, ejecutar similitud en segundo plano
       if (resultStatus === "not_found") {
         setTimeout(async () => {
           try {
@@ -1473,14 +1412,11 @@ function uniqueJoin_(arr, sep=" / "){
           }
         }, 0);
       }
-
     }catch(e){
       console.error(e);
       setStatus("Error: " + (e && e.message ? e.message : e));
       alert("Error consultando: " + (e && e.message ? e.message : e));
-
       const t1 = performance.now();
-
       await logSearchEvent_({
         queryRaw: raw,
         queryType: "oem",
@@ -1489,47 +1425,34 @@ function uniqueJoin_(arr, sep=" / "){
         resultStatus: "unknown",
         resultsCount: 0,
         responseTimeMs: Math.round(t1 - t0),
-        meta: {
-          error: (e && e.message) ? e.message : String(e)
-        }
+        meta: { error: (e && e.message) ? e.message : String(e) }
       });
     }
   };
 
   function render(payload){
     lastPayload = payload;
-
     const codigo = payload.codigo || "-";
     const productUrl = payload.productUrl || buildGoogleUrl_(codigo);
-
     document.getElementById("pillCode").textContent = codigo;
     document.getElementById("productUrl").textContent = productUrl;
     document.getElementById("productUrl").href = productUrl;
-
     const vehicles = payload.tablas?.vehicles || null;
-    if(payload.tablas){
-      payload.tablas.vehicles_full = vehicles;
-    }
+    if(payload.tablas) payload.tablas.vehicles_full = vehicles;
     setFiltroPill_("Sin filtro");
     const cambios  = payload.tablas?.cambios  || null;
-
     renderTableInto_("vehWrap", vehicles);
     renderVehicleLogos_(vehicles);
     renderTableInto_("oeWrap", cambios);
-
     const hasVeh = vehicles && Array.isArray(vehicles.rows) && vehicles.rows.length > 0;
     const hasCamb = cambios && Array.isArray(cambios.rows) && cambios.rows.length > 0;
-
     document.getElementById("btnCopyVeh").disabled = !hasVeh;
     document.getElementById("btnCopyOE").disabled = !hasCamb;
-
     document.getElementById("counts").textContent =
       "Vehicles: " + (hasVeh ? vehicles.rows.length : 0) +
       " | Cambios: " + (hasCamb ? cambios.rows.length : 0);
-
     document.getElementById("notes").textContent = "";
     document.getElementById("btnExport").disabled = !(hasVeh || hasCamb);
-
     setStatus("Listo ✅");
     if(isMobile_()) setMobileDefault_();
   }
@@ -1560,11 +1483,9 @@ function uniqueJoin_(arr, sep=" / "){
 
   window.exportar = function(){
     if(!lastPayload){ alert("No hay datos para exportar."); return; }
-
     const codigo = (lastPayload.codigo || "export").toString();
     const vehicles = lastPayload?.tablas?.vehicles || null;
     const cambios  = lastPayload?.tablas?.cambios  || null;
-
     const parts = [];
     parts.push("CODIGO\t" + codigo);
     parts.push("");
@@ -1573,7 +1494,6 @@ function uniqueJoin_(arr, sep=" / "){
     parts.push("");
     parts.push("=== CAMBIOS ===");
     parts.push(tableToTSV_(cambios) || "No hay filas");
-
     const content = parts.join("\n");
     const blob = new Blob([content], { type:"text/tab-separated-values;charset=utf-8" });
     const a = document.createElement("a");
@@ -1584,44 +1504,35 @@ function uniqueJoin_(arr, sep=" / "){
     a.remove();
   };
 
-  // ✅ Decorar Descripcion con Codigo Original
   function decorateDescWithOriginal_(tableObj){
     if(!tableObj || !Array.isArray(tableObj.headers) || !Array.isArray(tableObj.rows)) return tableObj;
-
     const hs = tableObj.headers.map(h => String(h||"").trim().toLowerCase());
     const iDesc = hs.findIndex(h => h === "descripcion" || h === "descripción" || h.includes("descripcion") || h.includes("description"));
-
     let iOri = hs.findIndex(h => h === "original");
     if(iOri < 0){
       iOri = hs.findIndex(h => h.includes("codigo original") || h.includes("código original") || h.includes("oem") || h.includes("itemcode") || (h.includes("codigo") && !h.includes("descripcion")));
     }
-
     if(iDesc < 0 || iOri < 0) return tableObj;
-
     const out = { headers: [...tableObj.headers], rows: tableObj.rows.map(r => [...r]) };
-
     for(let k=0;k<out.rows.length;k++){
       const r = out.rows[k];
       const desc = String(r[iDesc] ?? "").trim();
       const ori  = String(r[iOri]  ?? "").trim();
       if(!ori) continue;
-
       const already = desc.toLowerCase().includes(ori.toLowerCase()) || desc.toLowerCase().includes("oem:");
       if(!already){
         r[iDesc] = (desc ? desc + "  —  " : "") + "OEM: " + ori;
       }
     }
-
     out.headers.splice(iOri, 1);
     out.rows = out.rows.map(r => { r.splice(iOri, 1); return r; });
-
     return out;
   }
 
   // ✅ init
   await initAuth_();
 
-  // ✅ Forzar MAYUSCULA en el input de codigo (a276... => A276...)
+  // ✅ Forzar MAYUSCULA en el input de codigo
   try{
     const codeInput = document.getElementById("code");
     if(codeInput){
@@ -1642,17 +1553,14 @@ function uniqueJoin_(arr, sep=" / "){
     }
   }catch(e){}
 
-  // ===== PRESENCIA ONLINE (APP) =====
+  // ===== PRESENCIA ONLINE =====
   const { data: ses } = await supabase.auth.getSession();
   const user = ses?.session?.user;
-
   if (user) {
     const PRESENCE_CHANNEL = "rf-online-users";
-
     const presenceChannel = supabase.channel(PRESENCE_CHANNEL, {
       config: { presence: { key: user.id } }
     });
-
     await presenceChannel.subscribe(async (status) => {
       if (status === "SUBSCRIBED") {
         await presenceChannel.track({
@@ -1665,13 +1573,39 @@ function uniqueJoin_(arr, sep=" / "){
 
   await loadProfileMarket_();
 
+  // ✅ Event listener para el selector de país
+  document.addEventListener("DOMContentLoaded", function() {
+    const countrySelector = document.getElementById("countrySelector");
+    if (countrySelector) {
+      countrySelector.addEventListener("change", function(e) {
+        const newCountry = e.target.value;
+        profileCountry = newCountry;
+        saveCountryPreference(newCountry);
+        const pillCountry = document.getElementById("pillCountry");
+        if (pillCountry) pillCountry.textContent = newCountry;
+        console.log("País cambiado a:", newCountry);
+      });
+    }
+  });
+
   supabase.auth.onAuthStateChange((event, session) => {
     const params = new URLSearchParams(window.location.search);
     const isDemo = params.get("demo") === "1";
     if (!session && !isDemo) window.location.href = "/?stay=1";
   });
 
+  // Trigger inicial del DOMContentLoaded para configurar el selector
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      // Ya se llamará arriba
+    });
+  } else {
+    // Si ya cargó, ejecutar manual
+    setTimeout(() => {
+      const event = new Event('DOMContentLoaded');
+      document.dispatchEvent(event);
+    }, 0);
+  }
 </script>
 </body>
 </html>
-
