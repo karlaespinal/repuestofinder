@@ -2398,6 +2398,17 @@ window.limpiar = function(){
     try { release(); } catch(e) {}
   };
 
+  // ✅ Timeout DURO: si alguna promesa se queda "pending" (Supabase/red), liberamos SIEMPRE
+  const HARD_TIMEOUT_MS = 55000; // 55s
+  const hardTimer = setTimeout(() => {
+    try { __activeAbortController?.abort(); } catch(e){}
+    if (!isSearchStale_(searchId)) {
+      try { setStatus("Timeout. Intenta de nuevo."); } catch(e){}
+    }
+    try { safeRelease(); } catch(e){}
+  }, HARD_TIMEOUT_MS);
+
+
   try {
     if (isSearchStale_(searchId) || signal?.aborted) { safeRelease(); return; }
 
@@ -2570,6 +2581,7 @@ window.limpiar = function(){
       try { clearInputsAfterCodeSearch_(); } catch(err) {}
     }
   } finally {
+    try { clearTimeout(hardTimer); } catch(e) {}
     // ✅ Garantia: nunca quedarse en "Buscando..."
     safeRelease();
   }
@@ -3066,4 +3078,3 @@ function isOfferActive_(o){
 </script>
 </body>
 </html>
-
