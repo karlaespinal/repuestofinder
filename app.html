@@ -563,15 +563,14 @@ let __activeAbortController = null;
 function createSearchGuard() {
   // Cancelar búsqueda anterior si existe
   if (__activeAbortController) {
-    try { __activeAbortController.abort(); } catch (e) {}
+    try {
+      __activeAbortController.abort();
+    } catch (e) {}
   }
 
   __searchSeq++;
   __activeSearchId = __searchSeq;
   __activeAbortController = new AbortController();
-
-  // Capturar el id de ESTA búsqueda (evita que una búsqueda vieja libere la UI de la nueva)
-  const myId = __activeSearchId;
 
   // Liberar UI
   window.__isSearching = true;
@@ -580,14 +579,13 @@ function createSearchGuard() {
   setStatus("Buscando...");
 
   return {
-    searchId: myId,
+    searchId: __activeSearchId,
     signal: __activeAbortController.signal,
     release: () => {
-      // Solo la búsqueda activa puede liberar
-      if (myId === __activeSearchId) {
+      if (__activeSearchId === __searchSeq) {
         window.__isSearching = false;
-        const btn2 = document.getElementById('btnBuscarCodigo');
-        if (btn2) btn2.disabled = false;
+        const btn = document.getElementById('btnBuscarCodigo');
+        if (btn) btn.disabled = false;
       }
     }
   };
@@ -1717,17 +1715,14 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
   // Log no-bloqueante (evita que la UI se quede colgada si Supabase tarda)
   async function safeLogSearchEvent_(payload){
   try{
-    // Evita error NOT NULL (query_raw) y no bloquea la búsqueda
-    if (!payload) return;
-    const qr = (payload.query_raw ?? payload.queryRaw ?? "").toString().trim();
-    if (!qr) return;
-    payload.query_raw = qr;
     await logSearchEvent_(payload);
   }catch(e){
     // silencioso
   }
 }
-// ======================================================
+
+
+  // ======================================================
   // ✅ Helpers multi-tabla (v1 + v2)
   // ======================================================
 
@@ -2398,17 +2393,6 @@ window.limpiar = function(){
     try { release(); } catch(e) {}
   };
 
-  // ✅ Timeout DURO: si alguna promesa se queda "pending" (Supabase/red), liberamos SIEMPRE
-  const HARD_TIMEOUT_MS = 55000; // 55s
-  const hardTimer = setTimeout(() => {
-    try { __activeAbortController?.abort(); } catch(e){}
-    if (!isSearchStale_(searchId)) {
-      try { setStatus("Timeout. Intenta de nuevo."); } catch(e){}
-    }
-    try { safeRelease(); } catch(e){}
-  }, HARD_TIMEOUT_MS);
-
-
   try {
     if (isSearchStale_(searchId) || signal?.aborted) { safeRelease(); return; }
 
@@ -2439,29 +2423,25 @@ window.limpiar = function(){
     let camb = { headers: [], rows: [] };
     let usedRpc = false;
 
-    // RPC es opcional (solo si existe la función en Supabase).
-    // Para activarlo: window.__USE_RPC = true;
-    if (window.__USE_RPC === true) {
-      try {
-        const rpc = await retryWithAbort_(
-          (s) => buscarEnSupabaseRPC_(norm, s),
-          { timeoutMs: 45000, label: "rpc buscar_repuesto", retries: 1, signal }
-        );
+    try {
+      const rpc = await retryWithAbort_(
+        (s) => buscarEnSupabaseRPC_(norm, s),
+        { timeoutMs: 45000, label: "rpc buscar_repuesto", retries: 1, signal }
+      );
 
-        if (rpc && (rpc.vehicles || rpc.cambios || rpc.original_norms)) {
-          usedRpc = true;
-          originalNorms = Array.isArray(rpc.original_norms) && rpc.original_norms.length ? rpc.original_norms : [norm];
-          veh = vehiclesTableFromRPC_(rpc.vehicles);
-          camb = cambiosTableFromRPC_(rpc.cambios);
-        }
-      } catch (e) {
-        // Si fue abortado, salir silencioso
-        if (signal?.aborted || e?.name === "AbortError" || String(e?.message||"").toLowerCase().includes("abort")) {
-          safeRelease();
-          return;
-        }
-        console.warn("RPC fallo, usando fallback multi-consulta:", e);
+      if (rpc && (rpc.vehicles || rpc.cambios || rpc.original_norms)) {
+        usedRpc = true;
+        originalNorms = Array.isArray(rpc.original_norms) && rpc.original_norms.length ? rpc.original_norms : [norm];
+        veh = vehiclesTableFromRPC_(rpc.vehicles);
+        camb = cambiosTableFromRPC_(rpc.cambios);
       }
+    } catch (e) {
+      // Si fue abortado, salir silencioso
+      if (signal?.aborted || e?.name === "AbortError" || String(e?.message||"").toLowerCase().includes("abort")) {
+        safeRelease();
+        return;
+      }
+      console.warn("RPC fallo, usando fallback multi-consulta:", e);
     }
 
     if (!usedRpc) {
@@ -2581,7 +2561,6 @@ window.limpiar = function(){
       try { clearInputsAfterCodeSearch_(); } catch(err) {}
     }
   } finally {
-    try { clearTimeout(hardTimer); } catch(e) {}
     // ✅ Garantia: nunca quedarse en "Buscando..."
     safeRelease();
   }
