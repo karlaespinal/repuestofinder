@@ -120,6 +120,46 @@
       .filterActions button{flex:1}
     }
 
+    /* ===== Logos de Vehiculos (por marca) ===== */
+    .vehLogos{
+      margin-top:10px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+    }
+    .vehLogoItem{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border:1px solid #eef0f6;
+      border-radius:12px;
+      background:#fff;
+      box-shadow:0 1px 8px rgba(0,0,0,.03);
+      max-width: 220px;
+    }
+    .vehLogoImg{
+      width:34px;
+      height:22px;
+      object-fit:contain;
+      display:block;
+      filter: grayscale(0%);
+      opacity:.95;
+    }
+    .vehLogoText{
+      font-size:12px;
+      font-weight:900;
+      color:#111;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:150px;
+    }
+
+    /* Codigo principal (link) */
+    .codeLink{color:#2563eb;text-decoration:underline;font-weight:900;cursor:pointer;}
+    .codeLink:hover{filter:brightness(.9)}
 
   </style>
 </head>
@@ -222,7 +262,26 @@
       <div class="accBody">
         <div class="muted">URL: <a id="productUrl" href="#" target="_blank">-</a></div>
         <div style="margin-top:8px" class="muted" id="counts">Vehicles: 0 | Cambios: 0</div>
+        <div id="vehLogos" class="vehLogos" style="display:none"></div>
         <div style="margin-top:8px" class="muted" id="notes"></div>
+      </div>
+    </div>
+
+    <!-- ===== TARJETA DE SIMILITUD (copiada de app14) ===== -->
+    <div class="card menuCard" id="cardSimilitud">
+      <div class="accHeader" onclick="toggleAcc('cardSimilitud')">
+        <div class="accTitle">Similitud</div>
+        <div class="accRight" onclick="event.stopPropagation()">
+          <span class="pill" id="pillSimCount">0</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 9l6 6 6-6"></path>
+          </svg>
+        </div>
+      </div>
+
+      <div class="accBody">
+        <div class="muted" id="simHint">Si no encontramos coincidencia exacta, te mostraremos codigos similares aqui.</div>
+        <div id="simWrap" style="margin-top:10px"></div>
       </div>
     </div>
 
@@ -282,6 +341,22 @@
   const VEH_TABLES = ["datos_vehiculares", "datos_vehiculares_v2"];
   const CAMBIOS_TABLES = ["cambios", "cambios_v2"];
 
+  // ✅ Logos por marca (ruta dentro del repo)
+  const AUTO_LOGO_BASE = "assets/logos/autos/";
+
+  // Placeholder (SVG) para cuando no exista un logo
+  const DEFAULT_CAR_SVG_DATAURI =
+    "data:image/svg+xml;charset=utf-8," +
+    encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="120" height="80" viewBox="0 0 120 80">
+        <rect x="0" y="0" width="120" height="80" rx="14" fill="#f3f4f6"/>
+        <path d="M30 48l8-16c2-4 6-6 10-6h24c4 0 8 2 10 6l8 16" fill="none" stroke="#9ca3af" stroke-width="4" stroke-linecap="round"/>
+        <path d="M26 48h68c6 0 10 4 10 10v6H16v-6c0-6 4-10 10-10z" fill="none" stroke="#9ca3af" stroke-width="4" stroke-linejoin="round"/>
+        <circle cx="34" cy="64" r="7" fill="#9ca3af"/>
+        <circle cx="86" cy="64" r="7" fill="#9ca3af"/>
+      </svg>
+    `);
+
   let lastPayload = null;
   let currentSearchSessionId = null;
 
@@ -298,18 +373,18 @@
     return (w <= 1024) || isTouch;
   }
   function setMobileDefault_(){
-    ["cardProducto","cardOE","cardVeh"].forEach(id => { const c=document.getElementById(id); if(c) c.classList.remove("open"); });
+    ["cardProducto","cardOE","cardVeh","cardSimilitud"].forEach(id => { const c=document.getElementById(id); if(c) c.classList.remove("open"); });
     const p = document.getElementById("cardProducto"); if(p) p.classList.add("open");
   }
   function setDesktopDefault_(){
-    ["cardProducto","cardOE","cardVeh"].forEach(id => { const c=document.getElementById(id); if(c) c.classList.add("open"); });
+    ["cardProducto","cardOE","cardVeh","cardSimilitud"].forEach(id => { const c=document.getElementById(id); if(c) c.classList.add("open"); });
   }
   window.toggleAcc = function(cardId){
     if(!isMobile_()) return;
     const el = document.getElementById(cardId);
     if(!el) return;
     const willOpen = !el.classList.contains("open");
-    ["cardProducto","cardOE","cardVeh"].forEach(id => { const c=document.getElementById(id); if(c) c.classList.remove("open"); });
+    ["cardProducto","cardOE","cardVeh","cardSimilitud"].forEach(id => { const c=document.getElementById(id); if(c) c.classList.remove("open"); });
     if(willOpen) el.classList.add("open");
   };
   window.addEventListener("resize", ()=>{ if(isMobile_()) setMobileDefault_(); else setDesktopDefault_(); });
@@ -354,6 +429,93 @@
       .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
   }
 
+  function slugifyMake_(make){
+    return String(make||"")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-z0-9_]/g, "");
+  }
+
+  function titleCase_(s){
+    const t = String(s||"").trim().toLowerCase();
+    if(!t) return "";
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  }
+
+  function getLogoCandidates_(make){
+    const slug = slugifyMake_(make);
+    const tcase = titleCase_(make).replace(/\s+/g, "");
+    const list = [];
+    if(slug)  list.push(AUTO_LOGO_BASE + slug + ".png", AUTO_LOGO_BASE + slug + ".jpg", AUTO_LOGO_BASE + slug + ".jpeg");
+    if(tcase) list.push(AUTO_LOGO_BASE + tcase + ".png", AUTO_LOGO_BASE + tcase + ".jpg", AUTO_LOGO_BASE + tcase + ".jpeg");
+    return list;
+  }
+
+  function renderVehicleLogos_(vehiclesTable){
+    const wrap = document.getElementById("vehLogos");
+    if(!wrap) return;
+
+    wrap.innerHTML = "";
+    wrap.style.display = "none";
+
+    if(!vehiclesTable || !Array.isArray(vehiclesTable.headers) || !Array.isArray(vehiclesTable.rows)) return;
+    if(!vehiclesTable.rows.length) return;
+
+    const headers = vehiclesTable.headers.map(h => String(h||"").toLowerCase());
+    const idxMake = headers.findIndex(h => h === "vehiculo" || h.includes("vehiculo") || h === "vehicle" || h.includes("vehicle"));
+    if(idxMake < 0) return;
+
+    const makes = [];
+    const seen = new Set();
+    for(const r of vehiclesTable.rows){
+      const mk = (r && r[idxMake] !== undefined) ? String(r[idxMake]||"").trim() : "";
+      if(!mk) continue;
+      const key = mk.toLowerCase();
+      if(seen.has(key)) continue;
+      seen.add(key);
+      makes.push(mk);
+      if(makes.length >= 10) break;
+    }
+
+    if(makes.length === 0) return;
+
+    let html = "";
+    for(const mk of makes){
+      const candidates = getLogoCandidates_(mk);
+      const firstSrc = candidates[0] || DEFAULT_CAR_SVG_DATAURI;
+
+      const escMk = escapeHtml_(mk);
+      const candJson = escapeHtml_(JSON.stringify(candidates));
+      html += `
+        <div class="vehLogoItem" title="${escMk}">
+          <img class="vehLogoImg"
+               src="${firstSrc}"
+               alt="${escMk}"
+               data-candidates='${candJson}'
+               onerror="(function(img){
+                 try{
+                   const c = JSON.parse(img.getAttribute('data-candidates')||'[]');
+                   const i = Number(img.getAttribute('data-idx')||'0');
+                   const next = c[i+1];
+                   if(next){
+                     img.setAttribute('data-idx', String(i+1));
+                     img.src = next;
+                     return;
+                   }
+                 }catch(e){}
+                 img.onerror=null;
+                 img.src='${DEFAULT_CAR_SVG_DATAURI}';
+               })(this)">
+          <div class="vehLogoText">${escMk}</div>
+        </div>
+      `;
+    }
+
+    wrap.innerHTML = html;
+    wrap.style.display = "flex";
+  }
+
   function renderTableInto_(wrapId, tableObj){
     const wrap = document.getElementById(wrapId);
     if(!wrap) return;
@@ -374,7 +536,19 @@
       html += '<tr>';
       for(let i=0;i<headers.length;i++){
         const v = (r && r[i] !== undefined) ? r[i] : "";
-        html += '<td>' + escapeHtml_(v) + '</td>';
+        const hName = String(headers[i] || "").toLowerCase();
+        const cell = (v !== undefined && v !== null) ? String(v) : "";
+        if(hName.includes("codigo principal") || hName.includes("código principal") || hName.includes("principal code")){
+          const clean = cell.trim();
+          if(clean){
+            const esc = escapeHtml_(clean);
+            html += '<td><a class="codeLink" href="#" onclick="buscarCodigoPrincipal(\'' + esc + '\');return false;">' + esc + '</a></td>';
+          }else{
+            html += '<td></td>';
+          }
+        }else{
+          html += '<td>' + escapeHtml_(cell) + '</td>';
+        }
       }
       html += '</tr>';
     }
@@ -676,11 +850,10 @@
   return String(v ?? "")
     .trim()
     .toUpperCase()
-    .replace(/\s+/g, " "); // normaliza espacios internos
+    .replace(/\s+/g, " ");
 }
 
 function normCodeCell_(v){
-  // para codigos tipo ME229272, AY500MT002, etc.
   return String(v ?? "")
     .trim()
     .toUpperCase()
@@ -702,7 +875,6 @@ function uniqueJoin_(arr, sep=" / "){
   return out.join(sep);
 }
 
-
   async function resolveOriginals_(codeNorm){
     let all = [];
     for(const t of CAMBIOS_TABLES){
@@ -721,87 +893,79 @@ function uniqueJoin_(arr, sep=" / "){
   }
 
   async function fetchCambiosByOriginals_(originalNorms){
-  let all = [];
-  for(const t of CAMBIOS_TABLES){
-    const { data, error } = await supabase
-      .from(t)
-      .select("cambio, owner, posicion")
-      .in("original_norm", originalNorms)
-      .limit(5000);
-    if(error) throw error;
-    all = all.concat(data || []);
-  }
-
-  // ✅ DEDUPE FUERTE: 1 fila por "cambio" (sin importar owner)
-  // ✅ Si hay varios owner, los unimos en un solo campo
-  const map = new Map(); // key=cambioNorm -> { cambio, owners:Set, posicion }
-  for(const r of (all || [])){
-    const cambioRaw = (r?.cambio ?? "");
-    const key = normCodeCell_(cambioRaw);
-    if(!key) continue;
-
-    if(!map.has(key)){
-      map.set(key, {
-        cambio: String(cambioRaw || "").trim(),
-        owners: new Set(),
-        posicion: String(r?.posicion || "").trim()
-      });
+    let all = [];
+    for(const t of CAMBIOS_TABLES){
+      const { data, error } = await supabase
+        .from(t)
+        .select("cambio, owner, posicion")
+        .in("original_norm", originalNorms)
+        .limit(5000);
+      if(error) throw error;
+      all = all.concat(data || []);
     }
-    const obj = map.get(key);
-    const owner = String(r?.owner || "").trim();
-    if(owner) obj.owners.add(owner);
 
-    // si una posicion viene vacia y otra no, guarda la mejor
-    const pos = String(r?.posicion || "").trim();
-    if(!obj.posicion && pos) obj.posicion = pos;
+    const map = new Map();
+    for(const r of (all || [])){
+      const cambioRaw = (r?.cambio ?? "");
+      const key = normCodeCell_(cambioRaw);
+      if(!key) continue;
+
+      if(!map.has(key)){
+        map.set(key, {
+          cambio: String(cambioRaw || "").trim(),
+          owners: new Set(),
+          posicion: String(r?.posicion || "").trim()
+        });
+      }
+      const obj = map.get(key);
+      const owner = String(r?.owner || "").trim();
+      if(owner) obj.owners.add(owner);
+
+      const pos = String(r?.posicion || "").trim();
+      if(!obj.posicion && pos) obj.posicion = pos;
+    }
+
+    let merged = Array.from(map.values()).map(x => ({
+      cambio: x.cambio,
+      owner: uniqueJoin_(Array.from(x.owners), " / "),
+      posicion: x.posicion
+    }));
+
+    merged.sort((a,b)=>{
+      const pa = String(a?.posicion||"");
+      const pb = String(b?.posicion||"");
+      if(pa && pb && pa !== pb) return pa.localeCompare(pb);
+      return String(a?.cambio||"").localeCompare(String(b?.cambio||""));
+    });
+
+    const rows = merged.map(r => ([
+      r.cambio || "",
+      r.owner || ""
+    ]));
+
+    return { headers: ["cambio", "owner"], rows };
   }
-
-  let merged = Array.from(map.values()).map(x => ({
-    cambio: x.cambio,
-    owner: uniqueJoin_(Array.from(x.owners), " / "),
-    posicion: x.posicion
-  }));
-
-  // orden simple
-  merged.sort((a,b)=>{
-    const pa = String(a?.posicion||"");
-    const pb = String(b?.posicion||"");
-    if(pa && pb && pa !== pb) return pa.localeCompare(pb);
-    return String(a?.cambio||"").localeCompare(String(b?.cambio||""));
-  });
-
-  const rows = merged.map(r => ([
-    r.cambio || "",
-    r.owner || ""
-  ]));
-
-  return { headers: ["cambio", "owner"], rows };
-}
-
 
   async function fetchVehiclesByOriginals_(originalNorms){
-  // Solo traemos columnas necesarias (y descripcion)
-  const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion";
+    const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion, original_norm";
 
-  let all = [];
-  for(const t of VEH_TABLES){
-    const { data, error } = await supabase
-      .from(t)
-      .select(selectCols)
-      .in("original_norm", originalNorms)
-      .limit(5000);
+    let all = [];
+    for(const t of VEH_TABLES){
+      const { data, error } = await supabase
+        .from(t)
+        .select(selectCols)
+        .in("original_norm", originalNorms)
+        .limit(5000);
 
-    if(error) throw error;
-    all = all.concat(data || []);
-  }
+      if(error) throw error;
+      all = all.concat(data || []);
+    }
 
-  if(all.length === 0) return { headers: [], rows: [] };
+    if(all.length === 0) return { headers: [], rows: [] };
 
-  // ✅ 1) Sacar una descripcion "canon" del grupo (si existe al menos 1)
-  const canonDesc = (all.find(r => String(r?.descripcion ?? "").trim() !== "")?.descripcion ?? "").toString().trim();
+    const canonDesc = (all.find(r => String(r?.descripcion ?? "").trim() !== "")?.descripcion ?? "").toString().trim();
 
-  // ✅ 2) Dedupe para no repetir la misma fila si existe en v1 y v2
-      all = dedupeByKey_(all, r => [
+    all = dedupeByKey_(all, r => [
       r.vehiculo,
       r.anio_inicio,
       r.anio_final,
@@ -814,62 +978,164 @@ function uniqueJoin_(arr, sep=" / "){
       r.descripcion
     ].map(normCell_).join("|"));
 
+    all.sort((a,b)=>{
+      const va = String(a?.vehiculo||"");
+      const vb = String(b?.vehiculo||"");
+      if(va !== vb) return va.localeCompare(vb);
+      const ma = String(a?.modelo||"");
+      const mb = String(b?.modelo||"");
+      if(ma !== mb) return ma.localeCompare(mb);
+      const ya = Number(a?.anio_inicio || 0);
+      const yb = Number(b?.anio_inicio || 0);
+      return ya - yb;
+    });
 
-  // ✅ 3) Orden base: vehiculo, modelo, anio_inicio
-  all.sort((a,b)=>{
-    const va = String(a?.vehiculo||"");
-    const vb = String(b?.vehiculo||"");
-    if(va !== vb) return va.localeCompare(vb);
-    const ma = String(a?.modelo||"");
-    const mb = String(b?.modelo||"");
-    if(ma !== mb) return ma.localeCompare(mb);
-    const ya = Number(a?.anio_inicio || 0);
-    const yb = Number(b?.anio_inicio || 0);
-    return ya - yb;
-  });
-
-  // ✅ 4) Aplicar la descripcion canon a todas las filas (si existe)
-  if(canonDesc){
-    for(const r of all){
-      const cur = String(r?.descripcion ?? "").trim();
-      if(!cur) r.descripcion = canonDesc;
+    if(canonDesc){
+      for(const r of all){
+        const cur = String(r?.descripcion ?? "").trim();
+        if(!cur) r.descripcion = canonDesc;
+      }
     }
+
+    const headersKeys = [
+      "vehiculo","anio_inicio","anio_final","modelo","motor","serie","cilindro","posicion","version","descripcion"
+    ];
+
+    const headerLabel = (k) => {
+      if(k === "anio_inicio") return "Año inicio";
+      if(k === "anio_final") return "Año final";
+      if(k === "vehiculo") return "Vehiculo";
+      if(k === "modelo") return "Modelo";
+      if(k === "motor") return "Motor";
+      if(k === "serie") return "Serie";
+      if(k === "cilindro") return "Cilindro";
+      if(k === "posicion") return "Posicion";
+      if(k === "version") return "Version";
+      if(k === "descripcion") return "Descripcion";
+      return k.replace(/_/g," ").replace(/^./, c => c.toUpperCase());
+    };
+
+    const headers = headersKeys.map(headerLabel);
+    const rows = all.map(obj => headersKeys.map(k => (obj?.[k] ?? "")));
+
+    return { headers, rows };
   }
 
-  // ✅ Headers EXACTOS
-  const headersKeys = [
-    "vehiculo","anio_inicio","anio_final","modelo","motor","serie","cilindro","posicion","version","descripcion"
-  ];
+  // ======================================================
+  // ✅ SIMILITUD: sugerir codigos parecidos cuando no hay match
+  // ======================================================
+  async function fetchSimilitudByPrefix_(normalized, signal) {
+    const norm = String(normalized || "").trim().toUpperCase();
+    if (!norm) return [];
 
-  const headerLabel = (k) => {
-    if(k === "anio_inicio") return "Año inicio";
-    if(k === "anio_final") return "Año final";
-    if(k === "vehiculo") return "Vehiculo";
-    if(k === "modelo") return "Modelo";
-    if(k === "motor") return "Motor";
-    if(k === "serie") return "Serie";
-    if(k === "cilindro") return "Cilindro";
-    if(k === "posicion") return "Posicion";
-    if(k === "version") return "Version";
-    if(k === "descripcion") return "Descripcion";
-    return k.replace(/_/g," ").replace(/^./, c => c.toUpperCase());
-  };
+    const prefLen = Math.min(8, norm.length);
+    const prefix = norm.slice(0, prefLen);
+    if (prefix.length < 4) return [];
 
-  const headers = headersKeys.map(headerLabel);
-  const rows = all.map(obj => headersKeys.map(k => (obj?.[k] ?? "")));
+    const selectCols = "original, original_norm, descripcion, vehiculo, modelo, anio_inicio, anio_final";
+    let all = [];
 
-  return { headers, rows };
-}
+    for (const t of VEH_TABLES) {
+      const { data, error } = await supabase
+        .from(t)
+        .select(selectCols)
+        .ilike("original_norm", prefix + "%")
+        .abortSignal(signal)
+        .limit(40);
 
+      if (error) {
+        if (error.name === 'AbortError' || error.message?.includes('abort')) throw error;
+        console.warn(`Error en similitud ${t}:`, error.message);
+      }
+      all = all.concat(data || []);
+    }
+
+    if (all.length === 0) return [];
+
+    const seen = new Set();
+    const out = [];
+    
+    for (const r of all) {
+      const k = String(r?.original_norm || "").trim().toUpperCase();
+      if (!k || seen.has(k)) continue;
+      seen.add(k);
+      
+      const disp = String(r?.original ?? "").toString().trim() || k;
+      out.push({
+        code: disp,
+        code_norm: k,
+        desc: (r?.descripcion ?? "").toString().trim(),
+        vehiculo: (r?.vehiculo ?? "").toString().trim(),
+        modelo: (r?.modelo ?? "").toString().trim(),
+        from: r?.anio_inicio ?? "",
+        to: r?.anio_final ?? ""
+      });
+      
+      if (out.length >= 10) break;
+    }
+    
+    return out;
+  }
+
+  function renderSimilitud_(items, searchedNorm){
+    const wrap = document.getElementById("simWrap");
+    const pill = document.getElementById("pillSimCount");
+    const hint = document.getElementById("simHint");
+    if(pill) pill.textContent = String((items||[]).length);
+
+    if(!wrap) return;
+
+    if(!items || items.length === 0){
+      wrap.innerHTML = '<div class="muted">No hay sugerencias.</div>';
+      if(hint) hint.textContent = "No encontramos coincidencia exacta. Si existen codigos parecidos, apareceran aqui.";
+      return;
+    }
+
+    if(hint) hint.textContent = `No encontramos "${String(searchedNorm||"").toUpperCase()}". Te sugerimos estos codigos similares:`;
+
+    const rows = items.map(it=>{
+      const title = escapeHtml_(it.code);
+      const sub = [it.vehiculo, it.modelo, (it.from||it.to) ? `${it.from||""}-${it.to||""}` : ""].filter(Boolean).join(" · ");
+      const desc = it.desc ? `<div class="muted" style="margin-top:4px">${escapeHtml_(it.desc)}</div>` : "";
+      const subHtml = sub ? `<div class="muted" style="margin-top:4px">${escapeHtml_(sub)}</div>` : "";
+      return `
+        <div class="row" style="justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid rgba(20,28,45,.08)">
+          <div style="min-width:0">
+            <div style="font-weight:900">${title}</div>
+            ${subHtml}
+            ${desc}
+          </div>
+          <div style="flex:0 0 auto">
+            <button class="btn2" onclick="useSimilarCode_('${escapeJs_(it.code)}')">Usar</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    wrap.innerHTML = `<div>${rows}</div>`;
+  }
+
+  window.useSimilarCode_ = async function(code){
+    try{
+      const ci = document.getElementById("code");
+      if(ci){
+        ci.value = String(code||"").toUpperCase();
+        ci.focus();
+      }
+      if(typeof window.buscar === 'function') { await window.buscar(); } else { try{ document.getElementById('btnBuscar')?.click(); }catch(e){} }
+      try{ toggleAcc('cardSimilitud', false); }catch(e){}
+      try{ toggleAcc('cardProducto', true); }catch(e){}
+    }catch(e){}
+  }
+
+  function escapeJs_(s){
+    return String(s ?? "").replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+  }
 
   // ======================================================
 
-  
   // ======================================================
   // ✅ Buscador Vehicular (consulta real a Supabase)
-  //  - Vehiculo / Modelo / Motor / Descripcion: ilike "%texto%"
-  //  - Año: match si anio_inicio <= año <= anio_final
-  //  - Busca en ambas tablas de VEH_TABLES y hace dedupe
   // ======================================================
 
   function strNorm_(v){ return String(v ?? "").trim().toLowerCase(); }
@@ -916,7 +1182,6 @@ function uniqueJoin_(arr, sep=" / "){
       if(f.desc)     q = q.ilike("descripcion", "%" + f.desc  + "%");
 
       if(f.anio){
-        // match por rango: inicio <= año <= final
         q = q.lte("anio_inicio", f.anio).gte("anio_final", f.anio);
       }
 
@@ -927,13 +1192,11 @@ function uniqueJoin_(arr, sep=" / "){
 
     if(all.length === 0) return { headers: [], rows: [] };
 
-    // Dedupe (si existe en v1 y v2)
     all = dedupeByKey_(all, r => [
       r.vehiculo, r.anio_inicio, r.anio_final, r.modelo, r.motor,
       r.serie, r.cilindro, r.posicion, r.version, r.descripcion
     ].map(normCell_).join("|"));
 
-    // Orden base
     all.sort((a,b)=>{
       const va = String(a?.vehiculo||"");
       const vb = String(b?.vehiculo||"");
@@ -973,10 +1236,8 @@ function uniqueJoin_(arr, sep=" / "){
       return;
     }
 
-    // Si ya hay resultado OEM cargado, filtra SOLO eso (más rápido)
     if(lastPayload && lastPayload.tablas && lastPayload.tablas.vehicles_full){
       const base = lastPayload.tablas.vehicles_full;
-      // Filtrado client-side usando los mismos headers esperados
       const idxVeh = base.headers.findIndex(h => String(h).toLowerCase().includes("vehiculo"));
       const idxY1  = base.headers.findIndex(h => String(h).toLowerCase().includes("año inicio") || String(h).toLowerCase().includes("anio inicio"));
       const idxY2  = base.headers.findIndex(h => String(h).toLowerCase().includes("año final")  || String(h).toLowerCase().includes("anio final"));
@@ -1005,13 +1266,12 @@ function uniqueJoin_(arr, sep=" / "){
         return true;
       });
 
-      const filtered = { headers: base.headers, rows };
-      const withOem = appendOemToDescription_(filtered);
-    lastPayload.tablas.vehicles = withOem;
-      // ✅ Agregar OEM al final de la descripcion SOLO en filtro
-    filtered = decorateDescWithOriginal_(filtered);
+      let filtered = { headers: base.headers, rows };
+      filtered = decorateDescWithOriginal_(filtered);
+      lastPayload.tablas.vehicles = filtered;
 
-    renderTableInto_("vehWrap", filtered);
+      renderTableInto_("vehWrap", filtered);
+      renderVehicleLogos_(filtered);
 
       document.getElementById("btnCopyVeh").disabled = !(rows.length>0);
       document.getElementById("counts").textContent =
@@ -1029,7 +1289,6 @@ function uniqueJoin_(arr, sep=" / "){
       return;
     }
 
-    // Si no hay OEM cargado => buscar directo en BD
     setStatus("Buscando vehiculos...");
 
     try{
@@ -1042,6 +1301,7 @@ function uniqueJoin_(arr, sep=" / "){
       };
 
       renderTableInto_("vehWrap", veh);
+      renderVehicleLogos_(veh);
       renderTableInto_("oeWrap", { headers: [], rows: [] });
 
       const vehCount = (veh?.rows||[]).length;
@@ -1078,6 +1338,7 @@ function uniqueJoin_(arr, sep=" / "){
     if(lastPayload && lastPayload.tablas && lastPayload.tablas.vehicles_full){
       lastPayload.tablas.vehicles = lastPayload.tablas.vehicles_full;
       renderTableInto_("vehWrap", lastPayload.tablas.vehicles_full);
+      renderVehicleLogos_(lastPayload.tablas.vehicles_full);
 
       const vehCount = (lastPayload.tablas.vehicles_full?.rows||[]).length;
       const cambCount = (lastPayload.tablas?.cambios?.rows||[]).length;
@@ -1088,8 +1349,21 @@ function uniqueJoin_(arr, sep=" / "){
     }
   };
 
+  window.buscarCodigoPrincipal = async function(code){
+    const c = String(code || "").trim();
+    if(!c) return;
+    const input = document.getElementById("code");
+    if(input) input.value = c;
+    try{ window.scrollTo({ top: 0, behavior: "smooth" }); }catch(e){ window.scrollTo(0,0); }
+    try{
+      await window.buscar();
+    }catch(e){
+      const btn = document.querySelector('button[onclick*="buscar"]');
+      if(btn) btn.click();
+    }
+  };
 
-window.limpiar = function(){
+  window.limpiar = function(){
     lastPayload = null;
     document.getElementById("btnExport").disabled = true;
     document.getElementById("btnCopyOE").disabled = true;
@@ -1103,6 +1377,16 @@ window.limpiar = function(){
 
     document.getElementById("oeWrap").innerHTML = "No hay filas detectadas.";
     document.getElementById("vehWrap").innerHTML = "No hay filas detectadas.";
+    document.getElementById("vehLogos").innerHTML = "";
+    document.getElementById("vehLogos").style.display = "none";
+
+    // Limpiar similitud
+    const simWrap = document.getElementById("simWrap");
+    if(simWrap) simWrap.innerHTML = "";
+    const pillSim = document.getElementById("pillSimCount");
+    if(pillSim) pillSim.textContent = "0";
+    const simHint = document.getElementById("simHint");
+    if(simHint) simHint.textContent = "Si no encontramos coincidencia exacta, te mostraremos codigos similares aqui.";
 
     setStatus("Listo");
     if(isMobile_()) setMobileDefault_();
@@ -1121,11 +1405,8 @@ window.limpiar = function(){
     try{
       const codigoMostrado = candidates[0] || raw;
 
-      // ✅ originals desde cambios + cambios_v2
       const originalNorms = await resolveOriginals_(norm);
 
-      // ✅ vehicles desde datos_vehiculares + datos_vehiculares_v2
-      // ✅ cambios desde cambios + cambios_v2
       const [veh, camb] = await Promise.all([
         fetchVehiclesByOriginals_(originalNorms),
         fetchCambiosByOriginals_(originalNorms),
@@ -1175,12 +1456,23 @@ window.limpiar = function(){
           vehicle_year_to: vehSummary?.year_to || null,
           vehicle_engine: vehSummary?.engine || null,
           vehicle_serie: vehSummary?.serie || null,
-
-          // ✅ meta para saber que buscamos en v1+v2
           used_vehicle_tables: VEH_TABLES,
           used_cambios_tables: CAMBIOS_TABLES
         }
       });
+
+      // Si no hay resultados, ejecutar similitud en segundo plano
+      if (resultStatus === "not_found") {
+        setTimeout(async () => {
+          try {
+            const sim = await fetchSimilitudByPrefix_(norm, new AbortController().signal);
+            renderSimilitud_(sim, norm);
+            try { toggleAcc('cardSimilitud', true); } catch(e) {}
+          } catch (e) {
+            renderSimilitud_([], norm);
+          }
+        }, 0);
+      }
 
     }catch(e){
       console.error(e);
@@ -1215,15 +1507,14 @@ window.limpiar = function(){
     document.getElementById("productUrl").href = productUrl;
 
     const vehicles = payload.tablas?.vehicles || null;
-    // ✅ Guardar copia completa para filtros
     if(payload.tablas){
       payload.tablas.vehicles_full = vehicles;
     }
-    // reset estado del filtro al renderizar una nueva busqueda
     setFiltroPill_("Sin filtro");
     const cambios  = payload.tablas?.cambios  || null;
 
     renderTableInto_("vehWrap", vehicles);
+    renderVehicleLogos_(vehicles);
     renderTableInto_("oeWrap", cambios);
 
     const hasVeh = vehicles && Array.isArray(vehicles.rows) && vehicles.rows.length > 0;
@@ -1293,6 +1584,40 @@ window.limpiar = function(){
     a.remove();
   };
 
+  // ✅ Decorar Descripcion con Codigo Original
+  function decorateDescWithOriginal_(tableObj){
+    if(!tableObj || !Array.isArray(tableObj.headers) || !Array.isArray(tableObj.rows)) return tableObj;
+
+    const hs = tableObj.headers.map(h => String(h||"").trim().toLowerCase());
+    const iDesc = hs.findIndex(h => h === "descripcion" || h === "descripción" || h.includes("descripcion") || h.includes("description"));
+
+    let iOri = hs.findIndex(h => h === "original");
+    if(iOri < 0){
+      iOri = hs.findIndex(h => h.includes("codigo original") || h.includes("código original") || h.includes("oem") || h.includes("itemcode") || (h.includes("codigo") && !h.includes("descripcion")));
+    }
+
+    if(iDesc < 0 || iOri < 0) return tableObj;
+
+    const out = { headers: [...tableObj.headers], rows: tableObj.rows.map(r => [...r]) };
+
+    for(let k=0;k<out.rows.length;k++){
+      const r = out.rows[k];
+      const desc = String(r[iDesc] ?? "").trim();
+      const ori  = String(r[iOri]  ?? "").trim();
+      if(!ori) continue;
+
+      const already = desc.toLowerCase().includes(ori.toLowerCase()) || desc.toLowerCase().includes("oem:");
+      if(!already){
+        r[iDesc] = (desc ? desc + "  —  " : "") + "OEM: " + ori;
+      }
+    }
+
+    out.headers.splice(iOri, 1);
+    out.rows = out.rows.map(r => { r.splice(iOri, 1); return r; });
+
+    return out;
+  }
+
   // ✅ init
   await initAuth_();
 
@@ -1324,47 +1649,6 @@ window.limpiar = function(){
     const isDemo = params.get("demo") === "1";
     if (!session && !isDemo) window.location.href = "/?stay=1";
   });
-
-
-  // ======================================================
-  // ✅ Decorar Descripcion con Codigo Original (solo en busqueda por filtros)
-  //   - Si la tabla trae una columna "original" (o similar), la agrega al final de "Descripcion"
-  //   - Luego oculta esa columna para que no salga como columna aparte
-  // ======================================================
-  function decorateDescWithOriginal_(tableObj){
-    if(!tableObj || !Array.isArray(tableObj.headers) || !Array.isArray(tableObj.rows)) return tableObj;
-
-    const hs = tableObj.headers.map(h => String(h||"").trim().toLowerCase());
-    const iDesc = hs.findIndex(h => h === "descripcion" || h === "descripción" || h.includes("descripcion") || h.includes("description"));
-
-    // prioriza "original" exacto
-    let iOri = hs.findIndex(h => h === "original");
-    if(iOri < 0){
-      iOri = hs.findIndex(h => h.includes("codigo original") || h.includes("código original") || h.includes("oem") || h.includes("itemcode") || (h.includes("codigo") && !h.includes("descripcion")));
-    }
-
-    if(iDesc < 0 || iOri < 0) return tableObj;
-
-    const out = { headers: [...tableObj.headers], rows: tableObj.rows.map(r => [...r]) };
-
-    for(let k=0;k<out.rows.length;k++){
-      const r = out.rows[k];
-      const desc = String(r[iDesc] ?? "").trim();
-      const ori  = String(r[iOri]  ?? "").trim();
-      if(!ori) continue;
-
-      const already = desc.toLowerCase().includes(ori.toLowerCase()) || desc.toLowerCase().includes("oem:");
-      if(!already){
-        r[iDesc] = (desc ? desc + "  —  " : "") + "OEM: " + ori;
-      }
-    }
-
-    // Quitar la columna original para que no se vea como columna aparte
-    out.headers.splice(iOri, 1);
-    out.rows = out.rows.map(r => { r.splice(iOri, 1); return r; });
-
-    return out;
-  }
 
 </script>
 </body>
