@@ -1621,6 +1621,27 @@ function uniqueJoin_(arr, sep=" / "){
   // ✅ init
   await initAuth_();
 
+  // ✅ Forzar MAYUSCULA en el input de codigo (a276... => A276...)
+  try{
+    const codeInput = document.getElementById("code");
+    if(codeInput){
+      const up = ()=>{
+        const s = String(codeInput.value || "");
+        const u = s.toUpperCase();
+        if(s !== u){
+          const p = codeInput.selectionStart;
+          const q = codeInput.selectionEnd;
+          codeInput.value = u;
+          if(typeof p === "number" && typeof q === "number"){
+            codeInput.setSelectionRange(p, q);
+          }
+        }
+      };
+      codeInput.addEventListener("input", up);
+      codeInput.addEventListener("paste", ()=> setTimeout(up, 0));
+    }
+  }catch(e){}
+
   // ===== PRESENCIA ONLINE (APP) =====
   const { data: ses } = await supabase.auth.getSession();
   const user = ses?.session?.user;
@@ -1653,3 +1674,4 @@ function uniqueJoin_(arr, sep=" / "){
 </script>
 </body>
 </html>
+
