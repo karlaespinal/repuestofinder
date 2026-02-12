@@ -825,6 +825,10 @@
     if(currentSearchSessionId) return currentSearchSessionId;
     const anonId = getOrCreateAnonId_();
     const userId = await getCurrentUserId_();
+    
+    // ✅ Usamos el país del selector SIEMPRE
+    const selectedCountry = getSelectedCountry();
+    
     const { data, error } = await supabase
       .from("search_sessions")
       .insert([{
@@ -832,7 +836,7 @@
         anon_id: anonId,
         source: "web",
         device: detectDevice_(),
-        country: profileCountry,  // Guardamos también en sesión
+        country: selectedCountry,  // ✅ Columna country con el país del selector
         city: profileCity
       }])
       .select("id")
@@ -864,9 +868,12 @@
         result_status: resultStatus || "unknown",
         results_count: Number.isFinite(resultsCount) ? resultsCount : 0,
         response_time_ms: Number.isFinite(responseTimeMs) ? responseTimeMs : null,
+        // ✅ NUEVO: country en su propia columna (NO dentro de meta)
+        country: selectedCountry,
+        // ✅ meta SOLO para datos extra, SIN market_country duplicado
         meta: {
           ...(meta || {}),
-          market_country: selectedCountry,  // ✅ PAÍS DEL SELECTOR
+          // ❌ Eliminamos market_country de aquí para no duplicar
           market_city: profileCity || null
         }
       };
@@ -1596,11 +1603,8 @@
 
   // Trigger inicial del DOMContentLoaded para configurar el selector
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      // Ya se llamará arriba
-    });
+    document.addEventListener('DOMContentLoaded', () => {});
   } else {
-    // Si ya cargó, ejecutar manual
     setTimeout(() => {
       const event = new Event('DOMContentLoaded');
       document.dispatchEvent(event);
