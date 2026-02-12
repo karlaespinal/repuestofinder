@@ -563,14 +563,15 @@ let __activeAbortController = null;
 function createSearchGuard() {
   // Cancelar búsqueda anterior si existe
   if (__activeAbortController) {
-    try {
-      __activeAbortController.abort();
-    } catch (e) {}
+    try { __activeAbortController.abort(); } catch (e) {}
   }
 
   __searchSeq++;
   __activeSearchId = __searchSeq;
   __activeAbortController = new AbortController();
+
+  // Capturar el id de ESTA búsqueda (evita que una búsqueda vieja libere la UI de la nueva)
+  const myId = __activeSearchId;
 
   // Liberar UI
   window.__isSearching = true;
@@ -579,13 +580,14 @@ function createSearchGuard() {
   setStatus("Buscando...");
 
   return {
-    searchId: __activeSearchId,
+    searchId: myId,
     signal: __activeAbortController.signal,
     release: () => {
-      if (__activeSearchId === __searchSeq) {
+      // Solo la búsqueda activa puede liberar
+      if (myId === __activeSearchId) {
         window.__isSearching = false;
-        const btn = document.getElementById('btnBuscarCodigo');
-        if (btn) btn.disabled = false;
+        const btn2 = document.getElementById('btnBuscarCodigo');
+        if (btn2) btn2.disabled = false;
       }
     }
   };
@@ -1715,14 +1717,24 @@ document.querySelectorAll(".themeBtn").forEach(btn=>{
   // Log no-bloqueante (evita que la UI se quede colgada si Supabase tarda)
   async function safeLogSearchEvent_(payload){
   try{
+    // Log no-bloqueante: nunca debe romper ni colgar la búsqueda
+    if (!payload) return;
+
+    // Acepta varios formatos (codigo/codigo_norm, query_raw/queryRaw, etc.)
+    const qr = (payload.query_raw ?? payload.queryRaw ?? payload.codigo ?? payload.code ?? payload.query ?? "").toString().trim();
+    if (!qr) return;
+
+    // Normaliza campos mínimos esperados en la tabla
+    payload.query_raw = qr;
+    if (payload.normalized_query == null) payload.normalized_query = (payload.codigo_norm ?? payload.normalized_query ?? "").toString().trim() || null;
+    if (payload.query_type == null) payload.query_type = payload.query_type ?? "codigo";
+
     await logSearchEvent_(payload);
   }catch(e){
     // silencioso
   }
 }
-
-
-  // ======================================================
+// ======================================================
   // ✅ Helpers multi-tabla (v1 + v2)
   // ======================================================
 
@@ -2393,29 +2405,46 @@ window.limpiar = function(){
     try { release(); } catch(e) {}
   };
 
+  // ✅ Timeout DURO: si alguna promesa se queda "pending" (Supabase/red), liberamos SIEMPRE
+  const HARD_TIMEOUT_MS = 55000; // 55s
+  const hardTimer = setTimeout(() => {
+    try { __activeAbortController?.abort(); } catch(e){}
+    if (!isSearchStale_(searchId)) {
+      try { setStatus("Timeout. Intenta de nuevo."); } catch(e){}
+    }
+    try { safeRelease(); } catch(e){}
+  }, HARD_TIMEOUT_MS);
+
+
   try {
     if (isSearchStale_(searchId) || signal?.aborted) { safeRelease(); return; }
 
     const codigoMostrado = raw;
 
     // ======================================================
-    // ✅ A) OFERTAS PRIMERO (no bloquea / no cuelga)
+    // ======================================================
+    // ✅ A) OFERTAS (best-effort) - NUNCA bloquea la búsqueda
+    //    Si Supabase se queda "pending", igual seguimos.
     // ======================================================
     let offers = [];
-    try {
-      offers = await retryWithAbort_(
-        (s) => fetchOffersByOriginals_([], norm, s),
-        { timeoutMs: 12000, retries: 0, label: "ofertas", signal }
-      );
-      if (!isSearchStale_(searchId) && !signal?.aborted) {
-        renderOffersIntoProducto_(offers || []);
-      }
-    } catch (e) {
-      // silencioso: si falla/timeout, NO bloquea la busqueda
-    }
+    try{
+      setTimeout(() => {
+        if (isSearchStale_(searchId) || signal?.aborted) return;
 
-
-    // ======================================================
+        // Intento rápido (máx 8s). Si falla/timeout, no pasa nada.
+        retryWithAbort_(
+          (s) => fetchOffersByOriginals_([], norm, s),
+          { timeoutMs: 8000, retries: 0, label: "ofertas", signal }
+        )
+        .then(list => {
+          if (isSearchStale_(searchId) || signal?.aborted) return;
+          offers = Array.isArray(list) ? list : [];
+          renderOffersIntoProducto_(offers);
+        })
+        .catch(() => {/*silencioso*/});
+      }, 0);
+    }catch(e){}
+// ======================================================
     // ✅ 0) INTENTO RPC (1 sola consulta) - evita cuelgues
     // ======================================================
     let originalNorms = [norm];
@@ -2423,25 +2452,29 @@ window.limpiar = function(){
     let camb = { headers: [], rows: [] };
     let usedRpc = false;
 
-    try {
-      const rpc = await retryWithAbort_(
-        (s) => buscarEnSupabaseRPC_(norm, s),
-        { timeoutMs: 45000, label: "rpc buscar_repuesto", retries: 1, signal }
-      );
+    // RPC es opcional (solo si existe la función en Supabase).
+    // Para activarlo: window.__USE_RPC = true;
+    if (window.__USE_RPC === true) {
+      try {
+        const rpc = await retryWithAbort_(
+          (s) => buscarEnSupabaseRPC_(norm, s),
+          { timeoutMs: 45000, label: "rpc buscar_repuesto", retries: 1, signal }
+        );
 
-      if (rpc && (rpc.vehicles || rpc.cambios || rpc.original_norms)) {
-        usedRpc = true;
-        originalNorms = Array.isArray(rpc.original_norms) && rpc.original_norms.length ? rpc.original_norms : [norm];
-        veh = vehiclesTableFromRPC_(rpc.vehicles);
-        camb = cambiosTableFromRPC_(rpc.cambios);
+        if (rpc && (rpc.vehicles || rpc.cambios || rpc.original_norms)) {
+          usedRpc = true;
+          originalNorms = Array.isArray(rpc.original_norms) && rpc.original_norms.length ? rpc.original_norms : [norm];
+          veh = vehiclesTableFromRPC_(rpc.vehicles);
+          camb = cambiosTableFromRPC_(rpc.cambios);
+        }
+      } catch (e) {
+        // Si fue abortado, salir silencioso
+        if (signal?.aborted || e?.name === "AbortError" || String(e?.message||"").toLowerCase().includes("abort")) {
+          safeRelease();
+          return;
+        }
+        console.warn("RPC fallo, usando fallback multi-consulta:", e);
       }
-    } catch (e) {
-      // Si fue abortado, salir silencioso
-      if (signal?.aborted || e?.name === "AbortError" || String(e?.message||"").toLowerCase().includes("abort")) {
-        safeRelease();
-        return;
-      }
-      console.warn("RPC fallo, usando fallback multi-consulta:", e);
     }
 
     if (!usedRpc) {
@@ -2498,30 +2531,37 @@ window.limpiar = function(){
     render(payload);
 
     // ======================================================
-    // ✅ B) REFRESCO DE OFERTAS (best-effort) con original_norms
-    //     NO bloquea la UI. Si no hay, se detiene.
     // ======================================================
-    try {
+    // ✅ B) REFRESCO DE OFERTAS (best-effort) con original_norms
+    //     NO bloquea la UI. Si no hay o se cuelga, se detiene.
+    // ======================================================
+    try{
       setTimeout(() => {
         if (isSearchStale_(searchId) || signal?.aborted) return;
-        const ctl = new AbortController();
-        const to = setTimeout(() => { try { ctl.abort(); } catch(e) {} }, 12000);
-        const sig = AbortSignal.any([signal, ctl.signal]);
 
-        fetchOffersByOriginals_(originalNorms, norm, sig)
-          .then(list => {
-            clearTimeout(to);
-            if (isSearchStale_(searchId) || signal?.aborted) return;
-            renderOffersIntoProducto_(list || []);
-          })
-          .catch(() => {
-            clearTimeout(to);
-          })
-          .finally(() => {
-            try { ctl.abort(); } catch(e) {}
-          });
+        const ctl = new AbortController();
+        const sig = anySignal_([signal, ctl.signal]);
+
+        // Abort por tiempo + protección por Promise.race (anti-pending)
+        const ms = 8000;
+        const to = setTimeout(() => { try{ ctl.abort(); }catch(e){}; }, ms);
+
+        Promise.race([
+          fetchOffersByOriginals_(originalNorms, norm, sig),
+          new Promise(resolve => setTimeout(() => resolve([]), ms + 250))
+        ])
+        .then(list => {
+          clearTimeout(to);
+          if (isSearchStale_(searchId) || signal?.aborted) return;
+          renderOffersIntoProducto_(Array.isArray(list) ? list : []);
+        })
+        .catch(() => {
+          clearTimeout(to);
+        })
+        .finally(() => { try{ ctl.abort(); }catch(e){}; });
       }, 0);
-    } catch(e) {}
+    }catch(e){}
+
 
 
     const vehCount = veh?.rows?.length || 0;
@@ -2561,6 +2601,7 @@ window.limpiar = function(){
       try { clearInputsAfterCodeSearch_(); } catch(err) {}
     }
   } finally {
+    try { clearTimeout(hardTimer); } catch(e) {}
     // ✅ Garantia: nunca quedarse en "Buscando..."
     safeRelease();
   }
@@ -2586,45 +2627,61 @@ function isOfferActive_(o){
 
   async function fetchOffersByOriginals_(originalNorms, codeNorm, signal) {
   const norms = unique_([...(originalNorms || []), codeNorm].filter(Boolean));
+  if (!norms.length) return [];
+
   const selectCols = "id, original, original_norm, brand, description, price, currency, country, expires_at, seller_id, created_at";
   const nowIso = new Date().toISOString();
 
-  try {
-    const { data, error } = await supabase
+  // ⚠️ Anti-pending real: aunque abortSignal no funcione en el navegador,
+  // este wrapper SIEMPRE termina en maxMs.
+  const maxMs = 8000;
+
+  const runQuery = async (withOrder) => {
+    const q = supabase
       .from(OFFERS_TABLE)
       .select(selectCols)
       .in("original_norm", norms)
-      .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
-      .order("created_at", { ascending: false })
-      .abortSignal(signal)
-      .limit(25);
+      .or(`expires_at.is.null,expires_at.gt.${nowIso}`);
 
-    if (error) {
-      if (error.name === 'AbortError' || error.message?.includes('abort')) throw error;
-      
-      // Fallback: intentar sin order
-      const { data: d2, error: e2 } = await supabase
-        .from(OFFERS_TABLE)
-        .select(selectCols)
-        .in("original_norm", norms)
-        .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
-        .abortSignal(signal)
-        .limit(25);
-      
-      if (e2) throw e2;
-      return (d2 || []);
+    if (withOrder) q.order("created_at", { ascending: false });
+
+    // Nota: abortSignal puede o no ser soportado por tu build/navegador,
+    // por eso además usamos Promise.race.
+    const p = q.abortSignal(signal).limit(25);
+
+    const res = await Promise.race([
+      p,
+      new Promise(resolve => setTimeout(() => resolve({ __timeout: true }), maxMs))
+    ]);
+
+    if (res && res.__timeout) {
+      // Timeout -> devolver vacío (no bloquea)
+      return { data: [], error: null, __timeout: true };
     }
-    
-    return (data || []);
-  } catch (e) {
-    if (e?.name === 'AbortError' || e?.message?.includes('abort')) throw e;
-    lastOffersError = (e?.message || String(e || ''));
+    return res;
+  };
+
+  try{
+    const r1 = await runQuery(true);
+    if (r1?.error) {
+      // si fue abortado, re-lanzar
+      if (r1.error?.name === "AbortError" || String(r1.error?.message||"").toLowerCase().includes("abort")) throw r1.error;
+      // fallback sin order
+      const r2 = await runQuery(false);
+      if (r2?.error) throw r2.error;
+      return (r2?.data || []);
+    }
+    return (r1?.data || []);
+  }catch(e){
+    if (e?.name === "AbortError" || String(e?.message||"").toLowerCase().includes("abort")) throw e;
+    lastOffersError = (e?.message || String(e || ""));
     console.warn("No pude leer ofertas:", lastOffersError);
     return [];
   }
 }
 
-  function renderOffersIntoProducto_(offers){
+function renderOffersIntoProducto_(offers){
+(offers){
     const wrap = document.getElementById("offersWrap");
     if(!wrap) return;
 
@@ -3057,3 +3114,4 @@ function isOfferActive_(o){
 </script>
 </body>
 </html>
+
