@@ -56,10 +56,21 @@
     }
     .brand{display:flex;align-items:center;gap:10px}
     .logo{
-      width:40px;height:40px;border-radius:12px;
+      width:40px;
+      height:40px;
+      border-radius:12px;
       background:linear-gradient(135deg,var(--pri),var(--pri2));
       box-shadow:0 10px 20px rgba(37,99,235,.25);
+    
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    
+      font-weight:900;
+      font-size:16px;
+      color:white;
     }
+
     .brand h1{font-size:16px;margin:0}
     .brand p{margin:0;font-size:12px;color:var(--mut)}
     .userbox{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
@@ -293,7 +304,7 @@
 
     <div class="topbar">
       <div class="brand">
-        <div class="logo"></div>
+        <div class="logo">RF</div>
         <div>
           <h1>Mensajería</h1>
           <p class="mut">Foro abierto (etiquetas, fijados/cerrados) + mensajes a admins</p>
