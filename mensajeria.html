@@ -34,7 +34,7 @@
                   var(--bg);
       color:var(--txt);
     }
-    .wrap{max-width:1600px;width:min(1600px, 100%);margin:0 auto;padding:96px 2px 30px}
+    .wrap{max-width:1600px;width:min(1600px, 100%);margin:0 auto;padding:96px 0 30px} /* Cambiado padding horizontal a 0 */
     .topbar{
       display:flex;align-items:center;justify-content:space-between;gap:12px;
       padding:12px 12px;border:1px solid var(--line);background:var(--card);
@@ -67,21 +67,47 @@
     }
     .btn2:active{transform:translateY(1px)}
     
-    /* MODIFICACIÓN: laterales expandidos hacia los bordes */
-    .grid{display:grid;grid-template-columns: 0.4fr 2.2fr 0.4fr;gap:8px;margin-top:10px}
-    /* Para que las tarjetas laterales se peguen a los bordes */
+    /* MODIFICACIÓN: laterales expandidos completamente hacia los bordes */
+    .grid{
+      display:grid;
+      grid-template-columns: 0.4fr 2.2fr 0.4fr;
+      gap:8px;
+      margin-top:10px;
+      margin-left: 0;
+      margin-right: 0;
+      width: 100%;
+    }
+    
+    /* Eliminar padding del contenedor principal */
+    .wrap {
+      padding-left: 0;
+      padding-right: 0;
+    }
+    
+    /* Expandir tarjetas laterales hasta los bordes */
     .grid > .card:first-child {
-      margin-left: -8px; /* Se expande hacia la izquierda */
+      margin-left: 0;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      border-left: none;
     }
+    
     .grid > .card:last-child {
-      margin-right: -8px; /* Se expande hacia la derecha */
+      margin-right: 0;
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      border-right: none;
     }
+    
     @media (max-width: 1100px){ 
       .grid{grid-template-columns:1fr}
       .grid > .card:first-child,
       .grid > .card:last-child {
         margin-left: 0;
         margin-right: 0;
+        border-radius: var(--r2);
+        border-left: 1px solid var(--line);
+        border-right: 1px solid var(--line);
       }
     }
     
