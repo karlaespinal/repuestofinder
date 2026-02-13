@@ -34,7 +34,13 @@
                   var(--bg);
       color:var(--txt);
     }
-    .wrap{max-width:1600px;width:min(1600px, 100%);margin:0 auto;padding:96px 0 30px} /* Cambiado padding horizontal a 0 */
+    .wrap{
+      width:100%;
+      max-width:100%;
+      margin:0;
+      padding:96px 0 30px;
+    }
+     
     .topbar{
       display:flex;align-items:center;justify-content:space-between;gap:12px;
       padding:12px 12px;border:1px solid var(--line);background:var(--card);
@@ -43,9 +49,9 @@
       /* ✅ FIX: header siempre fijo (no se mueve al hacer scroll) */
       position:fixed;
       top:10px;
-      left:50%;
-      transform:translateX(-50%);
-      width:min(1600px, calc(100% - 32px));
+      left:0%;
+      transform:none;
+      width:100%;
       z-index:100;
     }
     .brand{display:flex;align-items:center;gap:10px}
