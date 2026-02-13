@@ -67,9 +67,23 @@
     }
     .btn2:active{transform:translateY(1px)}
     
-    /* MODIFICACIÓN: grid con laterales pegados a los bordes y centro más ancho */
-    .grid{display:grid;grid-template-columns: 0.3fr 2.4fr 0.3fr;gap:8px;margin-top:10px}
-    @media (max-width: 1100px){ .grid{grid-template-columns:1fr} }
+    /* MODIFICACIÓN: laterales expandidos hacia los bordes */
+    .grid{display:grid;grid-template-columns: 0.4fr 2.2fr 0.4fr;gap:8px;margin-top:10px}
+    /* Para que las tarjetas laterales se peguen a los bordes */
+    .grid > .card:first-child {
+      margin-left: -8px; /* Se expande hacia la izquierda */
+    }
+    .grid > .card:last-child {
+      margin-right: -8px; /* Se expande hacia la derecha */
+    }
+    @media (max-width: 1100px){ 
+      .grid{grid-template-columns:1fr}
+      .grid > .card:first-child,
+      .grid > .card:last-child {
+        margin-left: 0;
+        margin-right: 0;
+      }
+    }
     
     .card{
       border:1px solid var(--line);background:var(--card);
