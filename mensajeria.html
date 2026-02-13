@@ -688,10 +688,11 @@ async function requireAuth(){
 async function loadProfile(){
   try{
     const { data, error } = await sb
-      .from("profiles")
-      .select("id,email,full_name,role,country,created_at")
-      .eq("id", ME.id)
-      .maybeSingle();
+        .from("profiles")
+        .select("id,email,full_name,role,country,company_name,created_at")
+        .eq("id", ME.id)
+        .maybeSingle();
+
 
     if(error) throw error;
 
@@ -701,7 +702,11 @@ async function loadProfile(){
   }
 
   IS_ADMIN = String(PROFILE.role||"").toLowerCase() === "admin";
-  document.getElementById("who").textContent = (PROFILE.full_name||"Usuario") + " • " + (PROFILE.role||"user");
+  document.getElementById("who").textContent =
+  (PROFILE.company_name || PROFILE.full_name || "Usuario")
+  + " • "
+  + (PROFILE.role || "user");
+
   document.getElementById("meInfo").textContent =
     `Nombre: ${PROFILE.full_name||"—"}\nCorreo: ${ME.email||"—"}\nRol: ${PROFILE.role||"user"}\nPaís: ${PROFILE.country||"—"}`;
 
