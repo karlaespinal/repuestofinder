@@ -1214,6 +1214,34 @@
     return { headers, rows };
   }
 
+  // ======================================================
+  // ✅ DECORADOR DE DESCRIPCIÓN (para vehicular filter)
+  // ======================================================
+  function decorateDescWithOriginal_(tableObj){
+    if(!tableObj || !Array.isArray(tableObj.headers) || !Array.isArray(tableObj.rows)) return tableObj;
+    const hs = tableObj.headers.map(h => String(h||"").trim().toLowerCase());
+    const iDesc = hs.findIndex(h => h === "descripcion" || h === "descripción" || h.includes("descripcion") || h.includes("description"));
+    let iOri = hs.findIndex(h => h === "original");
+    if(iOri < 0){
+      iOri = hs.findIndex(h => h.includes("codigo original") || h.includes("código original") || h.includes("oem") || h.includes("itemcode") || (h.includes("codigo") && !h.includes("descripcion")));
+    }
+    if(iDesc < 0 || iOri < 0) return tableObj;
+    const out = { headers: [...tableObj.headers], rows: tableObj.rows.map(r => [...r]) };
+    for(let k=0;k<out.rows.length;k++){
+      const r = out.rows[k];
+      const desc = String(r[iDesc] ?? "").trim();
+      const ori  = String(r[iOri]  ?? "").trim();
+      if(!ori) continue;
+      const already = desc.toLowerCase().includes(ori.toLowerCase()) || desc.toLowerCase().includes("oem:");
+      if(!already){
+        r[iDesc] = (desc ? desc + "  —  " : "") + "OEM: " + ori;
+      }
+    }
+    out.headers.splice(iOri, 1);
+    out.rows = out.rows.map(r => { r.splice(iOri, 1); return r; });
+    return out;
+  }
+
   window.aplicarFiltroVehicular = async function(){
     const filtro = readFiltro_();
     if(!filtro.hasAny){
@@ -1511,31 +1539,6 @@
     a.click();
     a.remove();
   };
-
-  function decorateDescWithOriginal_(tableObj){
-    if(!tableObj || !Array.isArray(tableObj.headers) || !Array.isArray(tableObj.rows)) return tableObj;
-    const hs = tableObj.headers.map(h => String(h||"").trim().toLowerCase());
-    const iDesc = hs.findIndex(h => h === "descripcion" || h === "descripción" || h.includes("descripcion") || h.includes("description"));
-    let iOri = hs.findIndex(h => h === "original");
-    if(iOri < 0){
-      iOri = hs.findIndex(h => h.includes("codigo original") || h.includes("código original") || h.includes("oem") || h.includes("itemcode") || (h.includes("codigo") && !h.includes("descripcion")));
-    }
-    if(iDesc < 0 || iOri < 0) return tableObj;
-    const out = { headers: [...tableObj.headers], rows: tableObj.rows.map(r => [...r]) };
-    for(let k=0;k<out.rows.length;k++){
-      const r = out.rows[k];
-      const desc = String(r[iDesc] ?? "").trim();
-      const ori  = String(r[iOri]  ?? "").trim();
-      if(!ori) continue;
-      const already = desc.toLowerCase().includes(ori.toLowerCase()) || desc.toLowerCase().includes("oem:");
-      if(!already){
-        r[iDesc] = (desc ? desc + "  —  " : "") + "OEM: " + ori;
-      }
-    }
-    out.headers.splice(iOri, 1);
-    out.rows = out.rows.map(r => { r.splice(iOri, 1); return r; });
-    return out;
-  }
 
   // ✅ init
   await initAuth_();
