@@ -1168,8 +1168,7 @@
   }
 
   async function fetchVehiclesByFilters_(f){
-    // ✅ CORREGIDO: Incluimos original_norm para que decorateDescWithOriginal_ pueda encontrar el código
-    const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion, original_norm";
+    const selectCols = "vehiculo, anio_inicio, anio_final, modelo, motor, serie, cilindro, posicion, version, descripcion";
     let all = [];
     for(const t of VEH_TABLES){
       let q = supabase.from(t).select(selectCols).limit(5000);
@@ -1196,8 +1195,7 @@
       if(ma !== mb) return ma.localeCompare(mb);
       return (Number(a?.anio_inicio||0) - Number(b?.anio_inicio||0));
     });
-    // ✅ Incluimos original_norm en los headers para que sea visible para la función de decoración
-    const headersKeys = ["vehiculo","anio_inicio","anio_final","modelo","motor","serie","cilindro","posicion","version","descripcion","original_norm"];
+    const headersKeys = ["vehiculo","anio_inicio","anio_final","modelo","motor","serie","cilindro","posicion","version","descripcion"];
     const headerLabel = (k)=>{
       if(k === "vehiculo") return "Vehiculo";
       if(k === "anio_inicio") return "Año inicio";
@@ -1209,12 +1207,39 @@
       if(k === "posicion") return "Posicion";
       if(k === "version") return "Version";
       if(k === "descripcion") return "Descripcion";
-      if(k === "original_norm") return "original"; // ← Este nombre es clave para que decorateDescWithOriginal_ lo encuentre
       return k.replace(/_/g," ").replace(/^./, c => c.toUpperCase());
     };
     const headers = headersKeys.map(headerLabel);
     const rows = all.map(obj => headersKeys.map(k => (obj?.[k] ?? "")));
     return { headers, rows };
+  }
+
+  // ======================================================
+  // ✅ DECORADOR DE DESCRIPCIÓN (para vehicular filter)
+  // ======================================================
+  function decorateDescWithOriginal_(tableObj){
+    if(!tableObj || !Array.isArray(tableObj.headers) || !Array.isArray(tableObj.rows)) return tableObj;
+    const hs = tableObj.headers.map(h => String(h||"").trim().toLowerCase());
+    const iDesc = hs.findIndex(h => h === "descripcion" || h === "descripción" || h.includes("descripcion") || h.includes("description"));
+    let iOri = hs.findIndex(h => h === "original");
+    if(iOri < 0){
+      iOri = hs.findIndex(h => h.includes("codigo original") || h.includes("código original") || h.includes("oem") || h.includes("itemcode") || (h.includes("codigo") && !h.includes("descripcion")));
+    }
+    if(iDesc < 0 || iOri < 0) return tableObj;
+    const out = { headers: [...tableObj.headers], rows: tableObj.rows.map(r => [...r]) };
+    for(let k=0;k<out.rows.length;k++){
+      const r = out.rows[k];
+      const desc = String(r[iDesc] ?? "").trim();
+      const ori  = String(r[iOri]  ?? "").trim();
+      if(!ori) continue;
+      const already = desc.toLowerCase().includes(ori.toLowerCase()) || desc.toLowerCase().includes("oem:");
+      if(!already){
+        r[iDesc] = (desc ? desc + "  —  " : "") + "OEM: " + ori;
+      }
+    }
+    out.headers.splice(iOri, 1);
+    out.rows = out.rows.map(r => { r.splice(iOri, 1); return r; });
+    return out;
   }
 
   window.aplicarFiltroVehicular = async function(){
@@ -1514,42 +1539,6 @@
     a.click();
     a.remove();
   };
-
-  function decorateDescWithOriginal_(tableObj){
-    if(!tableObj || !Array.isArray(tableObj.headers) || !Array.isArray(tableObj.rows)) return tableObj;
-    const hs = tableObj.headers.map(h => String(h||"").trim().toLowerCase());
-    const iDesc = hs.findIndex(h => h === "descripcion" || h === "descripción" || h.includes("descripcion") || h.includes("description"));
-    let iOri = hs.findIndex(h => h === "original");
-    if(iOri < 0){
-      iOri = hs.findIndex(h => h.includes("codigo original") || h.includes("código original") || h.includes("oem") || h.includes("itemcode") || (h.includes("codigo") && !h.includes("descripcion")));
-    }
-    if(iDesc < 0 || iOri < 0) return tableObj;
-    const out = { headers: [...tableObj.headers], rows: tableObj.rows.map(r => [...r]) };
-    for(let k=0;k<out.rows.length;k++){
-      const r = out.rows[k];
-      const desc = String(r[iDesc] ?? "").trim();
-      const ori  = String(r[iOri]  ?? "").trim();
-      if(!ori) continue;
-      const already = desc.toLowerCase().includes(ori.toLowerCase()) || desc.toLowerCase().includes("oem:");
-      if(!already){
-        // ✅ MODIFICADO: Crear un enlace clickeable para el código OEM
-        const codigoLink = `<a href="#" onclick="buscarCodigoPrincipal('${ori.replace(/'/g, "\\'")}');return false;" style="color:#2563eb;text-decoration:underline;font-weight:900;">${ori}</a>`;
-        r[iDesc] = (desc ? desc + "  —  " : "") + "OEM: " + codigoLink;
-      } else {
-        // ✅ Si ya tiene OEM, reemplazar el texto plano por un enlace
-        const regex = /OEM:\s*([A-Z0-9-]+)/i;
-        const match = desc.match(regex);
-        if (match && match[1]) {
-          const codigoExistente = match[1];
-          const codigoLink = `<a href="#" onclick="buscarCodigoPrincipal('${codigoExistente.replace(/'/g, "\\'")}');return false;" style="color:#2563eb;text-decoration:underline;font-weight:900;">${codigoExistente}</a>`;
-          r[iDesc] = desc.replace(regex, "OEM: " + codigoLink);
-        }
-      }
-    }
-    out.headers.splice(iOri, 1);
-    out.rows = out.rows.map(r => { r.splice(iOri, 1); return r; });
-    return out;
-  }
 
   // ✅ init
   await initAuth_();
