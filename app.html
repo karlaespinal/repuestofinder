@@ -1516,29 +1516,40 @@
   };
 
   function decorateDescWithOriginal_(tableObj){
-    if(!tableObj || !Array.isArray(tableObj.headers) || !Array.isArray(tableObj.rows)) return tableObj;
-    const hs = tableObj.headers.map(h => String(h||"").trim().toLowerCase());
-    const iDesc = hs.findIndex(h => h === "descripcion" || h === "descripción" || h.includes("descripcion") || h.includes("description"));
-    let iOri = hs.findIndex(h => h === "original");
-    if(iOri < 0){
-      iOri = hs.findIndex(h => h.includes("codigo original") || h.includes("código original") || h.includes("oem") || h.includes("itemcode") || (h.includes("codigo") && !h.includes("descripcion")));
-    }
-    if(iDesc < 0 || iOri < 0) return tableObj;
-    const out = { headers: [...tableObj.headers], rows: tableObj.rows.map(r => [...r]) };
-    for(let k=0;k<out.rows.length;k++){
-      const r = out.rows[k];
-      const desc = String(r[iDesc] ?? "").trim();
-      const ori  = String(r[iOri]  ?? "").trim();
-      if(!ori) continue;
-      const already = desc.toLowerCase().includes(ori.toLowerCase()) || desc.toLowerCase().includes("oem:");
-      if(!already){
-        r[iDesc] = (desc ? desc + "  —  " : "") + "OEM: " + ori;
+  if(!tableObj || !Array.isArray(tableObj.headers) || !Array.isArray(tableObj.rows)) return tableObj;
+  const hs = tableObj.headers.map(h => String(h||"").trim().toLowerCase());
+  const iDesc = hs.findIndex(h => h === "descripcion" || h === "descripción" || h.includes("descripcion") || h.includes("description"));
+  let iOri = hs.findIndex(h => h === "original");
+  if(iOri < 0){
+    iOri = hs.findIndex(h => h.includes("codigo original") || h.includes("código original") || h.includes("oem") || h.includes("itemcode") || (h.includes("codigo") && !h.includes("descripcion")));
+  }
+  if(iDesc < 0 || iOri < 0) return tableObj;
+  const out = { headers: [...tableObj.headers], rows: tableObj.rows.map(r => [...r]) };
+  for(let k=0;k<out.rows.length;k++){
+    const r = out.rows[k];
+    const desc = String(r[iDesc] ?? "").trim();
+    const ori  = String(r[iOri]  ?? "").trim();
+    if(!ori) continue;
+    const already = desc.toLowerCase().includes(ori.toLowerCase()) || desc.toLowerCase().includes("oem:");
+    if(!already){
+      // ✅ CREAR ENLACE CLICKEABLE
+      const codigoLink = `<a href="#" onclick="buscarCodigoPrincipal('${ori.replace(/'/g, "\\'")}'); return false;" style="color:#2563eb; text-decoration:underline; font-weight:900;">${ori}</a>`;
+      r[iDesc] = (desc ? desc + "  —  " : "") + "OEM: " + codigoLink;
+    } else {
+      // Si ya tiene OEM, reemplazar el texto plano por un enlace
+      const regex = /OEM:\s*([A-Z0-9-]+)/i;
+      const match = desc.match(regex);
+      if (match && match[1]) {
+        const codigoExistente = match[1];
+        const codigoLink = `<a href="#" onclick="buscarCodigoPrincipal('${codigoExistente.replace(/'/g, "\\'")}'); return false;" style="color:#2563eb; text-decoration:underline; font-weight:900;">${codigoExistente}</a>`;
+        r[iDesc] = desc.replace(regex, "OEM: " + codigoLink);
       }
     }
-    out.headers.splice(iOri, 1);
-    out.rows = out.rows.map(r => { r.splice(iOri, 1); return r; });
-    return out;
   }
+  out.headers.splice(iOri, 1);
+  out.rows = out.rows.map(r => { r.splice(iOri, 1); return r; });
+  return out;
+}
 
   // ✅ init
   await initAuth_();
