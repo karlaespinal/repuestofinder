@@ -1532,7 +1532,18 @@
       if(!ori) continue;
       const already = desc.toLowerCase().includes(ori.toLowerCase()) || desc.toLowerCase().includes("oem:");
       if(!already){
-        r[iDesc] = (desc ? desc + "  —  " : "") + "OEM: " + ori;
+        // ✅ CORREGIDO: onclick con comillas simples y return false
+        const codigoLink = `<a href="#" onclick="buscarCodigoPrincipal('${ori.replace(/'/g, "\\'")}'); return false;" style="color:#2563eb; text-decoration:underline; font-weight:900;">${ori}</a>`;
+        r[iDesc] = (desc ? desc + "  —  " : "") + "OEM: " + codigoLink;
+      } else {
+        // Si ya tiene OEM, reemplazar el texto plano por un enlace
+        const regex = /OEM:\s*([A-Z0-9-]+)/i;
+        const match = desc.match(regex);
+        if (match && match[1]) {
+          const codigoExistente = match[1];
+          const codigoLink = `<a href="#" onclick="buscarCodigoPrincipal('${codigoExistente.replace(/'/g, "\\'")}'); return false;" style="color:#2563eb; text-decoration:underline; font-weight:900;">${codigoExistente}</a>`;
+          r[iDesc] = desc.replace(regex, "OEM: " + codigoLink);
+        }
       }
     }
     out.headers.splice(iOri, 1);
