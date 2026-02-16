@@ -1266,7 +1266,8 @@
     }
     setStatus("Buscando vehiculos...");
     try{
-      const veh = await fetchVehiclesByFilters_(filtro);
+      const vehRaw = await fetchVehiclesByFilters_(filtro);
+      const veh = decorateDescWithOriginal_(vehRaw);
       lastPayload = {
         codigo: "FILTRO_VEHICULAR",
         productUrl: buildGoogleUrl_("vehiculo " + (filtro.vehiculo||"")),
